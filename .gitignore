@@ -13,6 +13,12 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
+# Cursor rules files
+.cursorrules/
+.cursor/
+.cursor/rules/*
+
+
 # Build outputs
 dist/
 build/
