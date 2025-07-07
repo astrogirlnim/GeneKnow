@@ -1,0 +1,42 @@
+# Core ML Libraries
+tensorflow>=2.13.0
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Privacy & Security
+pysyft>=0.8.0
+opacus>=1.4.0
+
+# Genomic Analysis
+cyvcf2>=0.30.0
+pysam>=0.21.0
+biopython>=1.81
+
+# NLP & LLM
+transformers>=4.30.0
+tokenizers>=0.13.0
+sentencepiece>=0.1.99
+
+# Data Processing
+h5py>=3.9.0
+joblib>=1.3.0
+tqdm>=4.65.0
+
+# Configuration & Utilities
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+click>=8.1.0
+loguru>=0.7.0
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Optional: For advanced genomic analysis
+# hail>=0.2.128
+# dask>=2023.7.0 

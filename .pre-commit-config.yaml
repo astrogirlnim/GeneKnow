@@ -1,0 +1,359 @@
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: detect-private-key
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'develop']
+      - id: pretty-format-json
+        args: ['--autofix', '--indent', '2']
+
+  # Python hooks
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        files: ^backend/python/
+        language_version: python3.11
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        files: ^backend/python/
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        files: ^backend/python/
+        args: 
+          - "--max-line-length=88"
+          - "--extend-ignore=E203,W503"
+          - "--exclude=venv,build,dist,__pycache__,.git"
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
+    hooks:
+      - id: mypy
+        files: ^backend/python/
+        additional_dependencies: [types-requests, types-PyYAML]
+        args: ["--ignore-missing-imports", "--strict"]
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        files: ^backend/python/
+        args: ["-r", "backend/python/genepredict/"]
+        exclude: ^backend/python/tests/
+
+  # Rust hooks
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        files: ^backend/rust/
+        args: ["--manifest-path", "backend/rust/Cargo.toml"]
+      - id: clippy
+        files: ^backend/rust/
+        args: ["--manifest-path", "backend/rust/Cargo.toml", "--", "-D", "warnings"]
+      - id: cargo-check
+        files: ^backend/rust/
+        args: ["--manifest-path", "backend/rust/Cargo.toml"]
+
+  # JavaScript/TypeScript hooks
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.42.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
+        types: [javascript, jsx, typescript, tsx]
+        additional_dependencies:
+          - eslint@8.42.0
+          - '@typescript-eslint/parser@5.59.11'
+          - '@typescript-eslint/eslint-plugin@5.59.11'
+          - 'eslint-plugin-react@7.32.2'
+          - 'eslint-plugin-react-hooks@4.6.0'
+          - 'eslint-plugin-jsx-a11y@6.7.1'
+          - 'eslint-plugin-import@2.27.5'
+        args: ["--fix", "--max-warnings", "0"]
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        files: ^frontend/
+        types_or: [javascript, jsx, typescript, tsx, json, css, scss, html, markdown]
+        additional_dependencies:
+          - prettier@3.0.0
+          - "@trivago/prettier-plugin-sort-imports@4.1.1"
+        args: ["--write", "--ignore-unknown"]
+
+  # Security hooks
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*\.min\.js$|
+            .*\.min\.css$|
+            package-lock\.json$|
+            yarn\.lock$|
+            Cargo\.lock$|
+            .*\.svg$|
+            .*\.png$|
+            .*\.jpg$|
+            .*\.jpeg$|
+            .*\.gif$|
+            .*\.ico$|
+            .*\.woff$|
+            .*\.woff2$|
+            .*\.ttf$|
+            .*\.eot$|
+            .*\.otf$
+          )$
+
+  # Documentation hooks
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
+    hooks:
+      - id: markdownlint
+        args: ["--fix", "--ignore", "node_modules"]
+        exclude: |
+          (?x)^(
+            CHANGELOG\.md$|
+            \.github/.*\.md$
+          )$
+
+  # Dockerfile hooks
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        files: ^.*Dockerfile.*$
+
+  # Shell script hooks
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.2
+    hooks:
+      - id: shellcheck
+        files: ^scripts/.*\.sh$
+
+  # YAML hooks
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint.yml]
+
+  # Git hooks
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
+  # License hooks
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.1
+    hooks:
+      - id: insert-license
+        files: ^backend/rust/src/.*\.rs$
+        args:
+          - --license-filepath
+          - .license-header-rust.txt
+          - --comment-style
+          - "//|//|"
+      - id: insert-license
+        files: ^backend/python/genepredict/.*\.py$
+        args:
+          - --license-filepath
+          - .license-header-python.txt
+          - --comment-style
+          - "#|#|"
+      - id: insert-license
+        files: ^frontend/src/.*\.(ts|tsx|js|jsx)$
+        args:
+          - --license-filepath
+          - .license-header-js.txt
+          - --comment-style
+          - "/**| *| */"
+
+  # Custom hooks
+  - repo: local
+    hooks:
+      # Check for TODO/FIXME in production code
+      - id: check-todos
+        name: Check for TODO/FIXME comments
+        entry: bash -c 'if grep -r "TODO\|FIXME" --include="*.rs" --include="*.py" --include="*.ts" --include="*.tsx" --exclude-dir=target --exclude-dir=node_modules --exclude-dir=venv .; then echo "TODO/FIXME comments found in code"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      # Check for debug prints
+      - id: check-debug-prints
+        name: Check for debug prints
+        entry: bash -c 'if grep -r "console\.log\|print(\|println!\|dbg!" --include="*.rs" --include="*.py" --include="*.ts" --include="*.tsx" --exclude-dir=target --exclude-dir=node_modules --exclude-dir=venv .; then echo "Debug prints found in code"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      # Check for sensitive data patterns
+      - id: check-sensitive-data
+        name: Check for sensitive data
+        entry: bash -c 'if grep -r -i "password\|secret\|token\|key\|api_key" --include="*.rs" --include="*.py" --include="*.ts" --include="*.tsx" --include="*.json" --exclude-dir=target --exclude-dir=node_modules --exclude-dir=venv .; then echo "Potential sensitive data found"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      # Validate genomic file formats
+      - id: validate-genomic-files
+        name: Validate genomic test files
+        entry: bash -c 'if [ -d "data/test" ]; then python3 -c "
+import os
+import sys
+test_dir = \"data/test\"
+if os.path.exists(test_dir):
+    for file in os.listdir(test_dir):
+        if file.endswith(\".vcf\") and file != \"invalid.vcf\":
+            with open(os.path.join(test_dir, file)) as f:
+                content = f.read()
+                if not content.startswith(\"##fileformat=VCF\"):
+                    print(f\"Invalid VCF file: {file}\")
+                    sys.exit(1)
+        elif file.endswith(\".fastq\") and file != \"invalid.fastq\":
+            with open(os.path.join(test_dir, file)) as f:
+                lines = f.readlines()
+                if len(lines) < 4 or not lines[0].startswith(\"@\"):
+                    print(f\"Invalid FASTQ file: {file}\")
+                    sys.exit(1)
+"; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      # Check Python imports
+      - id: check-python-imports
+        name: Check Python imports
+        entry: bash -c 'cd backend/python && python3 -m py_compile genepredict/__init__.py'
+        language: system
+        files: ^backend/python/
+        pass_filenames: false
+
+      # Check Rust compilation
+      - id: check-rust-compilation
+        name: Check Rust compilation
+        entry: bash -c 'cd backend/rust && cargo check'
+        language: system
+        files: ^backend/rust/
+        pass_filenames: false
+
+      # Check TypeScript compilation
+      - id: check-typescript-compilation
+        name: Check TypeScript compilation
+        entry: bash -c 'cd frontend && npm run type-check'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+
+      # Check for proper file permissions
+      - id: check-file-permissions
+        name: Check file permissions
+        entry: bash -c 'find . -name "*.sh" -type f ! -perm -u+x -exec echo "Script {} is not executable" \; -exec false \;'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+      # Validate configuration files
+      - id: validate-config-files
+        name: Validate configuration files
+        entry: bash -c 'python3 -c "
+import os
+import json
+import yaml
+import toml
+import sys
+
+def validate_json(file_path):
+    try:
+        with open(file_path) as f:
+            json.load(f)
+        return True
+    except Exception as e:
+        print(f\"Invalid JSON in {file_path}: {e}\")
+        return False
+
+def validate_yaml(file_path):
+    try:
+        with open(file_path) as f:
+            yaml.safe_load(f)
+        return True
+    except Exception as e:
+        print(f\"Invalid YAML in {file_path}: {e}\")
+        return False
+
+def validate_toml(file_path):
+    try:
+        with open(file_path) as f:
+            toml.load(f)
+        return True
+    except Exception as e:
+        print(f\"Invalid TOML in {file_path}: {e}\")
+        return False
+
+all_valid = True
+for root, dirs, files in os.walk(\".\"):
+    for file in files:
+        file_path = os.path.join(root, file)
+        if file.endswith(\".json\") and \"node_modules\" not in file_path:
+            if not validate_json(file_path):
+                all_valid = False
+        elif file.endswith(\".yaml\") or file.endswith(\".yml\"):
+            if not validate_yaml(file_path):
+                all_valid = False
+        elif file.endswith(\".toml\"):
+            if not validate_toml(file_path):
+                all_valid = False
+
+if not all_valid:
+    sys.exit(1)
+"'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+# Configuration for yamllint
+default_language_version:
+  python: python3.11
+  node: "18"
+  rust: "1.70"
+
+minimum_pre_commit_version: 3.0.0
+
+default_stages: [commit, push] 

@@ -1,0 +1,199 @@
+version: '3.8'
+
+name: genepredict
+
+services:
+  # =============================================================================
+  # Frontend Development Server
+  # =============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        - NODE_ENV=development
+    container_name: genepredict-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+      - VITE_APP_NAME=GenePredict
+    depends_on:
+      - backend
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # Python ML Backend
+  # =============================================================================
+  backend:
+    build:
+      context: ./backend/python
+      dockerfile: Dockerfile.dev
+      args:
+        - PYTHON_ENV=development
+    container_name: genepredict-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/python:/app
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app
+      - PYTHON_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATA_BASE_PATH=/app/data
+      - MODEL_CACHE_PATH=/app/data/models
+      - HUGGINGFACE_CACHE_DIR=/app/data/models/huggingface
+      - TENSORFLOW_MODEL_DIR=/app/data/models/tensorflow
+      - ENABLE_PRIVACY=true
+      - PRIVACY_BUDGET=1.0
+      - MAX_PARALLEL_PROCESSES=2
+      - PROCESSING_TIMEOUT=3600
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Redis Cache (for session management and caching)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: genepredict-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # PostgreSQL Database (for metadata and audit logs)
+  # =============================================================================
+  database:
+    image: postgres:15-alpine
+    container_name: genepredict-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=genepredict
+      - POSTGRES_USER=genepredict
+      - POSTGRES_PASSWORD=genepredict_dev_password
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U genepredict -d genepredict"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # MinIO Object Storage (for file storage)
+  # =============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: genepredict-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=genepredict
+      - MINIO_ROOT_PASSWORD=genepredict_dev_password
+      - MINIO_DEFAULT_BUCKETS=genomic-files,processed-data,models
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # Monitoring and Observability
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: genepredict-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: genepredict-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=genepredict_dev_password
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - genepredict-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  genepredict-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    internal: false  # Set to true for complete isolation
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  minio-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local 
