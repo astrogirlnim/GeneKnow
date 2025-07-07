@@ -85,8 +85,6 @@ cargo tauri dev
 # From desktop/ directory
 cargo tauri build
 
-# Or from desktop/ui/ directory
-pnpm run tauri-build
 ```
 
 ---
