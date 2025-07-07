@@ -5,8 +5,8 @@
   "identifier": "org.gene.predict.desktop",
   "build": {
     "frontendDist": "../ui/dist",
-    "beforeDevCommand": "cd ../ui && pnpm run dev",
-    "beforeBuildCommand": "cd ../ui && pnpm run build"
+    "beforeDevCommand": "pnpm --dir ../ui run dev",
+    "beforeBuildCommand": "pnpm --dir ../ui run build"
   },
   "app": {
     "windows": [
