@@ -108,8 +108,6 @@ def test_llm_detection():
                 print(f"Available Ollama models: {[m['name'] for m in models]}")
         except:
             pass
-    elif interface.backend == LLMBackend.HUGGINGFACE:
-        print("HuggingFace is available!")
     else:
         print("No LLM backend available - will use fallback mode")
 
