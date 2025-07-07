@@ -1,7 +1,5 @@
-# Python Version-Specific Requirements
-# This file automatically includes the correct requirements based on Python version
-# For Python 3.13+: Uses JAX instead of TensorFlow
-# For Python 3.9-3.12: Uses requirements-legacy.txt (includes TensorFlow)
+# Python 3.13 Compatible Requirements
+# This file contains packages that are confirmed to work with Python 3.13
 
 # Core ML Libraries (Python 3.13 compatible)
 torch>=2.0.0

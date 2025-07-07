@@ -99,6 +99,7 @@ OPTIONS:
     --cleanup               Clean up all processes and temporary files
     --status                Show status of running services
     --logs                  Show recent logs
+    --test-ml               Test ML library compatibility
 
 RUN MODES:
     docker      Use Docker Compose for all services
@@ -302,6 +303,24 @@ install_python_dependencies() {
     
     cd "$PYTHON_DIR"
     
+    # Check Python version for compatibility
+    local python_version=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    log "INFO" "Detected Python version: $python_version"
+    
+    # Determine which requirements file to use
+    local requirements_file="requirements.txt"
+    if [[ $(python3 -c "import sys; print(sys.version_info >= (3, 13))") == "True" ]]; then
+        log "INFO" "Using Python 3.13+ compatible requirements (JAX instead of TensorFlow)"
+        requirements_file="requirements.txt"  # Already updated for Python 3.13
+    else
+        log "INFO" "Using legacy requirements (includes TensorFlow for Python 3.9-3.12)"
+        if [[ -f "requirements-legacy.txt" ]]; then
+            requirements_file="requirements-legacy.txt"
+        else
+            log "WARNING" "Legacy requirements file not found, using default"
+        fi
+    fi
+    
     # Check if virtual environment exists
     if [[ ! -d "venv" ]] || [[ "$FORCE_REINSTALL" == "true" ]]; then
         log "STEP" "Creating Python virtual environment..."
@@ -315,19 +334,80 @@ install_python_dependencies() {
     source venv/bin/activate
     
     # Install/upgrade pip
+    log "STEP" "Upgrading pip..."
     pip install --upgrade pip
     
-    # Install dependencies
-    if [[ "$FORCE_REINSTALL" == "true" ]] || ! pip freeze | grep -q "tensorflow"; then
-        log "STEP" "Installing Python dependencies..."
-        pip install -r requirements.txt
+    # Install dependencies with better error handling
+    if [[ "$FORCE_REINSTALL" == "true" ]] || ! pip freeze | grep -q -E "(tensorflow|jax|torch)"; then
+        log "STEP" "Installing Python dependencies from $requirements_file..."
         
-        # Install additional TCGA dependencies
-        pip install requests aiohttp aiofiles gdctools 2>/dev/null || log "WARNING" "Some optional dependencies failed to install"
+        # Try to install requirements with better error handling
+        if pip install -r "$requirements_file"; then
+            log "SUCCESS" "Core Python dependencies installed successfully"
+        else
+            log "ERROR" "Failed to install some dependencies from $requirements_file"
+            log "INFO" "Attempting to install minimal requirements..."
+            
+            # Install minimal requirements that should work
+            local minimal_deps=(
+                "numpy>=1.24.0"
+                "pandas>=2.0.0"
+                "scikit-learn>=1.3.0"
+                "fastapi>=0.100.0"
+                "uvicorn>=0.23.0"
+                "pydantic>=2.0.0"
+                "python-dotenv>=1.0.0"
+            )
+            
+            for dep in "${minimal_deps[@]}"; do
+                if pip install "$dep"; then
+                    log "SUCCESS" "Installed: $dep"
+                else
+                    log "WARNING" "Failed to install: $dep"
+                fi
+            done
+        fi
         
-        log "SUCCESS" "Python dependencies installed"
+        # Install additional TCGA dependencies (optional)
+        log "STEP" "Installing optional TCGA dependencies..."
+        local optional_deps=("requests" "aiohttp" "aiofiles")
+        for dep in "${optional_deps[@]}"; do
+            if pip install "$dep" 2>/dev/null; then
+                log "SUCCESS" "Installed optional dependency: $dep"
+            else
+                log "WARNING" "Failed to install optional dependency: $dep"
+            fi
+        done
+        
+        # Try to install gdctools separately as it may have issues
+        if pip install gdctools 2>/dev/null; then
+            log "SUCCESS" "Installed gdctools for TCGA integration"
+        else
+            log "WARNING" "Failed to install gdctools - TCGA integration may be limited"
+        fi
+        
+        log "SUCCESS" "Python dependencies installation completed"
     else
         log "INFO" "Python dependencies already installed, skipping"
+    fi
+    
+    # Verify critical packages are installed
+    log "STEP" "Verifying critical packages..."
+    local critical_packages=("numpy" "pandas" "fastapi")
+    local all_critical_installed=true
+    
+    for package in "${critical_packages[@]}"; do
+        if python -c "import $package" 2>/dev/null; then
+            log "SUCCESS" "Verified: $package is installed"
+        else
+            log "ERROR" "Critical package missing: $package"
+            all_critical_installed=false
+        fi
+    done
+    
+    if [[ "$all_critical_installed" == "false" ]]; then
+        log "ERROR" "Some critical packages are missing. The application may not work properly."
+        log "INFO" "Try running with --force to reinstall all dependencies"
     fi
     
     cd "$PROJECT_ROOT"
@@ -543,6 +623,30 @@ show_logs() {
     fi
 }
 
+test_ml_compatibility() {
+    print_header "ML Compatibility Test"
+    
+    if [[ ! -f "$PYTHON_DIR/test_ml_compatibility.py" ]]; then
+        log "ERROR" "ML compatibility test script not found"
+        exit 1
+    fi
+    
+    cd "$PYTHON_DIR"
+    
+    # Check if virtual environment exists
+    if [[ -d "venv" ]]; then
+        log "INFO" "Using existing virtual environment"
+        source venv/bin/activate
+    else
+        log "WARNING" "No virtual environment found, using system Python"
+    fi
+    
+    log "INFO" "Running ML compatibility test..."
+    python3 test_ml_compatibility.py
+    
+    cd "$PROJECT_ROOT"
+}
+
 # =============================================================================
 # Main Functions
 # =============================================================================
@@ -588,6 +692,10 @@ parse_arguments() {
                 ;;
             --logs)
                 show_logs
+                exit 0
+                ;;
+            --test-ml)
+                test_ml_compatibility
                 exit 0
                 ;;
             *)
