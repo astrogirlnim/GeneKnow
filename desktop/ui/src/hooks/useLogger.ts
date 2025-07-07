@@ -7,12 +7,7 @@ interface LogLevel {
   ERROR: 'error'
 }
 
-const LOG_LEVELS: LogLevel = {
-  DEBUG: 'debug',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error'
-}
+// Removed unused LOG_LEVELS constant to fix TypeScript error
 
 export const useLogger = () => {
   const log = useCallback((level: keyof LogLevel, message: string, data?: any) => {
