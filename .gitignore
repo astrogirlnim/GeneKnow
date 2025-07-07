@@ -128,3 +128,8 @@ Desktop.ini
 *.pkl
 models/
 data/ 
+
+
+/test-data
+/output_chunks
+regions.bed
