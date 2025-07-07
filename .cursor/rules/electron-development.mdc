@@ -1,0 +1,323 @@
+---
+description: Best practices for building secure and performant Electron applications with modern JavaScript
+globs: **/*.{js,jsx,ts,tsx}, **/electron/**/*, **/preload/**/*, **/renderer/**/*
+---
+
+# Electron Development
+
+// Description: Best practices for building secure and performant Electron applications with modern JavaScript
+// Recommended Globs: **/*.{js,jsx,ts,tsx}, **/electron/**/*, **/preload/**/*, **/renderer/**/*
+
+## Project Structure
+```
+src/
+  electron/
+    main/
+      window-manager.js
+      ipc-handlers.js
+      auto-updater.js
+    preload/
+      bridge.js
+      types.d.ts
+    constants/
+      ipc-channels.js
+  renderer/
+    components/
+      ui/
+        button.jsx
+        dialog.jsx
+      features/
+        file-manager/
+          file-list.jsx
+          use-files.js
+    pages/
+      home.jsx
+      settings.jsx
+    lib/
+      db/
+        pouchdb.js
+      utils/
+        format.js
+```
+
+## Main Process Setup
+```javascript
+// src/electron/main/window-manager.js
+const { app, BrowserWindow } = require('electron');
+const path = require('path');
+
+const createMainWindow = () => {
+  const mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: path.join(__dirname, '../preload/bridge.js')
+    }
+  });
+
+  mainWindow.loadFile('index.html');
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
+  });
+
+  return mainWindow;
+};
+
+const setupApp = () => {
+  app.whenReady().then(() => {
+    const mainWindow = createMainWindow();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createMainWindow();
+      }
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+};
+
+module.exports = { setupApp };
+```
+
+## IPC Communication
+```javascript
+// src/electron/main/ipc-handlers.js
+const { ipcMain } = require('electron');
+const { IPC_CHANNELS } = require('../constants/ipc-channels');
+
+const setupIpcHandlers = () => {
+  ipcMain.handle(IPC_CHANNELS.READ_FILE, async (event, filePath) => {
+    try {
+      // Validate file path and permissions
+      if (!isPathSafe(filePath)) {
+        throw new Error('Invalid file path');
+      }
+
+      const content = await fs.promises.readFile(filePath, 'utf-8');
+      return { success: true, data: content };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SAVE_FILE, async (event, { filePath, content }) => {
+    try {
+      if (!isPathSafe(filePath)) {
+        throw new Error('Invalid file path');
+      }
+
+      await fs.promises.writeFile(filePath, content, 'utf-8');
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+};
+
+module.exports = { setupIpcHandlers };
+```
+
+## Preload Script
+```javascript
+// src/electron/preload/bridge.js
+const { contextBridge, ipcRenderer } = require('electron');
+const { IPC_CHANNELS } = require('../constants/ipc-channels');
+
+const API = {
+  files: {
+    read: (filePath) => ipcRenderer.invoke(IPC_CHANNELS.READ_FILE, filePath),
+    save: (filePath, content) => (
+      ipcRenderer.invoke(IPC_CHANNELS.SAVE_FILE, { filePath, content })
+    )
+  },
+  db: {
+    sync: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_DB),
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.GET_DB_STATUS)
+  }
+};
+
+contextBridge.exposeInMainWorld('electron', API);
+```
+
+## Renderer Process
+```javascript
+// src/renderer/components/features/file-manager/use-files.js
+import { useState, useCallback } from 'react';
+import { useDB } from '@/lib/db/pouchdb';
+
+export const useFiles = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const db = useDB();
+
+  const readFile = useCallback(async (filePath) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const result = await window.electron.files.read(filePath);
+      if (!result.success) throw new Error(result.error);
+
+      // Store in PouchDB for offline access
+      await db.put({
+        _id: `file:${filePath}`,
+        content: result.data,
+        updatedAt: new Date().toISOString()
+      });
+
+      return result.data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [db]);
+
+  return { readFile, isLoading, error };
+};
+
+// src/renderer/components/features/file-manager/file-list.jsx
+import { useFiles } from './use-files';
+import { Button } from '@/components/ui/button';
+
+export const FileList = ({ files }) => {
+  const { readFile, isLoading, error } = useFiles();
+
+  const handleFileOpen = async (filePath) => {
+    try {
+      const content = await readFile(filePath);
+      // Handle file content
+    } catch (err) {
+      // Handle error
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        Error: {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {files.map((file) => (
+        <div
+          key={file.path}
+          className="flex items-center justify-between p-4 bg-white
+                     rounded-lg shadow hover:shadow-md transition-shadow"
+        >
+          <span className="text-gray-900">{file.name}</span>
+          <Button
+            onClick={() => handleFileOpen(file.path)}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Opening...' : 'Open'}
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+## PouchDB Integration
+```javascript
+// src/renderer/lib/db/pouchdb.js
+import PouchDB from 'pouchdb';
+import { useState, useEffect } from 'react';
+
+const localDB = new PouchDB('myapp');
+const remoteDB = new PouchDB('http://localhost:5984/myapp');
+
+export const setupSync = () => {
+  localDB.sync(remoteDB, {
+    live: true,
+    retry: true
+  }).on('change', (change) => {
+    console.log('Data change:', change);
+  }).on('error', (err) => {
+    console.error('Sync error:', err);
+  });
+};
+
+export const useDB = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return {
+    db: localDB,
+    isOnline,
+    sync: () => setupSync()
+  };
+};
+```
+
+## Best Practices
+
+### Security
+- Enable contextIsolation and sandbox mode
+- Validate all IPC communications
+- Use content security policy (CSP)
+- Implement proper file access controls
+
+### Performance
+- Use worker threads for heavy computations
+- Implement proper window management
+- Optimize IPC communication
+- Use proper caching strategies
+
+### Offline Support
+- Implement PouchDB for offline data
+- Handle sync conflicts properly
+- Cache necessary resources
+- Provide offline feedback
+
+### Architecture
+- Separate main and renderer processes
+- Use preload scripts for security
+- Implement proper error handling
+- Follow modular design patterns
+
+### UI/UX
+- Use native OS patterns when appropriate
+- Implement proper loading states
+- Handle window states properly
+- Provide proper feedback
+
+### Development
+- Use proper development tools
+- Implement proper logging
+- Follow security guidelines
+- Test thoroughly
+
+## Resources
+- [Electron Documentation](https://www.electronjs.org/docs)
+- [PouchDB Documentation](https://pouchdb.com/guides/)
+- [Security Guidelines](https://www.electronjs.org/docs/tutorial/security)
+- [Performance Best Practices](https://www.electronjs.org/docs/tutorial/performance)
