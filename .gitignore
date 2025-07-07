@@ -1,3 +1,46 @@
-/test-data
-/output_chunks
-regions.bed
+# Large genomic data files
+*.vcf.gz
+*.vcf
+*.bam
+*.sam
+*.fastq.gz
+*.fastq
+*.fasta.gz
+*.fasta
+
+# Index files
+*.tbi
+*.csi
+*.bai
+*.fai
+
+# Data directories
+test-data/
+output_chunks/
+data-cache/
+results/
+
+# Temporary files
+*_temp*
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Keep important empty directories with gitkeep
+!output_chunks/.gitkeep
