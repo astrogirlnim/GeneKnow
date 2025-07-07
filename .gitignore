@@ -44,3 +44,9 @@ __pycache__/
 
 # Keep important empty directories with gitkeep
 !output_chunks/.gitkeep
+
+# External data and cache
+external-data/
+remote_index_cache/
+comparison_output/
+remote_test_output/

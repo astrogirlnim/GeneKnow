@@ -4,6 +4,12 @@ import time
 import resource
 from multiprocessing import Pool
 
+# Set bcftools cache directory for remote index files
+os.environ['HTS_CACHE'] = os.path.join(os.getcwd(), 'remote_index_cache')
+
+# Import configuration
+from config_data_source import get_vcf_files, get_data_info
+
 # Performance Configuration
 CONFIG = {
     "max_processes": None,  # None = use all CPU cores, or set to specific number
@@ -15,11 +21,8 @@ CONFIG = {
     "retry_failed": 1,      # Number of retries for failed extractions
 }
 
-# Map chromosomes to VCF files (now using symlinked data)
-VCF_FILES = {
-    "1": "test-data/ALL.chr1.integrated_phase1_v3.20101123.snps_indels_svs.genotypes.vcf.gz",
-    "22": "test-data/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz"
-}
+# Get VCF files from configuration
+VCF_FILES = get_vcf_files()
 
 BED_PATH = "regions.bed"
 OUTPUT_DIR = "output_chunks"
@@ -116,6 +119,7 @@ def _extract_region_attempt(chrom, start, end, gene, attempt=0):
 def main():
     """Main extraction process with performance monitoring"""
     print("🧬 Starting parallel genomic extraction with performance monitoring...")
+    print(f"📍 Data source: {get_data_info()}")
     
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
@@ -204,4 +208,8 @@ def main():
     print("="*80)
 
 if __name__ == "__main__":
-    main() 
+    main()
+    
+    # Clean up any .tbi files that ended up in root
+    from clean_index_files import clean_index_files
+    clean_index_files() 
