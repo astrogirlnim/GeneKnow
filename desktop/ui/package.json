@@ -8,9 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri-dev": "RUST_LOG=debug tauri dev",
-    "tauri-build": "tauri build"
+    "tauri": "cargo tauri",
+    "tauri-dev": "RUST_LOG=debug cargo tauri dev",
+    "tauri-build": "cargo tauri build"
   },
   "dependencies": {
     "react": "^19.1.0",
