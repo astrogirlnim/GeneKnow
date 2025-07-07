@@ -86,7 +86,7 @@ def _extract_region_attempt(chrom, start, end, gene, attempt=0):
         
         # Step 4: Compress final output
         compress_start = time.time()
-        subprocess.run(["bgzip", "-l", str(CONFIG["compression_level"]), output_file.replace('.gz', '')], check=True)
+        subprocess.run(["bgzip", "-f", "-l", str(CONFIG["compression_level"]), output_file.replace('.gz', '')], check=True)
         compress_time = time.time() - compress_start
         
         # Step 5: Clean up temp file
