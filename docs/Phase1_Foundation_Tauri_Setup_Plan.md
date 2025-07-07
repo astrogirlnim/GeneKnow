@@ -41,53 +41,53 @@
 
 ## 4. Detailed Implementation Checklist
 
-- [ ] **Phase 1 · Foundation**
-  - [ ] **Feature · Tauri Environment Setup**
+- [x] **Phase 1 · Foundation**
+  - [x] **Feature · Tauri Environment Setup**
     1. **Toolchain Preparation**
-       - [ ] Install **Rust stable** (`rustup default stable`) and `cargo`.
-       - [ ] Install **Node 20 LTS** + **pnpm 8** (`corepack enable && corepack prepare pnpm@8 --activate`).
-       - [ ] Add **Tauri CLI** globally: `cargo install tauri-cli`.
-       - [ ] Verify versions:
-         - [ ] `rustc --version` ≥ 1.77
-         - [ ] `node -v` ≥ 20
-         - [ ] `pnpm -v` ≥ 8
+       - [x] Install **Rust stable** (`rustup default stable`) and `cargo`.
+       - [x] Install **Node 20 LTS** + **pnpm 8** (`corepack enable && corepack prepare pnpm@8 --activate`).
+       - [x] Add **Tauri CLI** globally: `cargo install tauri-cli`.
+       - [x] Verify versions:
+         - [x] `rustc --version` ≥ 1.77 (Current: 1.88.0 ✅)
+         - [x] `node -v` ≥ 20 (Current: v20.19.2 ✅)
+         - [x] `pnpm -v` ≥ 8 (Current: 10.12.1 ✅)
     2. **Scaffold Project Structure**
-       - [ ] Create top-level `desktop/` directory (keeps repo root tidy).
-       - [ ] Inside `desktop/`, initialise React app with Vite:
+       - [x] Create top-level `desktop/` directory (keeps repo root tidy).
+       - [x] Inside `desktop/`, initialise React app with Vite:
          ```bash
          pnpm create vite ui -- --template react-ts
          ```
-       - [ ] Add Tailwind CSS:
+       - [x] Add Tailwind CSS:
          ```bash
          cd ui && pnpm add -D tailwindcss postcss autoprefixer
          npx tailwindcss init -p
          ```
-       - [ ] Configure `tailwind.config.ts` with Tauri-friendly `content` globs (`../src-tauri/**/*.rs`, `./index.html`, `./src/**/*.{ts,tsx}`).
+       - [x] Configure `tailwind.config.ts` with Tauri-friendly `content` globs (`../src-tauri/**/*.rs`, `./index.html`, `./src/**/*.{ts,tsx}`).
     3. **Initialise Tauri**
-       - [ ] From `desktop/`, run `cargo tauri init --directory ui --ci false` (places `src-tauri/` beside `ui/`).
-       - [ ] Move generated Rust code into `src-tauri/src/` if not already.
-       - [ ] Add **window hardening** to `tauri.conf.json`:
+       - [x] From `desktop/`, run `cargo tauri init --directory ui --ci false` (places `src-tauri/` beside `ui/`).
+       - [x] Move generated Rust code into `src-tauri/src/` if not already.
+       - [x] Add **window hardening** to `tauri.conf.json`:
          ```json
          {
            "security":{ "csp":"default-src 'self'; img-src 'self' data:;" }
          }
          ```
-       - [ ] Configure **bundle identifiers** (`org.gene.predict.desktop`) and icons.
+       - [x] Configure **bundle identifiers** (`org.gene.predict.desktop`) and icons.
     4. **Cross-Silicon Build Scripts**
-       - [ ] Add `"dev": "tauri dev"` & `"build": "tauri build"` scripts to `ui/package.json`.
-       - [ ] Add top-level Makefile targets or `scripts/desktop.sh` for CI convenience.
+       - [x] Add `"dev": "tauri dev"` & `"build": "tauri build"` scripts to `ui/package.json`.
+       - [x] Add top-level Makefile targets or `scripts/desktop.sh` for CI convenience.
     5. **Logging & Debugging Hooks**
-       - [ ] Enable Rust `tracing` crate with JSON layer (future-proofs ML logs).
-       - [ ] Add React custom hook `useLogger` wrapping `console.debug`.
-       - [ ] Ensure `RUST_LOG=debug` is injected in `pnpm dev` command.
+       - [x] Enable Rust `tracing` crate with JSON layer (future-proofs ML logs).
+       - [x] Add React custom hook `useLogger` wrapping `console.debug`.
+       - [x] Ensure `RUST_LOG=debug` is injected in `pnpm dev` command.
     6. **Git Integration**
-       - [ ] Add `.gitignore` entries: `desktop/ui/node_modules`, `desktop/src-tauri/target`, `/dist`, etc.
-       - [ ] Commit with message `chore: scaffold tauri + react + tailwind environment` (no slashes).
+       - [x] Add `.gitignore` entries: `desktop/ui/node_modules`, `desktop/src-tauri/target`, `/dist`, etc.
+       - [x] Commit with message `chore: scaffold tauri + react + tailwind environment` (no slashes).
     7. **Smoke Test**
-       - [ ] Run `pnpm dev` inside `desktop/ui` ➜ `tauri dev` should auto-open the window.
-       - [ ] Confirm hot-reload works for both React and Rust.
-       - [ ] Verify Tailwind classes render correctly.
-       - [ ] Package test macOS build: `tauri build --debug` ➜ `.dmg` opens successfully.
+       - [x] Run `pnpm dev` inside `desktop/ui` ➜ `tauri dev` should auto-open the window.
+       - [x] Confirm hot-reload works for both React and Rust.
+       - [x] Verify Tailwind classes render correctly.
+       - [x] Package test macOS build: `tauri build --debug` ➜ `.dmg` opens successfully.
 
 ## 5. Future-Facing Notes (Out-of-Scope for Step 1)
 - IPC layer (Rust ↔ Python via Tauri plugin) will be set up in **Phase 1 Step 2**.
