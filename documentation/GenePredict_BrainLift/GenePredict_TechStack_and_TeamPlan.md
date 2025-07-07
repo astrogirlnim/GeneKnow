@@ -23,7 +23,7 @@
 
 ### Phase 1: Foundation
 **Dev 2 (Full Stack)** – Setup and core architecture
-- [ ] Set up Tauri environment with React, Tailwind CSS.
+- [x] Set up Tauri environment with React, Tailwind CSS.
 - [ ] Wire Rust backend to invoke Python ML functions.
 - [ ] Add plugin scaffolding for file parsing and ML execution.
 

@@ -1,0 +1,90 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cursor rules files
+.cursorrules/
+.cursor/
+.cursor/rules/*
+
+
+# Build outputs
+dist/
+build/
+out/
+
+# Desktop app build outputs
+desktop/ui/dist/
+desktop/ui/build/
+
+# Rust/Tauri
+desktop/src-tauri/target/
+desktop/src-tauri/Cargo.lock
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Mac OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Future ML model files (will be large)
+*.model
+*.h5
+*.pkl
+models/
+data/ 
