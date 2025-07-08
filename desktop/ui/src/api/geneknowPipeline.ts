@@ -63,10 +63,18 @@ export interface Job {
   error?: string;
 }
 
+// Define proper types for report sections
+export interface ReportSection {
+  title: string;
+  content: string;
+  severity?: 'low' | 'medium' | 'high';
+  technical_details?: string;
+}
+
 export interface JobResult {
   variant_count: number;
   risk_scores: Record<string, number>;
-  report_sections: Record<string, any>;
+  report_sections: Record<string, ReportSection>;
   processing_time: number;
 }
 
@@ -83,6 +91,29 @@ export interface HealthStatus {
   service: string;
   version: string;
   jobs_active: number;
+}
+
+// Define proper types for pipeline results
+export interface PipelineResult {
+  pipeline_status: 'completed' | 'failed' | 'cancelled';
+  variant_count: number;
+  risk_scores: Record<string, number>;
+  report_sections: Record<string, ReportSection>;
+  processing_time_seconds: number;
+  variants?: Array<{
+    gene: string;
+    position: string;
+    type: string;
+    impact: string;
+  }>;
+  errors?: string[];
+}
+
+// Define WebSocket error type
+export interface WebSocketError {
+  message: string;
+  code?: string;
+  type?: string;
 }
 
 // API Client Class
@@ -180,7 +211,7 @@ export class GeneKnowPipelineClient {
   }
 
   // Get Job Results
-  async getJobResults(jobId: string): Promise<any> {
+  async getJobResults(jobId: string): Promise<PipelineResult> {
     const response = await fetch(`${this.baseUrl}/api/results/${jobId}`);
     if (!response.ok) {
       const error = await response.json();
@@ -245,7 +276,7 @@ export class GeneKnowPipelineClient {
       if (callback) callback(data);
     });
 
-    this.socket.on('error', (error: any) => {
+    this.socket.on('error', (error: WebSocketError) => {
       console.error('WebSocket error:', error);
     });
   }
@@ -314,7 +345,7 @@ export class GeneKnowPipelineClient {
     file: File | string,
     preferences?: UserPreferences,
     onProgress?: (progress: JobProgress) => void
-  ): Promise<any> {
+  ): Promise<PipelineResult> {
     let jobInfo;
     
     if (typeof file === 'string') {
