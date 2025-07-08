@@ -1,0 +1,274 @@
+name: 🧬 PR Validation Pipeline
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'README.md'
+
+env:
+  NODE_VERSION: '20'
+  RUST_VERSION: '1.77.2'
+  PNPM_VERSION: '9.15.1'
+
+jobs:
+  # 🧪 Code Quality & Linting
+  quality-check:
+    name: 🧪 Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🔍 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🚀 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install frontend dependencies
+        working-directory: desktop/ui
+        run: |
+          echo "🔍 Installing dependencies..."
+          pnpm install --frozen-lockfile
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Run ESLint
+        working-directory: desktop/ui
+        run: |
+          echo "🔍 Running ESLint..."
+          pnpm lint
+          echo "✅ ESLint passed - no errors found"
+
+      - name: 🔍 Run TypeScript type checking
+        working-directory: desktop/ui
+        run: |
+          echo "🔍 Running TypeScript compilation..."
+          pnpm exec tsc --noEmit
+          echo "✅ TypeScript compilation successful"
+
+      - name: 📊 Bundle size analysis
+        working-directory: desktop/ui
+        run: |
+          echo "📊 Analyzing bundle size..."
+          pnpm build
+          echo "📦 Bundle analysis complete"
+          ls -la dist/
+
+  # 🔨 Build Testing (Multi-platform)
+  build-test:
+    name: 🔨 Build Testing
+    needs: quality-check
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-latest
+            rust-target: x86_64-unknown-linux-gnu
+            name: 'Linux x64'
+            emoji: '🐧'
+          - os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            name: 'Windows x64'
+            emoji: '🪟'
+          - os: macos-latest
+            rust-target: x86_64-apple-darwin
+            name: 'macOS x64'
+            emoji: '🍎'
+
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🦀 Setup Rust ${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: ${{ matrix.platform.rust-target }}
+
+      - name: 🚀 Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            desktop/src-tauri -> target
+
+      - name: 🔍 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🚀 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 🔧 Install system dependencies (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          echo "🔧 Installing Linux system dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev librsvg2-dev
+          echo "✅ Linux dependencies installed"
+
+      - name: 📦 Install frontend dependencies
+        working-directory: desktop/ui
+        run: |
+          echo "📦 Installing frontend dependencies on ${{ matrix.platform.name }}..."
+          pnpm install --frozen-lockfile
+          echo "✅ Frontend dependencies installed"
+
+      - name: 🔨 Build frontend
+        working-directory: desktop/ui
+        run: |
+          echo "🔨 Building frontend for ${{ matrix.platform.name }}..."
+          pnpm build
+          echo "✅ Frontend build completed"
+
+      - name: 🔨 Build Tauri (Debug)
+        working-directory: desktop/src-tauri
+        env:
+          RUST_LOG: debug
+        run: |
+          echo "${{ matrix.platform.emoji }} Building Tauri debug for ${{ matrix.platform.name }}..."
+          cargo build --target ${{ matrix.platform.rust-target }}
+          echo "✅ Tauri debug build completed for ${{ matrix.platform.name }}"
+
+      - name: 📊 Build artifact info
+        run: |
+          echo "📊 Build completed successfully for ${{ matrix.platform.name }}"
+          echo "🔍 Build artifacts:"
+          ls -la desktop/ui/dist/ || echo "No frontend dist found"
+
+  # 🛡️ Security Audit
+  security-audit:
+    name: 🛡️ Security Audit
+    needs: quality-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🦀 Setup Rust ${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: 🔒 Install cargo-audit
+        run: |
+          echo "🔒 Installing cargo-audit..."
+          cargo install cargo-audit
+          echo "✅ cargo-audit installed"
+
+      - name: 🔍 Node.js security audit
+        working-directory: desktop/ui
+        run: |
+          echo "🔍 Running Node.js security audit..."
+          pnpm install --frozen-lockfile
+          pnpm audit
+          echo "✅ Node.js security audit completed"
+
+      - name: 🔍 Rust security audit
+        working-directory: desktop/src-tauri
+        run: |
+          echo "🔍 Running Rust security audit..."
+          cargo audit
+          echo "✅ Rust security audit completed"
+
+  # 📋 PR Summary
+  pr-summary:
+    name: 📋 PR Summary
+    needs: [quality-check, build-test, security-audit]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 📋 Generate PR summary
+        run: |
+          echo "# 🧬 GenePredict PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.quality-check.result }}" == "success" ]; then
+            echo "✅ **Code Quality & Linting**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Code Quality & Linting**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.build-test.result }}" == "success" ]; then
+            echo "✅ **Cross-Platform Build Testing**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Cross-Platform Build Testing**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.security-audit.result }}" == "success" ]; then
+            echo "✅ **Security Audit**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security Audit**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔍 Build Matrix Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐧 **Linux x64**: Debug build tested" >> $GITHUB_STEP_SUMMARY
+          echo "- 🪟 **Windows x64**: Debug build tested" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 **macOS x64**: Debug build tested" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Once this PR is merged to main, the Release Pipeline will automatically:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔖 Create a new version tag" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔨 Build production releases for all platforms" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Create GitHub release with installers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
