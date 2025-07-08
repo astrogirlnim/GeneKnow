@@ -235,6 +235,7 @@ jobs:
           ref: main
 
       - name: 🔄 Update version files for validation
+        shell: bash
         run: |
           echo "🔄 Updating version files to ${{ needs.version.outputs.version }}..."
           
@@ -243,7 +244,7 @@ jobs:
           mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
           echo "✅ Updated tauri.conf.json"
           
-          # Update package.json
+          # Update package.json  
           jq --arg version "${{ needs.version.outputs.version }}" '.version = $version' desktop/ui/package.json > desktop/ui/package.json.tmp
           mv desktop/ui/package.json.tmp desktop/ui/package.json
           echo "✅ Updated package.json"
@@ -325,6 +326,7 @@ jobs:
           ref: main
 
       - name: 🔄 Update version files for build
+        shell: bash
         run: |
           echo "🔄 Updating version files to ${{ needs.version.outputs.version }}..."
           
