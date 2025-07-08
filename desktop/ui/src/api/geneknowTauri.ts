@@ -5,12 +5,11 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import type { 
-  HealthStatus, 
   Job, 
   PipelineResult, 
   UserPreferences, 
   JobProgress,
-  PipelineInfo
+  HealthStatus
 } from './geneknowPipeline';
 
 export class GeneKnowTauriClient {
@@ -45,7 +44,7 @@ export class GeneKnowTauriClient {
   }
 
   // Get API server status
-  async getApiServerStatus(): Promise<any> {
+  async getApiServerStatus(): Promise<HealthStatus> {
     try {
       return await invoke('get_api_server_status');
     } catch (error) {
@@ -93,7 +92,7 @@ export class GeneKnowTauriClient {
   // Get job status
   async getJobStatus(jobId: string): Promise<Job> {
     try {
-      const status = await invoke<any>('get_job_status', { jobId });
+      const status = await invoke<Job>('get_job_status', { jobId });
       return status;
     } catch (error) {
       console.error('Failed to get job status:', error);
@@ -105,7 +104,7 @@ export class GeneKnowTauriClient {
   async getJobResults(jobId: string): Promise<PipelineResult> {
     try {
       console.log('Getting job results for job ID:', jobId);
-      const results = await invoke<any>('get_job_results', { jobId });
+      const results = await invoke<PipelineResult>('get_job_results', { jobId });
       console.log('Raw results from invoke:', results);
       console.log('Results keys:', results ? Object.keys(results) : 'no results');
       
