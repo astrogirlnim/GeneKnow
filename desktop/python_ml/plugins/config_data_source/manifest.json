@@ -1,0 +1,93 @@
+{
+    "id": "config_data_source",
+    "name": "Data Source Configuration Manager",
+    "description": "Manages and configures genomic data sources and file listings",
+    "version": "1.0.0",
+    "author": "GenePredict Team",
+    "script_path": "config_data_source.py",
+    "category": "utilities",
+    "config": {
+        "supported_formats": ["vcf", "vcf.gz", "bcf"],
+        "scan_depth": 3,
+        "cache_results": true,
+        "validate_files": true
+    },
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "description": "Action to perform",
+                "enum": ["list-vcf-files", "validate-sources", "scan-directory"],
+                "default": "list-vcf-files"
+            },
+            "directory": {
+                "type": "string",
+                "description": "Directory to scan for genomic files",
+                "required": false
+            },
+            "recursive": {
+                "type": "boolean",
+                "description": "Whether to scan directories recursively",
+                "default": true
+            },
+            "file_extensions": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "File extensions to include in scan",
+                "default": ["vcf", "vcf.gz", "bcf"]
+            }
+        },
+        "required": ["action"]
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the operation was successful"
+            },
+            "vcf_files": {
+                "type": "object",
+                "description": "Map of VCF file names to their paths"
+            },
+            "file_count": {
+                "type": "integer",
+                "description": "Number of files found"
+            },
+            "scan_path": {
+                "type": "string",
+                "description": "Path that was scanned"
+            },
+            "execution_time": {
+                "type": "number",
+                "description": "Time taken for scanning in seconds"
+            },
+            "error": {
+                "type": "string",
+                "description": "Error message if operation failed"
+            }
+        }
+    },
+    "requirements": [
+        "python>=3.8",
+        "os",
+        "pathlib",
+        "glob"
+    ],
+    "tags": [
+        "configuration",
+        "file-management",
+        "data-sources",
+        "vcf-files",
+        "utilities"
+    ],
+    "enabled": true,
+    "platform_support": {
+        "windows": true,
+        "macos": true,
+        "linux": true
+    }
+} 

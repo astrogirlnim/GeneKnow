@@ -1,0 +1,106 @@
+{
+    "id": "fastq_to_vcf",
+    "name": "FASTQ to VCF Converter",
+    "description": "Converts FASTQ files to VCF format using alignment and variant calling",
+    "version": "1.0.0",
+    "author": "GenePredict Team",
+    "script_path": "fastq_to_vcf_pipeline.py",
+    "category": "genomic_processing",
+    "config": {
+        "default_threads": 4,
+        "default_aligner": "bwa",
+        "memory_limit": "8GB",
+        "temp_dir": "/tmp",
+        "output_format": "vcf"
+    },
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "reference": {
+                "type": "string",
+                "description": "Path to reference genome file",
+                "required": true
+            },
+            "fastq1": {
+                "type": "string",
+                "description": "Path to first FASTQ file (R1)",
+                "required": true
+            },
+            "fastq2": {
+                "type": "string",
+                "description": "Path to second FASTQ file (R2), optional for single-end",
+                "required": false
+            },
+            "output_prefix": {
+                "type": "string",
+                "description": "Output file prefix for VCF and BAM files",
+                "required": true
+            },
+            "threads": {
+                "type": "integer",
+                "description": "Number of threads to use for processing",
+                "minimum": 1,
+                "maximum": 32,
+                "default": 4
+            },
+            "aligner": {
+                "type": "string",
+                "description": "Alignment tool to use",
+                "enum": ["bwa", "minimap2", "bowtie2"],
+                "default": "bwa"
+            }
+        },
+        "required": ["reference", "fastq1", "output_prefix"]
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the conversion was successful"
+            },
+            "vcf_file": {
+                "type": "string",
+                "description": "Path to the generated VCF file"
+            },
+            "bam_file": {
+                "type": "string",
+                "description": "Path to the generated BAM file"
+            },
+            "variant_count": {
+                "type": "integer",
+                "description": "Number of variants found"
+            },
+            "execution_time": {
+                "type": "number",
+                "description": "Time taken for processing in seconds"
+            },
+            "error": {
+                "type": "string",
+                "description": "Error message if processing failed"
+            }
+        }
+    },
+    "requirements": [
+        "python>=3.8",
+        "biopython>=1.78",
+        "pysam>=0.16",
+        "samtools>=1.10",
+        "bcftools>=1.10",
+        "bwa-mem2 or bwa>=0.7"
+    ],
+    "tags": [
+        "genomics",
+        "variant-calling",
+        "alignment", 
+        "file-conversion",
+        "fastq",
+        "vcf"
+    ],
+    "enabled": true,
+    "platform_support": {
+        "windows": false,
+        "macos": true,
+        "linux": true
+    }
+} 
