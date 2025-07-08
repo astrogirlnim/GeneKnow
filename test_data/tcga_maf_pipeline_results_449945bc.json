@@ -1,0 +1,1255 @@
+{
+  "file_path": "test_data/tcga_downloads/3d14b1e2-0555-4d6f-a55b-a56065f915e1.wxs.aliquot_ensemble_masked.maf.gz",
+  "file_type": "maf",
+  "file_metadata": {
+    "format": "MAF",
+    "compression": "gzip",
+    "file_size_mb": 0.0037336349487304688,
+    "column_count": 140,
+    "has_required_columns": true,
+    "variant_count": 10,
+    "variant_source": "MAF",
+    "total_variants": 9,
+    "maf_info": {
+      "unique_genes": 9,
+      "unique_samples": 1,
+      "variant_classifications": {
+        "3'UTR": "4",
+        "Missense_Mutation": "3",
+        "5'UTR": "1",
+        "Silent": "1"
+      },
+      "top_mutated_genes": {
+        "IL17RD": "1",
+        "FLNB": "1",
+        "IGSF10": "1",
+        "N4BP2": "1",
+        "CALN1": "1",
+        "GPR180": "1",
+        "RCVRN": "1",
+        "STAT5B": "1",
+        "TMEM74B": "1"
+      }
+    },
+    "tcga_summary": {
+      "variants_matched": 0,
+      "total_variants": 9,
+      "match_rate": 0.0,
+      "cancer_types_analyzed": [
+        "breast",
+        "colon",
+        "lung",
+        "prostate",
+        "blood"
+      ],
+      "cohort_sizes": {
+        "blood": 200,
+        "breast": 1084,
+        "colon": 461,
+        "lung": 585,
+        "prostate": 498
+      }
+    }
+  },
+  "raw_variants": [],
+  "filtered_variants": [
+    {
+      "chrom": "chr3",
+      "pos": 57092920,
+      "ref": "G",
+      "alt": "A",
+      "gene": "IL17RD",
+      "variant_id": "chr3:57092920:G>A",
+      "variant_classification": "3'UTR",
+      "variant_type": "SNP",
+      "consequence": "3_prime_UTR_variant",
+      "protein_change": NaN,
+      "qual": 100.0,
+      "depth": 44,
+      "allele_freq": 0.06818181818181818,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr3",
+      "pos": 58102260,
+      "ref": "G",
+      "alt": "A",
+      "gene": "FLNB",
+      "variant_id": "chr3:58102260:G>A",
+      "variant_classification": "Missense_Mutation",
+      "variant_type": "SNP",
+      "consequence": "missense_variant",
+      "protein_change": "p.Arg468His",
+      "qual": 100.0,
+      "depth": 54,
+      "allele_freq": 0.07407407407407407,
+      "clinical_significance": "Uncertain significance",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "rs1446446854",
+      "existing_variation": "rs1446446854"
+    },
+    {
+      "chrom": "chr3",
+      "pos": 151434886,
+      "ref": "G",
+      "alt": "T",
+      "gene": "IGSF10",
+      "variant_id": "chr3:151434886:G>T",
+      "variant_classification": "3'UTR",
+      "variant_type": "SNP",
+      "consequence": "3_prime_UTR_variant",
+      "protein_change": NaN,
+      "qual": 100.0,
+      "depth": 44,
+      "allele_freq": 0.09090909090909091,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr4",
+      "pos": 40103007,
+      "ref": "G",
+      "alt": "A",
+      "gene": "N4BP2",
+      "variant_id": "chr4:40103007:G>A",
+      "variant_classification": "Missense_Mutation",
+      "variant_type": "SNP",
+      "consequence": "missense_variant",
+      "protein_change": "p.Ala388Thr",
+      "qual": 100.0,
+      "depth": 57,
+      "allele_freq": 0.07017543859649122,
+      "clinical_significance": "Uncertain significance",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr7",
+      "pos": 71786663,
+      "ref": "G",
+      "alt": "A",
+      "gene": "CALN1",
+      "variant_id": "chr7:71786663:G>A",
+      "variant_classification": "3'UTR",
+      "variant_type": "SNP",
+      "consequence": "3_prime_UTR_variant",
+      "protein_change": NaN,
+      "qual": 100.0,
+      "depth": 33,
+      "allele_freq": 0.09090909090909091,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr13",
+      "pos": 94621212,
+      "ref": "G",
+      "alt": "A",
+      "gene": "GPR180",
+      "variant_id": "chr13:94621212:G>A",
+      "variant_classification": "Missense_Mutation",
+      "variant_type": "SNP",
+      "consequence": "missense_variant",
+      "protein_change": "p.Ala291Thr",
+      "qual": 100.0,
+      "depth": 43,
+      "allele_freq": 0.06976744186046512,
+      "clinical_significance": "Uncertain significance",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr17",
+      "pos": 9905248,
+      "ref": "G",
+      "alt": "A",
+      "gene": "RCVRN",
+      "variant_id": "chr17:9905248:G>A",
+      "variant_classification": "5'UTR",
+      "variant_type": "SNP",
+      "consequence": "5_prime_UTR_variant",
+      "protein_change": NaN,
+      "qual": 100.0,
+      "depth": 28,
+      "allele_freq": 0.10714285714285714,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr17",
+      "pos": 42201391,
+      "ref": "C",
+      "alt": "T",
+      "gene": "STAT5B",
+      "variant_id": "chr17:42201391:C>T",
+      "variant_classification": "3'UTR",
+      "variant_type": "SNP",
+      "consequence": "3_prime_UTR_variant",
+      "protein_change": NaN,
+      "qual": 100.0,
+      "depth": 48,
+      "allele_freq": 0.0625,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    },
+    {
+      "chrom": "chr20",
+      "pos": 1181009,
+      "ref": "G",
+      "alt": "A",
+      "gene": "TMEM74B",
+      "variant_id": "chr20:1181009:G>A",
+      "variant_classification": "Silent",
+      "variant_type": "SNP",
+      "consequence": "synonymous_variant",
+      "protein_change": "p.Leu204=",
+      "qual": 100.0,
+      "depth": 47,
+      "allele_freq": 0.06382978723404255,
+      "clinical_significance": "Likely benign",
+      "sample_id": "MMRF_1621_2_BM_CD138pos_T1_KBS5U_L05841",
+      "normal_sample_id": "MMRF_1621_1_PB_Whole_C1_KHS5U_K14072",
+      "dbsnp_rs": "novel",
+      "existing_variation": "nan"
+    }
+  ],
+  "variant_count": 9,
+  "tcga_matches": {
+    "breast": {
+      "chr3:57092920:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:58102260:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:151434886:G>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr4:40103007:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr7:71786663:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr13:94621212:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:9905248:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:42201391:C>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr20:1181009:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 1084,
+        "clinical_significance": "Not found in TCGA"
+      }
+    },
+    "colon": {
+      "chr3:57092920:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:58102260:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:151434886:G>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr4:40103007:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr7:71786663:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr13:94621212:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:9905248:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:42201391:C>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr20:1181009:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 461,
+        "clinical_significance": "Not found in TCGA"
+      }
+    },
+    "lung": {
+      "chr3:57092920:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:58102260:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:151434886:G>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr4:40103007:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr7:71786663:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr13:94621212:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:9905248:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:42201391:C>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr20:1181009:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 585,
+        "clinical_significance": "Not found in TCGA"
+      }
+    },
+    "prostate": {
+      "chr3:57092920:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:58102260:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:151434886:G>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr4:40103007:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr7:71786663:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr13:94621212:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:9905248:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:42201391:C>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr20:1181009:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 498,
+        "clinical_significance": "Not found in TCGA"
+      }
+    },
+    "blood": {
+      "chr3:57092920:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:58102260:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr3:151434886:G>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr4:40103007:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr7:71786663:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr13:94621212:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:9905248:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr17:42201391:C>T": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      },
+      "chr20:1181009:G>A": {
+        "frequency": 0.0,
+        "sample_count": 0,
+        "total_samples": 200,
+        "clinical_significance": "Not found in TCGA"
+      }
+    }
+  },
+  "risk_scores": {
+    "breast": 5.0,
+    "colon": 5.0,
+    "lung": 5.0,
+    "prostate": 5.0,
+    "blood": 5.0
+  },
+  "risk_genes": {
+    "breast": [],
+    "colon": [],
+    "lung": [],
+    "prostate": [],
+    "blood": []
+  },
+  "structured_json": {
+    "report_metadata": {
+      "pipeline_version": "1.0.0",
+      "processing_time_seconds": 0.014231,
+      "generated_at": "2025-07-08T14:43:10.312275",
+      "language": "en"
+    },
+    "patient_data": {
+      "file_type": "maf",
+      "file_metadata": {
+        "format": "MAF",
+        "compression": "gzip",
+        "file_size_mb": 0.0037336349487304688,
+        "column_count": 140,
+        "has_required_columns": true,
+        "variant_count": 10,
+        "variant_source": "MAF",
+        "total_variants": 9,
+        "maf_info": {
+          "unique_genes": 9,
+          "unique_samples": 1,
+          "variant_classifications": {
+            "3'UTR": "4",
+            "Missense_Mutation": "3",
+            "5'UTR": "1",
+            "Silent": "1"
+          },
+          "top_mutated_genes": {
+            "IL17RD": "1",
+            "FLNB": "1",
+            "IGSF10": "1",
+            "N4BP2": "1",
+            "CALN1": "1",
+            "GPR180": "1",
+            "RCVRN": "1",
+            "STAT5B": "1",
+            "TMEM74B": "1"
+          }
+        },
+        "tcga_summary": {
+          "variants_matched": 0,
+          "total_variants": 9,
+          "match_rate": 0.0,
+          "cancer_types_analyzed": [
+            "breast",
+            "colon",
+            "lung",
+            "prostate",
+            "blood"
+          ],
+          "cohort_sizes": {
+            "blood": 200,
+            "breast": 1084,
+            "colon": 461,
+            "lung": 585,
+            "prostate": 498
+          }
+        }
+      }
+    },
+    "summary": {
+      "total_variants_found": 9,
+      "variants_passed_qc": 9,
+      "high_risk_findings": 0
+    },
+    "risk_assessment": {
+      "scores": {
+        "breast": 5.0,
+        "colon": 5.0,
+        "lung": 5.0,
+        "prostate": 5.0,
+        "blood": 5.0
+      },
+      "high_risk_findings": [],
+      "risk_genes": {
+        "breast": [],
+        "colon": [],
+        "lung": [],
+        "prostate": [],
+        "blood": []
+      }
+    },
+    "variant_details": [
+      {
+        "gene": "IL17RD",
+        "variant": "chr3:57092920:G>A",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 44,
+          "allele_freq": 0.06818181818181818
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      },
+      {
+        "gene": "FLNB",
+        "variant": "chr3:58102260:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Arg468His",
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 54,
+          "allele_freq": 0.07407407407407407
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Uncertain significance"
+      },
+      {
+        "gene": "IGSF10",
+        "variant": "chr3:151434886:G>T",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 44,
+          "allele_freq": 0.09090909090909091
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      },
+      {
+        "gene": "N4BP2",
+        "variant": "chr4:40103007:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Ala388Thr",
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 57,
+          "allele_freq": 0.07017543859649122
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Uncertain significance"
+      },
+      {
+        "gene": "CALN1",
+        "variant": "chr7:71786663:G>A",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 33,
+          "allele_freq": 0.09090909090909091
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      },
+      {
+        "gene": "GPR180",
+        "variant": "chr13:94621212:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Ala291Thr",
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 43,
+          "allele_freq": 0.06976744186046512
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Uncertain significance"
+      },
+      {
+        "gene": "RCVRN",
+        "variant": "chr17:9905248:G>A",
+        "consequence": "5_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 28,
+          "allele_freq": 0.10714285714285714
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      },
+      {
+        "gene": "STAT5B",
+        "variant": "chr17:42201391:C>T",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 48,
+          "allele_freq": 0.0625
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      },
+      {
+        "gene": "TMEM74B",
+        "variant": "chr20:1181009:G>A",
+        "consequence": "synonymous_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Leu204=",
+        "quality_metrics": {
+          "quality": 100.0,
+          "depth": 47,
+          "allele_freq": 0.06382978723404255
+        },
+        "tcga_matches": {
+          "breast": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/1084"
+          },
+          "colon": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/461"
+          },
+          "lung": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/585"
+          },
+          "prostate": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/498"
+          },
+          "blood": {
+            "frequency_percent": 0.0,
+            "patient_fraction": "0/200"
+          }
+        },
+        "clinical_significance": "Likely benign"
+      }
+    ],
+    "quality_control": {},
+    "tcga_summary": {
+      "cancer_types_analyzed": [
+        "breast",
+        "colon",
+        "lung",
+        "prostate",
+        "blood"
+      ],
+      "cohort_sizes": {},
+      "variants_with_tcga_data": 9
+    },
+    "warnings": [
+      {
+        "node": "risk_model",
+        "warning": "Using simple risk calculation - ML models not available",
+        "timestamp": "2025-07-08 14:43:10.311928"
+      }
+    ]
+  },
+  "report_markdown": "# Patient Genomic Risk Report\n\n**Generated**: 2025-07-08 at 14:43:10  \n**Pipeline Version**: 1.0.0\n\n## Summary\n\nThis report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.\n\n- Total variants analyzed: 9\n- Variants passing quality control: 9\n- High-risk findings: 0\n\n## Risk Assessment\n\n### \ud83d\udfe2 Breast Cancer\n- **Risk Score**: 5.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Colon Cancer\n- **Risk Score**: 5.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Lung Cancer\n- **Risk Score**: 5.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Prostate Cancer\n- **Risk Score**: 5.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Blood Cancer\n- **Risk Score**: 5.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n## Key Genetic Variants\n\n| Gene | Variant | Consequence | TCGA Match | Clinical Significance |\n|------|---------|-------------|------------|-----------------------|\n| IL17RD | chr3:57092920:G>A... | 3_prime_UTR_variant | No match | uncertain_significance |\n| FLNB | chr3:58102260:G>A... | missense_variant | No match | uncertain_significance |\n| IGSF10 | chr3:151434886:G>T... | 3_prime_UTR_variant | No match | uncertain_significance |\n| N4BP2 | chr4:40103007:G>A... | missense_variant | No match | uncertain_significance |\n| CALN1 | chr7:71786663:G>A... | 3_prime_UTR_variant | No match | uncertain_significance |\n\n## Important Notice\n\n- This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.\n- Genetic risk assessment is based on current scientific understanding and may change as new research emerges.\n- Not all genetic variants are included in this analysis.\n\n---\n*Report ID: GR-20250708-144310*\n*Processing time: 0.01 seconds*\n",
+  "report_sections": {
+    "header": {
+      "title": "Patient Genomic Risk Report",
+      "generated_date": "2025-07-08",
+      "generated_time": "14:43:10",
+      "pipeline_version": "1.0.0",
+      "processing_time_seconds": 0.014231,
+      "language": "en"
+    },
+    "summary": {
+      "description": "This report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.",
+      "total_variants_found": 9,
+      "variants_passed_qc": 9,
+      "high_risk_findings_count": 0,
+      "patient_info": {}
+    },
+    "risk_findings": [
+      {
+        "cancer_type": "breast",
+        "risk_percentage": 5.0,
+        "risk_level": "low",
+        "affected_genes": [],
+        "gene_count": 0,
+        "recommendation": "Standard screening guidelines apply"
+      },
+      {
+        "cancer_type": "colon",
+        "risk_percentage": 5.0,
+        "risk_level": "low",
+        "affected_genes": [],
+        "gene_count": 0,
+        "recommendation": "Standard screening guidelines apply"
+      },
+      {
+        "cancer_type": "lung",
+        "risk_percentage": 5.0,
+        "risk_level": "low",
+        "affected_genes": [],
+        "gene_count": 0,
+        "recommendation": "Standard screening guidelines apply"
+      },
+      {
+        "cancer_type": "prostate",
+        "risk_percentage": 5.0,
+        "risk_level": "low",
+        "affected_genes": [],
+        "gene_count": 0,
+        "recommendation": "Standard screening guidelines apply"
+      },
+      {
+        "cancer_type": "blood",
+        "risk_percentage": 5.0,
+        "risk_level": "low",
+        "affected_genes": [],
+        "gene_count": 0,
+        "recommendation": "Standard screening guidelines apply"
+      }
+    ],
+    "variant_table": [
+      {
+        "gene": "IL17RD",
+        "variant_id": "chr3:57092920:G>A",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_score": 100.0,
+        "depth": 44,
+        "allele_frequency": 0.06818181818181818,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "FLNB",
+        "variant_id": "chr3:58102260:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Arg468His",
+        "quality_score": 100.0,
+        "depth": 54,
+        "allele_frequency": 0.07407407407407407,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "IGSF10",
+        "variant_id": "chr3:151434886:G>T",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_score": 100.0,
+        "depth": 44,
+        "allele_frequency": 0.09090909090909091,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "N4BP2",
+        "variant_id": "chr4:40103007:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Ala388Thr",
+        "quality_score": 100.0,
+        "depth": 57,
+        "allele_frequency": 0.07017543859649122,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "CALN1",
+        "variant_id": "chr7:71786663:G>A",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_score": 100.0,
+        "depth": 33,
+        "allele_frequency": 0.09090909090909091,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "GPR180",
+        "variant_id": "chr13:94621212:G>A",
+        "consequence": "missense_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Ala291Thr",
+        "quality_score": 100.0,
+        "depth": 43,
+        "allele_frequency": 0.06976744186046512,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "RCVRN",
+        "variant_id": "chr17:9905248:G>A",
+        "consequence": "5_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_score": 100.0,
+        "depth": 28,
+        "allele_frequency": 0.10714285714285714,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "STAT5B",
+        "variant_id": "chr17:42201391:C>T",
+        "consequence": "3_prime_UTR_variant",
+        "hgvs_c": "",
+        "hgvs_p": NaN,
+        "quality_score": 100.0,
+        "depth": 48,
+        "allele_frequency": 0.0625,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      },
+      {
+        "gene": "TMEM74B",
+        "variant_id": "chr20:1181009:G>A",
+        "consequence": "synonymous_variant",
+        "hgvs_c": "",
+        "hgvs_p": "p.Leu204=",
+        "quality_score": 100.0,
+        "depth": 47,
+        "allele_frequency": 0.06382978723404255,
+        "tcga_best_match": null,
+        "clinical_significance": "uncertain_significance"
+      }
+    ],
+    "quality_control": {
+      "total_variants": 9,
+      "passed_variants": 9,
+      "filtered_variants": 0,
+      "pass_rate_percent": 100.0,
+      "filter_criteria": {
+        "min_quality": 30,
+        "min_depth": 10,
+        "min_allele_frequency": 0.01
+      }
+    },
+    "tcga_summary": {
+      "cancer_types_analyzed": [
+        "breast",
+        "colon",
+        "lung",
+        "prostate",
+        "blood"
+      ],
+      "total_cohort_size": 0,
+      "cohort_sizes": {},
+      "variants_with_matches": 9,
+      "match_rate_percent": 100.0
+    },
+    "recommendations": [],
+    "technical_details": {
+      "pipeline_nodes": [
+        "file_input",
+        "maf_parser",
+        "tcga_mapper",
+        "formatter",
+        "report_writer"
+      ],
+      "file_metadata": {
+        "format": "MAF",
+        "compression": "gzip",
+        "file_size_mb": 0.0037336349487304688,
+        "column_count": 140,
+        "has_required_columns": true,
+        "variant_count": 10,
+        "variant_source": "MAF",
+        "total_variants": 9,
+        "maf_info": {
+          "unique_genes": 9,
+          "unique_samples": 1,
+          "variant_classifications": {
+            "3'UTR": "4",
+            "Missense_Mutation": "3",
+            "5'UTR": "1",
+            "Silent": "1"
+          },
+          "top_mutated_genes": {
+            "IL17RD": "1",
+            "FLNB": "1",
+            "IGSF10": "1",
+            "N4BP2": "1",
+            "CALN1": "1",
+            "GPR180": "1",
+            "RCVRN": "1",
+            "STAT5B": "1",
+            "TMEM74B": "1"
+          }
+        },
+        "tcga_summary": {
+          "variants_matched": 0,
+          "total_variants": 9,
+          "match_rate": 0.0,
+          "cancer_types_analyzed": [
+            "breast",
+            "colon",
+            "lung",
+            "prostate",
+            "blood"
+          ],
+          "cohort_sizes": {
+            "blood": 200,
+            "breast": 1084,
+            "colon": 461,
+            "lung": 585,
+            "prostate": 498
+          }
+        }
+      },
+      "alignment_stats": {},
+      "variant_calling_method": "Mock DeepVariant (simulated)",
+      "reference_genome": "GRCh38",
+      "quality_thresholds": {
+        "min_quality_score": 30,
+        "min_read_depth": 10,
+        "min_allele_frequency": 0.01
+      },
+      "model_details": {
+        "type": "logistic_regression",
+        "version": "1.0.0",
+        "training_date": "2025-01-07"
+      }
+    },
+    "disclaimers": [
+      "This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.",
+      "Genetic risk assessment is based on current scientific understanding and may change as new research emerges.",
+      "Not all genetic variants are included in this analysis."
+    ],
+    "metadata": {
+      "report_id": "GR-20250708-144310",
+      "model_version": "1.0.0",
+      "warnings": [
+        "Using simple risk calculation - ML models not available"
+      ],
+      "file_analyzed": "test_data/tcga_downloads/3d14b1e2-0555-4d6f-a55b-a56065f915e1.wxs.aliquot_ensemble_masked.maf.gz"
+    }
+  },
+  "pipeline_start_time": "2025-07-08 14:43:10.298010",
+  "errors": [],
+  "warnings": [
+    {
+      "node": "risk_model",
+      "warning": "Using simple risk calculation - ML models not available",
+      "timestamp": "2025-07-08 14:43:10.311928"
+    }
+  ],
+  "pipeline_status": "completed",
+  "completed_nodes": [
+    "file_input",
+    "maf_parser",
+    "tcga_mapper",
+    "formatter",
+    "report_writer"
+  ],
+  "current_node": "report_writer",
+  "language": "en",
+  "include_technical_details": true,
+  "pipeline_end_time": "2025-07-08 14:43:10.313584",
+  "processing_time_seconds": 0.015574
+}

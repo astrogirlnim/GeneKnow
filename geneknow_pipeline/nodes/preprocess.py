@@ -149,6 +149,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - For FASTQ: Run BWA alignment to create BAM
     - For BAM: Validate and pass through
     - For VCF: Load variants directly
+    - For MAF: Pass to MAF parser
     
     Updates state with:
     - aligned_bam_path: Path to aligned BAM file (for FASTQ/BAM inputs)
@@ -161,6 +162,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         file_type = state["file_type"]
         file_path = state["file_path"]
+        
+        # Check if input is MAF - pass to MAF parser
+        if file_type == "maf":
+            logger.info("Input is MAF, passing to MAF parser")
+            # Import and call MAF parser
+            from . import maf_parser
+            return maf_parser.process(state)
         
         # Check if input is VCF - load variants directly
         if file_type == "vcf":

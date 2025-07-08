@@ -1,6 +1,6 @@
 """
 File input validation node.
-Validates uploaded FASTQ/BAM files and extracts metadata.
+Validates uploaded FASTQ/BAM/VCF/MAF files and extracts metadata.
 """
 import os
 import gzip
@@ -196,12 +196,76 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
     return metadata
 
 
+def validate_maf(file_path: str) -> Dict[str, Any]:
+    """
+    Validate MAF file and extract metadata.
+    
+    Args:
+        file_path: Path to MAF file
+        
+    Returns:
+        Dictionary with file metadata
+    """
+    metadata = {
+        "format": "MAF",
+        "compression": "gzip" if file_path.endswith('.gz') else "none",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+    }
+    
+    try:
+        # Open file with appropriate handler
+        if file_path.endswith('.gz'):
+            f = gzip.open(file_path, 'rt')
+        else:
+            f = open(file_path, 'r')
+        
+        with f:
+            # Skip comment lines
+            header_line = None
+            line_count = 0
+            for line in f:
+                line_count += 1
+                if not line.startswith('#'):
+                    header_line = line.strip()
+                    break
+                if line_count > 100:  # Safety check
+                    break
+            
+            if not header_line:
+                raise ValueError("No header found in MAF file")
+            
+            # Check for required MAF columns
+            columns = header_line.split('\t')
+            required_columns = ['Hugo_Symbol', 'Chromosome', 'Start_Position', 
+                              'Reference_Allele', 'Tumor_Seq_Allele2']
+            
+            missing = [col for col in required_columns if col not in columns]
+            if missing:
+                raise ValueError(f"Missing required MAF columns: {missing}")
+            
+            metadata["column_count"] = len(columns)
+            metadata["has_required_columns"] = True
+            
+            # Count total lines (variants)
+            variant_count = 0
+            for line in f:
+                if not line.startswith('#') and line.strip():
+                    variant_count += 1
+            
+            metadata["variant_count"] = variant_count
+        
+    except Exception as e:
+        raise ValueError(f"Failed to validate MAF file: {str(e)}")
+    
+    return metadata
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate input file and extract metadata.
     
     Updates state with:
-    - file_type: 'fastq' or 'bam'
+    - file_type: 'fastq', 'bam', 'vcf', or 'maf'
     - file_metadata: size, format validation, read count estimate
     - errors: any validation failures
     """
@@ -227,6 +291,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             file_type = 'bam'
         elif file_lower.endswith(('.vcf', '.vcf.gz')):
             file_type = 'vcf'
+        elif file_lower.endswith(('.maf', '.maf.gz')):
+            file_type = 'maf'
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
@@ -241,6 +307,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "format": "VCF",
                 "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
             }
+        elif file_type == 'maf':
+            metadata = validate_maf(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
