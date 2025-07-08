@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeneKnow - Advanced Clinical Genomics Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #2563eb;
+            --primary-dark: #1e40af;
+            --danger-red: #ef4444;
+            --warning-orange: #f59e0b;
+            --success-green: #10b981;
+            --neutral-gray: #64748b;
+            --light-blue: #f0f9ff;
+            --dark-blue: #1e3a8a;
+            --gradient-medical: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.1);
+            --shadow-strong: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #2c3e50;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .medical-interface {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f8fafc;
+            border-radius: 16px;
+            margin: 8px;
+            box-shadow: var(--shadow-strong);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Enhanced Medical Header */
+        .medical-header {
+            background: var(--gradient-medical);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            z-index: 100;
+        }
+
+        .medical-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            animation: pulse-rainbow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-rainbow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .medical-logo {
+            font-size: 32px;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: logo-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes logo-glow {
+            from { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3)); }
+            to { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6)); }
+        }
+
+        .platform-title {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .platform-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .patient-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .patient-info:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .emergency-status {
+            background: var(--danger-red);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            animation: urgent-pulse 1.5s infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .emergency-status:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        @keyframes urgent-pulse {
+            0%, 100% { 
+                opacity: 1; 
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% { 
+                opacity: 0.8; 
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* Enhanced Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Enhanced Medical Sidebar */
+        .medical-sidebar {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-medium);
+            z-index: 50;
+        }
+
+        .patient-summary {
+            padding: 24px;
+            background: var(--gradient-medical);
+            color: white;
+            margin: 16px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .patient-summary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .patient-id {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .patient-details {
+            font-size: 14px;
+            opacity: 0.95;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        .patient-risk-score {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .nav-section {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--neutral-gray);
+            margin-bottom: 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-dark));
+            transition: width 0.3s ease;
+            z-index: 1;
+        }
+
+        .nav-item > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            transform: translateX(6px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-item:hover::before {
+            width: 4px;
+        }
+
+        .nav-item.active {
+            background: var(--gradient-medical);
+            color: white;
+            box-shadow: var(--shadow-medium);
+            transform: translateX(8px);
+        }
+
+        .nav-item.active::before {
+            width: 100%;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover .nav-icon {
+            transform: scale(1.1);
+        }
+
+        .clinical-alerts {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .alert-item {
+            background: #fff5f5;
+            border: 1px solid #fecaca;
+            border-left: 4px solid var(--danger-red);
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.1) 50%, transparent 51%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .alert-item:hover::before {
+            transform: translateX(100%);
+        }
+
+        .alert-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .alert-item.warning {
+            background: #fffbeb;
+            border-color: #fcd34d;
+            border-left-color: var(--warning-orange);
+        }
+
+        .alert-item.info {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            border-left-color: var(--primary-blue);
+        }
+
+        .alert-item.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+            border-left-color: var(--success-green);
+        }
+
+        /* Enhanced Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 32px 32px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-soft);
+            position: relative;
+        }
+
+        .content-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #1e293b 0%, var(--primary-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-subtitle {
+            color: var(--neutral-gray);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .analysis-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .control-button {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            border: 1px solid #bfdbfe;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            background: #fafbfc;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced Manhattan Plot */
+        .manhattan-container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .manhattan-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-medical);
+        }
+
+        .plot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .plot-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .plot-info {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid #bfdbfe;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border-left: 6px solid var(--primary-blue);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05));
+        }
+
+        .info-panel h4 {
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-panel p {
+            color: var(--neutral-gray);
+            font-size: 15px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        .manhattan-plot {
+            height: 450px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .plot-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .plot-control {
+            background: white;
+            border: 1px solid #d1d5db;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .plot-control:hover {
+            background: var(--light-blue);
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .plot-control.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .significance-line {
+            position: absolute;
+            left: 70px;
+            right: 30px;
+            height: 2px;
+            border-radius: 1px;
+            z-index: 10;
+        }
+
+        .significance-line.genome-wide {
+            top: 80px;
+            background: var(--danger-red);
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+        }
+
+        .significance-line.suggestive {
+            top: 120px;
+            background: var(--warning-orange);
+            box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+        }
+
+        .significance-line::after {
+            content: attr(data-label);
+            position: absolute;
+            right: -120px;
+            top: -10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .chromosome-section {
+            position: absolute;
+            bottom: 60px;
+            height: 340px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .data-point {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            margin: 0 1px 1px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .data-point:hover {
+            transform: scale(2.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+        }
+
+        .data-point.significant {
+            animation: significant-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes significant-glow {
+            0%, 100% { box-shadow: 0 0 5px currentColor; }
+            50% { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+        }
+
+        /* Enhanced Heatmap */
+        .heatmap-container {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #e2e8f0;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: 140px repeat(10, 1fr);
+            gap: 3px;
+            margin-top: 24px;
+        }
+
+        .heatmap-label {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .heatmap-label:hover {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            transform: scale(1.02);
+        }
+
+        .heatmap-cell {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .heatmap-cell::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            transition: transform 0.6s ease;
+        }
+
+        .heatmap-cell:hover::before {
+            transform: translateX(0) translateY(0) rotate(45deg);
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-medium);
+            z-index: 10;
+        }
+
+        .risk-high { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+        }
+        
+        .risk-medium { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+        
+        .risk-low { 
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+        }
+        
+        .risk-none { 
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            color: #6b7280;
+            box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
+        }
+
+        .heatmap-legend {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
+            padding: 8px 16px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .legend-item:hover {
+            background: white;
+            box-shadow: var(--shadow-soft);
+            transform: translateY(-2px);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Enhanced Clinical Insights */
+        .clinical-insights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .insight-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: var(--shadow-soft);
+            border-left: 6px solid var(--primary-blue);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+            border-radius: 0 0 0 80px;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .insight-card.critical {
+            border-left-color: var(--danger-red);
+        }
+
+        .insight-card.critical::before {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
+        }
+
+        .insight-card.warning {
+            border-left-color: var(--warning-orange);
+        }
+
+        .insight-card.warning::before {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
+        }
+
+        .insight-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .insight-description {
+            color: var(--neutral-gray);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .insight-action {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .insight-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .insight-action:hover::before {
+            left: 100%;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Enhanced Statistics Panel */
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--neutral-gray);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Enhanced Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-strong);
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--neutral-gray);
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--danger-red);
+        }
+
+        /* Progress Indicators */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-medical);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .medical-sidebar {
+                width: 280px;
+            }
+            
+            .clinical-insights {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .medical-sidebar {
+                width: 260px;
+            }
+            
+            .manhattan-plot {
+                height: 350px;
+            }
+            
+            .plot-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .heatmap-grid {
+                font-size: 11px;
+                grid-template-columns: 120px repeat(5, 1fr);
+            }
+            
+            .stats-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: loading-shimmer 1.5s infinite;
+        }
+
+        @keyframes loading-shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus states */
+        button:focus,
+        .nav-item:focus,
+        .control-button:focus {
+            outline: 2px solid var(--primary-blue);
+            outline-offset: 2px;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neutral-gray);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="medical-interface">
+        <!-- Enhanced Medical Header -->
+        <div class="medical-header">
+            <div class="logo-section">
+                <div class="medical-logo">⚕️</div>
+                <div>
+                    <div class="platform-title">GeneKnow</div>
+                    <div class="platform-subtitle">Advanced Clinical Genomics Platform</div>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="patient-info">
+                    <div><strong>Patient ID:</strong> GEN-2025-001</div>
+                    <div><strong>Physician:</strong> Dr. Sarah Chen • Oncology</div>
+                    <div><strong>Analysis:</strong> Complete • QC Passed</div>
+                </div>
+                <div class="emergency-status" onclick="showAlert('Emergency protocols activated. High-priority findings require immediate attention.')">
+                    🚨 High Priority
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Enhanced Medical Sidebar -->
+            <div class="medical-sidebar">
+                <div class="patient-summary">
+                    <div class="patient-id">Emma Rodriguez</div>
+                    <div class="patient-details">
+                        <strong>Age:</strong> 34 • Female<br>
+                        <strong>Family History:</strong> Breast Cancer (Maternal)<br>
+                        <strong>Referral:</strong> Genetic Counseling<br>
+                        <strong>Previous Tests:</strong> None
+                    </div>
+                    <div class="patient-risk-score">
+                        <strong>Risk Score:</strong> 95/100 (Extremely High)
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Clinical Workflow</div>
+                    <div class="nav-item active" data-tab="analysis" tabindex="0">
+                        <span class="nav-icon">🧬</span>
+                        <span>Genomic Analysis</span>
+                    </div>
+                    <div class="nav-item" data-tab="variants" tabindex="0">
+                        <span class="nav-icon">🔥</span>
+                        <span>Variant Heatmap</span>
+                    </div>
+                    <div class="nav-item" data-tab="pathways" tabindex="0">
+                        <span class="nav-icon">🔬</span>
+                        <span>Pathway Analysis</span>
+                    </div>
+                    <div class="nav-item" data-tab="clinical" tabindex="0">
+                        <span class="nav-icon">📋</span>
+                        <span>Clinical Report</span>
+                    </div>
+                    <div class="nav-item" data-tab="family" tabindex="0">
+                        <span class="nav-icon">👥</span>
+                        <span>Family Analysis</span>
+                    </div>
+                </div>
+
+                <div class="clinical-alerts">
+                    <div class="nav-title">Clinical Alerts</div>
+                    <div class="alert-item" onclick="showVariantDetails('BRCA1', 'c.5266dupC')">
+                        <div class="priority-indicator priority-high"></div>
+                        <strong>🚨 Pathogenic BRCA1 Variant</strong><br>
+                        <small>c.5266dupC - Immediate action required</small>
+                    </div>
+                    <div class="alert-item warning" onclick="showVariantDetails('BRCA2', 'c.9976A>T')">
+                        <div class="priority-indicator priority-medium"></div>
+                        <strong>⚠️ Pathogenic BRCA2 Variant</strong><br>
+                        <small>c.9976A>T - High penetrance</small>
+                    </div>
+                    <div class="alert-item info" onclick="showFamilyHistory()">
+                        <div class="priority-indicator priority-low"></div>
+                        <strong>📊 Family History Match</strong><br>
+                        <small>Consistent with maternal lineage</small>
+                    </div>
+                    <div class="alert-item success">
+                        <div class="priority-indicator priority-low"></div>
+                        <strong>✅ Quality Control</strong><br>
+                        <small>All metrics passed (>99% coverage)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Content Area -->
+            <div class="content-area">
+                <div class="content-header">
+                    <div class="content-title">🧬 Genomic Analysis Results</div>
+                    <div class="content-subtitle">Comprehensive variant analysis with clinical insights and actionable recommendations</div>
+                    <div class="analysis-controls">
+                        <button class="control-button" onclick="exportReport()">📄 Export Report</button>
+                        <button class="control-button" onclick="shareFindings()">📤 Share Findings</button>
+                        <button class="control-button" onclick="scheduleConsult()">📅 Schedule Consult</button>
+                        <button class="control-button" onclick="viewHistory()">📊 View History</button>
+                    </div>
+                </div>
+
+                <!-- Analysis Tab -->
+                <div class="tab-content active" id="analysis-tab">
+                    <!-- Statistics Panel -->
+                    <div class="stats-panel">
+                        <div class="stat-card">
+                            <div class="stat-value">2</div>
+                            <div class="stat-label">Pathogenic Variants</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">47,891</div>
+                            <div class="stat-label">Variants Analyzed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">99.8%</div>
+                            <div class="stat-label">Coverage Quality</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">25</div>
+                            <div class="stat-label">Genes Screened</div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Manhattan Plot -->
+                    <div class="manhattan-container">
+                        <div class="plot-header">
+                            <div class="plot-title">🗺️ Manhattan Plot - Genome-Wide Significance</div>
+                            <div class="plot-info">
+                                <span class="medical-badge">GWAS Analysis</span>
+                                Real-time results
+                            </div>
+                        </div>
+                        
+                        <div class="plot-controls">
+                            <button class="plot-control active" data-view="all">All Chromosomes</button>
+                            <button class="plot-control" data-view="significant">Significant Only</button>
+                            <button class="plot-control" data-view="cancer">Cancer Genes</button>
+                            <button class="plot-control" data-view="zoom">Zoom View</button>
+                        </div>
+
+                        <div class="info-panel">
+                            <h4>📊 Manhattan Plot Analysis</h4>
+                            <p>
+                                Interactive visualization of statistical significance across all chromosomes. Y-axis represents -log10(p-value) - higher peaks indicate stronger associations. 
+                                <strong>Red line:</strong> Genome-wide significance (p < 5×10⁻⁸), <strong>Orange line:</strong> Suggestive significance (p < 1×10⁻⁵). 
+                                Click on data points for detailed variant information. Significant peaks on chromosomes 13 and 17 correspond to BRCA1/BRCA2 pathogenic variants.
+                            </p>
+                        </div>
+
+                        <div class="manhattan-plot" id="manhattanPlot">
+                            <div class="plot-axis y-axis">-log10(p-value)</div>
+                            <div class="plot-axis x-axis">Chromosome Position</div>
+                            
+                            <div class="significance-line genome-wide" data-label="Genome-wide (p < 5×10⁻⁸)"></div>
+                            <div class="significance-line suggestive" data-label="Suggestive (p < 1×10⁻⁵)"></div>
+                            
+                            <!-- Dynamically generated chromosomes will be inserted here -->
+                        </div>
+
+                        <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #10b981;">
+                            <strong style="color: #065f46;">🎯 Key Findings Summary:</strong>
+                            <ul style="margin-top: 8px; color: #374151;">
+                                <li><strong>Chromosome 17:</strong> BRCA1 c.5266dupC (p = 2.3×10⁻¹²) - Frameshift, loss of function</li>
+                                <li><strong>Chromosome 13:</strong> BRCA2 c.9976A>T (p = 5.8×10⁻¹¹) - Nonsense, premature stop</li>
+                                <li><strong>Clinical Impact:</strong> Both variants are established pathogenic with high penetrance</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Clinical Insights -->
+                    <div class="clinical-insights">
+                        <div class="insight-card critical">
+                            <div class="insight-title">🚨 Critical Finding - BRCA1</div>
+                            <div class="insight-description">
+                                Frameshift variant c.5266dupC with genome-wide significance (p=2.3×10⁻¹²). This variant leads to a premature stop codon, resulting in loss of BRCA1 function. 
+                                Associated with 60-80% lifetime breast cancer risk and 40-60% ovarian cancer risk.
+                            </div>
+                            <button class="insight-action" onclick="initiateProtocol('genetic-counseling')">🔬 Genetic Counseling Protocol</button>
+                        </div>
+
+                        <div class="insight-card critical">
+                            <div class="insight-title">⚠️ Critical Finding - BRCA2</div>
+                            <div class="insight-description">
+                                Nonsense variant c.9976A>T with high significance (p=5.8×10⁻¹¹). Creates premature termination in DNA-binding domain. 
+                                Associated with 60-70% lifetime breast cancer risk and moderate ovarian cancer risk.
+                            </div>
+                            <button class="insight-action" onclick="generateFamilyReport()">👥 Generate Family Report</button>
+                        </div>
+
+                        <div class="insight-card warning">
+                            <div class="insight-title">📊 Population Context</div>
+                            <div class="insight-description">
+                                Both variants are extremely rare in general population (&lt; 0.01%) but show strong penetrance in cancer families. 
+                                ClinVar classification: Pathogenic (5-star rating). Multiple functional studies confirm deleterious impact.
+                            </div>
+                            <button class="insight-action" onclick="viewPopulationData()">📈 View Population Data</button>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-title">🔬 Functional Impact</div>
+                            <div class="insight-description">
+                                Variants affect critical domains: BRCA1 (BRCT domains), BRCA2 (DNA-binding domain). 
+                                Both proteins essential for homologous recombination repair. Loss of function leads to genomic instability and cancer predisposition.
+                            </div>
+                            <button class="insight-action" onclick="analyzePathways()">🧬 Analyze Pathway Impact</button>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-title">🎯 Treatment Implications</div>
+                            <div class="insight-description">
+                                BRCA-deficient tumors show exceptional sensitivity to PARP inhibitors and platinum-based chemotherapy. 
+                                Synthetic lethality approach highly effective. Consider clinical trials for targeted therapies.
+                            </div>
+                            <button class="insight-action" onclick="findClinicalTrials()">🔍 Find Clinical Trials</button>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-title">📋 Surveillance Recommendations</div>
+                            <div class="insight-description">
+                                Enhanced screening protocol: Annual breast MRI starting age 25, clinical breast exams every 6 months, 
+                                consideration of risk-reducing surgery. Ovarian screening with CA-125 and transvaginal ultrasound.
+                            </div>
+                            <button class="insight-action" onclick="createSurveillancePlan()">📅 Create Surveillance Plan</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Variants Tab -->
+                <div class="tab-content" id="variants-tab">
+                    <div class="stats-panel">
+                        <div class="stat-card">
+                            <div class="stat-value">40%</div>
+                            <div class="stat-label">Pathogenic Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">15%</div>
+                            <div class="stat-label">VUS Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">30%</div>
+                            <div class="stat-label">Benign Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">15%</div>
+                            <div class="stat-label">No Variants</div>
+                        </div>
+                    </div>
+
+                    <div class="heatmap-container">
+                        <div class="plot-header">
+                            <div class="plot-title">🔥 Variant Impact Heatmap</div>
+                            <div class="plot-info">
+                                <span class="medical-badge">Multi-Gene Panel</span>
+                                Hereditary cancer genes
+                            </div>
+                        </div>
+                        
+                        <div class="info-panel">
+                            <h4>🔥 Variant Heatmap Analysis</h4>
+                            <p>
+                                Comprehensive matrix visualization of variant impact across cancer susceptibility genes and patient cohort. 
+                                <strong>Red:</strong> Pathogenic/Likely Pathogenic variants requiring immediate action. 
+                                <strong>Orange:</strong> Variants of Uncertain Significance (VUS) needing monitoring. 
+                                <strong>Green:</strong> Benign/Likely Benign variants. <strong>Gray:</strong> No variants detected.
+                                Click cells for detailed variant information and clinical recommendations.
+                            </p>
+                        </div>
+
+                        <div class="heatmap-grid" id="heatmapGrid">
+                            <!-- Dynamically generated heatmap will be inserted here -->
+                        </div>
+
+                        <div class="heatmap-legend">
+                            <div class="legend-item">
+                                <div class="legend-color risk-high"></div>
+                                <span>Pathogenic (P) - Immediate Action</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color risk-medium"></div>
+                                <span>VUS (V) - Monitor & Research</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color risk-low"></div>
+                                <span>Benign (B) - No Action Needed</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color risk-none"></div>
+                                <span>No Variant (-) - Normal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clinical-insights">
+                        <div class="insight-card critical">
+                            <div class="insight-title">🔥 Patient 1 Critical Profile</div>
+                            <div class="insight-description">
+                                Multiple pathogenic variants detected (BRCA1, BRCA2). Extremely high cancer risk profile indicating hereditary breast and ovarian cancer syndrome. 
+                                Immediate genetic counseling and enhanced surveillance protocols required.
+                            </div>
+                            <button class="insight-action" onclick="generateRiskAssessment(1)">📊 Generate Risk Assessment</button>
+                        </div>
+
+                        <div class="insight-card warning">
+                            <div class="insight-title">📈 Cohort Analysis</div>
+                            <div class="insight-description">
+                                BRCA1 shows highest pathogenic variant frequency (30%), followed by BRCA2 (20%) and TP53 (10%). 
+                                Pattern consistent with high-risk hereditary cancer clinic population. Consider expanded family testing.
+                            </div>
+                            <button class="insight-action" onclick="viewCohortStatistics()">📊 View Cohort Statistics</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Pathways Tab -->
+                <div class="tab-content" id="pathways-tab">
+                    <div class="manhattan-container">
+                        <div class="plot-header">
+                            <div class="plot-title">🔬 Pathway Enrichment Analysis</div>
+                            <div class="plot-info">
+                                <span class="medical-badge">Functional Analysis</span>
+                                DNA repair pathways
+                            </div>
+                        </div>
+                        
+                        <div class="info-panel">
+                            <h4>🔬 Pathway Analysis Overview</h4>
+                            <p>
+                                Functional enrichment analysis identifying significantly affected biological pathways. Analysis reveals critical disruption 
+                                in DNA repair mechanisms, particularly homologous recombination repair pathway. Results inform treatment selection 
+                                and provide mechanistic insights into cancer predisposition.
+                            </p>
+                        </div>
+                        
+                        <div style="background: #f0f9ff; padding: 24px; border-radius: 12px; border: 1px solid #bfdbfe; margin-bottom: 24px;">
+                            <h4 style="color: #1e40af; margin-bottom: 16px;">🎯 Top Enriched Pathways (FDR < 0.05)</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <h5 style="color: #1e293b; margin-bottom: 12px;">DNA Repair Pathways:</h5>
+                                    <ul style="color: #475569; line-height: 1.6;">
+                                        <li><strong>Homologous Recombination:</strong> p = 1.2×10⁻⁸</li>
+                                        <li><strong>DNA Damage Response:</strong> p = 3.4×10⁻⁷</li>
+                                        <li><strong>Cell Cycle Checkpoints:</strong> p = 8.1×10⁻⁶</li>
+                                        <li><strong>BRCA1/2 Mediated Repair:</strong> p = 2.1×10⁻⁵</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #fffbeb; padding: 20px; border-radius: 8px; border-left: 6px solid #f59e0b; margin-bottom: 24px;">
+                                <h4 style="color: #92400e; margin-bottom: 16px; font-size: 18px;">⚠️ Important Clinical Notes</h4>
+                                <div style="color: #78350f; line-height: 1.6;">
+                                    <p style="margin-bottom: 12px;">
+                                        <strong>Penetrance Data:</strong> BRCA1 carriers have 60-80% lifetime breast cancer risk and 40-60% ovarian cancer risk. 
+                                        BRCA2 carriers have 60-70% lifetime breast cancer risk and 10-20% ovarian cancer risk.
+                                    </p>
+                                    <p style="margin-bottom: 12px;">
+                                        <strong>Age-Related Risks:</strong> Cancer risks increase significantly after age 40. Early intervention and surveillance 
+                                        are critical for optimal outcomes.
+                                    </p>
+                                    <p style="margin-bottom: 12px;">
+                                        <strong>Reproductive Considerations:</strong> Genetic counseling should address family planning, prenatal testing options, 
+                                        and timing of risk-reducing surgeries.
+                                    </p>
+                                    <p>
+                                        <strong>Treatment Implications:</strong> BRCA-associated cancers show exceptional response to PARP inhibitors 
+                                        and platinum-based chemotherapy due to defective DNA repair mechanisms.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 6px solid #16a34a;">
+                                <h4 style="color: #15803d; margin-bottom: 16px; font-size: 18px;">✅ Quality Metrics & Technical Details</h4>
+                                <div style="color: #166534; line-height: 1.6;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                        <div>
+                                            <h5 style="margin-bottom: 8px;">Sequencing Quality:</h5>
+                                            <ul style="margin: 0 0 0 20px;">
+                                                <li>Average coverage: 847x</li>
+                                                <li>Target region coverage ≥20x: 99.8%</li>
+                                                <li>Variant call quality: QUAL > 50</li>
+                                                <li>Contamination check: < 1%</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h5 style="margin-bottom: 8px;">Analytical Methods:</h5>
+                                            <ul style="margin: 0 0 0 20px;">
+                                                <li>Platform: Illumina NovaSeq 6000</li>
+                                                <li>Pipeline: GATK v4.2.6</li>
+                                                <li>Reference: GRCh38/hg38</li>
+                                                <li>CNV analysis: Included</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Family Analysis Tab -->
+                <div class="tab-content" id="family-tab">
+                    <div class="stats-panel">
+                        <div class="stat-card">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">Generations Analyzed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Family Members</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">50%</div>
+                            <div class="stat-label">Carrier Risk</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">Priority Tests</div>
+                        </div>
+                    </div>
+
+                    <div class="manhattan-container">
+                        <div class="plot-header">
+                            <div class="plot-title">👥 Family Pedigree Analysis</div>
+                            <div class="plot-info">
+                                <span class="medical-badge">3-Generation</span>
+                                Maternal lineage focus
+                            </div>
+                        </div>
+                        
+                        <div class="info-panel">
+                            <h4>👥 Family Analysis Overview</h4>
+                            <p>
+                                Three-generation pedigree analysis revealing autosomal dominant inheritance pattern consistent with hereditary breast and ovarian cancer syndrome. 
+                                Maternal history strongly suggests BRCA1/BRCA2 pathogenic variant segregation. Priority testing recommendations provided for first-degree relatives.
+                            </p>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+                            <h4 style="color: #1e293b; margin-bottom: 20px; text-align: center;">🌳 Family Cancer History</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: center;">
+                                <!-- Generation I (Grandparents) -->
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e2e8f0;">
+                                    <h5 style="color: #374151; margin-bottom: 16px;">Generation I (Grandparents)</h5>
+                                    <div style="margin-bottom: 12px;">
+                                        <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+                                            <strong>Maternal Grandmother</strong><br>
+                                            <span style="color: #dc2626;">Breast cancer age 45</span><br>
+                                            <small>Died age 67</small>
+                                        </div>
+                                        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px;">
+                                            <strong>Maternal Grandfather</strong><br>
+                                            <span style="color: #16a34a;">No cancer history</span><br>
+                                            <small>Died age 78 (heart disease)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generation II (Parents) -->
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e2e8f0;">
+                                    <h5 style="color: #374151; margin-bottom: 16px;">Generation II (Parents)</h5>
+                                    <div style="margin-bottom: 12px;">
+                                        <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+                                            <strong>Mother (Maria)</strong><br>
+                                            <span style="color: #dc2626;">Breast cancer age 52</span><br>
+                                            <small>Currently age 58, survivor</small>
+                                        </div>
+                                        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px;">
+                                            <strong>Father (Carlos)</strong><br>
+                                            <span style="color: #16a34a;">No cancer history</span><br>
+                                            <small>Age 60, healthy</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generation III (Siblings) -->
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 2px solid #e2e8f0;">
+                                    <h5 style="color: #374151; margin-bottom: 16px;">Generation III (Siblings)</h5>
+                                    <div style="margin-bottom: 12px;">
+                                        <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-bottom: 8px; border: 3px solid #dc2626;">
+                                            <strong>Emma (Proband)</strong><br>
+                                            <span style="color: #dc2626;">BRCA1/2 Positive</span><br>
+                                            <small>Age 34, unaffected</small>
+                                        </div>
+                                        <div style="background: #fffbeb; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+                                            <strong>Sister (Ana)</strong><br>
+                                            <span style="color: #f59e0b;">Testing recommended</span><br>
+                                            <small>Age 31, unaffected</small>
+                                        </div>
+                                        <div style="background: #fffbeb; padding: 12px; border-radius: 6px;">
+                                            <strong>Brother (Miguel)</strong><br>
+                                            <span style="color: #f59e0b;">Testing recommended</span><br>
+                                            <small>Age 29, unaffected</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 24px; padding: 20px; background: #fef3c7; border-radius: 8px; border-left: 6px solid #f59e0b;">
+                                <h5 style="color: #92400e; margin-bottom: 12px;">🎯 Inheritance Pattern Analysis</h5>
+                                <ul style="color: #92400e; margin: 0 0 0 20px; line-height: 1.6;">
+                                    <li><strong>Pattern:</strong> Autosomal dominant inheritance strongly suggested</li>
+                                    <li><strong>Maternal Lineage:</strong> 2 generations affected (grandmother, mother)</li>
+                                    <li><strong>Age of Onset:</strong> Early onset (45-52 years) indicates high-penetrance variant</li>
+                                    <li><strong>Cancer Types:</strong> Breast cancer primary - consistent with BRCA1/BRCA2</li>
+                                    <li><strong>Risk to Relatives:</strong> 50% chance for first-degree relatives</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <h4 style="color: #1e293b; margin-bottom: 20px;">📋 Family Testing Recommendations</h4>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                <div>
+                                    <h5 style="color: #dc2626; margin-bottom: 16px;">🚨 High Priority Testing</h5>
+                                    <div style="space-y: 12px;">
+                                        <div style="background: #fef2f2; padding: 16px; border-radius: 8px; border-left: 4px solid #dc2626; margin-bottom: 12px;">
+                                            <strong>Mother (Maria Rodriguez)</strong><br>
+                                            <span style="font-size: 14px; color: #7f1d1d;">
+                                                Breast cancer survivor - likely carrier<br>
+                                                Testing critical for family counseling
+                                            </span>
+                                        </div>
+                                        <div style="background: #fffbeb; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 12px;">
+                                            <strong>Sister (Ana Rodriguez)</strong><br>
+                                            <span style="font-size: 14px; color: #92400e;">
+                                                Age 31 - optimal testing age<br>
+                                                50% carrier probability
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h5 style="color: #f59e0b; margin-bottom: 16px;">⚠️ Recommended Testing</h5>
+                                    <div style="space-y: 12px;">
+                                        <div style="background: #fffbeb; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 12px;">
+                                            <strong>Brother (Miguel Rodriguez)</strong><br>
+                                            <span style="font-size: 14px; color: #92400e;">
+                                                Male carrier - lower cancer risk<br>
+                                                Important for future offspring
+                                            </span>
+                                        </div>
+                                        <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 12px;">
+                                            <strong>Future Children</strong><br>
+                                            <span style="font-size: 14px; color: #1e40af;">
+                                                Genetic counseling before conception<br>
+                                                Prenatal testing options available
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clinical-insights">
+                        <div class="insight-card critical">
+                            <div class="insight-title">👥 Cascade Testing Priority</div>
+                            <div class="insight-description">
+                                Immediate testing recommended for mother and sister. Mother's cancer history at age 52 strongly suggests she is a BRCA carrier. 
+                                Sister at age 31 is at optimal age for intervention if positive.
+                            </div>
+                            <button class="insight-action" onclick="coordinateFamilyTesting()">📋 Coordinate Family Testing</button>
+                        </div>
+
+                        <div class="insight-card warning">
+                            <div class="insight-title">🧬 Genetic Counseling Plan</div>
+                            <div class="insight-description">
+                                Comprehensive family counseling session needed to discuss inheritance patterns, risk assessment, and testing options. 
+                                Address reproductive planning and psychological support needs.
+                            </div>
+                            <button class="insight-action" onclick="scheduleFamilyConseling()">📅 Schedule Family Counseling</button>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-title">📊 Risk Stratification</div>
+                            <div class="insight-description">
+                                Family history consistent with high-penetrance BRCA variants. Early onset maternal lineage cancer indicates need for 
+                                enhanced surveillance for all at-risk family members.
+                            </div>
+                            <button class="insight-action" onclick="createFamilyRiskPlan()">📈 Create Family Risk Plan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Modal for detailed information -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalContent">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced data for the application
+        const chromosomeData = {
+            1: { width: 80, variants: [
+                { position: 10, pValue: 0.01, variant: "rs123456", color: "#64748b" },
+                { position: 30, pValue: 0.005, variant: "rs234567", color: "#64748b" },
+                { position: 60, pValue: 0.02, variant: "rs345678", color: "#64748b" }
+            ]},
+            2: { width: 75, variants: [
+                { position: 15, pValue: 0.008, variant: "rs456789", color: "#3b82f6" },
+                { position: 45, pValue: 0.003, variant: "rs567890", color: "#3b82f6" }
+            ]},
+            3: { width: 70, variants: [
+                { position: 25, pValue: 0.004, variant: "rs890123", color: "#64748b" }
+            ]},
+            13: { width: 55, variants: [
+                { position: 30, pValue: 5.8e-11, variant: "BRCA2 c.9976A>T", color: "#ef4444", significant: true },
+                { position: 50, pValue: 0.0008, variant: "rs789012", color: "#64748b" }
+            ]},
+            17: { width: 50, variants: [
+                { position: 20, pValue: 2.3e-12, variant: "BRCA1 c.5266dupC", color: "#ef4444", significant: true },
+                { position: 40, pValue: 1.2e-8, variant: "BRCA1 c.181T>G", color: "#f59e0b" },
+                { position: 70, pValue: 0.001, variant: "rs678901", color: "#64748b" }
+            ]}
+        };
+
+        const heatmapData = {
+            genes: ['BRCA1', 'BRCA2', 'TP53', 'PALB2', 'ATM', 'CHEK2', 'CDH1', 'PTEN'],
+            patients: Array.from({length: 10}, (_, i) => `Patient ${i + 1}`),
+            variants: {
+                'BRCA1': ['P', 'V', '-', 'P', 'B', '-', 'V', '-', 'P', 'B'],
+                'BRCA2': ['P', '-', 'V', '-', 'P', 'B', '-', 'V', '-', 'P'],
+                'TP53': ['-', 'V', 'P', '-', '-', 'B', 'V', '-', '-', 'B'],
+                'PALB2': ['B', '-', '-', 'V', '-', 'P', '-', 'B', '-', '-'],
+                'ATM': ['-', 'B', 'V', '-', 'P', '-', '-', 'B', 'V', '-'],
+                'CHEK2': ['-', '-', 'B', 'P', '-', 'V', '-', '-', 'B', '-'],
+                'CDH1': ['V', '-', '-', '-', 'B', '-', 'P', '-', '-', 'V'],
+                'PTEN': ['-', 'B', '-', 'V', '-', '-', '-', 'P', '-', 'B']
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeManhattanPlot();
+            initializeHeatmap();
+            addEventListeners();
+            updateProgressBars();
+        });
+
+        function initializeManhattanPlot() {
+            const plot = document.getElementById('manhattanPlot');
+            const baseLeft = 70;
+            let currentLeft = baseLeft;
+
+            Object.entries(chromosomeData).forEach(([chr, data]) => {
+                const chrSection = document.createElement('div');
+                chrSection.className = 'chromosome-section';
+                chrSection.style.left = currentLeft + 'px';
+                chrSection.style.width = data.width + 'px';
+
+                data.variants.forEach(variant => {
+                    const point = document.createElement('div');
+                    point.className = 'data-point';
+                    if (variant.significant) point.classList.add('significant');
+                    
+                    const height = Math.max(5, -Math.log10(variant.pValue) * 8);
+                    point.style.height = height + 'px';
+                    point.style.background = variant.color;
+                    point.title = `${variant.variant} (p=${variant.pValue.toExponential(2)})`;
+                    
+                    point.addEventListener('click', () => showVariantDetails(variant.variant, variant.pValue));
+                    chrSection.appendChild(point);
+                });
+
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.bottom = '20px';
+                label.style.fontSize = '12px';
+                label.style.color = '#64748b';
+                label.style.fontWeight = '600';
+                label.textContent = chr;
+                chrSection.appendChild(label);
+
+                plot.appendChild(chrSection);
+                currentLeft += data.width + 10;
+            });
+        }
+
+        function initializeHeatmap() {
+            const grid = document.getElementById('heatmapGrid');
+            
+            // Header row
+            const headerCell = document.createElement('div');
+            headerCell.className = 'heatmap-label';
+            headerCell.textContent = 'Gene';
+            headerCell.style.fontWeight = '700';
+            headerCell.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            headerCell.style.color = 'white';
+            grid.appendChild(headerCell);
+
+            heatmapData.patients.forEach(patient => {
+                const patientCell = document.createElement('div');
+                patientCell.className = 'heatmap-label';
+                patientCell.textContent = patient;
+                patientCell.style.fontSize = '11px';
+                grid.appendChild(patientCell);
+            });
+
+            // Data rows
+            heatmapData.genes.forEach(gene => {
+                const geneCell = document.createElement('div');
+                geneCell.className = 'heatmap-label';
+                geneCell.textContent = gene;
+                geneCell.style.fontWeight = '700';
+                grid.appendChild(geneCell);
+
+                heatmapData.variants[gene].forEach((variant, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+                    cell.textContent = variant;
+                    
+                    switch(variant) {
+                        case 'P': 
+                            cell.classList.add('risk-high');
+                            cell.title = `${gene} - Pathogenic variant in ${heatmapData.patients[index]}`;
+                            break;
+                        case 'V': 
+                            cell.classList.add('risk-medium');
+                            cell.title = `${gene} - VUS in ${heatmapData.patients[index]}`;
+                            break;
+                        case 'B': 
+                            cell.classList.add('risk-low');
+                            cell.title = `${gene} - Benign variant in ${heatmapData.patients[index]}`;
+                            break;
+                        default: 
+                            cell.classList.add('risk-none');
+                            cell.title = `${gene} - No variants detected in ${heatmapData.patients[index]}`;
+                    }
+
+                    cell.addEventListener('click', () => showHeatmapDetails(gene, variant, heatmapData.patients[index]));
+                    grid.appendChild(cell);
+                });
+            });
+        }
+
+        function addEventListeners() {
+            // Navigation functionality
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => switchTab(item.getAttribute('data-tab')));
+                item.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') switchTab(item.getAttribute('data-tab'));
+                });
+            });
+
+            // Plot controls
+            document.querySelectorAll('.plot-control').forEach(control => {
+                control.addEventListener('click', () => {
+                    document.querySelectorAll('.plot-control').forEach(c => c.classList.remove('active'));
+                    control.classList.add('active');
+                    // Add filtering logic here
+                });
+            });
+
+            // Tooltip functionality
+            document.addEventListener('mouseover', handleTooltip);
+            document.addEventListener('mouseout', hideTooltip);
+
+            // Keyboard navigation
+            document.addEventListener('keydown', handleKeyNavigation);
+        }
+
+        function switchTab(tabName) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function updateProgressBars() {
+            const bars = document.querySelectorAll('.progress-fill');
+            bars.forEach((bar, index) => {
+                setTimeout(() => {
+                    bar.style.width = (Math.random() * 70 + 30) + '%';
+                }, index * 200);
+            });
+        }
+
+        function handleTooltip(e) {
+            if (e.target.hasAttribute('title')) {
+                const tooltip = document.getElementById('tooltip');
+                if (tooltip) {
+                    tooltip.textContent = e.target.getAttribute('title');
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = e.pageY - 30 + 'px';
+                    tooltip.classList.add('visible');
+                }
+            }
+        }
+
+        function hideTooltip(e) {
+            if (e.target.hasAttribute('title')) {
+                const tooltip = document.getElementById('tooltip');
+                if (tooltip) tooltip.classList.remove('visible');
+            }
+        }
+
+        function handleKeyNavigation(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        }
+
+        // Modal and detail functions
+        function showModal(content) {
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        function showVariantDetails(gene, variant) {
+            const content = `
+                <h3 style="color: #1e293b; margin-bottom: 20px;">🧬 Variant Details: ${gene}</h3>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #374151; margin-bottom: 12px;">Variant Information</h4>
+                    <p><strong>Gene:</strong> ${gene}</p>
+                    <p><strong>Variant:</strong> ${variant}</p>
+                    <p><strong>Classification:</strong> Pathogenic (Class 5)</p>
+                    <p><strong>ACMG Criteria:</strong> PVS1, PM2, PP3</p>
+                    <p><strong>Population Frequency:</strong> < 0.01%</p>
+                </div>
+                <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #dc2626; margin-bottom: 12px;">Clinical Significance</h4>
+                    <p>This variant results in loss of function and is associated with significantly increased cancer risk. 
+                    Immediate genetic counseling and enhanced surveillance protocols are recommended.</p>
+                </div>
+                <div style="text-align: center;">
+                    <button class="insight-action" onclick="closeModal()">Close</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function showHeatmapDetails(gene, variant, patient) {
+            if (variant === '-') return;
+            
+            const content = `
+                <h3 style="color: #1e293b; margin-bottom: 20px;">🔥 Heatmap Cell Details</h3>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #374151; margin-bottom: 12px;">Cell Information</h4>
+                    <p><strong>Patient:</strong> ${patient}</p>
+                    <p><strong>Gene:</strong> ${gene}</p>
+                    <p><strong>Variant Type:</strong> ${variant === 'P' ? 'Pathogenic' : variant === 'V' ? 'VUS' : 'Benign'}</p>
+                </div>
+                <div style="text-align: center;">
+                    <button class="insight-action" onclick="closeModal()">Close</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        // Utility functions for button actions
+        function showAlert(message) {
+            alert(message);
+        }
+
+        function exportReport() {
+            showAlert('📄 Generating comprehensive clinical report...\n\nReport will include:\n• Complete variant analysis\n• Clinical recommendations\n• Family testing guide\n• Surveillance protocols');
+        }
+
+        function shareFindings() {
+            showAlert('📤 Sharing options:\n• Secure physician portal\n• Encrypted email\n• Patient portal access\n• Family notification system');
+        }
+
+        function scheduleConsult() {
+            showAlert('📅 Scheduling genetic counseling consultation...\n\nPriority appointment within 48 hours\nMultidisciplinary team involvement');
+        }
+
+        function viewHistory() {
+            showAlert('📊 Patient genetic testing history:\n• No previous genetic testing\n• Family history documented\n• Risk assessment updated');
+        }
+
+        function initiateProtocol(protocol) {
+            showAlert(`🔬 Initiating ${protocol} protocol...\n\nThis would integrate with hospital systems for:\n• Appointment scheduling\n• Provider notifications\n• Patient education materials`);
+        }
+
+        function generateFamilyReport() {
+            showAlert('👥 Generating family cascade testing report...\n\nIncludes:\n• Pedigree analysis\n• Risk assessments\n• Testing recommendations\n• Counseling protocols');
+        }
+
+        function viewPopulationData() {
+            showAlert('📈 Population genetics data:\n• Variant frequency databases\n• Ethnic-specific data\n• Penetrance studies\n• Clinical outcomes');
+        }
+
+        function analyzePathways() {
+            showAlert('🧬 Pathway analysis initiated...\n\nAnalyzing:\n• DNA repair pathways\n• Cell cycle control\n• Tumor suppressor networks\n• Drug target pathways');
+        }
+
+        function findClinicalTrials() {
+            showAlert('🔍 Searching clinical trials...\n\nFound 12 relevant trials:\n• PARP inhibitor studies\n• Prevention trials\n• Surveillance studies\n• Novel therapeutic approaches');
+        }
+
+        function createSurveillancePlan() {
+            showAlert('📅 Creating personalized surveillance plan...\n\nProtocol includes:\n• Annual breast MRI\n• 6-month clinical exams\n• Ovarian screening\n• Risk assessment updates');
+        }
+
+        // Additional interactive functions
+        function coordinateFamilyTesting() {
+            showAlert('📋 Coordinating family cascade testing...\n\nActions:\n• Contact family members\n• Schedule genetic counseling\n• Arrange testing appointments\n• Provide educational materials');
+        }
+
+        function scheduleFamilyConseling() {
+            showAlert('📅 Scheduling family counseling session...\n\nMulti-family session will cover:\n• Inheritance patterns\n• Risk assessment\n• Testing options\n• Psychological support');
+        }
+
+        function createFamilyRiskPlan() {
+            showAlert('📈 Creating comprehensive family risk management plan...\n\nIncludes:\n• Individual risk assessments\n• Surveillance protocols\n• Prevention options\n• Regular updates');
+        }
+
+        // Click outside modal to close
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
+                                <div>
+                                    <h5 style="color: #1e293b; margin-bottom: 12px;">Clinical Implications:</h5>
+                                    <ul style="color: #475569; line-height: 1.6;">
+                                        <li>High PARP inhibitor sensitivity expected</li>
+                                        <li>Platinum-based therapy highly responsive</li>
+                                        <li>Enhanced tumor surveillance recommended</li>
+                                        <li>Consider prophylactic surgical options</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <h4 style="color: #1e293b; margin-bottom: 16px;">🧬 Molecular Mechanisms</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; color: #475569; line-height: 1.6;">
+                                <div>
+                                    <h5 style="color: #7c2d12; margin-bottom: 8px;">BRCA1 Function Loss:</h5>
+                                    <p>Frameshift mutation disrupts BRCT domains essential for protein-protein interactions in DNA repair complexes. Loss of transcriptional regulation and homologous recombination capacity.</p>
+                                </div>
+                                <div>
+                                    <h5 style="color: #7c2d12; margin-bottom: 8px;">BRCA2 Function Loss:</h5>
+                                    <p>Nonsense mutation eliminates DNA-binding domain, preventing RAD51 nucleofilament formation. Critical for homologous recombination and replication fork protection.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clinical-insights">
+                        <div class="insight-card">
+                            <div class="insight-title">💊 Therapeutic Targets</div>
+                            <div class="insight-description">
+                                PARP inhibitors (olaparib, rucaparib, niraparib) show exceptional efficacy in BRCA-deficient tumors. 
+                                Synthetic lethality principle: cancer cells with defective homologous recombination cannot survive PARP inhibition.
+                            </div>
+                            <button class="insight-action" onclick="searchTherapies()">🔍 Search Targeted Therapies</button>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-title">🧪 Biomarker Status</div>
+                            <div class="insight-description">
+                                Homologous recombination deficiency (HRD) score significantly elevated. Tumor likely to show genomic instability patterns, 
+                                microsatellite instability, and high tumor mutational burden.
+                            </div>
+                            <button class="insight-action" onclick="calculateHRDScore()">📊 Calculate HRD Score</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Clinical Tab -->
+                <div class="tab-content" id="clinical-tab">
+                    <div class="manhattan-container">
+                        <div class="plot-header">
+                            <div class="plot-title">📋 Clinical Decision Support Report</div>
+                            <div class="plot-info">
+                                <span class="medical-badge">AI-Generated</span>
+                                Evidence-based recommendations
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px;">
+                                <h3 style="color: #1e293b; font-size: 24px;">📋 Comprehensive Clinical Summary</h3>
+                                <button class="control-button" onclick="printReport()" style="margin-left: auto;">🖨️ Print Report</button>
+                            </div>
+                            
+                            <div style="color: #475569; line-height: 1.6; margin-bottom: 32px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                                    <div>
+                                        <p><strong>Patient:</strong> Emma Rodriguez</p>
+                                        <p><strong>Age/Sex:</strong> 34-year-old female</p>
+                                        <p><strong>Family History:</strong> Breast cancer (maternal)</p>
+                                        <p><strong>Referring Physician:</strong> Dr. Sarah Chen, Oncology</p>
+                                    </div>
+                                    <div>
+                                        <p><strong>Analysis Date:</strong> January 15, 2025</p>
+                                        <p><strong>Test Type:</strong> Hereditary cancer panel (25 genes)</p>
+                                        <p><strong>Laboratory:</strong> GeneKnow Clinical Labs</p>
+                                        <p><strong>Report Status:</strong> Final</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 6px solid #dc2626; margin-bottom: 24px;">
+                                <h4 style="color: #dc2626; margin-bottom: 16px; font-size: 18px;">🚨 Critical Findings</h4>
+                                <div style="color: #7f1d1d;">
+                                    <div style="margin-bottom: 12px;">
+                                        <strong>1. BRCA1 c.5266dupC (p.Gln1756ProfsTer74)</strong>
+                                        <ul style="margin: 8px 0 0 20px;">
+                                            <li>Classification: Pathogenic (Class 5)</li>
+                                            <li>Variant type: Frameshift deletion</li>
+                                            <li>Clinical significance: High penetrance cancer predisposition</li>
+                                            <li>Population frequency: &lt; 0.01% (ExAC/gnomAD)</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <strong>2. BRCA2 c.9976A&gt;T (p.Lys3326Ter)</strong>
+                                        <ul style="margin: 8px 0 0 20px;">
+                                            <li>Classification: Pathogenic (Class 5)</li>
+                                            <li>Variant type: Nonsense mutation</li>
+                                            <li>Clinical significance: High penetrance cancer predisposition</li>
+                                            <li>Population frequency: &lt; 0.01% (ExAC/gnomAD)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 6px solid #2563eb; margin-bottom: 24px;">
+                                <h4 style="color: #1e40af; margin-bottom: 16px; font-size: 18px;">💡 Clinical Recommendations</h4>
+                                <div style="color: #1e3a8a;">
+                                    <h5 style="margin-bottom: 12px;">Immediate Actions (within 48 hours):</h5>
+                                    <ul style="margin: 0 0 16px 20px; line-height: 1.6;">
+                                        <li>Urgent genetic counseling referral</li>
+                                        <li>Patient contact for result disclosure</li>
+                                        <li>Multidisciplinary team consultation</li>
+                                        <li>Psychosocial support initiation</li>
+                                    </ul>
+                                    
+                                    <h5 style="margin-bottom: 12px;">Enhanced Surveillance Protocol:</h5>
+                                    <ul style="margin: 0 0 16px 20px; line-height: 1.6;">
+                                        <li>Annual breast MRI starting immediately</li>
+                                        <li>Clinical breast exams every 6 months</li>
+                                        <li>Annual mammography (consider tomosynthesis)</li>
+                                        <li>Transvaginal ultrasound + CA-125 (semiannual)</li>
+                                    </ul>
+                                    
+                                    <h5 style="margin-bottom: 12px;">Risk-Reducing Options:</h5>
+                                    <ul style="margin: 0 0 16px 20px; line-height: 1.6;">
+                                        <li>Risk-reducing bilateral mastectomy consideration</li>
+                                        <li>Risk-reducing bilateral salpingo-oophorectomy (after childbearing)</li>
+                                        <li>Chemoprevention options (tamoxifen, raloxifene)</li>
+                                    </ul>
+                                    
+                                    <h5 style="margin-bottom: 12px;">Family Testing:</h5>
+                                    <ul style="margin: 0 0 16px 20px; line-height: 1.6;">
+                                        <li>First-degree relatives (parents, siblings, children)</li>
+                                        <li>Maternal lineage priority given family history</li>
+                                        <li>Cascade testing coordination</li>
+                                    </ul>
+                                </div>
