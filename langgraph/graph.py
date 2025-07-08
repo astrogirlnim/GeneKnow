@@ -38,9 +38,60 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def merge_variants(state: dict) -> dict:
+    """
+    Merge results from parallel variant processing.
+    Combines variants from both variant_calling and qc_filter paths.
+    """
+    logger.info("Merging results from parallel variant processing")
+    
+    # Ensure we have filtered_variants for downstream nodes
+    if not state.get("filtered_variants"):
+        # If QC filter didn't run (no pre-existing variants), 
+        # filter the newly called variants
+        if state.get("raw_variants"):
+            logger.info("Applying QC filters to variants")
+            from nodes.qc_filter import apply_qc_filters
+            state["filtered_variants"] = apply_qc_filters(state["raw_variants"])
+            state["variant_count"] = len(state["filtered_variants"])
+        else:
+            logger.warning("No variants found after merge")
+            state["filtered_variants"] = []
+            state["variant_count"] = 0
+    
+    # Log merge results
+    logger.info(f"Merge complete: {state['variant_count']} filtered variants ready for TCGA mapping")
+    
+    return state
+
+
+def route_after_preprocess(state: dict) -> list:
+    """
+    Determine which nodes to run after preprocessing.
+    Returns a list to enable parallel execution.
+    """
+    nodes_to_run = []
+    
+    # Always run variant calling if we have a BAM file
+    if state.get("aligned_bam_path"):
+        nodes_to_run.append("variant_calling")
+    
+    # Always run QC filter if we have any raw variants
+    if state.get("raw_variants"):
+        nodes_to_run.append("qc_filter")
+    
+    # If neither condition is met, we still need variant calling
+    if not nodes_to_run:
+        nodes_to_run.append("variant_calling")
+    
+    logger.info(f"Routing to nodes: {nodes_to_run}")
+    return nodes_to_run
+
+
 def create_genomic_pipeline() -> StateGraph:
     """
     Creates the main LangGraph pipeline for genomic analysis.
+    Now with parallel execution of variant calling and QC filtering.
     
     Returns:
         StateGraph configured with all nodes and edges
@@ -53,6 +104,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("preprocess", preprocess.process)
     workflow.add_node("variant_calling", variant_calling.process)
     workflow.add_node("qc_filter", qc_filter.process)
+    workflow.add_node("merge_parallel", merge_variants)
     workflow.add_node("tcga_mapper", tcga_mapper.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
@@ -61,29 +113,28 @@ def create_genomic_pipeline() -> StateGraph:
     # Define the entry point
     workflow.set_entry_point("file_input")
     
-    # Add edges (linear flow with conditional routing)
+    # Linear flow up to preprocess
     workflow.add_edge("file_input", "preprocess")
     
-    # Conditional edge: Skip alignment if input is already BAM
+    # After preprocess, use conditional edges for parallel execution
+    # This will run the nodes returned by route_after_preprocess in parallel
     workflow.add_conditional_edges(
         "preprocess",
-        lambda state: "variant_calling" if state["aligned_bam_path"] else "FAILED",
-        {
-            "variant_calling": "variant_calling",
-            "FAILED": END
-        }
+        route_after_preprocess,
     )
     
-    workflow.add_edge("variant_calling", "qc_filter")
-    workflow.add_edge("qc_filter", "tcga_mapper")
+    # Both parallel paths converge at merge_parallel
+    workflow.add_edge("variant_calling", "merge_parallel")
+    workflow.add_edge("qc_filter", "merge_parallel")
+    
+    # Continue with linear flow after merge
+    workflow.add_edge("merge_parallel", "tcga_mapper")
     workflow.add_edge("tcga_mapper", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     workflow.add_edge("formatter", "report_writer")
     workflow.add_edge("report_writer", END)
     
     # Compile the graph
-    # Note: Removing checkpointer for now as it requires additional configuration
-    # To enable checkpointing, you'd need to provide thread_id in the config
     compiled = workflow.compile()
     
     return compiled

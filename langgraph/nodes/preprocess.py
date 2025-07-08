@@ -145,13 +145,15 @@ def parse_samtools_flagstat(flagstat_output: str) -> Dict[str, Any]:
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Preprocess genomic files for variant calling.
-    
-    - If FASTQ: align to reference genome using BWA
-    - If BAM: validate alignment and pass through
+    Preprocess the input file.
+    - For FASTQ: Run BWA alignment to create BAM
+    - For BAM: Validate and pass through
+    - For VCF: Load variants directly
     
     Updates state with:
-    - aligned_bam_path: path to aligned BAM file
+    - aligned_bam_path: Path to aligned BAM file (for FASTQ/BAM inputs)
+    - raw_variants: Loaded variants (for VCF inputs)
+    - alignment_stats: Alignment statistics
     """
     logger.info("Starting preprocessing node")
     state["current_node"] = "preprocess"
@@ -160,6 +162,43 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         file_type = state["file_type"]
         file_path = state["file_path"]
         
+        # Check if input is VCF - load variants directly
+        if file_type == "vcf":
+            logger.info("Input is VCF, loading variants directly")
+            import vcf as pyvcf
+            
+            variants = []
+            with open(file_path, 'r') as vcf_file:
+                vcf_reader = pyvcf.Reader(vcf_file)
+                for record in vcf_reader:
+                    variant_data = {
+                        "chrom": record.CHROM,
+                        "pos": record.POS,
+                        "ref": record.REF,
+                        "alt": str(record.ALT[0]) if record.ALT else ".",
+                        "qual": record.QUAL or 0,
+                        "filter": record.FILTER or [],
+                        "info": dict(record.INFO) if record.INFO else {},
+                        "variant_id": f"{record.CHROM}:{record.POS}:{record.REF}>{record.ALT[0] if record.ALT else '.'}",
+                    }
+                    
+                    # Add sample-specific data if available
+                    if record.samples:
+                        sample = record.samples[0]
+                        if hasattr(sample.data, 'DP'):
+                            variant_data["depth"] = sample.data.DP
+                        if hasattr(sample.data, 'AF'):
+                            variant_data["allele_freq"] = sample.data.AF
+                    
+                    variants.append(variant_data)
+            
+            state["raw_variants"] = variants
+            state["variant_count"] = len(variants)
+            logger.info(f"Loaded {len(variants)} variants from VCF")
+            state["completed_nodes"].append("preprocess")
+            return state
+        
+        # For FASTQ files, run alignment
         if file_type == "fastq":
             logger.info("Aligning FASTQ file with BWA")
             

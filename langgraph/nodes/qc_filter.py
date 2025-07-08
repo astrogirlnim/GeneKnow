@@ -14,6 +14,40 @@ DEPTH_THRESHOLD = 10
 ALLELE_FREQ_THRESHOLD = 0.01
 
 
+def apply_qc_filters(variants: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Apply QC filters to a list of variants.
+    
+    Args:
+        variants: List of variant dictionaries
+        
+    Returns:
+        List of variants passing QC filters
+    """
+    filtered_variants = []
+    
+    for variant in variants:
+        # Apply QC filters
+        passed_qc = True
+        
+        # Quality score filter
+        if variant.get("quality", 0) < QUAL_THRESHOLD:
+            passed_qc = False
+        
+        # Depth filter
+        if variant.get("depth", 0) < DEPTH_THRESHOLD:
+            passed_qc = False
+        
+        # Allele frequency filter
+        if variant.get("allele_freq", 0) < ALLELE_FREQ_THRESHOLD:
+            passed_qc = False
+        
+        if passed_qc:
+            filtered_variants.append(variant)
+    
+    return filtered_variants
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Filter variants based on quality control metrics.
@@ -31,33 +65,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     
     try:
         raw_variants = state["raw_variants"]
-        filtered_variants = []
         
-        for variant in raw_variants:
-            # Apply QC filters
-            passed_qc = True
-            qc_failures = []
-            
-            # Quality score filter
-            if variant.get("quality", 0) < QUAL_THRESHOLD:
-                passed_qc = False
-                qc_failures.append(f"Low quality: {variant.get('quality', 0)}")
-            
-            # Depth filter
-            if variant.get("depth", 0) < DEPTH_THRESHOLD:
-                passed_qc = False
-                qc_failures.append(f"Low depth: {variant.get('depth', 0)}")
-            
-            # Allele frequency filter
-            if variant.get("allele_freq", 0) < ALLELE_FREQ_THRESHOLD:
-                passed_qc = False
-                qc_failures.append(f"Low allele freq: {variant.get('allele_freq', 0)}")
-            
-            if passed_qc:
-                filtered_variants.append(variant)
-            else:
-                # Log filtered variants for debugging
-                logger.debug(f"Variant filtered: {variant['variant_id']} - {qc_failures}")
+        # Use the shared apply_qc_filters function
+        filtered_variants = apply_qc_filters(raw_variants)
         
         # Update state
         state["filtered_variants"] = filtered_variants

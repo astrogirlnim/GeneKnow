@@ -219,13 +219,28 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if not os.access(file_path, os.R_OK):
             raise PermissionError(f"File is not readable: {file_path}")
         
-        # Determine file type and validate
-        if file_path.endswith(('.fastq', '.fastq.gz', '.fq', '.fq.gz')):
+        # Determine file type from extension
+        file_lower = file_path.lower()
+        if file_lower.endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz')):
             file_type = 'fastq'
-            metadata = validate_fastq(file_path)
-        elif file_path.endswith(('.bam', '.sam')):
+        elif file_lower.endswith(('.bam', '.sam')):
             file_type = 'bam'
+        elif file_lower.endswith(('.vcf', '.vcf.gz')):
+            file_type = 'vcf'
+        else:
+            raise ValueError(f"Unsupported file type: {file_path}")
+        
+        # Validate based on file type
+        if file_type == 'fastq':
+            metadata = validate_fastq(file_path)
+        elif file_type == 'bam':
             metadata = validate_bam(file_path)
+        elif file_type == 'vcf':
+            # Basic VCF metadata
+            metadata = {
+                "format": "VCF",
+                "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+            }
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
