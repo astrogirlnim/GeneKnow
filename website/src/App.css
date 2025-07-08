@@ -1,0 +1,22 @@
+/* ==========================================================================
+   GenePredict - App.css
+   ========================================================================== */
+
+/* 
+   NOTE: The main CSS framework for GenePredict has been moved to index.css
+   This file can be used for component-specific styles if needed in the future.
+   
+   The comprehensive CSS framework includes:
+   - CSS variables and design tokens
+   - Component styles (buttons, forms, cards, etc.)
+   - Utility classes
+   - Responsive design
+   - Dark mode support
+   - Accessibility features
+   - Custom animations
+   
+   All styles are now centralized in index.css and automatically loaded
+   by main.tsx on application startup.
+*/
+
+/* Component-specific styles can be added here if needed */
