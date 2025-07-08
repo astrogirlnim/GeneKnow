@@ -5,7 +5,13 @@ on:
     branches: [ main ]
     paths:
       - 'desktop/**'
+      - 'langgraph/**'
       - '.github/workflows/release.yml'
+      - 'package.json'
+      - 'README.md'
+      - '*.py'
+      - 'requirements.txt'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       version_type:

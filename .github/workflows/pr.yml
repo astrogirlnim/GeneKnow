@@ -5,9 +5,13 @@ on:
     branches: [ main, develop ]
     paths:
       - 'desktop/**'
+      - 'langgraph/**'
       - '.github/workflows/**'
       - 'package.json'
       - 'README.md'
+      - '*.py'
+      - 'requirements.txt'
+      - 'docs/**'
 
 env:
   NODE_VERSION: '20'
