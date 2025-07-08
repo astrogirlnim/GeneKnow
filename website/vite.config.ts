@@ -6,5 +6,5 @@ export default defineConfig({
   plugins: [react()],
   // Use an empty string for the base to ensure relative paths.
   // This allows the site to be viewed correctly from the file system.
-  base: '',
+  base: '/GeneKnow/',
 });
