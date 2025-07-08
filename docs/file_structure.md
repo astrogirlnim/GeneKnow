@@ -14,6 +14,11 @@ LiteratureGapper/
 │   │   ├── src/               # Rust source files
 │   │   ├── Cargo.toml         # Rust dependencies
 │   │   └── tauri.conf.json    # Tauri configuration
+│   ├── python_ml/             # Python ML scripts for genomic processing
+│   │   ├── fastq_to_vcf_pipeline.py     # FASTQ to VCF conversion pipeline
+│   │   ├── extract_by_region.py         # Genomic region extraction tool
+│   │   ├── config_data_source.py        # Data source configuration
+│   │   └── generate_test_fastq.py       # Test FASTQ file generator
 │   └── ui/                    # React frontend application
 │       ├── src/               # React source files
 │       ├── public/            # Static assets
@@ -51,8 +56,13 @@ LiteratureGapper/
 
 ### `/desktop/` - Desktop Application
 - **Purpose**: Cross-platform desktop application built with Tauri
-- **Contents**: React frontend (UI) and Rust backend (src-tauri)
-- **Status**: Phase 1 Complete (Foundation)
+- **Contents**: React frontend (UI), Rust backend (src-tauri), and Python ML scripts (python_ml)
+- **Status**: Phase 1 Complete (Foundation), Phase 2 In Progress (Python Integration)
+
+### `/desktop/python_ml/` - Python ML Scripts
+- **Purpose**: Python scripts for genomic data processing and machine learning
+- **Contents**: FASTQ/VCF processing, region extraction, test data generation
+- **Status**: Phase 2 Development (Rust ⇄ Python integration complete)
 
 ### `/docs/` - Active Documentation
 - **Purpose**: Current project documentation and guides

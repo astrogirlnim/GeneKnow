@@ -4,6 +4,9 @@ Configuration for data sources - easily switch between local, external SSD, and 
 """
 
 import os
+import json
+import argparse
+import sys
 
 # Data source selection: 'local', 'external', or 'remote'
 DATA_SOURCE = os.environ.get('GENOMIC_DATA_SOURCE', 'remote')
@@ -97,12 +100,76 @@ def get_data_info():
         return "Using remote 1000 Genomes data (no local storage needed)"
 
 # Usage example:
+def main():
+    parser = argparse.ArgumentParser(description='Get genomic data source configuration')
+    parser.add_argument('--list-vcf-files', action='store_true', help='List available VCF files')
+    parser.add_argument('--get-data-info', action='store_true', help='Get data source information')
+    parser.add_argument('--json', action='store_true', help='Output results in JSON format')
+    
+    args = parser.parse_args()
+    
+    try:
+        if args.list_vcf_files:
+            vcf_files = get_vcf_files()
+            if args.json:
+                print(json.dumps(vcf_files))
+            else:
+                print(f"🔧 Current data source: {DATA_SOURCE}")
+                print(f"📍 {get_data_info()}")
+                print(f"\n📊 Available VCF files:")
+                for chrom, path in vcf_files.items():
+                    print(f"   chr{chrom}: {path}")
+        
+        elif args.get_data_info:
+            info = {
+                "data_source": DATA_SOURCE,
+                "description": get_data_info(),
+                "available_chromosomes": list(get_vcf_files().keys()),
+                "chromosome_format": DATASET_FORMATS.get(DATA_SOURCE, 'auto_detect')
+            }
+            if args.json:
+                print(json.dumps(info))
+            else:
+                print(f"🔧 Current data source: {info['data_source']}")
+                print(f"📍 {info['description']}")
+                print(f"📊 Available chromosomes: {', '.join(info['available_chromosomes'])}")
+                print(f"🧬 Chromosome format: {info['chromosome_format']}")
+        
+        else:
+            # Default behavior - show overview
+            if args.json:
+                result = {
+                    "data_source": DATA_SOURCE,
+                    "description": get_data_info(),
+                    "available_chromosomes": list(get_vcf_files().keys()),
+                    "vcf_files": get_vcf_files(),
+                    "chromosome_format": DATASET_FORMATS.get(DATA_SOURCE, 'auto_detect')
+                }
+                print(json.dumps(result))
+            else:
+                print(f"🔧 Current data source: {DATA_SOURCE}")
+                print(f"📍 {get_data_info()}")
+                print(f"\n📊 Available chromosomes: {', '.join(get_vcf_files().keys())}")
+                print(f"\n💡 To change source, set environment variable:")
+                print(f"   export GENOMIC_DATA_SOURCE=local    # Use test data")
+                print(f"   export GENOMIC_DATA_SOURCE=external # Use SSD data") 
+                print(f"   export GENOMIC_DATA_SOURCE=remote   # Use 1000 Genomes data (default)")
+                print(f"   export GENOMIC_DATA_SOURCE=gnomad   # Use gnomAD data (HUGE files!)")
+    
+    except Exception as e:
+        error_msg = f"Configuration error: {e}"
+        if args.json:
+            result = {
+                "success": False,
+                "error": error_msg,
+                "data_source": None,
+                "available_chromosomes": [],
+                "vcf_files": {}
+            }
+            print(json.dumps(result))
+        else:
+            print(f"❌ {error_msg}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    print(f"🔧 Current data source: {DATA_SOURCE}")
-    print(f"📍 {get_data_info()}")
-    print(f"\n📊 Available chromosomes: {', '.join(get_vcf_files().keys())}")
-    print(f"\n💡 To change source, set environment variable:")
-    print(f"   export GENOMIC_DATA_SOURCE=local    # Use test data")
-    print(f"   export GENOMIC_DATA_SOURCE=external # Use SSD data") 
-    print(f"   export GENOMIC_DATA_SOURCE=remote   # Use 1000 Genomes data (default)")
-    print(f"   export GENOMIC_DATA_SOURCE=gnomad   # Use gnomAD data (HUGE files!)") 
+    main() 
