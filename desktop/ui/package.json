@@ -9,8 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri-dev": "TAURI_DIR=../src-tauri tauri dev",
-    "tauri-build": "TAURI_DIR=../src-tauri tauri build"
+    "tauri-dev": "concurrently \"pnpm dev\" \"cd ../src-tauri && ../ui/node_modules/.bin/tauri dev --no-dev-server\"",
+    "tauri-build": "pnpm build && cd ../src-tauri && ../ui/node_modules/.bin/tauri build"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -26,6 +26,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
     "esbuild": "^0.25.6",
     "eslint": "^9.29.0",
     "eslint-plugin-react-hooks": "^5.2.0",

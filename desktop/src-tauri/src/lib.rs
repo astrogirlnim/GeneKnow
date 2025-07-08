@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 
 // Import the utils module
-mod utils;
+pub mod utils;
 use utils::execute_python;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -306,3 +306,6 @@ pub fn run() {
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod test_integration;
