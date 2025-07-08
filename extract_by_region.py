@@ -8,7 +8,7 @@ from multiprocessing import Pool
 os.environ['HTS_CACHE'] = os.path.join(os.getcwd(), 'remote_index_cache')
 
 # Import configuration
-from config_data_source import get_vcf_files, get_data_info
+from config_data_source import get_vcf_files, get_data_info, DATASET_FORMATS, DATA_SOURCE
 
 # Performance Configuration
 CONFIG = {
@@ -26,6 +26,19 @@ VCF_FILES = get_vcf_files()
 
 BED_PATH = "regions.bed"
 OUTPUT_DIR = "output_chunks"
+
+def normalize_chromosome(chrom, target_format):
+    """Convert between chr1 and 1 formats as needed."""
+    if target_format == 'with_chr':
+        return f"chr{chrom}" if not chrom.startswith('chr') else chrom
+    elif target_format == 'without_chr':
+        return chrom.replace('chr', '')
+    else:  # auto_detect or unknown
+        return chrom
+
+def get_chromosome_format():
+    """Get the expected chromosome format for current data source."""
+    return DATASET_FORMATS.get(DATA_SOURCE, 'auto_detect')
 
 def extract_region_precise(line):
     """Extract genomic region with retries and error resilience"""
@@ -49,14 +62,21 @@ def _extract_region_attempt(chrom, start, end, gene, attempt=0):
     start_time = time.time()
     initial_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024  # MB
     
+    # Normalize chromosome for VCF file lookup (remove 'chr' prefix)
+    chrom_key = chrom.replace('chr', '')
+    
     # Get the right VCF file for this chromosome
-    if chrom not in VCF_FILES:
+    if chrom_key not in VCF_FILES:
         return f"❌ No VCF file for chromosome {chrom}"
     
-    vcf_path = VCF_FILES[chrom]
+    vcf_path = VCF_FILES[chrom_key]
     temp_file = os.path.join(OUTPUT_DIR, f"{gene}_temp.vcf.gz")
     output_file = os.path.join(OUTPUT_DIR, f"{gene}.vcf.gz")
-    region = f"{chrom}:{start}-{end}"
+    
+    # Normalize chromosome name for the query based on dataset format
+    target_format = get_chromosome_format()
+    chrom_for_query = normalize_chromosome(chrom, target_format)
+    region = f"{chrom_for_query}:{start}-{end}"
     
     try:
         # Step 1: Extract region (might include boundary variants)
@@ -109,7 +129,7 @@ def _extract_region_attempt(chrom, start, end, gene, attempt=0):
         # Get file size
         file_size = os.path.getsize(output_file) / 1024  # KB
         
-        return (f"✅ {gene} (chr{chrom}): {variant_count} variants, {file_size:.1f}KB | "
+        return (f"✅ {gene} ({chrom}): {variant_count} variants, {file_size:.1f}KB | "
                 f"Time: {total_time:.2f}s (extract: {extract_time:.2f}s, filter: {filter_time:.2f}s, compress: {compress_time:.2f}s) | "
                 f"Memory: +{memory_used:.1f}MB")
         
@@ -150,7 +170,9 @@ def main():
             continue
             
         chrom, start, end, gene = parts
-        if chrom not in VCF_FILES:
+        # Normalize chromosome for VCF file lookup
+        chrom_key = chrom.replace('chr', '')
+        if chrom_key not in VCF_FILES:
             print(f"⚠️  WARNING: No VCF file available for chromosome {chrom} (gene: {gene})")
             continue
             
