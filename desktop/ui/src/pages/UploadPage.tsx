@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { useGeneKnowTauri } from '../api/geneknowTauri';
+import type { JobProgress } from '../api/geneknowPipeline';
+import { invoke } from '@tauri-apps/api/core';
 
 // Icon components
 const DocumentIcon = () => (
@@ -53,11 +56,40 @@ const MockPatientCard: React.FC<MockPatientCardProps> = ({ emoji, name, conditio
 const UploadPage: React.FC = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
+  const [filePath, setFilePath] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState<JobProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { processAndWait, ensureApiRunning } = useGeneKnowTauri();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      handleFileSelect(e.target.files[0]);
+    }
+  };
+
+  const handleFileSelect = async (selectedFile: File) => {
+    try {
+      setFile(selectedFile);
+      setError(null);
+      
+      // Read the file content
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const fileContent = new Uint8Array(arrayBuffer);
+      
+      // Save the file temporarily on the backend
+      const tempPath = await invoke<string>('save_temp_file', {
+        fileName: selectedFile.name,
+        fileContent: Array.from(fileContent)
+      });
+      
+      setFilePath(tempPath);
+      console.log('File saved temporarily at:', tempPath);
+    } catch (err) {
+      console.error('Error handling file:', err);
+      setError('Failed to handle file');
     }
   };
 
@@ -70,7 +102,7 @@ const UploadPage: React.FC = () => {
   const handleDrop = (e: React.DragEvent) => {
     handleDragEvents(e, false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
+      handleFileSelect(e.dataTransfer.files[0]);
     }
   };
 
@@ -78,17 +110,121 @@ const UploadPage: React.FC = () => {
     navigate('/');
   };
 
-  const handleStartAnalysis = () => {
-    // TODO: Implement analysis logic
-    console.log('Starting analysis with file:', file?.name);
-    // For now, just show an alert
-    alert('Analysis started! This will be implemented to process the file.');
+  const handleStartAnalysis = async () => {
+    if (!file && !filePath) {
+      setError('Please select a file first');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    setProgress(null);
+
+    try {
+      // Ensure API server is running
+      await ensureApiRunning();
+
+      // For desktop app, we need a file path
+      if (!filePath) {
+        setError('Please use the file browser to select a file');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Process the file with progress tracking
+      console.log('Starting file processing for:', filePath);
+      
+      const result = await processAndWait(
+        filePath,
+        {
+          language: 'en',
+          include_technical: true,
+          patient_data: {
+            age: 45,
+            sex: 'F',
+            family_history: false
+          }
+        },
+        (jobProgress) => {
+          setProgress(jobProgress);
+          console.log('Processing progress:', jobProgress);
+        }
+      );
+
+      console.log('Processing complete:', result);
+      console.log('Result type:', typeof result);
+      console.log('Result keys:', result ? Object.keys(result) : 'no result');
+      
+      if (!result) {
+        throw new Error('No results returned from processing');
+      }
+      
+      // Navigate to dashboard with results
+      navigate('/dashboard', { 
+        state: { 
+          results: result,
+          fileName: file?.name 
+        } 
+      });
+    } catch (err) {
+      console.error('Processing error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to process file');
+      setIsProcessing(false);
+    }
   };
 
-  const handleMockDataSelect = (riskLevel: string) => {
-    // Navigate to dashboard with the risk level as a URL parameter
-    console.log('Selected mock patient risk level:', riskLevel);
-    navigate(`/dashboard?risk=${riskLevel}`);
+  const handleMockDataSelect = async (riskLevel: string) => {
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Ensure API server is running
+      await ensureApiRunning();
+
+      // Use a test MAF file for mock data
+      const testFilePath = await invoke<string>('get_test_file_path', { 
+        riskLevel 
+      }).catch(() => null);
+
+      if (!testFilePath) {
+        // If no test file available, navigate with mock data
+        navigate('/dashboard', { 
+          state: { 
+            mockRiskLevel: riskLevel 
+          } 
+        });
+        return;
+      }
+
+      // Process the test file
+      const result = await processAndWait(
+        testFilePath,
+        {
+          language: 'en',
+          include_technical: true
+        },
+        (jobProgress) => {
+          setProgress(jobProgress);
+        }
+      );
+
+      navigate('/dashboard', { 
+        state: { 
+          results: result,
+          fileName: `Mock Patient - ${riskLevel} risk`,
+          mockRiskLevel: riskLevel
+        } 
+      });
+    } catch (err) {
+      console.error('Error processing mock data:', err);
+      navigate('/dashboard', { 
+        state: { 
+          mockRiskLevel: riskLevel 
+        } 
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -124,6 +260,56 @@ const UploadPage: React.FC = () => {
               Select your file to begin the analysis. Your data remains on your computer at all times.
             </p>
 
+            {/* Error display */}
+            {error && (
+              <div style={{
+                padding: '1rem',
+                marginBottom: '1rem',
+                backgroundColor: '#FEE2E2',
+                border: '1px solid #FCA5A5',
+                borderRadius: '0.5rem',
+                color: '#B91C1C',
+                fontSize: '0.875rem'
+              }}>
+                {error}
+              </div>
+            )}
+
+            {/* Processing status */}
+            {isProcessing && progress && (
+              <div style={{
+                padding: '1.5rem',
+                marginBottom: '1.5rem',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #93C5FD',
+                borderRadius: '0.75rem',
+                maxWidth: '600px',
+                margin: '0 auto 1.5rem'
+              }}>
+                <h3 style={{ fontWeight: '600', color: '#1E40AF', marginBottom: '0.5rem' }}>
+                  Processing Your File
+                </h3>
+                <div style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#DBEAFE',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  marginBottom: '0.5rem'
+                }}>
+                  <div style={{
+                    width: `${progress.progress}%`,
+                    height: '100%',
+                    backgroundColor: '#2563EB',
+                    transition: 'width 300ms ease'
+                  }} />
+                </div>
+                <p style={{ fontSize: '0.875rem', color: '#3730A3' }}>
+                  {progress.current_step || 'Processing...'} ({progress.progress}%)
+                </p>
+              </div>
+            )}
+
             <div
               style={{
                 padding: '2rem 3rem',
@@ -131,35 +317,39 @@ const UploadPage: React.FC = () => {
                 borderRadius: '0.75rem',
                 backgroundColor: isDragging ? '#EFF6FF' : '#FFFFFF',
                 transition: 'all 200ms ease',
-                cursor: 'pointer',
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
                 marginBottom: '1.5rem',
                 maxWidth: '600px',
                 margin: '0 auto 1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center'
+                alignItems: 'center',
+                opacity: isProcessing ? 0.6 : 1
               }}
-              onDragEnter={(e) => handleDragEvents(e, true)}
-              onDragLeave={(e) => handleDragEvents(e, false)}
-              onDragOver={(e) => handleDragEvents(e, true)}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('file-upload')?.click()}
+              onDragEnter={(e) => !isProcessing && handleDragEvents(e, true)}
+              onDragLeave={(e) => !isProcessing && handleDragEvents(e, false)}
+              onDragOver={(e) => !isProcessing && handleDragEvents(e, true)}
+              onDrop={(e) => !isProcessing && handleDrop(e)}
+              onClick={() => !isProcessing && document.getElementById('file-upload')?.click()}
             >
               <input
                 type="file"
                 id="file-upload"
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
-                accept=".fastq,.vcf,.bam"
+                accept=".fastq,.vcf,.bam,.maf,.gz"
+                disabled={isProcessing}
               />
               <DocumentIcon />
               {file ? (
-                <div style={{ marginTop: '1rem', textAlign: 'left' }}>
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
                   <p style={{ fontWeight: '600', color: '#111827' }}>Selected File:</p>
                   <p style={{ fontSize: '0.875rem', color: '#2563EB' }}>{file.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                    Size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+                  {filePath && (
+                    <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.25rem' }}>
+                      Path: {filePath}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <>
@@ -168,13 +358,13 @@ const UploadPage: React.FC = () => {
                     fontWeight: '600',
                     color: '#2563EB'
                   }}>
-                    Click to browse or drag & drop
+                    Click to browse files
                   </p>
                   <p style={{ 
                     fontSize: '0.875rem',
                     color: '#6B7280'
                   }}>
-                    Supported formats: FASTQ, VCF, BAM
+                    Supported formats: FASTQ, VCF, BAM, MAF
                   </p>
                 </>
               )}
@@ -189,19 +379,23 @@ const UploadPage: React.FC = () => {
             }}>
               <button
                 onClick={handleBackClick}
+                disabled={isProcessing}
                 style={{
                   padding: '0.75rem 1.5rem',
                   color: '#374151',
                   background: '#E5E7EB',
                   border: 'none',
                   borderRadius: '0.5rem',
-                  cursor: 'pointer',
+                  cursor: isProcessing ? 'not-allowed' : 'pointer',
                   transition: 'all 200ms ease',
                   fontSize: '1rem',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  opacity: isProcessing ? 0.6 : 1
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#D1D5DB';
+                  if (!isProcessing) {
+                    e.currentTarget.style.background = '#D1D5DB';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = '#E5E7EB';
@@ -211,87 +405,89 @@ const UploadPage: React.FC = () => {
               </button>
               <button
                 onClick={handleStartAnalysis}
-                disabled={!file}
+                                 disabled={(!file && !filePath) || isProcessing}
                 style={{
                   padding: '0.75rem 1.5rem',
                   fontWeight: 'bold',
                   color: '#FFFFFF',
-                  background: file ? '#2563EB' : '#9CA3AF',
+                  background: file && !isProcessing ? '#2563EB' : '#9CA3AF',
                   border: 'none',
                   borderRadius: '0.5rem',
-                  cursor: file ? 'pointer' : 'not-allowed',
+                  cursor: file && !isProcessing ? 'pointer' : 'not-allowed',
                   transition: 'all 200ms ease',
-                  boxShadow: file ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
+                  boxShadow: file && !isProcessing ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : 'none',
                   fontSize: '1rem'
                 }}
                 onMouseEnter={(e) => {
-                  if (file) {
+                  if (file && !isProcessing) {
                     e.currentTarget.style.background = '#1D4ED8';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (file) {
+                  if (file && !isProcessing) {
                     e.currentTarget.style.background = '#2563EB';
                   }
                 }}
               >
-                Start Analysis
+                {isProcessing ? 'Processing...' : 'Start Analysis'}
               </button>
             </div>
           </div>
 
-          {/* Mock Genome Data Section */}
-          <div style={{
-            padding: '1.5rem 0',
-            borderTop: '1px solid #E5E7EB'
-          }}>
-            <div style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <svg style={{ width: '1.5rem', height: '1.5rem', color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-              </svg>
-              <h3 style={{
-                fontSize: '1.25rem',
-                fontWeight: 'bold',
-                color: '#111827'
-              }}>
-                Or Use Mock Genome Data
-              </h3>
-            </div>
-
+          {/* Mock Genome Data Section - Hidden during processing */}
+          {!isProcessing && (
             <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1.5rem',
-              flexWrap: 'wrap',
-              maxWidth: '900px',
-              margin: '0 auto'
+              padding: '1.5rem 0',
+              borderTop: '1px solid #E5E7EB'
             }}>
-              <MockPatientCard
-                emoji="👩"
-                name="Emma Rodriguez"
-                condition="BRCA1/2 Positive High-risk profile"
-                onClick={() => handleMockDataSelect('high')}
-              />
-              <MockPatientCard
-                emoji="👨"
-                name="David Kim"
-                condition="Lynch Syndrome Colorectal cancer risk"
-                onClick={() => handleMockDataSelect('medium')}
-              />
-              <MockPatientCard
-                emoji="👩"
-                name="Sarah Johnson"
-                condition="TP53 Mutation Li-Fraumeni syndrome"
-                onClick={() => handleMockDataSelect('low')}
-              />
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1.5rem'
+              }}>
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 'bold',
+                  color: '#111827'
+                }}>
+                  Or Use Mock Genome Data
+                </h3>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '1.5rem',
+                flexWrap: 'wrap',
+                maxWidth: '900px',
+                margin: '0 auto'
+              }}>
+                <MockPatientCard
+                  emoji="👩"
+                  name="Emma Rodriguez"
+                  condition="BRCA1/2 Positive High-risk profile"
+                  onClick={() => handleMockDataSelect('high')}
+                />
+                <MockPatientCard
+                  emoji="👨"
+                  name="David Kim"
+                  condition="Lynch Syndrome Colorectal cancer risk"
+                  onClick={() => handleMockDataSelect('medium')}
+                />
+                <MockPatientCard
+                  emoji="👩"
+                  name="Sarah Johnson"
+                  condition="TP53 Mutation Li-Fraumeni syndrome"
+                  onClick={() => handleMockDataSelect('low')}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </Layout>

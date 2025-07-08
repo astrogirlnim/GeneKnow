@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::process::Command;
 use serde::{Deserialize, Serialize};
 use tauri::command;
@@ -385,6 +386,26 @@ async fn get_plugin_registry_stats() -> Result<String, String> {
 }
 
 // ========================================
+// File Processing Helpers
+// ========================================
+
+#[command]
+async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<String, String> {
+    use std::fs;
+    
+    // Create a temporary directory for genomic files
+    let temp_dir = std::env::temp_dir().join("geneknow_temp");
+    fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+    
+    // Save the file
+    let file_path = temp_dir.join(&file_name);
+    fs::write(&file_path, file_content).map_err(|e| e.to_string())?;
+    
+    log::info!("Saved temporary file: {:?}", file_path);
+    Ok(file_path.to_string_lossy().to_string())
+}
+
+// ========================================
 // GeneKnow Pipeline API Server Management
 // ========================================
 
@@ -411,17 +432,55 @@ async fn start_api_server() -> Result<bool, String> {
         return Ok(true);
     }
 
-    // Get the path to the Python script
-    let api_script = std::env::current_dir()
-        .map_err(|e| e.to_string())?
-        .join("../../geneknow_pipeline/enhanced_api_server.py");
+    // Get the path to the Python script relative to the workspace root
+    // The Tauri app is in desktop/src-tauri, so we need to go up 2 levels
+    let mut api_script = std::env::current_exe()
+        .map_err(|e| format!("Failed to get executable path: {}", e))?;
+    
+    // Go up to find the workspace root
+    // In dev: target/debug/app -> ../../.. = workspace root  
+    // In prod: Contents/MacOS/app -> ../../../.. = workspace root (approximate)
+    for _ in 0..5 {
+        api_script.pop();
+        if api_script.join("geneknow_pipeline/enhanced_api_server.py").exists() {
+            break;
+        }
+    }
+    
+    let api_script = api_script.join("geneknow_pipeline/enhanced_api_server.py");
+    
+    // Verify the script exists
+    if !api_script.exists() {
+        return Err(format!("API server script not found at: {:?}", api_script));
+    }
+    
+    log::info!("API server script path: {:?}", api_script);
+
+    // Find the venv Python executable
+    let mut venv_python = api_script.parent()
+        .ok_or("Failed to get parent directory")?
+        .join("venv");
+    
+    #[cfg(target_os = "windows")]
+    let python_exe = venv_python.join("Scripts").join("python.exe");
+    #[cfg(not(target_os = "windows"))]
+    let python_exe = venv_python.join("bin").join("python");
+    
+    // Check if venv exists, otherwise fall back to system Python
+    let python_cmd = if python_exe.exists() {
+        log::info!("Using venv Python at: {:?}", python_exe);
+        python_exe
+    } else {
+        log::warn!("Venv not found, falling back to system Python");
+        #[cfg(target_os = "windows")]
+        let sys_python = PathBuf::from("python");
+        #[cfg(not(target_os = "windows"))]
+        let sys_python = PathBuf::from("python3");
+        sys_python
+    };
 
     // Start the API server
-    #[cfg(target_os = "windows")]
-    let mut cmd = Command::new("python");
-    #[cfg(not(target_os = "windows"))]
-    let mut cmd = Command::new("python3");
-
+    let mut cmd = Command::new(python_cmd);
     let child = cmd
         .arg(api_script)
         .stdout(Stdio::piped())
@@ -630,7 +689,9 @@ pub fn run() {
         get_api_server_status,
         process_genomic_file,
         get_job_status,
-        get_job_results
+        get_job_results,
+        // File processing helpers
+        save_temp_file
     ])
     .on_window_event(|_window, event| {
         // Stop API server when app closes
