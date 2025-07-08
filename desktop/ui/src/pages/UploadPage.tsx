@@ -36,7 +36,7 @@ const UploadPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Mock genome datasets
-  const mockGenomeData = {
+  const mockGenomeData: Record<string, PatientData> = {
     patient1: {
       name: "Emma Rodriguez",
       age: 34,
@@ -45,10 +45,10 @@ const UploadPage: React.FC = () => {
       riskScore: "95/100 (Extremely High)",
       details: "Age: 34 • Female<br>Family History: Breast Cancer (Maternal)<br>Referral: Genetic Counseling<br>Previous Tests: None",
       alerts: [
-        { type: "critical", title: "🚨 Pathogenic BRCA1 Variant", desc: "c.5266dupC - Immediate action required" },
-        { type: "critical", title: "⚠️ Pathogenic BRCA2 Variant", desc: "c.9976A>T - High penetrance" },
-        { type: "info", title: "📊 Family History Match", desc: "Consistent with maternal lineage" },
-        { type: "success", title: "✅ Quality Control", desc: "All metrics passed (>99% coverage)" }
+        { type: "critical" as const, title: "🚨 Pathogenic BRCA1 Variant", desc: "c.5266dupC - Immediate action required" },
+        { type: "critical" as const, title: "⚠️ Pathogenic BRCA2 Variant", desc: "c.9976A>T - High penetrance" },
+        { type: "info" as const, title: "📊 Family History Match", desc: "Consistent with maternal lineage" },
+        { type: "success" as const, title: "✅ Quality Control", desc: "All metrics passed (>99% coverage)" }
       ]
     },
     patient2: {
@@ -59,10 +59,10 @@ const UploadPage: React.FC = () => {
       riskScore: "78/100 (High)",
       details: "Age: 42 • Male<br>Family History: Colorectal Cancer<br>Referral: Oncology<br>Previous Tests: MSI-H positive",
       alerts: [
-        { type: "critical", title: "🚨 MLH1 Pathogenic Variant", desc: "c.1989-1G>A - Splice site mutation" },
-        { type: "warning", title: "⚠️ MSH2 VUS", desc: "c.2634+1G>T - Needs monitoring" },
-        { type: "info", title: "📊 Population Frequency", desc: "Variant rare in Asian populations" },
-        { type: "success", title: "✅ Microsatellite Analysis", desc: "MSI-H confirmed" }
+        { type: "critical" as const, title: "🚨 MLH1 Pathogenic Variant", desc: "c.1989-1G>A - Splice site mutation" },
+        { type: "warning" as const, title: "⚠️ MSH2 VUS", desc: "c.2634+1G>T - Needs monitoring" },
+        { type: "info" as const, title: "📊 Population Frequency", desc: "Variant rare in Asian populations" },
+        { type: "success" as const, title: "✅ Microsatellite Analysis", desc: "MSI-H confirmed" }
       ]
     },
     patient3: {
@@ -73,10 +73,10 @@ const UploadPage: React.FC = () => {
       riskScore: "88/100 (Very High)",
       details: "Age: 28 • Female<br>Family History: Multiple Cancers<br>Referral: Pediatric Oncology<br>Previous Tests: TP53 screening",
       alerts: [
-        { type: "critical", title: "🚨 TP53 Pathogenic Variant", desc: "c.742C>T - Guardian of genome" },
-        { type: "warning", title: "⚠️ Early Onset Risk", desc: "Childhood cancer surveillance needed" },
-        { type: "info", title: "📊 Penetrance Data", desc: "90% lifetime cancer risk" },
-        { type: "success", title: "✅ Functional Analysis", desc: "DNA binding domain affected" }
+        { type: "critical" as const, title: "🚨 TP53 Pathogenic Variant", desc: "c.742C>T - Guardian of genome" },
+        { type: "warning" as const, title: "⚠️ Early Onset Risk", desc: "Childhood cancer surveillance needed" },
+        { type: "info" as const, title: "📊 Penetrance Data", desc: "90% lifetime cancer risk" },
+        { type: "success" as const, title: "✅ Functional Analysis", desc: "DNA binding domain affected" }
               ]
       }
     };
@@ -117,7 +117,7 @@ const UploadPage: React.FC = () => {
     setUploadStatus('complete');
     
     setTimeout(() => {
-      const mockData = {
+      const mockData: PatientData = {
         name: file.name.replace(/\.[^/.]+$/, ""),
         age: Math.floor(Math.random() * 50) + 20,
         sex: Math.random() > 0.5 ? "Female" : "Male",
@@ -125,9 +125,9 @@ const UploadPage: React.FC = () => {
         riskScore: Math.floor(Math.random() * 50) + 30 + "/100",
         details: `File: ${file.name}<br>Size: ${formatFileSize(file.size)}<br>Type: Genomic Analysis<br>Status: Processing Complete`,
         alerts: [
-          { type: "success", title: "✅ File Processed", desc: "Genome data successfully analyzed" },
-          { type: "info", title: "📊 Quality Control", desc: "All metrics within normal range" },
-          { type: "warning", title: "⚠️ Analysis Ready", desc: "Results available for review" }
+          { type: "success" as const, title: "✅ File Processed", desc: "Genome data successfully analyzed" },
+          { type: "info" as const, title: "📊 Quality Control", desc: "All metrics within normal range" },
+          { type: "warning" as const, title: "⚠️ Analysis Ready", desc: "Results available for review" }
         ]
       };
       
