@@ -1,0 +1,95 @@
+{
+    "id": "generate_test_fastq",
+    "name": "Test FASTQ Generator",
+    "description": "Generates synthetic FASTQ files for testing genomic pipelines",
+    "version": "1.0.0",
+    "author": "GenePredict Team",
+    "script_path": "generate_test_fastq.py",
+    "category": "utilities",
+    "config": {
+        "default_read_length": 150,
+        "default_quality_score": 30,
+        "output_format": "fastq",
+        "compression": false
+    },
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "output_dir": {
+                "type": "string",
+                "description": "Directory path for output FASTQ files",
+                "required": true
+            },
+            "num_reads": {
+                "type": "integer",
+                "description": "Number of reads to generate",
+                "minimum": 100,
+                "maximum": 10000000,
+                "default": 10000
+            },
+            "read_length": {
+                "type": "integer",
+                "description": "Length of each read in base pairs",
+                "minimum": 50,
+                "maximum": 300,
+                "default": 150
+            },
+            "paired_end": {
+                "type": "boolean",
+                "description": "Whether to generate paired-end reads",
+                "default": true
+            }
+        },
+        "required": ["output_dir", "num_reads"]
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the generation was successful"
+            },
+            "fastq1_file": {
+                "type": "string",
+                "description": "Path to the first FASTQ file (R1)"
+            },
+            "fastq2_file": {
+                "type": "string",
+                "description": "Path to the second FASTQ file (R2) if paired-end"
+            },
+            "total_reads": {
+                "type": "integer",
+                "description": "Total number of reads generated"
+            },
+            "file_size": {
+                "type": "integer",
+                "description": "Total size of generated files in bytes"
+            },
+            "execution_time": {
+                "type": "number",
+                "description": "Time taken for generation in seconds"
+            },
+            "error": {
+                "type": "string",
+                "description": "Error message if generation failed"
+            }
+        }
+    },
+    "requirements": [
+        "python>=3.8",
+        "random",
+        "os"
+    ],
+    "tags": [
+        "testing",
+        "synthetic-data",
+        "fastq-generation",
+        "utilities"
+    ],
+    "enabled": true,
+    "platform_support": {
+        "windows": true,
+        "macos": true,
+        "linux": true
+    }
+} 

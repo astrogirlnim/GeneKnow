@@ -3,9 +3,15 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
-// Import the utils module
+// Import modules
 pub mod utils;
+pub mod plugin;
+pub mod python_script_plugin;
+pub mod plugin_registry;
+
 use utils::execute_python;
+use plugin::PluginSummary;
+use plugin_registry::PluginRegistryApi;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FastqToVcfOptions {
@@ -283,6 +289,93 @@ async fn generate_test_fastq(output_dir: String, num_reads: u32) -> Result<HashM
     }
 }
 
+// ========================================
+// Plugin Management Commands
+// ========================================
+
+/// List all available plugins
+#[command]
+async fn list_plugins() -> Result<Vec<PluginSummary>, String> {
+    log::info!("Listing available plugins via Tauri command");
+    
+    PluginRegistryApi::list_plugins()
+        .map_err(|e| {
+            log::error!("Failed to list plugins: {}", e);
+            e.to_string()
+        })
+}
+
+/// Execute a plugin with the given arguments
+#[command]
+async fn run_plugin(plugin_id: String, args_json: String) -> Result<String, String> {
+    log::info!("Running plugin '{}' with args: {}", plugin_id, args_json);
+    
+    // Parse JSON arguments
+    let args: serde_json::Value = serde_json::from_str(&args_json)
+        .map_err(|e| format!("Invalid JSON arguments: {}", e))?;
+    
+    // Execute plugin
+    let result = PluginRegistryApi::run_plugin(&plugin_id, args)
+        .map_err(|e| {
+            log::error!("Plugin execution failed for '{}': {}", plugin_id, e);
+            e.to_string()
+        })?;
+    
+    // Return result as JSON string
+    serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize plugin result: {}", e))
+}
+
+/// Check if a plugin exists
+#[command]
+async fn has_plugin(plugin_id: String) -> Result<bool, String> {
+    log::debug!("Checking if plugin '{}' exists", plugin_id);
+    
+    PluginRegistryApi::has_plugin(&plugin_id)
+        .map_err(|e| e.to_string())
+}
+
+/// Get plugin metadata
+#[command]
+async fn get_plugin_metadata(plugin_id: String) -> Result<Option<String>, String> {
+    log::debug!("Getting metadata for plugin '{}'", plugin_id);
+    
+    let metadata = PluginRegistryApi::get_plugin_metadata(&plugin_id)
+        .map_err(|e| e.to_string())?;
+    
+    if let Some(metadata) = metadata {
+        serde_json::to_string(&metadata)
+            .map(Some)
+            .map_err(|e| format!("Failed to serialize metadata: {}", e))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Reload all plugins
+#[command]
+async fn reload_plugins() -> Result<(), String> {
+    log::info!("Reloading all plugins via Tauri command");
+    
+    PluginRegistryApi::reload_plugins()
+        .map_err(|e| {
+            log::error!("Failed to reload plugins: {}", e);
+            e.to_string()
+        })
+}
+
+/// Get plugin registry statistics
+#[command]
+async fn get_plugin_registry_stats() -> Result<String, String> {
+    log::debug!("Getting plugin registry statistics");
+    
+    let stats = PluginRegistryApi::get_stats()
+        .map_err(|e| e.to_string())?;
+    
+    serde_json::to_string(&stats)
+        .map_err(|e| format!("Failed to serialize stats: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -294,15 +387,37 @@ pub fn run() {
             .build(),
         )?;
       }
+      
+      // Initialize plugin registry
+      log::info!("Initializing plugin registry during app setup...");
+      if let Err(e) = PluginRegistryApi::initialize() {
+        log::error!("Failed to initialize plugin registry: {}", e);
+        // Don't fail the app startup, just log the error
+        log::warn!("Continuing without plugin system initialization");
+      } else {
+        log::info!("Plugin registry initialized successfully");
+      }
+      
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+        // Legacy commands (backwards compatibility)
         convert_fastq_to_vcf,
         extract_genomic_regions,
         check_genomic_dependencies,
         get_available_vcf_files,
-        generate_test_fastq
+        generate_test_fastq,
+        // New plugin management commands
+        list_plugins,
+        run_plugin,
+        has_plugin,
+        get_plugin_metadata,
+        reload_plugins,
+        get_plugin_registry_stats
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod test_integration;

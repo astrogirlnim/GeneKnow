@@ -1,0 +1,97 @@
+{
+    "id": "extract_by_region",
+    "name": "Genomic Region Extractor",
+    "description": "Extracts genomic variants from VCF files based on BED file regions",
+    "version": "1.0.0",
+    "author": "GenePredict Team",
+    "script_path": "extract_by_region.py",
+    "category": "data_analysis",
+    "config": {
+        "default_max_processes": 4,
+        "output_format": "vcf",
+        "compression": true,
+        "index_output": true
+    },
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "bed_file": {
+                "type": "string",
+                "description": "Path to BED file containing regions of interest",
+                "required": true
+            },
+            "output_dir": {
+                "type": "string",
+                "description": "Directory path for output files",
+                "required": true
+            },
+            "max_processes": {
+                "type": "integer",
+                "description": "Maximum number of parallel processes to use",
+                "minimum": 1,
+                "maximum": 16,
+                "default": 4
+            }
+        },
+        "required": ["bed_file", "output_dir"]
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "success": {
+                "type": "boolean",
+                "description": "Whether the extraction was successful"
+            },
+            "total_regions": {
+                "type": "integer",
+                "description": "Total number of regions processed"
+            },
+            "successful_extractions": {
+                "type": "integer",
+                "description": "Number of successful extractions"
+            },
+            "total_variants": {
+                "type": "integer",
+                "description": "Total number of variants extracted"
+            },
+            "total_size": {
+                "type": "integer",
+                "description": "Total size of output files in bytes"
+            },
+            "execution_time": {
+                "type": "number",
+                "description": "Time taken for processing in seconds"
+            },
+            "results": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "List of processing results for each region"
+            },
+            "error": {
+                "type": "string",
+                "description": "Error message if processing failed"
+            }
+        }
+    },
+    "requirements": [
+        "python>=3.8",
+        "pysam>=0.16",
+        "pandas>=1.3",
+        "multiprocessing"
+    ],
+    "tags": [
+        "genomics",
+        "variant-extraction",
+        "bed-files",
+        "vcf-processing",
+        "region-analysis"
+    ],
+    "enabled": true,
+    "platform_support": {
+        "windows": true,
+        "macos": true,
+        "linux": true
+    }
+} 
