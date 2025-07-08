@@ -1,0 +1,207 @@
+import React from 'react';
+
+// --- Helper Components for Icons ---
+
+const GeneKnowLogo = () => (
+    <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor" strokeWidth="1.5"/>
+        {/* DNA Helix inspired by the new user-provided image */}
+        <g stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+             <path d="M15.18 8.5C12.08 10.33 11.08 13.67 13.18 16.5"/>
+             <path d="M8.82 7.5C11.92 9.33 12.92 12.67 10.82 15.5"/>
+             <path d="M14.2 10.5H9.8"/>
+             <path d="M15 12.5H9"/>
+             <path d="M13.2 14.5H10.8"/>
+        </g>
+    </svg>
+);
+
+
+const CloudArrowUpIcon = () => (
+    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+    </svg>
+);
+
+const CheckCircleIcon = () => (
+    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+const DocumentTextIcon = () => (
+     <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+    </svg>
+);
+
+const CheckBadgeIcon = () => (
+    <svg className="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" />
+    </svg>
+);
+
+
+// --- Page Section Components ---
+
+const Header = () => (
+    <header className="bg-white/80 backdrop-blur-md fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+                <GeneKnowLogo />
+                <h1 className="text-2xl font-bold text-gray-800">GeneKnow</h1>
+            </div>
+            <nav className="hidden md:flex items-center space-x-8">
+                <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
+                <a href="#privacy" className="text-gray-600 hover:text-blue-600 transition-colors">Privacy First</a>
+                <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">How It Works</a>
+            </nav>
+        </div>
+    </header>
+);
+
+const HeroSection = () => (
+    <section style={{background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)'}}>
+        <div className="container mx-auto px-6 py-20 md:py-32 text-center">
+            <div className="max-w-3xl mx-auto">
+                <span className="text-blue-600 font-semibold bg-blue-100 rounded-full px-4 py-1">Your Personal Genomic Insights</span>
+                <h2 className="mt-4 text-4xl md:text-6xl font-bold tracking-tight text-gray-900">
+                    Understand Your Genomic Health, Privately.
+                </h2>
+                <p className="mt-6 text-lg leading-8 text-gray-600">
+                    Our desktop application analyzes your genomic data file (`.fastq`) directly on your computer to provide a secure cancer risk assessment. No data uploads, no cloud processing, complete privacy.
+                </p>
+                <div className="mt-10">
+                    <a href="#" className="bg-blue-600 text-white font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105">
+                        Test Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+const FeatureCard = ({ icon, title, children }) => (
+    <div className="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+            {icon}
+        </div>
+        <h4 className="mt-5 text-xl font-semibold text-gray-900">{title}</h4>
+        <p className="mt-2 text-gray-600">{children}</p>
+    </div>
+);
+
+const FeaturesSection = () => (
+    <section id="features" className="bg-gray-50 py-20">
+        <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold tracking-tight text-gray-900">A New Standard in Personal Genetic Analysis</h3>
+                <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">We combine powerful technology with an unwavering commitment to your privacy.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 text-center">
+                <FeatureCard icon={<CloudArrowUpIcon />} title="Local Processing">
+                    Your `.fastq` file is analyzed on your machine. Your sensitive genetic data never leaves your computer.
+                </FeatureCard>
+                <FeatureCard icon={<CheckCircleIcon />} title="State-of-the-Art AI">
+                    Leverages advanced models to provide insights on potential risks based on the latest scientific research.
+                </FeatureCard>
+                <FeatureCard icon={<DocumentTextIcon />} title="Comprehensive Reports">
+                    Receive a clear, understandable report generated by Llama 3.1, explaining the findings without jargon.
+                </FeatureCard>
+            </div>
+        </div>
+    </section>
+);
+
+const PrivacySection = () => (
+    <section id="privacy" className="bg-white py-20">
+        <div className="container mx-auto px-6">
+            <div className="lg:flex lg:items-center lg:gap-16">
+                <div className="lg:w-1/2">
+                    <span className="text-blue-600 font-semibold bg-blue-100 rounded-full px-4 py-1">Uncompromising Security</span>
+                    <h3 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">Your Data is Your Own. Period.</h3>
+                    <p className="mt-6 text-lg text-gray-600">In an age of data breaches, we believe your most personal information should remain in your hands. GeneKnow is built on a foundation of privacy-by-design. By processing everything locally, we eliminate the risk of server-side breaches and data misuse.</p>
+                    <ul className="mt-6 space-y-4 text-gray-600">
+                        <li className="flex items-start">
+                            <CheckBadgeIcon />
+                            <span><strong>No Cloud Uploads:</strong> Your genomic file is never sent to us or any third party.</span>
+                        </li>
+                        <li className="flex items-start">
+                            <CheckBadgeIcon />
+                            <span><strong>Secure by Design:</strong> Built with Rust and Tauri for a secure, sandboxed application environment.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div className="mt-10 lg:mt-0 lg:w-1/2">
+                    <img src="https://placehold.co/600x400/EBF4FF/3B82F6?text=Secure+Analysis+Illustration" alt="Abstract security illustration" className="rounded-lg shadow-xl w-full" />
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+const HowItWorksSection = () => (
+    <section id="how-it-works" className="bg-gray-50 py-20">
+        <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold tracking-tight text-gray-900">Get Your Report in 3 Simple Steps</h3>
+            </div>
+            <div className="relative">
+                <div className="hidden md:block absolute top-10 left-0 w-full h-0.5 border-t-2 border-dashed border-gray-300"></div>
+                <div className="relative grid md:grid-cols-3 gap-12">
+                    <div className="text-center">
+                        <div className="relative">
+                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">1</div>
+                        </div>
+                        <h4 className="mt-6 text-xl font-semibold text-gray-900">Select Your File</h4>
+                        <p className="mt-2 text-gray-600">Open the app and select your `.fastq` file from your local disk.</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="relative">
+                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">2</div>
+                        </div>
+                        <h4 className="mt-6 text-xl font-semibold text-gray-900">Run Analysis</h4>
+                        <p className="mt-2 text-gray-600">Click "Test Now". Our app performs the analysis locally using its built-in AI models.</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="relative">
+                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">3</div>
+                        </div>
+                        <h4 className="mt-6 text-xl font-semibold text-gray-900">View Your Report</h4>
+                        <p className="mt-2 text-gray-600">Receive and save your private, easy-to-understand health insights report.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+const Footer = () => (
+    <footer className="bg-gray-800 text-white">
+        <div className="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 GeneKnow. All rights reserved.</p>
+            <p className="text-sm text-gray-400 mt-2">Disclaimer: This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+        </div>
+    </footer>
+);
+
+
+// --- Main App Component ---
+// This would be the root component for your desktop app's webview.
+export default function App() {
+  // In a real React app, you would import a global CSS file (e.g., index.css)
+  // to apply body styles and fonts. For this self-contained example,
+  // we apply the font-family directly to the main div.
+  return (
+    <div style={{ fontFamily: "'Inter', sans-serif" }} className="bg-white text-gray-800">
+        <Header />
+        <main className="pt-20"> {/* Adjusted padding-top for the fixed header */}
+            <HeroSection />
+            <FeaturesSection />
+            <PrivacySection />
+            <HowItWorksSection />
+        </main>
+        <Footer />
+    </div>
+  );
+}
