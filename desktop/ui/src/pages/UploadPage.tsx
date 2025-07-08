@@ -1,16 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
+
+// Type definitions
+interface Alert {
+  type: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  desc: string;
+}
+
+interface PatientData {
+  name: string;
+  age: number;
+  sex: string;
+  condition: string;
+  riskScore: string;
+  details: string;
+  alerts: Alert[];
+}
+
+interface FileInfo {
+  name: string;
+  size: string;
+  type: string;
+}
 
 const UploadPage: React.FC = () => {
-  const navigate = useNavigate();
   const [uploadStatus, setUploadStatus] = useState('ready');
   const [isDashboardEnabled, setIsDashboardEnabled] = useState(false);
-  const [currentPatient, setCurrentPatient] = useState<any>(null);
+  const [currentPatient, setCurrentPatient] = useState<PatientData | null>(null);
   const [activeTab, setActiveTab] = useState('analysis');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showFileInfo, setShowFileInfo] = useState(false);
-  const [fileInfo, setFileInfo] = useState<any>(null);
+  const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,7 +79,7 @@ const UploadPage: React.FC = () => {
         { type: "success", title: "✅ Functional Analysis", desc: "DNA binding domain affected" }
       ]
     }
-  };
+  } as const;
 
   const handleFileSelect = (files: FileList) => {
     if (files.length > 0) {
@@ -125,7 +146,7 @@ const UploadPage: React.FC = () => {
     }, 1500);
   };
 
-  const activateDashboard = (data: any) => {
+  const activateDashboard = (data: PatientData) => {
     setCurrentPatient(data);
     setIsDashboardEnabled(true);
     setUploadStatus('complete');
@@ -183,13 +204,13 @@ const UploadPage: React.FC = () => {
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>🧬</div>
             <h2 style={{ color: '#1e293b', marginBottom: '16px' }}>Genomic Analysis Complete</h2>
-            <p style={{ color: '#64748b', marginBottom: '24px' }}>Analysis for {currentPatient.name} has been processed successfully.</p>
+            <p style={{ color: '#64748b', marginBottom: '24px' }}>Analysis for {currentPatient?.name} has been processed successfully.</p>
             <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', maxWidth: '600px', margin: '0 auto' }}>
               <h3 style={{ color: '#1e293b', marginBottom: '16px' }}>Analysis Summary</h3>
               <div style={{ textAlign: 'left', color: '#64748b' }}>
-                <p><strong>Patient:</strong> {currentPatient.name}</p>
-                <p><strong>Condition:</strong> {currentPatient.condition}</p>
-                <p><strong>Risk Score:</strong> {currentPatient.riskScore}</p>
+                <p><strong>Patient:</strong> {currentPatient?.name}</p>
+                <p><strong>Condition:</strong> {currentPatient?.condition}</p>
+                <p><strong>Risk Score:</strong> {currentPatient?.riskScore}</p>
                 <p><strong>Status:</strong> Analysis Complete</p>
               </div>
               <button 
@@ -443,7 +464,7 @@ const UploadPage: React.FC = () => {
               }}>Clinical Alerts</div>
               
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                {currentPatient ? currentPatient.alerts.map((alert: any, index: number) => (
+                {currentPatient ? currentPatient.alerts.map((alert: Alert, index: number) => (
                   <div 
                     key={index}
                     style={{ 
