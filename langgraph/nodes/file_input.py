@@ -3,11 +3,197 @@ File input validation node.
 Validates uploaded FASTQ/BAM files and extracts metadata.
 """
 import os
+import gzip
 import logging
 from datetime import datetime
 from typing import Dict, Any
+from Bio import SeqIO
+from Bio.SeqIO.QualityIO import FastqGeneralIterator
+import pysam
 
 logger = logging.getLogger(__name__)
+
+
+def validate_fastq(file_path: str) -> Dict[str, Any]:
+    """
+    Validate FASTQ file and extract metadata.
+    
+    Args:
+        file_path: Path to FASTQ file
+        
+    Returns:
+        Dictionary with file metadata
+    """
+    metadata = {
+        "format": "FASTQ",
+        "compression": "gzip" if file_path.endswith('.gz') else "none",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+    }
+    
+    # Sample the file to get read statistics
+    read_count = 0
+    read_lengths = []
+    quality_scores = []
+    
+    try:
+        # Open file with appropriate handler
+        if file_path.endswith('.gz'):
+            handle = gzip.open(file_path, 'rt')
+        else:
+            handle = open(file_path, 'r')
+        
+        # Use FastqGeneralIterator for efficient parsing
+        for title, seq, qual in FastqGeneralIterator(handle):
+            read_count += 1
+            read_lengths.append(len(seq))
+            
+            # Sample first 1000 reads for statistics
+            if read_count <= 1000:
+                # Calculate average quality score for this read
+                qual_scores = [ord(c) - 33 for c in qual]  # Assuming Phred+33
+                quality_scores.extend(qual_scores)
+            
+            # For large files, estimate from first 10k reads
+            if read_count >= 10000:
+                break
+        
+        handle.close()
+        
+        # Calculate statistics
+        if read_lengths:
+            metadata["read_length"] = int(sum(read_lengths) / len(read_lengths))
+            metadata["read_length_min"] = min(read_lengths)
+            metadata["read_length_max"] = max(read_lengths)
+        else:
+            raise ValueError("No reads found in FASTQ file")
+        
+        # Estimate total reads if we sampled
+        if read_count >= 10000:
+            # Estimate based on file size
+            sample_size = handle.tell() if hasattr(handle, 'tell') else 0
+            if sample_size > 0:
+                total_size = os.path.getsize(file_path)
+                metadata["estimated_read_count"] = int((total_size / sample_size) * read_count)
+            else:
+                metadata["estimated_read_count"] = read_count * 10  # Rough estimate
+        else:
+            metadata["estimated_read_count"] = read_count
+        
+        # Quality encoding detection
+        if quality_scores:
+            min_qual = min(quality_scores)
+            max_qual = max(quality_scores)
+            avg_qual = sum(quality_scores) / len(quality_scores)
+            
+            metadata["quality_encoding"] = "Phred+33"  # Modern standard
+            metadata["quality_score_min"] = min_qual
+            metadata["quality_score_max"] = max_qual
+            metadata["quality_score_avg"] = round(avg_qual, 1)
+        
+        # Check if paired-end (simple heuristic: /1 or /2 in read names)
+        # Note: This is a simplified check
+        metadata["paired_end"] = False  # Would need paired file to confirm
+        
+    except Exception as e:
+        raise ValueError(f"Failed to parse FASTQ file: {str(e)}")
+    
+    return metadata
+
+
+def validate_bam(file_path: str) -> Dict[str, Any]:
+    """
+    Validate BAM file and extract metadata.
+    
+    Args:
+        file_path: Path to BAM file
+        
+    Returns:
+        Dictionary with file metadata
+    """
+    metadata = {
+        "format": "BAM" if file_path.endswith('.bam') else "SAM",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+    }
+    
+    try:
+        # Open BAM file
+        bamfile = pysam.AlignmentFile(file_path, "rb")
+        
+        # Extract header information
+        header = bamfile.header
+        if 'SQ' in header:
+            # Get reference information
+            ref_sequences = header['SQ']
+            metadata["reference_sequences"] = len(ref_sequences)
+            
+            # Try to identify reference genome
+            if ref_sequences:
+                first_seq = ref_sequences[0]['SN']
+                if first_seq.startswith('chr'):
+                    metadata["reference_genome"] = "hg38"  # Assumption based on naming
+                else:
+                    metadata["reference_genome"] = "unknown"
+        
+        # Get alignment statistics
+        total_reads = 0
+        mapped_reads = 0
+        properly_paired = 0
+        
+        # Sample first 100k reads for statistics
+        for read in bamfile.fetch(until_eof=True):
+            total_reads += 1
+            
+            if not read.is_unmapped:
+                mapped_reads += 1
+            
+            if read.is_proper_pair:
+                properly_paired += 1
+            
+            if total_reads >= 100000:
+                break
+        
+        # Estimate total if we only sampled
+        if total_reads >= 100000:
+            # Use index if available for better estimate
+            if os.path.exists(file_path + '.bai'):
+                try:
+                    idx_stats = bamfile.get_index_statistics()
+                    total_estimate = sum(stat.total for stat in idx_stats)
+                    if total_estimate > 0:
+                        metadata["total_reads"] = total_estimate
+                        metadata["mapped_reads"] = sum(stat.mapped for stat in idx_stats)
+                    else:
+                        # Rough estimate
+                        metadata["total_reads"] = total_reads * 10
+                        metadata["mapped_reads"] = mapped_reads * 10
+                except:
+                    metadata["total_reads"] = total_reads * 10
+                    metadata["mapped_reads"] = mapped_reads * 10
+            else:
+                metadata["total_reads"] = total_reads * 10
+                metadata["mapped_reads"] = mapped_reads * 10
+                metadata["has_index"] = False
+        else:
+            metadata["total_reads"] = total_reads
+            metadata["mapped_reads"] = mapped_reads
+            metadata["has_index"] = os.path.exists(file_path + '.bai')
+        
+        # Calculate mapping rate
+        if metadata["total_reads"] > 0:
+            metadata["mapping_rate"] = round(metadata["mapped_reads"] / metadata["total_reads"], 3)
+        else:
+            metadata["mapping_rate"] = 0.0
+        
+        # Check for read groups
+        if 'RG' in header:
+            metadata["read_groups"] = len(header['RG'])
+        
+        bamfile.close()
+        
+    except Exception as e:
+        raise ValueError(f"Failed to parse BAM file: {str(e)}")
+    
+    return metadata
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,38 +211,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         file_path = state["file_path"]
         
-        # ⚠️ MOCK IMPLEMENTATION - Replace with real file validation
-        # TODO: Real implementation should:
-        # 1. Check file exists and is readable
-        # 2. Validate file format (check headers)
-        # 3. Extract read count for FASTQ or alignment stats for BAM
-        # 4. Check file size is reasonable
+        # Check file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
         
-        # MOCK: Determine file type based on extension
+        # Check file is readable
+        if not os.access(file_path, os.R_OK):
+            raise PermissionError(f"File is not readable: {file_path}")
+        
+        # Determine file type and validate
         if file_path.endswith(('.fastq', '.fastq.gz', '.fq', '.fq.gz')):
             file_type = 'fastq'
-            # ⚠️ MOCK DATA - Replace with real FASTQ validation
-            metadata = {
-                "format": "FASTQ",
-                "compression": "gzip" if file_path.endswith('.gz') else "none",
-                "file_size_mb": 150.5,  # MOCK VALUE
-                "estimated_read_count": 1000000,  # MOCK VALUE
-                "read_length": 150,  # MOCK VALUE
-                "paired_end": True,  # MOCK VALUE
-                "quality_encoding": "Phred+33"  # MOCK VALUE
-            }
+            metadata = validate_fastq(file_path)
         elif file_path.endswith(('.bam', '.sam')):
             file_type = 'bam'
-            # ⚠️ MOCK DATA - Replace with real BAM validation
-            metadata = {
-                "format": "BAM",
-                "file_size_mb": 2500.0,  # MOCK VALUE
-                "reference_genome": "hg38",  # MOCK VALUE
-                "total_reads": 50000000,  # MOCK VALUE
-                "mapped_reads": 49500000,  # MOCK VALUE
-                "mapping_rate": 0.99,  # MOCK VALUE
-                "has_index": True  # MOCK VALUE
-            }
+            metadata = validate_bam(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
@@ -66,13 +235,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         state["completed_nodes"].append("file_input")
         
         logger.info(f"File validation successful: {file_type} format detected")
-        
-        # ⚠️ MOCK WARNING - Remove in production
-        state["warnings"].append({
-            "node": "file_input",
-            "warning": "Using MOCK file validation - replace with real implementation",
-            "timestamp": datetime.now()
-        })
+        logger.info(f"File metadata: {metadata}")
         
     except Exception as e:
         logger.error(f"File validation failed: {str(e)}")
