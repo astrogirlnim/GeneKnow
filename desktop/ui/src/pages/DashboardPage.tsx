@@ -384,9 +384,8 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleClinicalView = () => {
-    // TODO: Implement clinical view navigation
-    console.log('Clinical view clicked');
-    alert('Clinical view will be implemented next!');
+    // Navigate to clinical view with the risk level parameter
+    navigate(`/clinical?risk=${riskLevel}`);
   };
 
   return (

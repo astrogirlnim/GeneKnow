@@ -5,6 +5,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import HowItWorksPage from './pages/HowItWorksPage'
 import UploadPage from './pages/UploadPage'
 import DashboardPage from './pages/DashboardPage'
+import ClinicalViewPage from './pages/ClinicalViewPage'
 
 // --- Main App Component ---
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/clinical" element={<ClinicalViewPage />} />
       </Routes>
     </Router>
   )

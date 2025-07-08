@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 // Type definitions
 interface Alert {
@@ -17,13 +18,79 @@ interface PatientData {
   alerts: Alert[];
 }
 
-interface DeepDiveProps {
-  currentPatient: PatientData;
-  uploadStatus: string;
-}
+// Mock data sets for different risk levels
+const mockDataSets = {
+  high: {
+    name: 'Emma Rodriguez',
+    age: 38,
+    sex: 'Female',
+    condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
+    riskScore: '82/100 (High)',
+    details: 'Age: 38 • Female<br/>Family History: Breast Cancer<br/>Referral: Oncology<br/>Previous Tests: BRCA1/2 Panel',
+    alerts: [
+      {
+        type: 'critical' as const,
+        title: 'BRCA1 Pathogenic Variant',
+        desc: 'c.5266dupC - Frameshift mutation detected'
+      },
+      {
+        type: 'warning' as const,
+        title: 'High Risk Classification',
+        desc: 'Immediate genetic counseling recommended'
+      }
+    ]
+  },
+  medium: {
+    name: 'David Kim',
+    age: 42,
+    sex: 'Male',
+    condition: 'Lynch Syndrome',
+    riskScore: '45/100 (Medium)',
+    details: 'Age: 42 • Male<br/>Family History: Colorectal Cancer<br/>Referral: Oncology<br/>Previous Tests: MSI-H positive',
+    alerts: [
+      {
+        type: 'warning' as const,
+        title: 'MLH1 Pathogenic Variant',
+        desc: 'c.1989-1G>A - Splice site mutation'
+      },
+      {
+        type: 'info' as const,
+        title: 'Screening Recommendations',
+        desc: 'Enhanced colonoscopy surveillance required'
+      }
+    ]
+  },
+  low: {
+    name: 'Sarah Johnson',
+    age: 29,
+    sex: 'Female',
+    condition: 'Li-Fraumeni Syndrome',
+    riskScore: '15/100 (Low)',
+    details: 'Age: 29 • Female<br/>Family History: Multiple Sarcomas<br/>Referral: Genetics<br/>Previous Tests: TP53 Sequencing',
+    alerts: [
+      {
+        type: 'info' as const,
+        title: 'TP53 Variant of Uncertain Significance',
+        desc: 'c.743G>A - Missense mutation'
+      },
+      {
+        type: 'success' as const,
+        title: 'Low Risk Assessment',
+        desc: 'Routine follow-up recommended'
+      }
+    ]
+  }
+};
 
-const DeepDive: React.FC<DeepDiveProps> = ({ currentPatient, uploadStatus }) => {
+const ClinicalViewPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('analysis');
+  
+  // Get the risk level from URL parameters, default to 'low' if not specified
+  const riskLevel = searchParams.get('risk') || 'low';
+  const currentPatient = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  const uploadStatus = 'complete';
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -158,18 +225,15 @@ const DeepDive: React.FC<DeepDiveProps> = ({ currentPatient, uploadStatus }) => 
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ 
-              background: 'rgba(255, 255, 255, 0.15)',
+              background: 'rgba(16, 185, 129, 0.2)',
               padding: '12px 20px',
               borderRadius: '25px',
               fontSize: '14px',
               backdropFilter: 'blur(15px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              ...(uploadStatus === 'uploading' && { background: 'rgba(245, 158, 11, 0.2)', borderColor: '#f59e0b', color: '#f59e0b' }),
-              ...(uploadStatus === 'complete' && { background: 'rgba(16, 185, 129, 0.2)', borderColor: '#10b981', color: '#10b981' })
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#10b981'
             }}>
-              {uploadStatus === 'ready' && '📁 Ready for genome upload'}
-              {uploadStatus === 'uploading' && '📤 Uploading genome data...'}
-              {uploadStatus === 'complete' && '✅ Upload complete • Processing...'}
+              ✅ Analysis Complete • Clinical View Active
             </div>
           </div>
         </div>
@@ -339,6 +403,21 @@ const DeepDive: React.FC<DeepDiveProps> = ({ currentPatient, uploadStatus }) => 
                 Comprehensive genomic analysis for {currentPatient.name}
               </div>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => navigate(`/dashboard?risk=${riskLevel}`)}
+                  style={{ 
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ← Back to Dashboard
+                </button>
                 {[
                   '📄 Export Report',
                   '📤 Share Findings', 
@@ -381,4 +460,4 @@ const DeepDive: React.FC<DeepDiveProps> = ({ currentPatient, uploadStatus }) => 
   );
 };
 
-export default DeepDive; 
+export default ClinicalViewPage; 
