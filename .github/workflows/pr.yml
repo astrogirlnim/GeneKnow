@@ -11,8 +11,8 @@ on:
 
 env:
   NODE_VERSION: '20'
-  RUST_VERSION: '1.77.2'
-  PNPM_VERSION: '9.15.1'
+  RUST_VERSION: '1.88.0'
+  PNPM_VERSION: '10.12.1'
 
 jobs:
   # 🧪 Code Quality & Linting
@@ -29,7 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
@@ -206,7 +205,7 @@ jobs:
       - name: 🔒 Install cargo-audit
         run: |
           echo "🔒 Installing cargo-audit..."
-          cargo install cargo-audit
+          cargo install cargo-audit --locked
           echo "✅ cargo-audit installed"
 
       - name: 🔍 Node.js security audit
