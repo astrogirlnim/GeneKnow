@@ -1,0 +1,74 @@
+# GitHub Pages configuration for GenePredict Download Website
+
+# Basic site information
+title: "GeneKnow - Decode Disease"
+description: "Download the latest version of GeneKnow, a privacy-first genomic risk assessment platform. Decode Disease with advanced genomic analysis."
+url: "https://astrogirlnim.github.io"
+baseurl: "/GeneKnow"
+
+# GitHub Pages settings
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - LICENSE
+  - node_modules/
+  - .git/
+  - .gitignore
+  - package.json
+  - package-lock.json
+  - Gemfile
+  - Gemfile.lock
+
+# Include files and directories
+include:
+  - assets/
+  - _headers
+  - _redirects
+
+# Markdown settings
+markdown: kramdown
+highlighter: rouge
+
+# GitHub Pages theme (optional)
+# theme: minima
+
+# Custom variables
+author: "GeneKnow Team"
+repository: "astrogirlnim/GeneKnow"
+github_username: "astrogirlnim"
+
+# SEO settings
+lang: "en-US"
+twitter:
+  username: "geneknow"
+  card: "summary_large_image"
+
+# Navigation
+navigation:
+  - title: "Features"
+    url: "#features"
+  - title: "Download"
+    url: "#download"
+  - title: "About"
+    url: "#about"
+  - title: "GitHub"
+    url: "https://github.com/astrogirlnim/GeneKnow"
+
+# Social links
+social:
+  github: "astrogirlnim/GeneKnow"
+  
+# Site verification (optional)
+# google_site_verification: "your-verification-code"
+
+# Analytics (optional)
+# google_analytics: "UA-XXXXXXXX-X"
+
+# Build settings
+safe: true
+lsi: false
+incremental: false 
