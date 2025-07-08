@@ -99,56 +99,6 @@ const FeaturesPage = () => (
         </div>
       </div>
     </section>
-
-    <section style={{ background: '#FFFFFF', padding: '5rem 0' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: '#111827' }}>
-            Advanced Technical Capabilities
-          </h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-              Secure Architecture
-            </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🔒 Built with Rust and Tauri for maximum security
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🛡️ Sandboxed application environment
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🔐 End-to-end encryption of all data processing
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🚫 No network access required during analysis
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-              AI-Powered Analysis
-            </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🧠 Llama 3.1 integration for report generation
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                📊 Advanced pattern recognition algorithms
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                🔬 Latest genomic research integration
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                📈 Continuous model updates and improvements
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
   </Layout>
 )
 
