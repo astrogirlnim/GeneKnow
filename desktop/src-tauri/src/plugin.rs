@@ -205,7 +205,7 @@ impl PluginConfig {
 }
 
 /// Plugin metadata for discovery and management
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PluginMetadata {
     pub manifest: PluginManifest,
     pub config: PluginConfig,

@@ -10,7 +10,7 @@ pub mod python_script_plugin;
 pub mod plugin_registry;
 
 use utils::execute_python;
-use plugin::{PluginSummary, PluginError};
+use plugin::PluginSummary;
 use plugin_registry::PluginRegistryApi;
 
 #[derive(Debug, Serialize, Deserialize)]

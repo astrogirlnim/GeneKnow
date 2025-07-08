@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
-use log::{info, debug, error, warn};
+use log::{info, debug, warn};
 
 /// Global plugin registry instance
 /// 
@@ -348,7 +348,7 @@ impl PluginRegistry {
 }
 
 /// Registry statistics
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct RegistryStats {
     pub total_plugins: usize,
     pub enabled_plugins: usize,
