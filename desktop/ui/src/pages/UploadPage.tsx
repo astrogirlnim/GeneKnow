@@ -89,10 +89,10 @@ const UploadPage: React.FC = () => {
     alert('Analysis started! This will be implemented to process the file.');
   };
 
-  const handleMockDataSelect = (patientType: string) => {
-    // TODO: Implement mock data selection logic
-    console.log('Selected mock patient:', patientType);
-    alert(`Mock analysis started for ${patientType}! This will be implemented to process mock data.`);
+  const handleMockDataSelect = (riskLevel: string) => {
+    // Navigate to dashboard with the risk level as a URL parameter
+    console.log('Selected mock patient risk level:', riskLevel);
+    navigate(`/dashboard?risk=${riskLevel}`);
   };
 
   return (
@@ -280,19 +280,19 @@ const UploadPage: React.FC = () => {
                 emoji="👩"
                 name="Emma Rodriguez"
                 condition="BRCA1/2 Positive High-risk profile"
-                onClick={() => handleMockDataSelect('emma')}
+                onClick={() => handleMockDataSelect('high')}
               />
               <MockPatientCard
                 emoji="👨"
                 name="David Kim"
                 condition="Lynch Syndrome Colorectal cancer risk"
-                onClick={() => handleMockDataSelect('david')}
+                onClick={() => handleMockDataSelect('medium')}
               />
               <MockPatientCard
                 emoji="👩"
                 name="Sarah Johnson"
                 condition="TP53 Mutation Li-Fraumeni syndrome"
-                onClick={() => handleMockDataSelect('sarah')}
+                onClick={() => handleMockDataSelect('low')}
               />
             </div>
           </div>
