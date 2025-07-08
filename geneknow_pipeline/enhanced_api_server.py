@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
-app.json_encoder = NumpyEncoder  # Use custom encoder for numpy types
+# Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -91,22 +91,40 @@ def get_file_type(filename: str) -> str:
 def convert_numpy_types(obj):
     """Convert numpy types and other non-JSON-serializable types to Python native types."""
     if HAS_NUMPY:
-        if isinstance(obj, (np.integer, np.int64)):
+        if isinstance(obj, np.integer):
             return int(obj)
-        elif isinstance(obj, (np.floating, np.float64)):
+        elif isinstance(obj, np.floating):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        elif isinstance(obj, np.str_):
+            return str(obj)
+    
     # Handle datetime objects
     if isinstance(obj, datetime):
         return obj.isoformat()
-    # Handle pandas NaN/None
-    if obj is None or (hasattr(obj, '__str__') and str(obj) == 'nan'):
+    
+    # Handle pandas NaN/None and other special values
+    if obj is None:
         return None
+    if hasattr(obj, '__str__') and str(obj) == 'nan':
+        return None
+    
+    # Handle dictionaries
     if isinstance(obj, dict):
         return {k: convert_numpy_types(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+    
+    # Handle lists and tuples
+    elif isinstance(obj, (list, tuple)):
         return [convert_numpy_types(item) for item in obj]
+    
+    # Handle sets
+    elif isinstance(obj, set):
+        return [convert_numpy_types(item) for item in obj]
+    
+    # Return as-is for other types
     return obj
 
 def create_job(file_path: str, preferences: dict) -> str:
@@ -171,10 +189,13 @@ def process_file_async(job_id: str):
         
         # Process results
         if result.get('pipeline_status') == 'completed':
+            # Convert all numpy types in the result before saving
+            converted_result = convert_numpy_types(result)
+            
             # Save results to file
             result_file = os.path.join(Config.RESULTS_FOLDER, f"{job_id}_result.json")
             with open(result_file, 'w') as f:
-                json.dump(result, f, indent=2, cls=NumpyEncoder)
+                json.dump(converted_result, f, indent=2)
             
             update_job(job_id, {
                 'status': 'completed',
@@ -375,7 +396,9 @@ def job_status(job_id: str):
         # Remove internal data
         job.pop('file_path', None)
         
-        return jsonify(job)
+        # Ensure all numpy types are converted before returning
+        converted_job = convert_numpy_types(job)
+        return jsonify(converted_job)
 
 @app.route('/api/results/<job_id>', methods=['GET'])
 def job_results(job_id: str):
@@ -395,9 +418,13 @@ def job_results(job_id: str):
         if result_file and os.path.exists(result_file):
             with open(result_file, 'r') as f:
                 full_results = json.load(f)
-            return jsonify(full_results)
+            # Ensure all numpy types are converted before returning
+            converted_results = convert_numpy_types(full_results)
+            return jsonify(converted_results)
         else:
-            return jsonify(job['result'])
+            # Fallback to job result, ensure it's converted
+            converted_result = convert_numpy_types(job['result'])
+            return jsonify(converted_result)
 
 @app.route('/api/results/<job_id>/download', methods=['GET'])
 def download_results(job_id: str):

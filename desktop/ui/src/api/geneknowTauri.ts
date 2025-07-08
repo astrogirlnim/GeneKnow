@@ -20,13 +20,26 @@ export class GeneKnowTauriClient {
   // Ensure API server is running
   async ensureApiServerRunning(): Promise<boolean> {
     try {
+      console.log('Checking API server health...');
       const isHealthy = await invoke<boolean>('check_api_health');
+      console.log('API health check result:', isHealthy);
+      
       if (!isHealthy) {
-        return await invoke<boolean>('start_api_server');
+        console.log('API server not healthy, attempting to start...');
+        const startResult = await invoke<boolean>('start_api_server');
+        console.log('API server start result:', startResult);
+        
+        if (!startResult) {
+          throw new Error('Failed to start API server');
+        }
+        
+        return startResult;
       }
       return true;
     } catch (error) {
       console.error('Failed to ensure API server is running:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
       throw new Error('Failed to start GeneKnow API server');
     }
   }
@@ -47,18 +60,32 @@ export class GeneKnowTauriClient {
     preferences?: UserPreferences
   ): Promise<string> {
     try {
+      console.log('Processing genomic file:', filePath);
+      console.log('Preferences:', preferences);
+      
       // Ensure server is running
+      console.log('Ensuring API server is running...');
       await this.ensureApiServerRunning();
+      console.log('API server is running');
       
       // Process the file
+      console.log('Calling Tauri process_genomic_file command...');
       const jobId = await invoke<string>('process_genomic_file', {
         filePath,
         preferences: preferences || {}
       });
       
+      console.log('Tauri command returned:', jobId);
+      console.log('Job ID type:', typeof jobId);
+      
+      if (!jobId || typeof jobId !== 'string' || jobId.trim() === '') {
+        throw new Error('Invalid job ID returned from Tauri command');
+      }
+      
       return jobId;
     } catch (error) {
       console.error('Failed to process genomic file:', error);
+      console.error('Error details:', error);
       throw error;
     }
   }
@@ -183,21 +210,40 @@ export class GeneKnowTauriClient {
       console.log('Starting processFileAndWaitForResults for:', filePath);
       
       // Start processing
+      console.log('Step 1: Starting file processing...');
       const jobId = await this.processGenomicFile(filePath, preferences);
-      console.log('Got job ID:', jobId);
+      console.log('Step 1 Complete - Got job ID:', jobId);
+      
+      if (!jobId) {
+        throw new Error('No job ID returned from file processing');
+      }
       
       // Wait for completion
+      console.log('Step 2: Waiting for job completion...');
       const job = await this.waitForJobCompletion(jobId, onProgress);
-      console.log('Job completed:', job);
+      console.log('Step 2 Complete - Job completed:', job);
+      
+      if (!job) {
+        throw new Error('No job data returned from completion wait');
+      }
       
       // Get and return results
+      console.log('Step 3: Getting job results...');
       const results = await this.getJobResults(jobId);
-      console.log('Got results:', results);
+      console.log('Step 3 Complete - Got results:', results);
       console.log('Results type:', typeof results);
+      console.log('Results structure:', results ? Object.keys(results) : 'no results');
+      
+      if (!results) {
+        throw new Error('No results returned from job');
+      }
       
       return results;
     } catch (error) {
       console.error('Error in processFileAndWaitForResults:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw error;
     }
   }

@@ -181,42 +181,45 @@ const UploadPage: React.FC = () => {
       // Ensure API server is running
       await ensureApiRunning();
 
-      // Use a test MAF file for mock data
-      const testFilePath = await invoke<string>('get_test_file_path', { 
-        riskLevel 
-      }).catch(() => null);
+      // Use a test MAF file from the test_data directory
+      const testFilePath = "/Users/noah/Gauntlet-Projects/LiteratureGapper/test_data/tcga_downloads/e631d7f1-5f9c-482f-8cd5-8f619e542607.wxs.aliquot_ensemble_masked.maf.gz";
 
-      if (!testFilePath) {
-        // If no test file available, navigate with mock data
+      try {
+        // Process the test file
+        const result = await processAndWait(
+          testFilePath,
+          {
+            language: 'en',
+            include_technical: true,
+            patient_data: {
+              age: 45,
+              sex: 'F',
+              family_history: false
+            }
+          },
+          (jobProgress) => {
+            setProgress(jobProgress);
+          }
+        );
+
+        navigate('/dashboard', { 
+          state: { 
+            results: result,
+            fileName: `Mock Patient - ${riskLevel} risk`,
+            mockRiskLevel: riskLevel
+          } 
+        });
+      } catch (processError) {
+        console.error('Error processing test file:', processError);
+        // Fall back to mock data
         navigate('/dashboard', { 
           state: { 
             mockRiskLevel: riskLevel 
           } 
         });
-        return;
       }
-
-      // Process the test file
-      const result = await processAndWait(
-        testFilePath,
-        {
-          language: 'en',
-          include_technical: true
-        },
-        (jobProgress) => {
-          setProgress(jobProgress);
-        }
-      );
-
-      navigate('/dashboard', { 
-        state: { 
-          results: result,
-          fileName: `Mock Patient - ${riskLevel} risk`,
-          mockRiskLevel: riskLevel
-        } 
-      });
     } catch (err) {
-      console.error('Error processing mock data:', err);
+      console.error('Error in mock data selection:', err);
       navigate('/dashboard', { 
         state: { 
           mockRiskLevel: riskLevel 
