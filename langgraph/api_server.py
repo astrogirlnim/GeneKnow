@@ -73,6 +73,7 @@ def analyze_genomic_file():
                 "status": "success",
                 "data": result['structured_json'],
                 "report": result.get('report_markdown', ''),
+                "report_sections": result.get('report_sections', {}),
                 "processing_time": result.get('processing_time_seconds', 0)
             })
         else:
@@ -115,6 +116,7 @@ def analyze_genomic_path():
                 "status": "success",
                 "data": result['structured_json'],
                 "report": result.get('report_markdown', ''),
+                "report_sections": result.get('report_sections', {}),
                 "processing_time": result.get('processing_time_seconds', 0)
             })
         else:

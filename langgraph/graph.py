@@ -106,30 +106,26 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
     # Prepare initial state
     initial_state = {
         "file_path": file_path,
-        "file_type": "unknown",  # Will be determined by file_input node
+        "file_type": None,
         "file_metadata": {},
-        "aligned_bam_path": None,
-        "vcf_path": None,
         "raw_variants": [],
         "filtered_variants": [],
         "variant_count": 0,
         "tcga_matches": {},
         "risk_scores": {},
-        "risk_genes": {},
         "structured_json": {},
-        "report_markdown": None,
-        "report_pdf_path": None,
-        "pipeline_start_time": datetime.now(),
-        "pipeline_end_time": None,
-        "processing_time_seconds": None,
+        "report_markdown": "",
+        "report_sections": {},  # Add this line
+        "pipeline_status": "in_progress",
+        "current_node": None,
+        "completed_nodes": [],
         "errors": [],
         "warnings": [],
-        "pipeline_status": "running",
-        "completed_nodes": [],
-        "current_node": "file_input",
-        "language": user_preferences.get("language", "en") if user_preferences else "en",
-        "include_technical_details": user_preferences.get("include_technical_details", True) if user_preferences else True,
-        "risk_threshold_percentage": user_preferences.get("risk_threshold_percentage", 50.0) if user_preferences else 50.0
+        "preferences": user_preferences,
+        "patient_data": user_preferences.get("patient_data", {}),
+        "include_technical_details": user_preferences.get("include_technical", True),
+        "language": user_preferences.get("language", "en"),
+        "pipeline_start_time": datetime.now()
     }
     
     try:
@@ -144,6 +140,11 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         ).total_seconds()
         
         logger.info(f"Pipeline completed in {final_state['processing_time_seconds']:.2f} seconds")
+        
+        # Debug logging
+        logger.info(f"Final state keys: {list(final_state.keys())}")
+        logger.info(f"Report sections in final state: {final_state.get('report_sections', 'NOT FOUND')}")
+        
         return final_state
         
     except Exception as e:

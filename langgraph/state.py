@@ -33,6 +33,7 @@ class GenomicState(TypedDict):
     # Report generation
     structured_json: Dict[str, Any]  # Formatted data for frontend
     report_markdown: Optional[str]  # LLM-generated report
+    report_sections: Dict[str, Any]  # Structured report sections for frontend
     report_pdf_path: Optional[str]  # Final PDF location
     
     # Pipeline metadata

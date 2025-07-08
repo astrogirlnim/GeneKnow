@@ -66,6 +66,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if state.get("pipeline_start_time"):
             processing_time = (datetime.now() - state["pipeline_start_time"]).total_seconds()
         
+        # Build TCGA summary
+        tcga_summary = {
+            "cancer_types_analyzed": list(state.get("tcga_matches", {}).keys()),
+            "cohort_sizes": state.get("tcga_cohort_sizes", {}),
+            "variants_with_tcga_data": len([v for v in variant_summary if v["tcga_matches"]])
+        }
+        
         structured_json = {
             "report_metadata": {
                 "pipeline_version": "1.0.0",
@@ -89,6 +96,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             },
             "variant_details": variant_summary,
             "quality_control": state["file_metadata"].get("qc_stats", {}),
+            "tcga_summary": tcga_summary,
             "warnings": state["warnings"]
         }
         
