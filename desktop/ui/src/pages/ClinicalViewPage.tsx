@@ -8,15 +8,7 @@ interface Alert {
   desc: string;
 }
 
-interface PatientData {
-  name: string;
-  age: number;
-  sex: string;
-  condition: string;
-  riskScore: string;
-  details: string;
-  alerts: Alert[];
-}
+
 
 // Mock data sets for different risk levels
 const mockDataSets = {
@@ -90,7 +82,6 @@ const ClinicalViewPage: React.FC = () => {
   // Get the risk level from URL parameters, default to 'low' if not specified
   const riskLevel = searchParams.get('risk') || 'low';
   const currentPatient = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
-  const uploadStatus = 'complete';
 
   const renderTabContent = () => {
     switch (activeTab) {

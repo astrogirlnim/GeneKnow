@@ -2,6 +2,18 @@ import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+// Type definitions
+interface MetricData {
+  id: number;
+  title: string;
+  value: string | number;
+  unit: string;
+  tooltipContent: {
+    content: string;
+    link?: string;
+  };
+}
+
 // Icon components
 const InformationCircleIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -490,7 +502,7 @@ const DashboardPage: React.FC = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '1.5rem'
           }}>
-            {currentData.otherMetrics.map((metric: any) => (
+            {currentData.otherMetrics.map((metric: MetricData) => (
               <MetricCard 
                 key={metric.id} 
                 title={metric.title} 
