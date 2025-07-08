@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeneKnow - Clinical Upload Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Medical Header */
+        .medical-header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .brand-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .user-badge {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        /* Clinical Card */
+        .clinical-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .card-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 24px 32px;
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            font-size: 16px;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        .card-body {
+            padding: 32px;
+        }
+
+        /* Upload Zone */
+        .upload-section {
+            margin-bottom: 32px;
+        }
+
+        .section-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 48px 24px;
+            text-align: center;
+            background: #fafbfc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #2563eb;
+            background: #eff6ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 24px;
+            color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover .upload-icon {
+            background: #3b82f6;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .upload-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .upload-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .upload-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* File Format Info */
+        .format-info {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .format-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .format-badge {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        /* Sample Data Section */
+        .samples-section {
+            margin-bottom: 32px;
+        }
+
+        .samples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .sample-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .sample-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .sample-icon {
+            width: 48px;
+            height: 48px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .sample-card:hover .sample-icon {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .sample-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .sample-description {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .sample-metrics {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        /* Security Notice */
+        .security-notice {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .security-icon {
+            width: 20px;
+            height: 20px;
+            background: #16a34a;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .security-content {
+            flex: 1;
+        }
+
+        .security-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 4px;
+        }
+
+        .security-text {
+            font-size: 13px;
+            color: #15803d;
+            line-height: 1.4;
+        }
+
+        /* Progress States */
+        .progress-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-radius: 8px;
+        }
+
+        .progress-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Success State */
+        .success-state {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-state.active {
+            display: block;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 20px;
+        }
+
+        .success-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .success-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .continue-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .continue-button:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        /* Medical Status Indicators */
+        .status-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin: 24px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-icon {
+            width: 32px;
+            height: 32px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .status-icon.active {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 20px auto;
+                padding: 0 16px;
+            }
+            
+            .card-body {
+                padding: 24px 20px;
+            }
+            
+            .format-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .samples-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Medical Header -->
+    <div class="medical-header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-icon">🧬</div>
+                <div class="brand-text">GeneKnow</div>
+            </div>
+            <div class="user-badge">Clinical Portal</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <div class="clinical-card">
+            <!-- Card Header -->
+            <div class="card-header">
+                <div class="header-title">Genomic Data Upload</div>
+                <div class="header-subtitle">Secure, local processing for clinical analysis</div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+                <!-- Upload Section -->
+                <div class="upload-section">
+                    <div class="section-label">Primary Data Input</div>
+                    
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-title">Select Genomic Data File</div>
+                        <div class="upload-subtitle">Drag and drop or click to browse</div>
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            Browse Files
+                        </button>
+                        <input type="file" id="fileInput" style="display: none" accept=".fastq,.bam,.vcf,.fq,.gz" multiple>
+                        
+                        <div class="format-info">
+                            <div class="format-item">
+                                <div class="format-badge">FASTQ</div>
+                                <span>Sequence Data</span>
+                            </div>
+                            <div class="format-item">
+                                <div class="format-badge">BAM</div>
+                                <span>Aligned Reads</span>
+                            </div>
+                            <div class="format-item">
+                                <div class="format-badge">VCF</div>
+                                <span>Variant Calls</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Overlay -->
+                        <div class="progress-overlay" id="progressOverlay">
+                            <div class="spinner"></div>
+                            <div class="progress-text">Validating genomic data...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success State -->
+                <div class="success-state" id="successState">
+                    <div class="success-icon">✓</div>
+                    <div class="success-title">Data Upload Complete</div>
+                    <div class="success-subtitle">Your genomic data has been validated and is ready for analysis</div>
+                    <button class="continue-button" onclick="proceedToAnalysis()">
+                        Begin Clinical Analysis
+                    </button>
+                </div>
+
+                <!-- Sample Data Section -->
+                <div class="samples-section" id="samplesSection">
+                    <div class="section-label">Test Data Sets</div>
+                    
+                    <div class="samples-grid">
+                        <div class="sample-card" onclick="loadSampleData('high-risk')">
+                            <div class="sample-icon">🔴</div>
+                            <div class="sample-title">High-Risk Profile</div>
+                            <div class="sample-description">BRCA1/2 Pathogenic</div>
+                            <div class="sample-metrics">
+                                Risk: 8.2/10<br>
+                                Variants: 4 pathogenic
+                            </div>
+                        </div>
+                        
+                        <div class="sample-card" onclick="loadSampleData('moderate-risk')">
+                            <div class="sample-icon">🟡</div>
+                            <div class="sample-title">Moderate-Risk Profile</div>
+                            <div class="sample-description">Mixed Significance</div>
+                            <div class="sample-metrics">
+                                Risk: 4.7/10<br>
+                                Variants: 3 VUS
+                            </div>
+                        </div>
+                        
+                        <div class="sample-card" onclick="loadSampleData('low-risk')">
+                            <div class="sample-icon">🟢</div>
+                            <div class="sample-title">Low-Risk Profile</div>
+                            <div class="sample-description">Population Standard</div>
+                            <div class="sample-metrics">
+                                Risk: 2.1/10<br>
+                                Variants: 1 benign
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Indicators -->
+                <div class="status-indicators">
+                    <div class="status-item">
+                        <div class="status-icon active">🔒</div>
+                        <div class="status-label">Local Processing</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon active">⚕️</div>
+                        <div class="status-label">HIPAA Compliant</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon active">🔬</div>
+                        <div class="status-label">Clinical Grade</div>
+                    </div>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="security-notice">
+                    <div class="security-icon">🛡️</div>
+                    <div class="security-content">
+                        <div class="security-title">Data Privacy Guaranteed</div>
+                        <div class="security-text">
+                            All genomic data processing occurs locally on your device. No patient information is transmitted or stored externally, ensuring complete HIPAA compliance and data sovereignty.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File upload functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressOverlay = document.getElementById('progressOverlay');
+        const successState = document.getElementById('successState');
+        const samplesSection = document.getElementById('samplesSection');
+
+        // Drag and drop events
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                const validTypes = ['.fastq', '.bam', '.vcf', '.fq', '.gz'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (validTypes.some(type => file.name.toLowerCase().endsWith(type.substring(1)))) {
+                    startUpload(file);
+                } else {
+                    alert('Please select a valid genomic file format (FASTQ, BAM, VCF, or compressed files).');
+                }
+            }
+        }
+
+        function startUpload(file) {
+            // Show progress overlay
+            progressOverlay.classList.add('active');
+            
+            // Simulate file processing
+            setTimeout(() => {
+                progressOverlay.classList.remove('active');
+                samplesSection.style.display = 'none';
+                successState.classList.add('active');
+                
+                // Store file info for later use
+                sessionStorage.setItem('uploadedFile', JSON.stringify({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    uploadTime: new Date().toISOString()
+                }));
+            }, 2500);
+        }
+
+        function loadSampleData(profileType) {
+            // Show progress overlay
+            progressOverlay.classList.add('active');
+            document.querySelector('.progress-text').textContent = 'Loading clinical sample data...';
+            
+            // Simulate loading sample data
+            setTimeout(() => {
+                progressOverlay.classList.remove('active');
+                samplesSection.style.display = 'none';
+                successState.classList.add('active');
+                
+                // Store sample data info
+                const sampleProfiles = {
+                    'high-risk': {
+                        name: 'BRCA_Positive_Clinical.bam',
+                        riskScore: 8.2,
+                        description: 'High-risk breast cancer profile'
+                    },
+                    'moderate-risk': {
+                        name: 'Moderate_Risk_Clinical.vcf',
+                        riskScore: 4.7,
+                        description: 'Moderate-risk genetic profile'
+                    },
+                    'low-risk': {
+                        name: 'Low_Risk_Control.fastq',
+                        riskScore: 2.1,
+                        description: 'Low-risk control sample'
+                    }
+                };
+                
+                sessionStorage.setItem('sampleData', JSON.stringify({
+                    profile: profileType,
+                    ...sampleProfiles[profileType],
+                    loadTime: new Date().toISOString()
+                }));
+                
+                // Update success message for sample data
+                document.querySelector('.success-title').textContent = 'Sample Data Loaded';
+                document.querySelector('.success-subtitle').textContent = `${sampleProfiles[profileType].description} ready for clinical analysis`;
+            }, 1800);
+        }
+
+        function proceedToAnalysis() {
+            // Get data from session storage
+            const uploadedFile = sessionStorage.getItem('uploadedFile');
+            const sampleData = sessionStorage.getItem('sampleData');
+            
+            // Show processing state
+            const button = document.querySelector('.continue-button');
+            button.textContent = 'Initializing Analysis...';
+            button.style.opacity = '0.7';
+            
+            // Simulate processing time then show results
+            setTimeout(() => {
+                let message = "🔬 CLINICAL ANALYSIS COMPLETE\n\n";
+                
+                if (uploadedFile) {
+                    const fileInfo = JSON.parse(uploadedFile);
+                    message += `📄 File: ${fileInfo.name}\n`;
+                    message += `💾 Size: ${(fileInfo.size / (1024 * 1024)).toFixed(1)} MB\n\n`;
+                } else if (sampleData) {
+                    const sample = JSON.parse(sampleData);
+                    message += `📄 Sample: ${sample.name}\n`;
+                    message += `🏥 Profile: ${sample.description}\n\n`;
+                }
+                
+                message += "✅ HIPAA-compliant processing complete\n";
+                message += "🧬 Genomic variants identified and classified\n";
+                message += "📊 Clinical risk assessment generated\n";
+                message += "⚕️ Evidence-based recommendations ready\n\n";
+                message += "Your comprehensive clinical dashboard is ready for review.";
+                
+                alert(message);
+                
+                // Reset button
+                button.textContent = 'Begin Clinical Analysis';
+                button.style.opacity = '1';
+                
+                // In production, this would navigate to the dashboard
+                // window.location.href = 'clinical-dashboard.html';
+                
+            }, 1200);
+        }
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    </script>
+</body>
+</html>
