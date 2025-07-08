@@ -16,7 +16,9 @@ use log::{info, error, debug};
 /// Returns the command output as a Result<std::process::Output, String>
 /// 
 /// # Examples
-/// ```
+/// ```no_run
+/// use app_lib::utils::execute_python;
+/// 
 /// let result = execute_python("fastq_to_vcf_pipeline", &["--help"]);
 /// match result {
 ///     Ok(output) => println!("Success: {}", String::from_utf8_lossy(&output.stdout)),
