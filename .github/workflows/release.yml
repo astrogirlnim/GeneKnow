@@ -56,48 +56,30 @@ jobs:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
 
-      - name: 🔍 Install semver for version calculation
-        run: |
-          echo "🔍 Installing semver tool..."
-          npm install -g semver
-          echo "✅ semver installed"
-
       - name: 🏷️ Calculate new version
         id: version
         run: |
-          echo "🔍 Calculating new version..."
+          echo "🔍 Using current version..."
           
-          # Get current version from package.json
-          CURRENT_VERSION=$(cat desktop/ui/package.json | jq -r '.version')
-          echo "📋 Current version: $CURRENT_VERSION"
+          # Get current version from tauri.conf.json (primary source)
+          CURRENT_VERSION=$(cat desktop/src-tauri/tauri.conf.json | jq -r '.version')
+          echo "📋 Current version from tauri.conf.json: $CURRENT_VERSION"
           
-          # Determine version bump type
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION_TYPE="${{ github.event.inputs.version_type }}"
-            echo "🎯 Manual release: $VERSION_TYPE"
-          else
-            # Analyze commits for conventional commit patterns
-            echo "🔍 Analyzing commit messages for version bump..."
-            COMMITS=$(git log --oneline --no-merges $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || git log --oneline --no-merges)
-            
-            if echo "$COMMITS" | grep -q "BREAKING CHANGE\|!:"; then
-              VERSION_TYPE="major"
-              echo "🚨 Breaking changes detected - major version bump"
-            elif echo "$COMMITS" | grep -q "^feat"; then
-              VERSION_TYPE="minor"
-              echo "✨ New features detected - minor version bump"
-            else
-              VERSION_TYPE="patch"
-              echo "🐛 Patches/fixes detected - patch version bump"
-            fi
+          # Verify consistency with package.json
+          PACKAGE_VERSION=$(cat desktop/ui/package.json | jq -r '.version')
+          echo "📋 Package.json version: $PACKAGE_VERSION"
+          
+          if [ "$CURRENT_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "⚠️  Version mismatch detected!"
+            echo "Using tauri.conf.json version: $CURRENT_VERSION"
           fi
           
-          # Calculate new version
-          NEW_VERSION=$(semver -i $VERSION_TYPE $CURRENT_VERSION)
+          # For now, use current version (can be enhanced later)
+          NEW_VERSION=$CURRENT_VERSION
           NEW_TAG="v$NEW_VERSION"
           
-          echo "🎯 Version bump: $CURRENT_VERSION → $NEW_VERSION ($VERSION_TYPE)"
-          echo "🏷️ New tag: $NEW_TAG"
+          echo "🎯 Version: $NEW_VERSION"
+          echo "🏷️ Tag: $NEW_TAG"
           
           # Generate changelog
           CHANGELOG=$(cat << EOF
@@ -110,7 +92,6 @@ jobs:
           
           ### 🔨 Technical Details
           - **Version**: $NEW_VERSION
-          - **Build Type**: $VERSION_TYPE
           - **Tauri**: 2.6.2
           - **React**: 19.1.0
           - **TypeScript**: 5.8.3
@@ -127,28 +108,31 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: 📝 Update version files (build-only)
+      - name: 🧹 Clean up existing release if exists
         run: |
-          echo "📝 Updating version files to ${{ steps.version.outputs.version }} for build..."
-          
-          # Update package.json
-          jq '.version = "${{ steps.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
-          mv desktop/ui/package.json.tmp desktop/ui/package.json
-          
-          # Update tauri.conf.json
-          jq '.version = "${{ steps.version.outputs.version }}"' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
-          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
-          
-          # Update Cargo.toml
-          sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
-          
-          echo "✅ Version files updated for build (not committed)"
+          echo "🧹 Checking for existing release..."
+          if gh release view ${{ steps.version.outputs.tag }} >/dev/null 2>&1; then
+            echo "⚠️  Release ${{ steps.version.outputs.tag }} already exists. Deleting..."
+            gh release delete ${{ steps.version.outputs.tag }} --yes
+            echo "✅ Existing release deleted"
+          else
+            echo "✅ No existing release found"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📤 Create git tag (local)
         run: |
           echo "📤 Creating local git tag..."
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          
+          # Delete existing tag if it exists
+          if git tag -l | grep -q "^${{ steps.version.outputs.tag }}$"; then
+            echo "🧹 Deleting existing local tag..."
+            git tag -d ${{ steps.version.outputs.tag }}
+          fi
+          
           git tag ${{ steps.version.outputs.tag }}
           echo "✅ Local git tag created: ${{ steps.version.outputs.tag }}"
 
@@ -212,7 +196,7 @@ jobs:
   # 🔨 Build Multi-Platform Release
   build:
     name: 🔨 Build Release
-    needs: [version, validate]
+    needs: [version]
     strategy:
       fail-fast: false
       matrix:
@@ -221,20 +205,14 @@ jobs:
             rust-target: x86_64-unknown-linux-gnu
             name: 'Linux x64'
             emoji: '🐧'
-            ext: '.deb'
-            ext2: '.AppImage'
           - os: windows-latest
             rust-target: x86_64-pc-windows-msvc
             name: 'Windows x64'
             emoji: '🪟'
-            ext: '.msi'
-            ext2: '.exe'
           - os: macos-latest
-            rust-target: universal-apple-darwin
-            name: 'macOS Universal'
+            rust-target: x86_64-apple-darwin
+            name: 'macOS x64'
             emoji: '🍎'
-            ext: '.dmg'
-            ext2: '.app'
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -266,6 +244,24 @@ jobs:
           workspaces: |
             desktop/src-tauri -> target
 
+      - name: 🔍 Cache Tauri CLI
+        uses: actions/cache@v4
+        id: tauri-cli-cache
+        with:
+          path: |
+            ~/.cargo/bin/cargo-tauri
+            ~/.cargo/bin/cargo-tauri.exe
+          key: ${{ runner.os }}-tauri-cli-${{ env.RUST_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-tauri-cli-
+
+      - name: 📦 Install Tauri CLI
+        if: steps.tauri-cli-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "📦 Installing Tauri CLI..."
+          cargo install tauri-cli --locked
+          echo "✅ Tauri CLI installed successfully"
+
       - name: 🔍 Get pnpm store directory
         shell: bash
         run: |
@@ -294,6 +290,13 @@ jobs:
           pnpm install --frozen-lockfile
           echo "✅ Frontend dependencies installed"
 
+      - name: 🔨 Build frontend
+        working-directory: desktop/ui
+        run: |
+          echo "🔨 Building frontend for release..."
+          pnpm build
+          echo "✅ Frontend build completed"
+
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri
         env:
@@ -304,37 +307,32 @@ jobs:
           echo "🎯 Target: ${{ matrix.platform.rust-target }}"
           echo "📦 Version: ${{ needs.version.outputs.version }}"
           
-          if [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
-            echo "🍎 Building universal macOS binary..."
-            cargo tauri build --target universal-apple-darwin
-          else
-            echo "🔨 Building for ${{ matrix.platform.rust-target }}..."
-            cargo tauri build --target ${{ matrix.platform.rust-target }}
-          fi
+          cargo tauri build --target ${{ matrix.platform.rust-target }}
           
           echo "✅ Tauri release build completed for ${{ matrix.platform.name }}"
 
-      - name: 📂 Locate build artifacts
-        id: artifacts
+      - name: 📂 Locate build artifacts (Unix)
+        id: artifacts-unix
+        if: matrix.platform.os != 'windows-latest'
         run: |
           echo "📂 Locating build artifacts..."
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
           
-          if [ "${{ matrix.platform.os }}" == "ubuntu-latest" ]; then
-            DEB_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb -name "*.deb" | head -1)
-            APPIMAGE_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage -name "*.AppImage" | head -1)
-            echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
-            echo "appimage_file=$APPIMAGE_FILE" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.platform.os }}" == "windows-latest" ]; then
-            MSI_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi -name "*.msi" | head -1)
-            EXE_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis -name "*.exe" | head -1)
-            echo "msi_file=$MSI_FILE" >> $GITHUB_OUTPUT
-            echo "exe_file=$EXE_FILE" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
-            DMG_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
-            APP_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
-            echo "dmg_file=$DMG_FILE" >> $GITHUB_OUTPUT
-            echo "app_file=$APP_FILE" >> $GITHUB_OUTPUT
-          fi
+          # Find all bundle files
+          find desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/ -type f -name "*" | sort
+          
+          echo "✅ Build artifacts located"
+
+      - name: 📂 Locate build artifacts (Windows)
+        id: artifacts-windows
+        if: matrix.platform.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          echo "📂 Locating build artifacts..."
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
+          
+          # Find all bundle files using PowerShell
+          Get-ChildItem -Path "desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName }
           
           echo "✅ Build artifacts located"
 
@@ -342,13 +340,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }} Build
-          path: |
-            ${{ steps.artifacts.outputs.deb_file }}
-            ${{ steps.artifacts.outputs.appimage_file }}
-            ${{ steps.artifacts.outputs.msi_file }}
-            ${{ steps.artifacts.outputs.exe_file }}
-            ${{ steps.artifacts.outputs.dmg_file }}
-            ${{ steps.artifacts.outputs.app_file }}
+          path: desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/
           if-no-files-found: error
 
       - name: 📊 Build summary
@@ -361,7 +353,7 @@ jobs:
   # 🚀 Create GitHub Release
   release:
     name: 🚀 Create GitHub Release
-    needs: [version, validate, build]
+    needs: [version, build]
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout code
@@ -379,6 +371,36 @@ jobs:
           echo "📂 Downloaded artifacts:"
           find ./artifacts -type f -name "*" | sort
 
+      - name: 🗂️ Organize artifacts by platform
+        run: |
+          echo "🗂️ Organizing artifacts to prevent name conflicts..."
+          mkdir -p ./release-assets
+          
+          # Move Linux artifacts with platform prefix
+          if [ -d "./artifacts/Linux x64 Build" ]; then
+            echo "📦 Processing Linux artifacts..."
+            find "./artifacts/Linux x64 Build" -name "*.deb" -exec cp {} ./release-assets/ \;
+            find "./artifacts/Linux x64 Build" -name "*.rpm" -exec cp {} ./release-assets/ \;
+            find "./artifacts/Linux x64 Build" -name "*.AppImage" -exec cp {} ./release-assets/ \;
+          fi
+          
+          # Move Windows artifacts with platform prefix
+          if [ -d "./artifacts/Windows x64 Build" ]; then
+            echo "📦 Processing Windows artifacts..."
+            find "./artifacts/Windows x64 Build" -name "*.msi" -exec cp {} ./release-assets/ \;
+            find "./artifacts/Windows x64 Build" -name "*.exe" -exec cp {} ./release-assets/ \;
+          fi
+          
+          # Move macOS artifacts with platform prefix
+          if [ -d "./artifacts/macOS x64 Build" ]; then
+            echo "📦 Processing macOS artifacts..."
+            find "./artifacts/macOS x64 Build" -name "*.dmg" -exec cp {} ./release-assets/ \;
+            find "./artifacts/macOS x64 Build" -name "*.app" -exec cp {} ./release-assets/ \;
+          fi
+          
+          echo "✅ Organized release assets:"
+          ls -la ./release-assets/
+
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -389,7 +411,7 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            ./artifacts/**/*
+            ./release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
