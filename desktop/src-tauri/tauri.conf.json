@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "../ui/dist",
     "beforeDevCommand": "pnpm --dir ../ui run dev",
-    "beforeBuildCommand": "pnpm --dir ../ui run build"
+    "beforeBuildCommand": ""
   },
   "app": {
     "windows": [
