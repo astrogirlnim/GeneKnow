@@ -1,0 +1,226 @@
+import React, { useState, useEffect } from 'react';
+
+// --- Helper Components for Icons ---
+
+const CloudArrowUpIcon = () => ( <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg> );
+const CheckCircleIcon = () => ( <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> );
+const DocumentTextIcon = () => ( <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg> );
+const CheckBadgeIcon = () => ( <svg className="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" /></svg> );
+const DocumentIcon = () => ( <svg className="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> );
+const InformationCircleIcon = ({ className = "w-5 h-5" }) => ( <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> );
+
+// --- Reusable Components ---
+
+const Tooltip = ({ content, link }) => (
+    <div className="absolute bottom-full mb-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
+        <p>{content}</p>
+        {link && <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline mt-1 inline-block">Learn more</a>}
+    </div>
+);
+
+// --- Page Section Components ---
+
+const Header = ({ onLogoClick }) => (
+    <header className="bg-white/80 backdrop-blur-md fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+            <button onClick={onLogoClick} className="flex items-center focus:outline-none">
+                <h1 className="text-2xl font-bold text-gray-800">GeneKnow</h1>
+            </button>
+            <nav className="hidden md:flex items-center space-x-8">
+                <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
+                <a href="#privacy" className="text-gray-600 hover:text-blue-600 transition-colors">Privacy First</a>
+                <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">How It Works</a>
+            </nav>
+        </div>
+    </header>
+);
+
+const LandingPage = ({ onTestNowClick }) => (
+    <>
+        <HeroSection onTestNowClick={onTestNowClick} />
+        <FeaturesSection />
+        <PrivacySection />
+        <HowItWorksSection />
+    </>
+);
+
+const HeroSection = ({ onTestNowClick }) => (
+    <section style={{background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)'}}>
+        <div className="container mx-auto px-6 py-20 md:py-32 text-center">
+            <div className="max-w-3xl mx-auto">
+                <span className="text-blue-600 font-semibold bg-blue-100 rounded-full px-4 py-1">Your Personal Genomic Insights</span>
+                <h2 className="mt-4 text-4xl md:text-6xl font-bold tracking-tight text-gray-900">Understand Your Genomic Health, Privately.</h2>
+                <p className="mt-6 text-lg leading-8 text-gray-600">Our desktop application analyzes your genomic data file directly on your computer to provide a secure cancer risk assessment. No data uploads, no cloud processing, complete privacy.</p>
+                <div className="mt-10">
+                    <button onClick={onTestNowClick} className="bg-blue-600 text-white font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105">Test Now</button>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+const FeaturesSection = () => ( <section id="features" className="bg-gray-50 py-20"><div className="container mx-auto px-6"><div className="text-center mb-12"><h3 className="text-3xl font-bold tracking-tight text-gray-900">A New Standard in Personal Genetic Analysis</h3><p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">We combine powerful technology with an unwavering commitment to your privacy.</p></div><div className="grid md:grid-cols-3 gap-8 text-center"><div className="bg-white p-8 rounded-xl shadow-md border border-gray-100"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100"><CloudArrowUpIcon /></div><h4 className="mt-5 text-xl font-semibold text-gray-900">Local Processing</h4><p className="mt-2 text-gray-600">Your `.fastq` file is analyzed on your machine. Your sensitive genetic data never leaves your computer.</p></div><div className="bg-white p-8 rounded-xl shadow-md border border-gray-100"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100"><CheckCircleIcon /></div><h4 className="mt-5 text-xl font-semibold text-gray-900">State-of-the-Art AI</h4><p className="mt-2 text-gray-600">Leverages advanced models to provide insights on potential risks based on the latest scientific research.</p></div><div className="bg-white p-8 rounded-xl shadow-md border border-gray-100"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100"><DocumentTextIcon /></div><h4 className="mt-5 text-xl font-semibold text-gray-900">Comprehensive Reports</h4><p className="mt-2 text-gray-600">Receive a clear, understandable report generated by Llama 3.1, explaining the findings without jargon.</p></div></div></div></section> );
+const PrivacySection = () => ( <section id="privacy" className="bg-white py-20"><div className="container mx-auto px-6"><div className="lg:flex lg:items-center lg:gap-16"><div className="lg:w-1/2"><span className="text-blue-600 font-semibold bg-blue-100 rounded-full px-4 py-1">Uncompromising Security</span><h3 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">Your Data is Your Own</h3><p className="mt-6 text-lg text-gray-600">In an age of data breaches, we believe your most personal information should remain in your hands. GeneKnow is built on a foundation of privacy-by-design. By processing everything locally, we eliminate the risk of server-side breaches and data misuse.</p><ul className="mt-6 space-y-4 text-gray-600"><li className="flex items-start"><CheckBadgeIcon /><span><strong>No Cloud Uploads:</strong> Your genomic file is never sent to us or any third party.</span></li><li className="flex items-start"><CheckBadgeIcon /><span><strong>Secure by Design:</strong> Built with Rust and Tauri for a secure, sandboxed application environment.</span></li></ul></div><div className="mt-10 lg:mt-0 lg:w-1/2"><img src="https://placehold.co/600x400/EBF4FF/3B82F6?text=Secure+Analysis+Illustration" alt="Abstract security illustration" className="rounded-lg shadow-xl w-full" /></div></div></div></section> );
+const HowItWorksSection = () => ( <section id="how-it-works" className="bg-gray-50 py-20"><div className="container mx-auto px-6"><div className="text-center mb-12"><h3 className="text-3xl font-bold tracking-tight text-gray-900">Get Your Report in 3 Simple Steps</h3></div><div className="relative"><div className="hidden md:block absolute top-10 left-0 w-full h-0.5 border-t-2 border-dashed border-gray-300"></div><div className="relative grid md:grid-cols-3 gap-12"><div className="text-center"><div className="relative"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">1</div></div><h4 className="mt-6 text-xl font-semibold text-gray-900">Select Your File</h4><p className="mt-2 text-gray-600">Open the app and select your `.fastq` file from your local disk.</p></div><div className="text-center"><div className="relative"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">2</div></div><h4 className="mt-6 text-xl font-semibold text-gray-900">Run Analysis</h4><p className="mt-2 text-gray-600">Click "Test Now". Our app performs the analysis locally using its built-in AI models.</p></div><div className="text-center"><div className="relative"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg border-4 border-blue-500 text-blue-600 text-2xl font-bold z-10 relative">3</div></div><h4 className="mt-6 text-xl font-semibold text-gray-900">View Your Report</h4><p className="mt-2 text-gray-600">Receive and save your private, easy-to-understand health insights report.</p></div></div></div></div></section> );
+
+const UploadPage = ({ onBackClick, onStartAnalysis }) => {
+    const [file, setFile] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const handleFileChange = (e) => { if (e.target.files && e.target.files[0]) { setFile(e.target.files[0]); } };
+    const handleDragEvents = (e, dragging) => { e.preventDefault(); e.stopPropagation(); setIsDragging(dragging); };
+    const handleDrop = (e) => { handleDragEvents(e, false); if (e.dataTransfer.files && e.dataTransfer.files[0]) { setFile(e.dataTransfer.files[0]); } };
+
+    return (
+        <section className="bg-gray-50 flex-grow flex flex-col items-center justify-center">
+            <div className="container mx-auto px-6 py-20 text-center max-w-2xl">
+                <h2 className="text-3xl font-bold tracking-tight text-gray-900">Upload Your Genomic Data File</h2>
+                <p className="mt-4 text-lg text-gray-600">Select your file to begin the analysis. Your data remains on your computer at all times.</p>
+                <div className={`mt-8 p-10 border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-blue-600 bg-blue-50' : 'border-gray-300 bg-white'}`} onDragEnter={(e) => handleDragEvents(e, true)} onDragLeave={(e) => handleDragEvents(e, false)} onDragOver={(e) => handleDragEvents(e, true)} onDrop={handleDrop}>
+                    <input type="file" id="file-upload" className="hidden" onChange={handleFileChange} accept=".fastq,.vcf,.bam" />
+                    <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                        <DocumentIcon />
+                        {file ? (<div className="mt-4 text-left"><p className="font-semibold text-gray-800">Selected File:</p><p className="text-sm text-blue-600">{file.name}</p><p className="text-xs text-gray-500">Size: {(file.size / 1024 / 1024).toFixed(2)} MB</p></div>) : (<><p className="mt-2 font-semibold text-blue-600">Click to browse or drag & drop</p><p className="text-sm text-gray-500">Supported formats: FASTQ, VCF, BAM</p></>)}
+                    </label>
+                </div>
+                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start text-left max-w-md mx-auto">
+                    <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mr-2 mt-0.5" />
+                    <p className="text-sm text-gray-700"><strong>What to expect:</strong> Once you start the analysis, GeneKnow will process your file locally. This may take a few moments. Upon completion, you will be presented with a personalized dashboard displaying your results and insights.</p>
+                </div>
+                <div className="mt-8 flex items-center justify-center space-x-4">
+                    <button onClick={onBackClick} className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Back</button>
+                    <button onClick={() => onStartAnalysis()} className="px-6 py-3 font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-colors">Start Analysis</button>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+const LoadingPage = () => (
+    <section className="bg-gray-50 flex-grow flex flex-col items-center justify-center text-center">
+        <div className="flex items-center space-x-3">
+            <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <h2 className="text-2xl font-semibold text-gray-700">Analyzing your data...</h2>
+        </div>
+        <p className="mt-4 text-gray-600">This may take a few moments. Please don't close the application.</p>
+    </section>
+);
+
+const ProbabilityCard = ({ value, tooltipContent }) => {
+    const getProbabilityColor = (prob) => {
+        if (prob >= 75) return 'bg-red-100 border-red-200 text-red-800';
+        if (prob >= 20) return 'bg-amber-100 border-amber-200 text-amber-800';
+        return 'bg-green-100 border-green-200 text-green-800';
+    };
+    const colorClasses = getProbabilityColor(value);
+
+    return (
+        <div className={`p-6 rounded-xl border ${colorClasses}`}>
+            <div className="flex justify-between items-start">
+                <h3 className="font-semibold text-lg">Risk Probability</h3>
+                <div className="relative group"><InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-500" /><Tooltip content={tooltipContent.content} link={tooltipContent.link} /></div>
+            </div>
+            <p className="text-5xl font-bold mt-2">{value}%</p>
+            <p className="text-sm mt-1">Probability of having this cancer type.</p>
+        </div>
+    );
+};
+
+const MetricCard = ({ title, value, unit, tooltipContent }) => (
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex justify-between items-center">
+            <h4 className="font-semibold text-gray-600">{title}</h4>
+            <div className="relative group"><InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-400" /><Tooltip content={tooltipContent.content} link={tooltipContent.link} /></div>
+        </div>
+        <p className="text-3xl font-bold text-gray-900 mt-2">{value} <span className="text-xl font-medium text-gray-500">{unit}</span></p>
+    </div>
+);
+
+const DashboardPage = ({ result, onNewAnalysis }) => (
+    <section className="bg-gray-50 flex-grow">
+        <div className="container mx-auto px-6 py-12">
+            <div className="flex justify-between items-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900">Analysis Dashboard</h2>
+                <button onClick={onNewAnalysis} className="px-5 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Run New Analysis</button>
+            </div>
+
+            {/* Headline Metrics */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <ProbabilityCard value={result.probability} tooltipContent={result.tooltips.probability} />
+                <MetricCard title="Hazard Score" value={result.hazardScore} unit="" tooltipContent={result.tooltips.hazardScore} />
+            </div>
+
+            {/* Placeholder Metrics Grid */}
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {result.otherMetrics.map(metric => (
+                    <MetricCard key={metric.id} title={metric.title} value={metric.value} unit={metric.unit} tooltipContent={metric.tooltipContent} />
+                ))}
+            </div>
+        </div>
+    </section>
+);
+
+
+const Footer = () => (
+    <footer className="bg-gray-800 text-white">
+        <div className="container mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 GeneKnow. All rights reserved.</p>
+            <p className="text-sm text-gray-400 mt-2">Disclaimer: This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+        </div>
+    </footer>
+);
+
+
+// --- Main App Component ---
+export default function App() {
+    const [page, setPage] = useState('landing'); // 'landing', 'upload', 'loading', 'dashboard'
+    const [analysisResult, setAnalysisResult] = useState(null);
+
+    const handleStartAnalysis = () => {
+        setPage('loading');
+        // Simulate a network request or heavy computation
+        setTimeout(() => {
+            // Generate mock data for the dashboard
+            const mockData = {
+                probability: 82, // Example value
+                hazardScore: 2.4,
+                tooltips: {
+                    probability: { content: "This score represents the likelihood of a specific cancer type based on the genetic markers found.", link: "#" },
+                    hazardScore: { content: "The hazard score compares your risk to a baseline population over time.", link: "#" },
+                },
+                otherMetrics: [
+                    { id: 1, title: "Somatic Mutations", value: 12, unit: "found", tooltipContent: { content: "Number of cancer-related somatic mutations detected.", link: "#" } },
+                    { id: 2, title: "Tumor Mutational Burden", value: 8.5, unit: "muts/Mb", tooltipContent: { content: "A measure of the total number of mutations per megabase of DNA.", link: "#" } },
+                    { id: 3, title: "Key Gene Variant", value: "NPM1", unit: "(c.860_863dup)", tooltipContent: { content: "The most significant gene variant identified in the analysis.", link: "#" } },
+                    { id: 4, title: "Variant Allele Freq.", value: "45.2", unit: "%", tooltipContent: { content: "The percentage of sequence reads that match a specific variant.", link: "#" } },
+                    { id: 5, title: "Ploidy", value: 2.1, unit: "", tooltipContent: { content: "The average number of chromosome sets in a cell.", link: "#" } },
+                    { id: 6, title: "Loss of Heterozygosity", value: "15%", unit: "of genome", tooltipContent: { content: "The percentage of the genome where one parental copy of a gene is lost.", link: "#" } },
+                    { id: 7, title: "Clonal Hematopoiesis", value: "Detected", unit: "", tooltipContent: { content: "Presence of somatic mutations in blood cells.", link: "#" } },
+                    { id: 8, title: "Data Quality Score", value: 98.7, unit: "Q-Score", tooltipContent: { content: "An overall score representing the quality of the input sequencing data.", link: "#" } },
+                ]
+            };
+            setAnalysisResult(mockData);
+            setPage('dashboard');
+        }, 3000); // 3-second delay
+    };
+
+    const handleNewAnalysis = () => {
+        setAnalysisResult(null);
+        setPage('upload');
+    }
+
+    return (
+        <div style={{ fontFamily: "'Inter', sans-serif" }} className="bg-white text-gray-800 min-h-screen flex flex-col">
+            <Header onLogoClick={() => setPage('landing')} />
+            <main className="pt-20 flex-grow flex flex-col">
+                {page === 'landing' && <LandingPage onTestNowClick={() => setPage('upload')} />}
+                {page === 'upload' && <UploadPage onBackClick={() => setPage('landing')} onStartAnalysis={handleStartAnalysis} />}
+                {page === 'loading' && <LoadingPage />}
+                {page === 'dashboard' && <DashboardPage result={analysisResult} onNewAnalysis={handleNewAnalysis} />}
+            </main>
+            <Footer />
+        </div>
+    );
+}
