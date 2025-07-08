@@ -1,1 +1,0 @@
-{"success": true, "file1": "test_output/test_R1.fastq.gz", "file2": "test_output/test_R2.fastq.gz", "num_reads": 5, "read_length": 150, "output_dir": "test_output", "error": null}
