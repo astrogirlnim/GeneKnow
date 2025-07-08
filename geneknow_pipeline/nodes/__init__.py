@@ -14,6 +14,7 @@ try:
     from . import risk_model
     from . import formatter
     from . import report_writer
+    from . import maf_parser
 except ImportError:
     # Direct imports
     import file_input
@@ -24,6 +25,7 @@ except ImportError:
     import risk_model
     import formatter
     import report_writer
+    import maf_parser
 
 __all__ = [
     "file_input",
@@ -33,5 +35,6 @@ __all__ = [
     "tcga_mapper",
     "risk_model",
     "formatter",
-    "report_writer"
+    "report_writer",
+    "maf_parser"
 ] 

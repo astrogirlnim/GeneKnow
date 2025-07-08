@@ -22,6 +22,50 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     state["current_node"] = "report_writer"
     
     try:
+        # Check if structured_json exists, if not, create a basic one
+        if "structured_json" not in state or not state["structured_json"]:
+            logger.warning("No structured_json found, creating basic structure")
+            # Create a basic structured_json from state data
+            state["structured_json"] = {
+                "report_metadata": {
+                    "pipeline_version": "1.0.0",
+                    "processing_time_seconds": (datetime.now() - state.get("pipeline_start_time", datetime.now())).total_seconds(),
+                    "generated_at": datetime.now().isoformat(),
+                    "language": state.get("language", "en")
+                },
+                "patient_data": {
+                    "file_type": state.get("file_type", "unknown"),
+                    "file_metadata": state.get("file_metadata", {})
+                },
+                "summary": {
+                    "total_variants_found": state.get("variant_count", 0),
+                    "variants_passed_qc": len(state.get("filtered_variants", [])),
+                    "high_risk_findings": len([s for s in state.get("risk_scores", {}).values() if s >= 50])
+                },
+                "risk_assessment": {
+                    "scores": state.get("risk_scores", {}),
+                    "high_risk_findings": [],
+                    "risk_genes": state.get("risk_genes", {})
+                },
+                "variant_details": [],
+                "quality_control": {},
+                "tcga_summary": {
+                    "cancer_types_analyzed": list(state.get("tcga_matches", {}).keys()),
+                    "cohort_sizes": state.get("tcga_cohort_sizes", {}),
+                    "variants_with_tcga_data": 0
+                },
+                "warnings": state.get("warnings", [])
+            }
+            
+            # Build high risk findings
+            for cancer_type, score in state.get("risk_scores", {}).items():
+                if score >= 50:
+                    state["structured_json"]["risk_assessment"]["high_risk_findings"].append({
+                        "cancer_type": cancer_type,
+                        "risk_percentage": score,
+                        "affected_genes": state.get("risk_genes", {}).get(cancer_type, [])
+                    })
+        
         structured_data = state["structured_json"]
         language = state.get("language", "en")
         include_technical = state.get("include_technical_details", True)
@@ -76,7 +120,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "metadata": {
                 "report_id": f"GR-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
                 "model_version": state.get("model_version", "1.0.0"),
-                "warnings": [w["warning"] for w in state.get("warnings", [])],
+                "warnings": [w.get("warning", str(w)) for w in state.get("warnings", []) if isinstance(w, dict)] + [str(w) for w in state.get("warnings", []) if isinstance(w, str)],
                 "file_analyzed": state.get("file_path", "Unknown")
             }
         }

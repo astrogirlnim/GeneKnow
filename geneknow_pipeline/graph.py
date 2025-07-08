@@ -1,6 +1,6 @@
 """
 Main LangGraph pipeline for GeneKnow genomic risk assessment.
-Orchestrates the flow from FASTQ/BAM input to final PDF report.
+Orchestrates the flow from FASTQ/BAM/VCF/MAF input to final PDF report.
 """
 from langgraph.graph import StateGraph, END
 from datetime import datetime
@@ -70,6 +70,11 @@ def route_after_preprocess(state: dict) -> list:
     Determine which nodes to run after preprocessing.
     Returns a list to enable parallel execution.
     """
+    # Check if this is a MAF file that already has filtered variants
+    if state.get("file_type") == "maf" and state.get("filtered_variants"):
+        logger.info("MAF file detected with pre-processed variants, skipping to TCGA mapping")
+        return ["tcga_mapper"]
+    
     nodes_to_run = []
     
     # Always run variant calling if we have a BAM file
@@ -92,6 +97,7 @@ def create_genomic_pipeline() -> StateGraph:
     """
     Creates the main LangGraph pipeline for genomic analysis.
     Now with parallel execution of variant calling and QC filtering.
+    Supports FASTQ, BAM, VCF, and MAF input files.
     
     Returns:
         StateGraph configured with all nodes and edges
@@ -127,6 +133,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("variant_calling", "merge_parallel")
     workflow.add_edge("qc_filter", "merge_parallel")
     
+    # MAF files skip directly to TCGA mapping (no merge needed)
     # Continue with linear flow after merge
     workflow.add_edge("merge_parallel", "tcga_mapper")
     workflow.add_edge("tcga_mapper", "risk_model")
@@ -145,7 +152,7 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
     Execute the genomic analysis pipeline.
     
     Args:
-        file_path: Path to FASTQ or BAM file
+        file_path: Path to FASTQ, BAM, VCF, or MAF file
         user_preferences: Optional user settings (language, detail level, etc.)
     
     Returns:

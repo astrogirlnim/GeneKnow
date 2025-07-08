@@ -36,22 +36,26 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         variant_summary = []
         for variant in state["filtered_variants"]:
             variant_info = {
-                "gene": variant["gene"],
-                "variant": variant["variant_id"],
-                "consequence": variant.get("consequence", "unknown"),
+                "gene": variant.get("gene", "Unknown"),
+                "variant": variant.get("variant_id", "Unknown"),
+                "consequence": variant.get("consequence", variant.get("variant_classification", "unknown")),
                 "hgvs_c": variant.get("hgvs_c", ""),
-                "hgvs_p": variant.get("hgvs_p", ""),
+                "hgvs_p": variant.get("hgvs_p", variant.get("protein_change", "")),
                 "quality_metrics": {
-                    "quality": variant["quality"],
-                    "depth": variant["depth"],
-                    "allele_freq": variant["allele_freq"]
+                    "quality": variant.get("quality", variant.get("qual", 0)),
+                    "depth": variant.get("depth", 0),
+                    "allele_freq": variant.get("allele_freq", 0)
                 },
                 "tcga_matches": {}
             }
             
+            # Add clinical significance if available (from MAF)
+            if "clinical_significance" in variant:
+                variant_info["clinical_significance"] = variant["clinical_significance"]
+            
             # Add TCGA match info
             for cancer_type, matches in state["tcga_matches"].items():
-                if variant["variant_id"] in matches:
+                if variant.get("variant_id") in matches:
                     match_info = matches[variant["variant_id"]]
                     variant_info["tcga_matches"][cancer_type] = {
                         "frequency_percent": match_info["frequency"] * 100,
