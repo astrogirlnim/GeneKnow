@@ -25,7 +25,7 @@
 **Dev 2 (Full Stack)** – Setup and core architecture
 - [x] Set up Tauri environment with React, Tailwind CSS.
 - [x] Wire Rust backend to invoke Python ML functions.
-- [⚠️] Add plugin scaffolding for file parsing and ML execution.
+- [ ] Add plugin scaffolding for file parsing and ML execution.
 
 **🎯 Phase 1 Achievements (January 2025):**
 - ✅ **Cross-Platform Desktop App**: Tauri 2.6.2 + React 19.1.0 + Tailwind CSS 4.1
