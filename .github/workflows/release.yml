@@ -18,6 +18,11 @@ on:
           - minor
           - major
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 env:
   NODE_VERSION: '20'
   RUST_VERSION: '1.88.0'
@@ -38,6 +43,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -121,9 +127,9 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: 📝 Update version files
+      - name: 📝 Update version files (build-only)
         run: |
-          echo "📝 Updating version files to ${{ steps.version.outputs.version }}..."
+          echo "📝 Updating version files to ${{ steps.version.outputs.version }} for build..."
           
           # Update package.json
           jq '.version = "${{ steps.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
@@ -136,18 +142,15 @@ jobs:
           # Update Cargo.toml
           sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
           
-          echo "✅ Version files updated"
+          echo "✅ Version files updated for build (not committed)"
 
-      - name: 📤 Commit version bump
+      - name: 📤 Create git tag (local)
         run: |
-          echo "📤 Committing version bump..."
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add desktop/ui/package.json desktop/src-tauri/tauri.conf.json desktop/src-tauri/Cargo.toml
-          git commit -m "🔖 Bump version to ${{ steps.version.outputs.version }}"
+          echo "📤 Creating local git tag..."
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git tag ${{ steps.version.outputs.tag }}
-          git push origin main --follow-tags
-          echo "✅ Version bump committed and tagged"
+          echo "✅ Local git tag created: ${{ steps.version.outputs.tag }}"
 
   # 🧪 Validation & Testing
   validate:
