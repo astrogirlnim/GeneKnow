@@ -408,9 +408,9 @@ const DashboardPage: React.FC = () => {
         { cancer: '', score: 0 }
       );
       
-      // Convert pipeline results to display format
-      const probability = Math.round(highestRisk.score * 100);
-      const hazardScore = (highestRisk.score * 3).toFixed(1); // Convert to hazard score scale
+      // Use pipeline results directly (already in percentage format)
+      const probability = Math.round(highestRisk.score);
+      const hazardScore = (highestRisk.score / 100 * 3).toFixed(1); // Convert from percentage to hazard score scale
       
       // Extract key metrics from the pipeline results
       const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
@@ -482,7 +482,7 @@ const DashboardPage: React.FC = () => {
           otherMetrics.push({
             id: metricId++,
             title: `${cancer} Risk`,
-            value: (score * 100).toFixed(1),
+            value: score.toFixed(1),
             unit: "%",
             tooltipContent: {
               content: `Predicted risk score for ${cancer}.`,
