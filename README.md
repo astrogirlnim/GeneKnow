@@ -80,14 +80,35 @@ cd ..
 ./test_implementation.sh
 ```
 
-### 4. Run Development Server
+### 4. Run Full Application (Complete Integration)
 
-**Option A: Automatic (Recommended)**
+**🚀 Recommended: One-Command Startup**
 ```bash
-# From desktop/ui directory
+# From desktop/ui directory (starts both frontend + backend)
 cd ui
 pnpm run tauri-dev
 ```
+
+This single command:
+- ✅ Starts the React frontend (Vite dev server)
+- ✅ Starts the Rust backend (Tauri + Python integration)  
+- ✅ Opens the desktop application automatically
+- ✅ Enables hot reload for both frontend and backend
+
+**🌐 Access Your Application:**
+- **Desktop App**: Opens automatically in a native window
+- **Web Browser**: http://localhost:5173 (for debugging)
+
+**✅ Verify Integration:**
+```bash
+# Test the Rust-Python integration (in another terminal)
+cd desktop
+python3 python_ml/config_data_source.py --list-vcf-files --json
+```
+
+---
+
+### Alternative Development Options
 
 **Option B: Manual (Two Terminals)**
 ```bash
@@ -308,7 +329,17 @@ python3 python_ml/fastq_to_vcf_pipeline.py --help
 **"Command not found: tauri"**
 ```bash
 cd desktop/ui
-pnpm install  # Reinstall dependencies
+pnpm install  # Reinstall dependencies including @tauri-apps/cli
+```
+
+**"tauri-dev fails to start"**
+```bash
+# Ensure you're in the correct directory
+cd desktop/ui
+pwd  # Should show .../LiteratureGapper/desktop/ui
+
+# Check if dependencies are installed
+ls node_modules/.bin/tauri  # Should exist
 ```
 
 **"Port 5173 is in use"**
