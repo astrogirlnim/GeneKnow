@@ -9,15 +9,15 @@ GeneKnow is a local-first genomic risk assessment platform focused on interpreti
 ## 🧠 LangGraph System Flow
 
 ```mermaid
-graph TD
-    A[FASTQ/BAM File Upload] --> B[Preprocess & Parse (Rust + Python)]
-    B --> C[Variant Calling (DeepVariant)]
-    C --> D[Variant Filtering/QC]
-    D --> E[TCGA Variant Comparison]
-    E --> F[TensorFlow Cancer Risk Scoring]
-    F --> G[Format Structured JSON]
-    G --> H[LLM Report Generator (Llama 3.1)]
-    H --> I[PDF Export + Charts + Frontend UI]
+flowchart TD
+    A["File Input"] --> B["Preprocess Validate + Parse File"]
+    B --> C["Variant QC filter low confidence"] & D["Variant Caller DeepVariant Samtools"]
+    D --> E["Variant Mapper ← reference genome + TCGA"]
+    E --> F["Disease Risk Model TensorFlow TCGA + 1000 Genomes"]
+    F --> G["Interpret Results JSON Output"]
+    G --> H["LLM Report Writer markdown pdf json ← Llama 3.1"]
+    H --> I["Visualizations + Frontend charts heatmaps tables ← React + Tailwind"]
+    C --> F
 ```
 
 ---
