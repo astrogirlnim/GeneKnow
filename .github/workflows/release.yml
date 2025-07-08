@@ -56,48 +56,21 @@ jobs:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
 
-      - name: 🔍 Install semver for version calculation
-        run: |
-          echo "🔍 Installing semver tool..."
-          npm install -g semver
-          echo "✅ semver installed"
-
       - name: 🏷️ Calculate new version
         id: version
         run: |
-          echo "🔍 Calculating new version..."
+          echo "🔍 Using current version..."
           
           # Get current version from package.json
           CURRENT_VERSION=$(cat desktop/ui/package.json | jq -r '.version')
           echo "📋 Current version: $CURRENT_VERSION"
           
-          # Determine version bump type
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION_TYPE="${{ github.event.inputs.version_type }}"
-            echo "🎯 Manual release: $VERSION_TYPE"
-          else
-            # Analyze commits for conventional commit patterns
-            echo "🔍 Analyzing commit messages for version bump..."
-            COMMITS=$(git log --oneline --no-merges $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || git log --oneline --no-merges)
-            
-            if echo "$COMMITS" | grep -q "BREAKING CHANGE\|!:"; then
-              VERSION_TYPE="major"
-              echo "🚨 Breaking changes detected - major version bump"
-            elif echo "$COMMITS" | grep -q "^feat"; then
-              VERSION_TYPE="minor"
-              echo "✨ New features detected - minor version bump"
-            else
-              VERSION_TYPE="patch"
-              echo "🐛 Patches/fixes detected - patch version bump"
-            fi
-          fi
-          
-          # Calculate new version
-          NEW_VERSION=$(semver -i $VERSION_TYPE $CURRENT_VERSION)
+          # For now, use current version (can be enhanced later)
+          NEW_VERSION=$CURRENT_VERSION
           NEW_TAG="v$NEW_VERSION"
           
-          echo "🎯 Version bump: $CURRENT_VERSION → $NEW_VERSION ($VERSION_TYPE)"
-          echo "🏷️ New tag: $NEW_TAG"
+          echo "🎯 Version: $NEW_VERSION"
+          echo "🏷️ Tag: $NEW_TAG"
           
           # Generate changelog
           CHANGELOG=$(cat << EOF
@@ -110,7 +83,6 @@ jobs:
           
           ### 🔨 Technical Details
           - **Version**: $NEW_VERSION
-          - **Build Type**: $VERSION_TYPE
           - **Tauri**: 2.6.2
           - **React**: 19.1.0
           - **TypeScript**: 5.8.3
@@ -126,23 +98,6 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: 📝 Update version files (build-only)
-        run: |
-          echo "📝 Updating version files to ${{ steps.version.outputs.version }} for build..."
-          
-          # Update package.json
-          jq '.version = "${{ steps.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
-          mv desktop/ui/package.json.tmp desktop/ui/package.json
-          
-          # Update tauri.conf.json
-          jq '.version = "${{ steps.version.outputs.version }}"' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
-          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
-          
-          # Update Cargo.toml
-          sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
-          
-          echo "✅ Version files updated for build (not committed)"
 
       - name: 📤 Create git tag (local)
         run: |
@@ -221,20 +176,14 @@ jobs:
             rust-target: x86_64-unknown-linux-gnu
             name: 'Linux x64'
             emoji: '🐧'
-            ext: '.deb'
-            ext2: '.AppImage'
           - os: windows-latest
             rust-target: x86_64-pc-windows-msvc
             name: 'Windows x64'
             emoji: '🪟'
-            ext: '.msi'
-            ext2: '.exe'
           - os: macos-latest
-            rust-target: universal-apple-darwin
-            name: 'macOS Universal'
+            rust-target: x86_64-apple-darwin
+            name: 'macOS x64'
             emoji: '🍎'
-            ext: '.dmg'
-            ext2: '.app'
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -305,31 +254,6 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
           echo "✅ Linux dependencies installed"
 
-      - name: 📝 Update version files for build
-        run: |
-          echo "📝 Updating version files to ${{ needs.version.outputs.version }} for build..."
-          
-          # Update package.json
-          jq '.version = "${{ needs.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
-          mv desktop/ui/package.json.tmp desktop/ui/package.json
-          
-          # Update tauri.conf.json
-          jq '.version = "${{ needs.version.outputs.version }}"' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
-          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
-          
-          # Update Cargo.toml (cross-platform compatible)
-          if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' 's/version = "[^"]*"/version = "${{ needs.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
-          else
-            sed -i 's/version = "[^"]*"/version = "${{ needs.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
-          fi
-          
-          echo "✅ Version files updated for build"
-          echo "🔍 Updated versions:"
-          echo "  package.json: $(cat desktop/ui/package.json | jq -r '.version')"
-          echo "  tauri.conf.json: $(cat desktop/src-tauri/tauri.conf.json | jq -r '.version')"
-          echo "  Cargo.toml: $(grep '^version = ' desktop/src-tauri/Cargo.toml)"
-
       - name: 📦 Install frontend dependencies
         working-directory: desktop/ui
         run: |
@@ -354,13 +278,7 @@ jobs:
           echo "🎯 Target: ${{ matrix.platform.rust-target }}"
           echo "📦 Version: ${{ needs.version.outputs.version }}"
           
-          if [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
-            echo "🍎 Building universal macOS binary..."
-            cargo tauri build --target universal-apple-darwin
-          else
-            echo "🔨 Building for ${{ matrix.platform.rust-target }}..."
-            cargo tauri build --target ${{ matrix.platform.rust-target }}
-          fi
+          cargo tauri build --target ${{ matrix.platform.rust-target }}
           
           echo "✅ Tauri release build completed for ${{ matrix.platform.name }}"
 
@@ -368,23 +286,10 @@ jobs:
         id: artifacts
         run: |
           echo "📂 Locating build artifacts..."
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
           
-          if [ "${{ matrix.platform.os }}" == "ubuntu-latest" ]; then
-            DEB_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb -name "*.deb" | head -1)
-            APPIMAGE_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage -name "*.AppImage" | head -1)
-            echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
-            echo "appimage_file=$APPIMAGE_FILE" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.platform.os }}" == "windows-latest" ]; then
-            MSI_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi -name "*.msi" | head -1)
-            EXE_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis -name "*.exe" | head -1)
-            echo "msi_file=$MSI_FILE" >> $GITHUB_OUTPUT
-            echo "exe_file=$EXE_FILE" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
-            DMG_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
-            APP_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
-            echo "dmg_file=$DMG_FILE" >> $GITHUB_OUTPUT
-            echo "app_file=$APP_FILE" >> $GITHUB_OUTPUT
-          fi
+          # Find all bundle files
+          find desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/ -type f -name "*" | sort
           
           echo "✅ Build artifacts located"
 
@@ -392,13 +297,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }} Build
-          path: |
-            ${{ steps.artifacts.outputs.deb_file }}
-            ${{ steps.artifacts.outputs.appimage_file }}
-            ${{ steps.artifacts.outputs.msi_file }}
-            ${{ steps.artifacts.outputs.exe_file }}
-            ${{ steps.artifacts.outputs.dmg_file }}
-            ${{ steps.artifacts.outputs.app_file }}
+          path: desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/
           if-no-files-found: error
 
       - name: 📊 Build summary
