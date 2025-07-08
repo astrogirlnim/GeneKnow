@@ -266,6 +266,24 @@ jobs:
           workspaces: |
             desktop/src-tauri -> target
 
+      - name: 🔍 Cache Tauri CLI
+        uses: actions/cache@v4
+        id: tauri-cli-cache
+        with:
+          path: |
+            ~/.cargo/bin/cargo-tauri
+            ~/.cargo/bin/cargo-tauri.exe
+          key: ${{ runner.os }}-tauri-cli-${{ env.RUST_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-tauri-cli-
+
+      - name: 📦 Install Tauri CLI
+        if: steps.tauri-cli-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "📦 Installing Tauri CLI..."
+          cargo install tauri-cli --locked
+          echo "✅ Tauri CLI installed successfully"
+
       - name: 🔍 Get pnpm store directory
         shell: bash
         run: |
@@ -287,12 +305,44 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
           echo "✅ Linux dependencies installed"
 
+      - name: 📝 Update version files for build
+        run: |
+          echo "📝 Updating version files to ${{ needs.version.outputs.version }} for build..."
+          
+          # Update package.json
+          jq '.version = "${{ needs.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
+          mv desktop/ui/package.json.tmp desktop/ui/package.json
+          
+          # Update tauri.conf.json
+          jq '.version = "${{ needs.version.outputs.version }}"' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
+          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
+          
+          # Update Cargo.toml (cross-platform compatible)
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' 's/version = "[^"]*"/version = "${{ needs.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
+          else
+            sed -i 's/version = "[^"]*"/version = "${{ needs.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
+          fi
+          
+          echo "✅ Version files updated for build"
+          echo "🔍 Updated versions:"
+          echo "  package.json: $(cat desktop/ui/package.json | jq -r '.version')"
+          echo "  tauri.conf.json: $(cat desktop/src-tauri/tauri.conf.json | jq -r '.version')"
+          echo "  Cargo.toml: $(grep '^version = ' desktop/src-tauri/Cargo.toml)"
+
       - name: 📦 Install frontend dependencies
         working-directory: desktop/ui
         run: |
           echo "📦 Installing frontend dependencies..."
           pnpm install --frozen-lockfile
           echo "✅ Frontend dependencies installed"
+
+      - name: 🔨 Build frontend
+        working-directory: desktop/ui
+        run: |
+          echo "🔨 Building frontend for release..."
+          pnpm build
+          echo "✅ Frontend build completed"
 
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri
