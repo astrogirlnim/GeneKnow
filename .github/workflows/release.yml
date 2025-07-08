@@ -186,23 +186,6 @@ jobs:
           
           echo "✅ Version calculation completed successfully!"
 
-      - name: 💾 Commit version updates
-        run: |
-          echo "💾 Committing version updates..."
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Add the updated files
-          git add desktop/src-tauri/tauri.conf.json desktop/ui/package.json
-          
-          # Check if there are changes to commit
-          if git diff --cached --quiet; then
-            echo "ℹ️  No version changes to commit"
-          else
-            git commit -m "🔖 Bump version to ${{ steps.version.outputs.version }}"
-            echo "✅ Version files committed"
-          fi
-
       - name: 🧹 Clean up existing release if exists
         run: |
           echo "🧹 Checking for existing release..."
@@ -236,10 +219,9 @@ jobs:
           git tag ${{ steps.version.outputs.tag }}
           git push origin ${{ steps.version.outputs.tag }}
           
-          # Push the version update commits
-          git push origin HEAD:main
-          
           echo "✅ Git tag created and pushed: ${{ steps.version.outputs.tag }}"
+          echo "ℹ️  Note: Version files are updated locally for build process only"
+          echo "ℹ️  Use ./scripts/bump-version.sh to update version files in repository"
 
   # 🧪 Validation & Testing
   validate:
@@ -251,6 +233,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+
+      - name: 🔄 Update version files for validation
+        run: |
+          echo "🔄 Updating version files to ${{ needs.version.outputs.version }}..."
+          
+          # Update tauri.conf.json
+          jq --arg version "${{ needs.version.outputs.version }}" '.version = $version' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
+          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
+          echo "✅ Updated tauri.conf.json"
+          
+          # Update package.json
+          jq --arg version "${{ needs.version.outputs.version }}" '.version = $version' desktop/ui/package.json > desktop/ui/package.json.tmp
+          mv desktop/ui/package.json.tmp desktop/ui/package.json
+          echo "✅ Updated package.json"
+          
+          echo "🎯 Version files updated for validation process"
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -325,6 +323,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+
+      - name: 🔄 Update version files for build
+        run: |
+          echo "🔄 Updating version files to ${{ needs.version.outputs.version }}..."
+          
+          # Update tauri.conf.json
+          jq --arg version "${{ needs.version.outputs.version }}" '.version = $version' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
+          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
+          echo "✅ Updated tauri.conf.json"
+          
+          # Update package.json
+          jq --arg version "${{ needs.version.outputs.version }}" '.version = $version' desktop/ui/package.json > desktop/ui/package.json.tmp
+          mv desktop/ui/package.json.tmp desktop/ui/package.json
+          echo "✅ Updated package.json"
+          
+          echo "🎯 Version files updated for build process"
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
