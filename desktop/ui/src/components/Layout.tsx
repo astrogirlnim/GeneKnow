@@ -43,6 +43,16 @@ const Header = () => (
         }}>GeneKnow</h1>
       </Link>
       <nav style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <Link to="/how-it-works" style={{ 
+          color: '#4B5563', 
+          textDecoration: 'none', 
+          transition: 'color 200ms ease',
+          fontWeight: '500'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
+        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
+          How It Works
+        </Link>
         <Link to="/features" style={{ 
           color: '#4B5563', 
           textDecoration: 'none', 
@@ -62,16 +72,6 @@ const Header = () => (
         onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
         onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
           Privacy First
-        </Link>
-        <Link to="/how-it-works" style={{ 
-          color: '#4B5563', 
-          textDecoration: 'none', 
-          transition: 'color 200ms ease',
-          fontWeight: '500'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
-          How It Works
         </Link>
       </nav>
     </div>

@@ -2,25 +2,34 @@ import React from 'react'
 import Layout from '../components/Layout'
 
 const CloudArrowUpIcon = () => (
-  <svg className="h-6 w-6" style={{ color: 'var(--primary-blue)' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+  <svg className="h-6 w-6" style={{ color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
   </svg>
 )
 
 const CheckCircleIcon = () => (
-  <svg className="h-6 w-6" style={{ color: 'var(--primary-blue)' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+  <svg className="h-6 w-6" style={{ color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 )
 
 const DocumentTextIcon = () => (
-  <svg className="h-6 w-6" style={{ color: 'var(--primary-blue)' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+  <svg className="h-6 w-6" style={{ color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
   </svg>
 )
 
 const FeatureCard = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
-  <div className="card" style={{ textAlign: 'center', height: '100%' }}>
+  <div style={{ 
+    textAlign: 'center', 
+    height: '100%',
+    background: '#FFFFFF',
+    border: '1px solid #E5E7EB',
+    borderRadius: '0.75rem',
+    padding: '2rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    transition: 'all 200ms ease'
+  }}>
     <div style={{
       margin: '0 auto 1.25rem',
       width: '3rem',
@@ -29,12 +38,12 @@ const FeatureCard = ({ icon, title, children }: { icon: React.ReactNode; title: 
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: '50%',
-      background: 'rgba(59, 130, 246, 0.1)'
+      background: '#DBEAFE'
     }}>
       {icon}
     </div>
-    <h4 style={{ marginTop: '1.25rem', fontSize: '1.25rem', fontWeight: '600', color: 'var(--gray-900)' }}>{title}</h4>
-    <p style={{ marginTop: '0.5rem', color: 'var(--gray-600)' }}>{children}</p>
+    <h4 style={{ marginTop: '1.25rem', fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>{title}</h4>
+    <p style={{ marginTop: '0.5rem', color: '#4B5563' }}>{children}</p>
   </div>
 )
 
@@ -49,7 +58,7 @@ const FeaturesPage = () => (
           fontSize: 'clamp(2.5rem, 5vw, 3.75rem)',
           fontWeight: 'bold',
           letterSpacing: '-0.02em',
-          color: 'var(--gray-900)',
+          color: '#111827',
           lineHeight: '1.1',
           marginBottom: '1rem'
         }}>
@@ -58,7 +67,7 @@ const FeaturesPage = () => (
         <p style={{
           fontSize: '1.125rem',
           lineHeight: '1.75',
-          color: 'var(--gray-600)',
+          color: '#4B5563',
           maxWidth: '42rem',
           margin: '0 auto'
         }}>
@@ -67,13 +76,13 @@ const FeaturesPage = () => (
       </div>
     </section>
 
-    <section style={{ background: 'var(--gray-50)', padding: '5rem 0' }}>
+    <section style={{ background: '#F9FAFB', padding: '5rem 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: 'var(--gray-900)' }}>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: '#111827' }}>
             A New Standard in Personal Genetic Analysis
           </h2>
-          <p style={{ marginTop: '1rem', fontSize: '1.125rem', color: 'var(--gray-600)', maxWidth: '32rem', margin: '1rem auto 0' }}>
+          <p style={{ marginTop: '1rem', fontSize: '1.125rem', color: '#4B5563', maxWidth: '32rem', margin: '1rem auto 0' }}>
             We combine powerful technology with an unwavering commitment to your privacy.
           </p>
         </div>
@@ -91,48 +100,48 @@ const FeaturesPage = () => (
       </div>
     </section>
 
-    <section style={{ background: 'white', padding: '5rem 0' }}>
+    <section style={{ background: '#FFFFFF', padding: '5rem 0' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: 'var(--gray-900)' }}>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: '#111827' }}>
             Advanced Technical Capabilities
           </h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               Secure Architecture
             </h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🔒 Built with Rust and Tauri for maximum security
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🛡️ Sandboxed application environment
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🔐 End-to-end encryption of all data processing
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🚫 No network access required during analysis
               </li>
             </ul>
           </div>
           <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               AI-Powered Analysis
             </h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🧠 Llama 3.1 integration for report generation
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 📊 Advanced pattern recognition algorithms
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 🔬 Latest genomic research integration
               </li>
-              <li style={{ marginBottom: '0.75rem', color: 'var(--gray-600)' }}>
+              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
                 📈 Continuous model updates and improvements
               </li>
             </ul>
