@@ -1,346 +1,248 @@
-# 🧬 GenePredict - AI-Powered Genomic Risk Assessment
+# LiteratureGapper
 
-> **Local-First Genomic Analysis Platform** • Built with Tauri, React, and Rust for maximum privacy and security
+A comprehensive genomic data processing project with desktop UI and data processing pipelines for TCGA cancer data downloads and genomic variant analysis.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-green.svg)
+## Overview
 
----
+LiteratureGapper combines a modern desktop application built with Tauri and React/TypeScript with powerful genomic data processing capabilities. The project includes:
 
-## 🎯 Project Overview
+- **Desktop Application**: Modern UI for genomic data visualization and analysis
+- **Data Processing Pipelines**: FASTQ to VCF conversion and genomic variant extraction
+- **TCGA Integration**: Blood cancer data download and processing
+- **Genomic Analysis**: Precise region-based variant extraction from multiple data sources
 
-GenePredict is a **privacy-first genomic risk assessment platform** that processes genetic data entirely on your local machine. No data ever leaves your device, ensuring complete privacy and HIPAA compliance for sensitive genetic information.
+## Prerequisites
 
-### 🔬 Core Capabilities (Planned)
-- **FASTQ/BAM File Processing**: Native support for genomic data formats
-- **AI Risk Scoring**: TensorFlow-powered breast cancer risk assessment  
-- **Variant Analysis**: Deep variant calling and interpretation
-- **Multi-language Reports**: AI-generated summaries in English, Hindi, Spanish
-- **Privacy-Preserving ML**: OpenMined PySyft integration for federated learning
-- **Cross-Platform**: Secure desktop app for macOS, Windows, and Linux
+Before getting started, ensure you have the following installed:
 
----
+### Required Software
+- **Node.js** (v16 or later) and **pnpm**
+- **Rust** and **Cargo** (latest stable)
+- **Python 3** (3.8 or later)
+- **System Dependencies** (Linux):
+  ```bash
+  sudo apt update
+  sudo apt install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+  ```
 
-## 📁 Current Application State
-
-### ✅ **Phase 1: Foundation - COMPLETED**
-- **Tauri Environment**: Cross-platform desktop framework initialized
-- **React + TypeScript**: Modern UI with Vite build system  
-- **Tailwind CSS**: Utility-first styling with production configuration
-- **Rust Backend**: Secure native layer for file processing
-- **Development Toolchain**: Hot reload, debugging, and build scripts
-- **Logging Infrastructure**: Comprehensive logging with `useLogger` hook
-
-### 🎨 **UI Status**
-- **Landing Page**: Beautiful gradient design with GenePredict branding
-- **Interactive Components**: Sample analysis counter with state management
-- **Responsive Design**: Mobile-first Tailwind implementation
-- **Developer Experience**: Hot reload working for both React and Rust
-
-### 🛠️ **Technical Stack**
-```
-Frontend:  React 19 + TypeScript + Tailwind CSS 4.1
-Backend:   Rust 1.88 + Tauri 2.x
-Build:     Vite 7.0 + pnpm 10.12
-Platform:  Cross-platform desktop (macOS/Windows/Linux)
-```
-
----
-
-## 🚀 Quick Start Guide
-
-### Prerequisites
-- **Node.js 20+** (LTS recommended)
-- **Rust 1.77+** (stable toolchain)
-- **pnpm 8+** (package manager)
-
-### 1. Clone & Setup
+### Genomic Tools (for data processing)
 ```bash
-git clone <repository-url>
-cd LiteratureGapper
+sudo apt install -y bcftools samtools tabix
 ```
 
-### 2. Install Dependencies
+### Verify Installation
 ```bash
-# Navigate to UI directory
+node --version && pnpm --version
+rustc --version && cargo --version
+python3 --version
+bcftools --version
+```
+
+## Quick Start
+
+### 1. Install Dependencies
+```bash
 cd desktop/ui
-
-# Install JavaScript dependencies
 pnpm install
 ```
 
-### 3. Run Development Server
-```bash
-# Option 1: Run from UI directory
-pnpm run tauri-dev
-
-# Option 2: Run from desktop directory  
-cd ../
-cargo tauri dev
-```
-
-### 4. Build for Production
-```bash
-# From desktop/ directory
-cargo tauri build
-```
-
----
-
-## 🧬 Genomic Parallel Extraction Pipeline
-
-A production-ready pipeline for extracting specific genomic regions from massive VCF files using parallel processing. This component handles the data processing layer of GenePredict.
-
-### Quick Start (Team Setup)
-
-**1. First time setup (downloads data once per machine):**
-```bash
-python3 setup_data.py
-```
-
-**2. Extract your regions:**
-```bash
-python3 extract_by_region_precise.py
-```
-
-**That's it!** Large files are shared across team members.
-
-### What This Pipeline Does
-
-- ✅ **Parallel processing** across multiple CPU cores
-- ✅ **100% precise extraction** (exact boundaries)
-- ✅ **Multi-chromosome support** (handles mixed datasets)
-- ✅ **Massive file handling** (tested on 11GB+ files)
-- ✅ **Team-friendly** (shared data, no repeated downloads)
-
-### Data Management
-
-**Smart caching system:**
-- Downloads large files **once per machine**
-- Stores in shared locations (`/shared/genomics-data` → `~/genomics-data` → `./data-cache`)
-- Creates symlinks in `test-data/` for project use
-- Automatically handles indexing
-
-**Git workflow:**
-- ✅ Track: Scripts, regions, documentation
-- ❌ Ignore: Large VCF files, outputs, indexes
-
-### Supported File Types
-
-| Dataset | Size | Type | Use Case |
-|---------|------|------|----------|
-| **Phase 1** | 11GB+ | SNPs + Indels + SVs | Comprehensive variant analysis |
-| **Phase 3** | 200MB-1.2GB | High-quality SNPs | Population genetics |
-
-### Usage Examples
-
-**Define your regions in `regions.bed`:**
-```
-22	29121014	29235591	EWSR1
-1	35691274	35801992	TP73
-```
-
-**Run extraction:**
-```bash
-python3 extract_by_region_precise.py
-# Output: ✅ Extracted EWSR1 from chr22: 3260 variants (100% precise)
-```
-
-**Analyze results:**
-```bash
-ls -lh output_chunks/
-# EWSR1.vcf.gz    598K
-# TP73.vcf.gz     4.6M
-```
-
-### Team Collaboration
-
-**New team member workflow:**
-1. `git clone` the repository
-2. `python3 setup_data.py` (uses existing shared data if available)
-3. `python3 extract_by_region_precise.py` (ready to go!)
-
-**No need to:**
-- Download 11GB+ files individually
-- Manage complex data paths
-- Worry about incomplete downloads (resume capability)
-
-### Performance
-
-**Tested on:**
-- ✅ 11GB Phase 1 files (chr1)
-- ✅ 3,260 variants extracted in seconds
-- ✅ 100% boundary precision
-- ✅ Parallel processing across chromosomes
-
-### Requirements
+### 2. Development Server
+To run the desktop application in development mode:
 
 ```bash
-# System tools
-bcftools
-bgzip
-wget
-
-# Python (standard library only)
-python3
+# From the desktop directory
+cd /path/to/LiteratureGapper/desktop
+npx @tauri-apps/cli dev
 ```
 
-### Troubleshooting
+**Note**: The development server will:
+- Start the React frontend on http://localhost:5173/
+- Launch the Tauri desktop application
+- Enable hot-reload for both frontend and backend changes
 
-**"No such file" errors:** Run `python3 setup_data.py` first
-
-**Slow downloads:** Script uses `wget -c` for resume capability
-
-**Permission errors:** Check write access to data directories
-
-### Architecture
-
-```
-Large Files (11GB+)     Shared Storage        Project Directory
-├── chr1.vcf.gz    →    ~/genomics-data   →   test-data/ (symlinks)
-├── chr22.vcf.gz        (cached once)         ├── Scripts
-└── indexes                                   └── Output chunks
+### 3. Build for Production
+```bash
+# From the desktop directory
+cd /path/to/LiteratureGapper/desktop
+npx @tauri-apps/cli build
 ```
 
----
+The built application will be available in `desktop/src-tauri/target/release/bundle/`.
 
-## 🏗️ Project Architecture
+## Genomic Data Processing
+
+### Extract Variants by Region
+
+The project includes a powerful genomic variant extraction tool that can work with multiple data sources:
+
+```bash
+# From the project root
+python3 extract_by_region.py
+```
+
+#### Features:
+- **Multiple Data Sources**: 1000 Genomes, gnomAD, local files
+- **Parallel Processing**: Uses all CPU cores for fast extraction
+- **Precise Boundaries**: Exact coordinate filtering (not just overlapping)
+- **Performance Monitoring**: Detailed timing and memory usage statistics
+- **Error Resilience**: Automatic retries and continue-on-error
+- **Flexible Configuration**: Easy switching between remote and local data
+
+#### Configuration
+
+The extraction tool uses `config_data_source.py` for data source configuration:
+
+```bash
+# Use remote 1000 Genomes data (default - no download required)
+export GENOMIC_DATA_SOURCE=remote
+
+# Use local test data (limited chromosomes)
+export GENOMIC_DATA_SOURCE=local
+
+# Use gnomAD v3.1.2 (large files - 4-30GB each)
+export GENOMIC_DATA_SOURCE=gnomad
+```
+
+#### Input Format
+
+The tool expects a `regions.bed` file with tab-separated values:
+```
+chr1    35691274    35801992    TP73
+chr17   7565097     7590868     TP53
+chr13   32889611    32973805    BRCA2
+```
+
+Format: `chromosome    start    end    gene_name`
+
+#### Output
+
+- Creates `output_chunks/` directory with compressed VCF files
+- Each gene gets its own `.vcf.gz` file
+- Detailed performance metrics and variant counts
+- Automatic cleanup of temporary files
+
+## Project Structure
 
 ```
 LiteratureGapper/
-├── desktop/                    # Cross-platform desktop application
-│   ├── src-tauri/             # Rust backend (Tauri framework)
-│   │   ├── src/
-│   │   │   ├── main.rs        # Rust entry point
-│   │   │   └── lib.rs         # Core business logic
-│   │   ├── tauri.conf.json    # Tauri configuration
-│   │   └── Cargo.toml         # Rust dependencies
-│   └── ui/                    # React frontend
-│       ├── src/
-│       │   ├── main.tsx       # React entry point
-│       │   ├── App.tsx        # Main application component
-│       │   └── hooks/
-│       │       └── useLogger.ts # Logging utilities
-│       ├── package.json       # Node.js dependencies
-│       ├── tailwind.config.ts # Tailwind CSS configuration
-│       └── vite.config.ts     # Vite build configuration
-├── data_processing/           # Data processing pipelines
-│   ├── tcga_download/         # TCGA data download utilities
-│   └── testing_data_generator/ # Test data generation
-├── extract_by_region_precise.py # Genomic region extraction
-├── setup_data.py              # Data setup script
-├── docs/                      # Project planning & documentation
-├── documentation/             # Technical specifications
-└── README.md                  # This file
+├── desktop/                    # Tauri desktop application
+│   ├── ui/                    # React/TypeScript frontend
+│   │   ├── src/               # Frontend source code
+│   │   ├── package.json       # Frontend dependencies
+│   │   └── ...
+│   └── src-tauri/             # Rust backend
+│       ├── src/               # Rust source code
+│       ├── Cargo.toml         # Rust dependencies
+│       └── tauri.conf.json    # Tauri configuration
+├── extract_by_region.py       # Genomic variant extraction tool
+├── config_data_source.py      # Data source configuration
+├── regions.bed               # Example genomic regions
+└── README.md                 # This file
 ```
 
----
+## Development
 
-## 🔧 Development
-
-### Available Scripts (from `desktop/ui/`)
+### Frontend Development
 ```bash
-pnpm run dev          # Start Vite development server
-pnpm run build        # Build for production
-pnpm run tauri-dev    # Start Tauri + React development
-pnpm run tauri-build  # Build desktop application
-pnpm run lint         # Run ESLint
+cd desktop/ui
+pnpm dev  # React development server only
 ```
 
-### Data Processing Scripts
+### Backend Development
 ```bash
-python3 setup_data.py              # Set up genomic data
-python3 extract_by_region_precise.py # Extract genomic regions
+cd desktop/src-tauri
+cargo run  # Rust backend only
 ```
 
-### Environment Variables
-- `RUST_LOG=debug` - Enable detailed Rust logging
-- `NODE_ENV=development` - React development mode
-- `TAURI_DEV_URL` - Custom development server URL
+### Full Stack Development
+```bash
+cd desktop
+npx @tauri-apps/cli dev  # Both frontend and backend with hot-reload
+```
 
-### Debugging
-- **React DevTools**: Available in development mode
-- **Rust Logging**: Use `RUST_LOG=debug` for detailed backend logs
-- **Browser Console**: Frontend logs via `useLogger` hook
-- **Hot Reload**: Automatic for both React and Rust changes
+## Data Sources
+
+### Default: Remote 1000 Genomes
+- **Pros**: No local storage required, comprehensive coverage
+- **Cons**: Requires internet connection, slower than local data
+- **Coverage**: All chromosomes 1-22 + X
+- **Format**: Standard VCF with GRCh37 coordinates
+
+### gnomAD v3.1.2
+- **Pros**: Larger variant database, population frequency data
+- **Cons**: Very large files (4-30GB each), requires significant bandwidth
+- **Coverage**: Selected chromosomes
+- **Format**: VCF with GRCh38 coordinates
+
+### Local Data
+- **Pros**: Fastest processing, no internet required
+- **Cons**: Requires manual download and setup
+- **Coverage**: Limited test chromosomes (1, 22)
+
+## Performance
+
+The genomic extraction tool is optimized for performance:
+
+- **Parallel Processing**: Utilizes all CPU cores
+- **Memory Efficient**: Processes regions independently
+- **Compression**: Configurable compression levels (1-9)
+- **Caching**: Remote index file caching
+- **Monitoring**: Real-time performance metrics
+
+Example output:
+```
+✅ TP53 (chr17): 245 variants, 23.4KB | Time: 2.34s | Memory: +12.5MB
+📊 Total variants extracted: 8,432
+⚡ Variants per second: 3,604
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Tauri CLI not found**
+   ```bash
+   # Use npx instead of global installation
+   npx @tauri-apps/cli dev
+   ```
+
+2. **System dependencies missing (Linux)**
+   ```bash
+   sudo apt install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+   ```
+
+3. **bcftools not found**
+   ```bash
+   sudo apt install -y bcftools samtools tabix
+   ```
+
+4. **Network issues with remote data**
+   ```bash
+   # Switch to local test data
+   export GENOMIC_DATA_SOURCE=local
+   ```
+
+### Getting Help
+
+- Check the console output for detailed error messages
+- Verify all prerequisites are installed
+- Ensure internet connectivity for remote data sources
+- Check file permissions for output directories
+
+## Contributing
+
+This project follows comprehensive development practices:
+
+- **Thorough Planning**: Extensive analysis before implementation
+- **Clean Architecture**: Well-organized folder structure
+- **Comprehensive Logging**: Detailed logging throughout
+- **Production Ready**: No mock data, real functionality from start
+- **Memory Bank System**: Project documentation and knowledge management
+
+## License
+
+[License information to be added]
 
 ---
 
-## 🛣️ Next Steps (Roadmap)
-
-### Phase 2: Data Layer (In Progress)
-- [ ] Python ML service integration via Tauri plugin
-- [ ] FASTQ/BAM file parsing with BioPython
-- [ ] TensorFlow pipeline for breast cancer prediction
-- [ ] DeepVariant integration for variant calling
-- [x] Parallel genomic extraction pipeline
-
-### Phase 3: Interface Layer
-- [ ] Drag-and-drop file uploader
-- [ ] Variant table with filtering and search
-- [ ] Risk visualization and heatmaps
-- [ ] Loading states and progress indicators
-
-### Phase 4: Reporting & Compliance
-- [ ] Llama 3.1 integration for AI report generation
-- [ ] Multi-language support (English, Hindi, Spanish)
-- [ ] PDF export functionality
-- [ ] Privacy-preserving ML with OpenMined PySyft
-
-### Phase 5: Explorer Mode
-- [ ] Interactive variant simulation
-- [ ] BRCA1/2 impact visualization
-- [ ] Comparative analysis tools
-
----
-
-## 🔒 Privacy & Security
-
-- **Local Processing**: All data remains on your device
-- **No External APIs**: Zero external data transmission
-- **Secure File Handling**: Rust-powered native file operations
-- **HIPAA Compliant**: Designed for medical data privacy
-- **Open Source**: Transparent and auditable codebase
-
----
-
-## 📚 Documentation
-
-- [`docs/Phase1_Foundation_Tauri_Setup_Plan.md`](docs/Phase1_Foundation_Tauri_Setup_Plan.md) - Detailed setup plan
-- [`documentation/GenePredict_BrainLift/`](documentation/GenePredict_BrainLift/) - Technical specifications
-- [`PRD_V2.md`](PRD_V2.md) - Product Requirements Document
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and linting
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🆘 Support
-
-- **Issues**: [GitHub Issues](../../issues)
-- **Discussions**: [GitHub Discussions](../../discussions)
-- **Documentation**: See [`docs/`](docs/) directory
-
----
-
-*"In genomics, privacy is not a feature—it's a fundamental right."*
-
----
-
-**Last Updated**: January 2025 • **Status**: MVP Foundation Complete ✅
+**Note**: This project is designed for genomic research and analysis. Ensure you have appropriate permissions and follow ethical guidelines when working with genomic data.
