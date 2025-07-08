@@ -6,6 +6,35 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+.venv/
+.env/
+
 # Environment variables
 .env
 .env.local
@@ -17,7 +46,6 @@ lerna-debug.log*
 .cursorrules/
 .cursor/
 .cursor/rules/*
-
 
 # Build outputs
 dist/
@@ -31,6 +59,18 @@ desktop/ui/build/
 # Rust/Tauri
 desktop/src-tauri/target/
 desktop/src-tauri/Cargo.lock
+
+# TCGA Data Downloads
+data_processing/tcga_download/*_downloads/
+data_processing/tcga_download/downloads/
+data_processing/tcga_download/logs/
+data_processing/tcga_download/venv/
+data_processing/tcga_download/*.log
+data_processing/testing_data_generator/*_downloads/
+data_processing/testing_data_generator/downloads/
+data_processing/testing_data_generator/logs/
+data_processing/testing_data_generator/venv/
+data_processing/testing_data_generator/*.log
 
 # Editor directories and files
 .vscode/*

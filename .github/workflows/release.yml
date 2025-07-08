@@ -1,0 +1,414 @@
+name: 🚀 Release Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  NODE_VERSION: '20'
+  RUST_VERSION: '1.88.0'
+  PNPM_VERSION: '10.12.1'
+
+jobs:
+  # 🏷️ Version Management
+  version:
+    name: 🏷️ Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      changelog: ${{ steps.version.outputs.changelog }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🔍 Install semver for version calculation
+        run: |
+          echo "🔍 Installing semver tool..."
+          npm install -g semver
+          echo "✅ semver installed"
+
+      - name: 🏷️ Calculate new version
+        id: version
+        run: |
+          echo "🔍 Calculating new version..."
+          
+          # Get current version from package.json
+          CURRENT_VERSION=$(cat desktop/ui/package.json | jq -r '.version')
+          echo "📋 Current version: $CURRENT_VERSION"
+          
+          # Determine version bump type
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION_TYPE="${{ github.event.inputs.version_type }}"
+            echo "🎯 Manual release: $VERSION_TYPE"
+          else
+            # Analyze commits for conventional commit patterns
+            echo "🔍 Analyzing commit messages for version bump..."
+            COMMITS=$(git log --oneline --no-merges $(git describe --tags --abbrev=0)..HEAD 2>/dev/null || git log --oneline --no-merges)
+            
+            if echo "$COMMITS" | grep -q "BREAKING CHANGE\|!:"; then
+              VERSION_TYPE="major"
+              echo "🚨 Breaking changes detected - major version bump"
+            elif echo "$COMMITS" | grep -q "^feat"; then
+              VERSION_TYPE="minor"
+              echo "✨ New features detected - minor version bump"
+            else
+              VERSION_TYPE="patch"
+              echo "🐛 Patches/fixes detected - patch version bump"
+            fi
+          fi
+          
+          # Calculate new version
+          NEW_VERSION=$(semver -i $VERSION_TYPE $CURRENT_VERSION)
+          NEW_TAG="v$NEW_VERSION"
+          
+          echo "🎯 Version bump: $CURRENT_VERSION → $NEW_VERSION ($VERSION_TYPE)"
+          echo "🏷️ New tag: $NEW_TAG"
+          
+          # Generate changelog
+          CHANGELOG=$(cat << EOF
+          ## 🧬 GenePredict Release $NEW_VERSION
+          
+          ### 📋 What's New
+          - Automated release build for desktop application
+          - Cross-platform builds (macOS, Windows, Linux)
+          - Privacy-first genomic risk assessment platform
+          
+          ### 🔨 Technical Details
+          - **Version**: $NEW_VERSION
+          - **Build Type**: $VERSION_TYPE
+          - **Tauri**: 2.6.2
+          - **React**: 19.1.0
+          - **TypeScript**: 5.8.3
+          
+          ### 📦 Download
+          Choose the appropriate installer for your platform below.
+          EOF
+          )
+          
+          # Set outputs
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 📝 Update version files
+        run: |
+          echo "📝 Updating version files to ${{ steps.version.outputs.version }}..."
+          
+          # Update package.json
+          jq '.version = "${{ steps.version.outputs.version }}"' desktop/ui/package.json > desktop/ui/package.json.tmp
+          mv desktop/ui/package.json.tmp desktop/ui/package.json
+          
+          # Update tauri.conf.json
+          jq '.version = "${{ steps.version.outputs.version }}"' desktop/src-tauri/tauri.conf.json > desktop/src-tauri/tauri.conf.json.tmp
+          mv desktop/src-tauri/tauri.conf.json.tmp desktop/src-tauri/tauri.conf.json
+          
+          # Update Cargo.toml
+          sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.version }}"/' desktop/src-tauri/Cargo.toml
+          
+          echo "✅ Version files updated"
+
+      - name: 📤 Commit version bump
+        run: |
+          echo "📤 Committing version bump..."
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add desktop/ui/package.json desktop/src-tauri/tauri.conf.json desktop/src-tauri/Cargo.toml
+          git commit -m "🔖 Bump version to ${{ steps.version.outputs.version }}"
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin main --follow-tags
+          echo "✅ Version bump committed and tagged"
+
+  # 🧪 Validation & Testing
+  validate:
+    name: 🧪 Validation & Testing
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🔍 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🚀 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install frontend dependencies
+        working-directory: desktop/ui
+        run: |
+          echo "📦 Installing dependencies for validation..."
+          pnpm install --frozen-lockfile
+          echo "✅ Dependencies installed"
+
+      - name: 🔍 Run validation checks
+        working-directory: desktop/ui
+        run: |
+          echo "🔍 Running ESLint..."
+          pnpm lint
+          echo "✅ ESLint passed"
+          
+          echo "🔍 Running TypeScript check..."
+          pnpm exec tsc --noEmit
+          echo "✅ TypeScript check passed"
+          
+          echo "🔨 Building frontend..."
+          pnpm build
+          echo "✅ Frontend build successful"
+
+  # 🔨 Build Multi-Platform Release
+  build:
+    name: 🔨 Build Release
+    needs: [version, validate]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-latest
+            rust-target: x86_64-unknown-linux-gnu
+            name: 'Linux x64'
+            emoji: '🐧'
+            ext: '.deb'
+            ext2: '.AppImage'
+          - os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            name: 'Windows x64'
+            emoji: '🪟'
+            ext: '.msi'
+            ext2: '.exe'
+          - os: macos-latest
+            rust-target: universal-apple-darwin
+            name: 'macOS Universal'
+            emoji: '🍎'
+            ext: '.dmg'
+            ext2: '.app'
+
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: 🦀 Setup Rust ${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: ${{ matrix.platform.rust-target }}
+
+      - name: 🚀 Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            desktop/src-tauri -> target
+
+      - name: 🔍 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🚀 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 🔧 Install system dependencies (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          echo "🔧 Installing Linux system dependencies..."
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
+          echo "✅ Linux dependencies installed"
+
+      - name: 📦 Install frontend dependencies
+        working-directory: desktop/ui
+        run: |
+          echo "📦 Installing frontend dependencies..."
+          pnpm install --frozen-lockfile
+          echo "✅ Frontend dependencies installed"
+
+      - name: 🔨 Build Tauri Release
+        working-directory: desktop/src-tauri
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          echo "${{ matrix.platform.emoji }} Building Tauri release for ${{ matrix.platform.name }}..."
+          echo "🎯 Target: ${{ matrix.platform.rust-target }}"
+          echo "📦 Version: ${{ needs.version.outputs.version }}"
+          
+          if [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
+            echo "🍎 Building universal macOS binary..."
+            cargo tauri build --target universal-apple-darwin
+          else
+            echo "🔨 Building for ${{ matrix.platform.rust-target }}..."
+            cargo tauri build --target ${{ matrix.platform.rust-target }}
+          fi
+          
+          echo "✅ Tauri release build completed for ${{ matrix.platform.name }}"
+
+      - name: 📂 Locate build artifacts
+        id: artifacts
+        run: |
+          echo "📂 Locating build artifacts..."
+          
+          if [ "${{ matrix.platform.os }}" == "ubuntu-latest" ]; then
+            DEB_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb -name "*.deb" | head -1)
+            APPIMAGE_FILE=$(find desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage -name "*.AppImage" | head -1)
+            echo "deb_file=$DEB_FILE" >> $GITHUB_OUTPUT
+            echo "appimage_file=$APPIMAGE_FILE" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.platform.os }}" == "windows-latest" ]; then
+            MSI_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi -name "*.msi" | head -1)
+            EXE_FILE=$(find desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis -name "*.exe" | head -1)
+            echo "msi_file=$MSI_FILE" >> $GITHUB_OUTPUT
+            echo "exe_file=$EXE_FILE" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.platform.os }}" == "macos-latest" ]; then
+            DMG_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+            APP_FILE=$(find desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
+            echo "dmg_file=$DMG_FILE" >> $GITHUB_OUTPUT
+            echo "app_file=$APP_FILE" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "✅ Build artifacts located"
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.name }} Build
+          path: |
+            ${{ steps.artifacts.outputs.deb_file }}
+            ${{ steps.artifacts.outputs.appimage_file }}
+            ${{ steps.artifacts.outputs.msi_file }}
+            ${{ steps.artifacts.outputs.exe_file }}
+            ${{ steps.artifacts.outputs.dmg_file }}
+            ${{ steps.artifacts.outputs.app_file }}
+          if-no-files-found: error
+
+      - name: 📊 Build summary
+        run: |
+          echo "📊 Build completed successfully for ${{ matrix.platform.name }}"
+          echo "🎯 Version: ${{ needs.version.outputs.version }}"
+          echo "🏷️ Tag: ${{ needs.version.outputs.tag }}"
+          echo "📦 Artifacts uploaded to GitHub Actions"
+
+  # 🚀 Create GitHub Release
+  release:
+    name: 🚀 Create GitHub Release
+    needs: [version, validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 📂 List artifacts
+        run: |
+          echo "📂 Downloaded artifacts:"
+          find ./artifacts -type f -name "*" | sort
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: 🧬 GenePredict ${{ needs.version.outputs.version }}
+          body: ${{ needs.version.outputs.changelog }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ./artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Release summary
+        run: |
+          echo "# 🧬 GenePredict Release ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ needs.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Available Downloads" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐧 **Linux**: .deb and .AppImage installers" >> $GITHUB_STEP_SUMMARY
+          echo "- 🪟 **Windows**: .msi and .exe installers" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 **macOS**: .dmg installer (Universal Binary)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [📄 Release Notes](https://github.com/${{ github.repository }}/releases/tag/${{ needs.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [📥 Download Page](https://github.com/${{ github.repository }}/releases/latest)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
