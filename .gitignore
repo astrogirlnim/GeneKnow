@@ -34,6 +34,9 @@ env/
 ENV/
 .venv/
 .env/
+*.pyc
+*.pyo
+.pytest_cache/
 
 # Environment variables
 .env
@@ -72,6 +75,29 @@ data_processing/testing_data_generator/logs/
 data_processing/testing_data_generator/venv/
 data_processing/testing_data_generator/*.log
 
+# Large genomic data files
+*.vcf.gz
+*.vcf
+*.bam
+*.sam
+*.fastq.gz
+*.fastq
+*.fasta.gz
+*.fasta
+
+# Index files
+*.tbi
+*.csi
+*.bai
+*.fai
+
+# Data directories
+test-data/
+output_chunks/
+data-cache/
+results/
+regions.bed
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -82,11 +108,16 @@ data_processing/testing_data_generator/*.log
 *.njsproj
 *.sln
 *.sw?
+*.sublime-*
+*.swp
+*.swo
 
 # OS generated files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+.AppleDouble
+.LSOverride
 
 # Logs
 *.log
@@ -97,6 +128,7 @@ logs/
 *.temp
 temp/
 tmp/
+*_temp*
 
 # Cache directories
 .cache/
@@ -106,16 +138,6 @@ tmp/
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
-
-# Mac OS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
 
 # Backup files
 *.bak
@@ -127,4 +149,18 @@ Desktop.ini
 *.h5
 *.pkl
 models/
-data/ 
+data/
+
+# Keep important empty directories with gitkeep
+!output_chunks/.gitkeep
+
+# External data and cache
+external-data/
+remote_index_cache/
+comparison_output/
+remote_test_output/
+test-fastq/
+blood_cancer_downloads/
+minimal_test_downloads/
+simple_test_downloads/
+chrX_regions.bed

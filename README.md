@@ -84,7 +84,123 @@ cargo tauri dev
 ```bash
 # From desktop/ directory
 cargo tauri build
+```
 
+---
+
+## 🧬 Genomic Parallel Extraction Pipeline
+
+A production-ready pipeline for extracting specific genomic regions from massive VCF files using parallel processing. This component handles the data processing layer of GenePredict.
+
+### Quick Start (Team Setup)
+
+**1. First time setup (downloads data once per machine):**
+```bash
+python3 setup_data.py
+```
+
+**2. Extract your regions:**
+```bash
+python3 extract_by_region_precise.py
+```
+
+**That's it!** Large files are shared across team members.
+
+### What This Pipeline Does
+
+- ✅ **Parallel processing** across multiple CPU cores
+- ✅ **100% precise extraction** (exact boundaries)
+- ✅ **Multi-chromosome support** (handles mixed datasets)
+- ✅ **Massive file handling** (tested on 11GB+ files)
+- ✅ **Team-friendly** (shared data, no repeated downloads)
+
+### Data Management
+
+**Smart caching system:**
+- Downloads large files **once per machine**
+- Stores in shared locations (`/shared/genomics-data` → `~/genomics-data` → `./data-cache`)
+- Creates symlinks in `test-data/` for project use
+- Automatically handles indexing
+
+**Git workflow:**
+- ✅ Track: Scripts, regions, documentation
+- ❌ Ignore: Large VCF files, outputs, indexes
+
+### Supported File Types
+
+| Dataset | Size | Type | Use Case |
+|---------|------|------|----------|
+| **Phase 1** | 11GB+ | SNPs + Indels + SVs | Comprehensive variant analysis |
+| **Phase 3** | 200MB-1.2GB | High-quality SNPs | Population genetics |
+
+### Usage Examples
+
+**Define your regions in `regions.bed`:**
+```
+22	29121014	29235591	EWSR1
+1	35691274	35801992	TP73
+```
+
+**Run extraction:**
+```bash
+python3 extract_by_region_precise.py
+# Output: ✅ Extracted EWSR1 from chr22: 3260 variants (100% precise)
+```
+
+**Analyze results:**
+```bash
+ls -lh output_chunks/
+# EWSR1.vcf.gz    598K
+# TP73.vcf.gz     4.6M
+```
+
+### Team Collaboration
+
+**New team member workflow:**
+1. `git clone` the repository
+2. `python3 setup_data.py` (uses existing shared data if available)
+3. `python3 extract_by_region_precise.py` (ready to go!)
+
+**No need to:**
+- Download 11GB+ files individually
+- Manage complex data paths
+- Worry about incomplete downloads (resume capability)
+
+### Performance
+
+**Tested on:**
+- ✅ 11GB Phase 1 files (chr1)
+- ✅ 3,260 variants extracted in seconds
+- ✅ 100% boundary precision
+- ✅ Parallel processing across chromosomes
+
+### Requirements
+
+```bash
+# System tools
+bcftools
+bgzip
+wget
+
+# Python (standard library only)
+python3
+```
+
+### Troubleshooting
+
+**"No such file" errors:** Run `python3 setup_data.py` first
+
+**Slow downloads:** Script uses `wget -c` for resume capability
+
+**Permission errors:** Check write access to data directories
+
+### Architecture
+
+```
+Large Files (11GB+)     Shared Storage        Project Directory
+├── chr1.vcf.gz    →    ~/genomics-data   →   test-data/ (symlinks)
+├── chr22.vcf.gz        (cached once)         ├── Scripts
+└── indexes                                   └── Output chunks
 ```
 
 ---
@@ -109,6 +225,11 @@ LiteratureGapper/
 │       ├── package.json       # Node.js dependencies
 │       ├── tailwind.config.ts # Tailwind CSS configuration
 │       └── vite.config.ts     # Vite build configuration
+├── data_processing/           # Data processing pipelines
+│   ├── tcga_download/         # TCGA data download utilities
+│   └── testing_data_generator/ # Test data generation
+├── extract_by_region_precise.py # Genomic region extraction
+├── setup_data.py              # Data setup script
 ├── docs/                      # Project planning & documentation
 ├── documentation/             # Technical specifications
 └── README.md                  # This file
@@ -125,6 +246,12 @@ pnpm run build        # Build for production
 pnpm run tauri-dev    # Start Tauri + React development
 pnpm run tauri-build  # Build desktop application
 pnpm run lint         # Run ESLint
+```
+
+### Data Processing Scripts
+```bash
+python3 setup_data.py              # Set up genomic data
+python3 extract_by_region_precise.py # Extract genomic regions
 ```
 
 ### Environment Variables
@@ -147,6 +274,7 @@ pnpm run lint         # Run ESLint
 - [ ] FASTQ/BAM file parsing with BioPython
 - [ ] TensorFlow pipeline for breast cancer prediction
 - [ ] DeepVariant integration for variant calling
+- [x] Parallel genomic extraction pipeline
 
 ### Phase 3: Interface Layer
 - [ ] Drag-and-drop file uploader
@@ -215,4 +343,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated**: January 2025 • **Status**: MVP Foundation Complete ✅ 
+**Last Updated**: January 2025 • **Status**: MVP Foundation Complete ✅
