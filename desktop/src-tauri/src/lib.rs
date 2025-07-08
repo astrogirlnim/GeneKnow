@@ -13,6 +13,14 @@ use utils::execute_python;
 use plugin::PluginSummary;
 use plugin_registry::PluginRegistryApi;
 
+// Add these imports for managing the API server
+use std::process::{Child, Stdio};
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+
+// Global API server process handle
+static API_SERVER_PROCESS: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FastqToVcfOptions {
     reference: String,
@@ -376,6 +384,195 @@ async fn get_plugin_registry_stats() -> Result<String, String> {
         .map_err(|e| format!("Failed to serialize stats: {}", e))
 }
 
+// ========================================
+// GeneKnow Pipeline API Server Management
+// ========================================
+
+#[command]
+async fn check_api_health() -> Result<bool, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get("http://localhost:5001/api/health")
+        .timeout(std::time::Duration::from_secs(2))
+        .send()
+        .await;
+    
+    match response {
+        Ok(resp) => Ok(resp.status().is_success()),
+        Err(_) => Ok(false),
+    }
+}
+
+#[command]
+async fn start_api_server() -> Result<bool, String> {
+    // Check if already running
+    if check_api_health().await.unwrap_or(false) {
+        return Ok(true);
+    }
+
+    // Get the path to the Python script
+    let api_script = std::env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join("../../geneknow_pipeline/enhanced_api_server.py");
+
+    // Start the API server
+    #[cfg(target_os = "windows")]
+    let mut cmd = Command::new("python");
+    #[cfg(not(target_os = "windows"))]
+    let mut cmd = Command::new("python3");
+
+    let child = cmd
+        .arg(api_script)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start API server: {}", e))?;
+
+    // Store the process handle and drop the guard immediately
+    {
+        let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+        *process_guard = Some(child);
+    } // Guard is dropped here
+
+    // Wait for server to start (with timeout)
+    let start_time = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(10);
+    
+    while start_time.elapsed() < timeout {
+        if check_api_health().await.unwrap_or(false) {
+            log::info!("GeneKnow API server started successfully");
+            return Ok(true);
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    }
+
+    // If we get here, server didn't start in time
+    stop_api_server().await?;
+    Err("API server failed to start within timeout".to_string())
+}
+
+#[command]
+async fn stop_api_server() -> Result<(), String> {
+    let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+    
+    if let Some(mut child) = process_guard.take() {
+        child.kill().map_err(|e| format!("Failed to stop API server: {}", e))?;
+        log::info!("GeneKnow API server stopped");
+    }
+    
+    Ok(())
+}
+
+#[command]
+async fn get_api_server_status() -> Result<serde_json::Value, String> {
+    let is_healthy = check_api_health().await.unwrap_or(false);
+    
+    if is_healthy {
+        // Get detailed health info
+        let client = reqwest::Client::new();
+        let response = client
+            .get("http://localhost:5001/api/health")
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+            
+        let health_data = response.json::<serde_json::Value>().await
+            .unwrap_or_else(|_| serde_json::json!({
+                "status": "running",
+                "details": "Unable to get detailed health info"
+            }));
+            
+        Ok(health_data)
+    } else {
+        Ok(serde_json::json!({
+            "status": "stopped",
+            "service": "GeneKnow Pipeline API"
+        }))
+    }
+}
+
+#[command]
+async fn process_genomic_file(
+    file_path: String,
+    preferences: Option<serde_json::Value>
+) -> Result<String, String> {
+    // Ensure API server is running
+    if !check_api_health().await.unwrap_or(false) {
+        start_api_server().await?;
+    }
+
+    let client = reqwest::Client::new();
+    
+    let request_body = serde_json::json!({
+        "file_path": file_path,
+        "preferences": preferences.unwrap_or(serde_json::json!({}))
+    });
+    
+    let response = client
+        .post("http://localhost:5001/api/process")
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+    
+    if response.status().is_success() {
+        let job_data: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+        
+        Ok(job_data["job_id"].as_str().unwrap_or("").to_string())
+    } else {
+        let error_data: serde_json::Value = response
+            .json()
+            .await
+            .unwrap_or(serde_json::json!({"error": "Unknown error"}));
+        
+        Err(error_data["error"].as_str().unwrap_or("Unknown error").to_string())
+    }
+}
+
+#[command]
+async fn get_job_status(job_id: String) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get(format!("http://localhost:5001/api/status/{}", job_id))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+    
+    if response.status().is_success() {
+        response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse response: {}", e))
+    } else {
+        Err("Failed to get job status".to_string())
+    }
+}
+
+#[command]
+async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get(format!("http://localhost:5001/api/results/{}", job_id))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+    
+    if response.status().is_success() {
+        response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse response: {}", e))
+    } else {
+        Err("Failed to get job results".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -398,6 +595,18 @@ pub fn run() {
         log::info!("Plugin registry initialized successfully");
       }
       
+      // Auto-start the GeneKnow API server in production
+      #[cfg(not(debug_assertions))]
+      {
+        log::info!("Starting GeneKnow API server...");
+        tauri::async_runtime::spawn(async {
+            match start_api_server().await {
+                Ok(_) => log::info!("GeneKnow API server started automatically"),
+                Err(e) => log::error!("Failed to start API server: {}", e),
+            }
+        });
+      }
+      
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -413,8 +622,26 @@ pub fn run() {
         has_plugin,
         get_plugin_metadata,
         reload_plugins,
-        get_plugin_registry_stats
+        get_plugin_registry_stats,
+        // GeneKnow Pipeline API commands
+        check_api_health,
+        start_api_server,
+        stop_api_server,
+        get_api_server_status,
+        process_genomic_file,
+        get_job_status,
+        get_job_results
     ])
+    .on_window_event(|_window, event| {
+        // Stop API server when app closes
+        if let tauri::WindowEvent::Destroyed = event {
+            let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+            if let Some(mut child) = process_guard.take() {
+                let _ = child.kill();
+                log::info!("Stopped GeneKnow API server on app exit");
+            }
+        }
+    })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
