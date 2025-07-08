@@ -429,9 +429,11 @@ async fn start_api_server() -> Result<bool, String> {
         .spawn()
         .map_err(|e| format!("Failed to start API server: {}", e))?;
 
-    // Store the process handle
-    let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
-    *process_guard = Some(child);
+    // Store the process handle and drop the guard immediately
+    {
+        let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+        *process_guard = Some(child);
+    } // Guard is dropped here
 
     // Wait for server to start (with timeout)
     let start_time = std::time::Instant::now();
@@ -630,9 +632,9 @@ pub fn run() {
         get_job_status,
         get_job_results
     ])
-    .on_window_event(|event| {
+    .on_window_event(|_window, event| {
         // Stop API server when app closes
-        if let tauri::WindowEvent::Destroyed = event.event() {
+        if let tauri::WindowEvent::Destroyed = event {
             let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
             if let Some(mut child) = process_guard.take() {
                 let _ = child.kill();
