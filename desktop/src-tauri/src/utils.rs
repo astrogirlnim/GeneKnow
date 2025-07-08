@@ -3,22 +3,20 @@ use std::process::Command;
 use std::io::Result;
 use log::{info, error, debug};
 
-/// Execute a Python script with the given arguments
+/// Execute a Python script with timing and comprehensive logging
 /// 
-/// This function provides a centralized way to execute Python scripts with proper
-/// cross-platform path handling, logging, and error reporting.
+/// This function provides a unified interface for executing Python scripts from Rust,
+/// with proper timing, logging, and error handling.
 /// 
 /// # Arguments
 /// * `script_name` - The name of the Python script (without .py extension)
 /// * `args` - A slice of string arguments to pass to the script
 /// 
 /// # Returns
-/// Returns the command output as a Result<std::process::Output, String>
+/// Returns the process output as a Result<std::process::Output, std::io::Error>
 /// 
-/// # Examples
-/// ```no_run
-/// use app_lib::utils::execute_python;
-/// 
+/// # Example
+/// ```rust
 /// let result = execute_python("fastq_to_vcf_pipeline", &["--help"]);
 /// match result {
 ///     Ok(output) => println!("Success: {}", String::from_utf8_lossy(&output.stdout)),
@@ -26,6 +24,7 @@ use log::{info, error, debug};
 /// }
 /// ```
 pub fn execute_python(script_name: &str, args: &[&str]) -> Result<std::process::Output> {
+    let start_time = std::time::Instant::now();
     info!("Executing Python script: {} with args: {:?}", script_name, args);
     
     // Build the script path - scripts are in desktop/python_ml/
@@ -54,19 +53,24 @@ pub fn execute_python(script_name: &str, args: &[&str]) -> Result<std::process::
     // Execute the command
     let output = cmd.output();
     
+    // Calculate execution time
+    let execution_time = start_time.elapsed();
+    
     match &output {
         Ok(result) => {
             if result.status.success() {
                 info!("Python script executed successfully in {:.2}s", 
-                     get_execution_time_placeholder());
+                     execution_time.as_secs_f64());
                 debug!("Script stdout: {}", String::from_utf8_lossy(&result.stdout));
             } else {
-                error!("Python script failed with exit code: {:?}", result.status.code());
+                error!("Python script failed with exit code: {:?} after {:.2}s", 
+                       result.status.code(), execution_time.as_secs_f64());
                 error!("Script stderr: {}", String::from_utf8_lossy(&result.stderr));
             }
         }
         Err(e) => {
-            error!("Failed to execute Python script: {}", e);
+            error!("Failed to execute Python script after {:.2}s: {}", 
+                   execution_time.as_secs_f64(), e);
         }
     }
     
@@ -132,12 +136,6 @@ fn get_project_root() -> Option<PathBuf> {
     
     // Fallback to current directory
     std::env::current_dir().ok()
-}
-
-/// Placeholder for execution time calculation
-/// TODO: Implement proper timing mechanism
-fn get_execution_time_placeholder() -> f64 {
-    0.0
 }
 
 /// Execute a Python script and parse the JSON output

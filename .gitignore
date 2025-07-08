@@ -6,6 +6,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Test output
+desktop/test-output/**
+desktop/test-output/
+
 # Python
 __pycache__/
 *.py[cod]

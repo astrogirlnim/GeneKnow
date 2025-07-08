@@ -141,6 +141,16 @@ impl PluginRegistry {
         Ok(plugin_dir)
     }
     
+    /// Get the registry configuration
+    pub fn get_config(&self) -> &RegistryConfig {
+        &self.config
+    }
+    
+    /// Update the registry configuration
+    pub fn update_config(&mut self, config: RegistryConfig) {
+        self.config = config;
+    }
+    
     /// Scan for plugins in the plugin directory
     fn scan_plugins(&mut self) -> Result<(), PluginError> {
         info!("Scanning for plugins in: {:?}", self.plugin_dir);
@@ -154,6 +164,12 @@ impl PluginRegistry {
         let mut loaded_plugins = 0;
         
         for entry in entries {
+            // Check if we've reached the maximum number of plugins
+            if loaded_plugins >= self.config.max_plugins {
+                info!("Reached maximum plugin limit ({}), skipping remaining plugins", self.config.max_plugins);
+                break;
+            }
+            
             let entry = entry.map_err(|e| PluginError::InitializationFailed(
                 format!("Failed to read directory entry: {}", e)
             ))?;
@@ -173,7 +189,8 @@ impl PluginRegistry {
             }
         }
         
-        info!("Plugin discovery complete. Discovered: {}, Loaded: {}", discovered_plugins, loaded_plugins);
+        info!("Plugin discovery complete. Discovered: {}, Loaded: {}/{}", 
+              discovered_plugins, loaded_plugins, self.config.max_plugins);
         Ok(())
     }
     
