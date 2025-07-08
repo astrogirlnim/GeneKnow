@@ -54,6 +54,7 @@ Platform:  Cross-platform desktop (macOS/Windows/Linux)
 - **Node.js 20+** (LTS recommended)
 - **Rust 1.77+** (stable toolchain)
 - **pnpm 8+** (package manager)
+- **Python 3.8+** (for genomic processing)
 
 ### 1. Clone & Setup
 ```bash
@@ -63,27 +64,83 @@ cd LiteratureGapper
 
 ### 2. Install Dependencies
 ```bash
-# Navigate to UI directory
+# Navigate to UI directory (IMPORTANT: Must be in desktop/ui/)
 cd desktop/ui
 
 # Install JavaScript dependencies
 pnpm install
 ```
 
-### 3. Run Development Server
+### 3. Test the Implementation
 ```bash
-# Option 1: Run from UI directory
-pnpm run tauri-dev
+# Navigate to desktop directory
+cd ..
 
-# Option 2: Run from desktop directory  
-cd ../
-cargo tauri dev
+# Run comprehensive test (recommended first time)
+./test_implementation.sh
 ```
 
-### 4. Build for Production
+### 4. Run Full Application (Complete Integration)
+
+**🚀 Recommended: One-Command Startup**
+```bash
+# From desktop/ui directory (starts both frontend + backend)
+cd ui
+pnpm run tauri-dev
+```
+
+This single command:
+- ✅ Starts the React frontend (Vite dev server)
+- ✅ Starts the Rust backend (Tauri + Python integration)  
+- ✅ Opens the desktop application automatically
+- ✅ Enables hot reload for both frontend and backend
+
+**🌐 Access Your Application:**
+- **Desktop App**: Opens automatically in a native window
+- **Web Browser**: http://localhost:5173 (for debugging)
+
+**✅ Verify Integration:**
+```bash
+# Test the Rust-Python integration (in another terminal)
+cd desktop
+python3 python_ml/config_data_source.py --list-vcf-files --json
+```
+
+---
+
+### Alternative Development Options
+
+**Option B: Manual (Two Terminals)**
+```bash
+# Terminal 1: Frontend (from desktop/ui/)
+cd desktop/ui
+pnpm dev
+
+# Terminal 2: Backend (from desktop/src-tauri/)
+cd desktop/src-tauri
+cargo tauri dev --no-dev-server
+```
+
+**Option C: Separate Components**
+```bash
+# Frontend only (from desktop/ui/)
+pnpm dev  # Runs on http://localhost:5173
+
+# Backend only (from desktop/src-tauri/)
+cargo run  # Runs Rust backend without UI
+```
+
+### 5. Build for Production
+```bash
+# From desktop/ui directory
+pnpm run tauri-build
+```
+
+### 🧬 Test Genomic Processing
 ```bash
 # From desktop/ directory
-cargo tauri build
+python3 python_ml/generate_test_fastq.py --output-dir test_output --num-reads 10 --json
+python3 python_ml/config_data_source.py --list-vcf-files --json
 ```
 
 ---
@@ -241,29 +298,69 @@ LiteratureGapper/
 
 ### Available Scripts (from `desktop/ui/`)
 ```bash
-pnpm run dev          # Start Vite development server
-pnpm run build        # Build for production
-pnpm run tauri-dev    # Start Tauri + React development
-pnpm run tauri-build  # Build desktop application
+pnpm run dev          # Start Vite development server only
+pnpm run build        # Build React frontend for production
+pnpm run tauri-dev    # Start both React + Tauri (full app)
+pnpm run tauri-build  # Build complete desktop application
 pnpm run lint         # Run ESLint
 ```
 
-### Data Processing Scripts
+### Python ML Scripts (from `desktop/`)
 ```bash
-python3 setup_data.py              # Set up genomic data
-python3 extract_by_region_precise.py # Extract genomic regions
+python3 python_ml/generate_test_fastq.py --help
+python3 python_ml/config_data_source.py --help
+python3 python_ml/extract_by_region.py --help
+python3 python_ml/fastq_to_vcf_pipeline.py --help
 ```
 
 ### Environment Variables
 - `RUST_LOG=debug` - Enable detailed Rust logging
 - `NODE_ENV=development` - React development mode
-- `TAURI_DEV_URL` - Custom development server URL
 
 ### Debugging
 - **React DevTools**: Available in development mode
-- **Rust Logging**: Use `RUST_LOG=debug` for detailed backend logs
+- **Rust Logging**: Use `RUST_LOG=debug` for detailed backend logs  
 - **Browser Console**: Frontend logs via `useLogger` hook
 - **Hot Reload**: Automatic for both React and Rust changes
+- **Python Integration**: All scripts support `--json` flag for structured output
+
+### Troubleshooting
+
+**"Command not found: tauri"**
+```bash
+cd desktop/ui
+pnpm install  # Reinstall dependencies including @tauri-apps/cli
+```
+
+**"tauri-dev fails to start"**
+```bash
+# Ensure you're in the correct directory
+cd desktop/ui
+pwd  # Should show .../LiteratureGapper/desktop/ui
+
+# Check if dependencies are installed
+ls node_modules/.bin/tauri  # Should exist
+```
+
+**"Port 5173 is in use"**
+```bash
+# Kill existing processes
+pkill -f "vite|cargo|tauri"
+# Or change port in vite.config.ts
+```
+
+**"No such file or directory"**
+```bash
+# Ensure you're in the correct directory:
+pwd  # Should show .../LiteratureGapper/desktop/ui for UI commands
+```
+
+**Python script errors**
+```bash
+# Test Python scripts individually:
+cd desktop
+python3 python_ml/config_data_source.py --help
+```
 
 ---
 

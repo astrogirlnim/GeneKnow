@@ -3,6 +3,10 @@ use std::process::Command;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
+// Import the utils module
+pub mod utils;
+use utils::execute_python;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FastqToVcfOptions {
     reference: String,
@@ -44,50 +48,80 @@ pub struct ExtractRegionResult {
 
 #[command]
 async fn convert_fastq_to_vcf(options: FastqToVcfOptions) -> Result<FastqToVcfResult, String> {
-    // Build the Python command
-    let mut cmd = Command::new("python3");
-    cmd.arg("src/api/fastq_to_vcf_pipeline.py");
-    cmd.arg("-r").arg(&options.reference);
-    cmd.arg("-1").arg(&options.fastq1);
+    // Build arguments for the Python script
+    let mut args = vec![
+        "-r", &options.reference,
+        "-1", &options.fastq1,
+        "-o", &options.output_prefix,
+        "--json", // Request JSON output
+    ];
     
+    // Add optional arguments
+    let fastq2_str;
     if let Some(fastq2) = &options.fastq2 {
-        cmd.arg("-2").arg(fastq2);
+        fastq2_str = fastq2.clone();
+        args.push("-2");
+        args.push(&fastq2_str);
     }
     
-    cmd.arg("-o").arg(&options.output_prefix);
-    
+    let threads_str;
     if let Some(threads) = options.threads {
-        cmd.arg("-t").arg(threads.to_string());
+        threads_str = threads.to_string();
+        args.push("-t");
+        args.push(&threads_str);
     }
     
+    let aligner_str;
     if let Some(aligner) = &options.aligner {
-        cmd.arg("-a").arg(aligner);
+        aligner_str = aligner.clone();
+        args.push("-a");
+        args.push(&aligner_str);
     }
     
-    // Execute the command
+    // Execute the Python script using our utility function
     let start_time = std::time::Instant::now();
-    let output = cmd.output().map_err(|e| e.to_string())?;
+    let output = execute_python("fastq_to_vcf_pipeline", &args)
+        .map_err(|e| e.to_string())?;
     let execution_time = start_time.elapsed().as_secs_f64();
     
     if output.status.success() {
-        // Parse the output to extract results
+        // Parse JSON output
         let stdout = String::from_utf8_lossy(&output.stdout);
         
-        // Extract variant count from output
-        let variant_count = stdout
-            .lines()
-            .find(|line| line.contains("Variants found:"))
-            .and_then(|line| line.split(':').last())
-            .and_then(|num| num.trim().parse::<u32>().ok());
-        
-        Ok(FastqToVcfResult {
-            success: true,
-            vcf_file: Some(format!("{}.vcf", options.output_prefix)),
-            bam_file: Some(format!("{}.bam", options.output_prefix)),
-            variant_count,
-            error: None,
-            execution_time: Some(execution_time),
-        })
+        // Try to parse as JSON, fall back to legacy parsing if needed
+        if let Ok(json_result) = serde_json::from_str::<serde_json::Value>(&stdout) {
+            // Parse JSON result
+            let success = json_result.get("success").and_then(|v| v.as_bool()).unwrap_or(false);
+            let vcf_file = json_result.get("vcf_file").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let bam_file = json_result.get("bam_file").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let variant_count = json_result.get("variant_count").and_then(|v| v.as_u64()).map(|v| v as u32);
+            let error = json_result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
+            
+            Ok(FastqToVcfResult {
+                success,
+                vcf_file,
+                bam_file,
+                variant_count,
+                error,
+                execution_time: Some(execution_time),
+            })
+        } else {
+            // Legacy parsing fallback
+            let variant_count = stdout
+                .lines()
+                .find(|line| line.contains("Variants found:"))
+                .and_then(|line| line.split(':').last())
+                .and_then(|num| num.trim().parse::<u32>().ok());
+            
+            Ok(FastqToVcfResult {
+                success: true,
+                vcf_file: Some(format!("{}.vcf", options.output_prefix)),
+                bam_file: Some(format!("{}.bam", options.output_prefix)),
+                variant_count,
+                error: None,
+                execution_time: Some(execution_time),
+            })
+        }
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Pipeline failed: {}", stderr))
@@ -96,68 +130,98 @@ async fn convert_fastq_to_vcf(options: FastqToVcfOptions) -> Result<FastqToVcfRe
 
 #[command]
 async fn extract_genomic_regions(options: ExtractRegionOptions) -> Result<ExtractRegionResult, String> {
-    // First, update the Python script to use the provided BED file
-    let mut cmd = Command::new("python3");
-    cmd.arg("src/api/extract_by_region.py");
+    // Build arguments for the Python script
+    let mut args = vec![
+        "--bed-file", &options.bed_file,
+        "--output-dir", &options.output_dir,
+        "--json", // Request JSON output
+    ];
     
-    // Set environment variables for the script
-    cmd.env("BED_PATH", &options.bed_file);
-    cmd.env("OUTPUT_DIR", &options.output_dir);
-    
+    // Add optional max_processes argument
+    let max_processes_str;
     if let Some(max_processes) = options.max_processes {
-        cmd.env("MAX_PROCESSES", max_processes.to_string());
+        max_processes_str = max_processes.to_string();
+        args.push("--max-processes");
+        args.push(&max_processes_str);
     }
     
-    // Execute the command
+    // Execute the Python script using our utility function
     let start_time = std::time::Instant::now();
-    let output = cmd.output().map_err(|e| e.to_string())?;
+    let output = execute_python("extract_by_region", &args)
+        .map_err(|e| e.to_string())?;
     let execution_time = start_time.elapsed().as_secs_f64();
     
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         
-        // Parse the output to extract results
-        let lines: Vec<String> = stdout.lines().map(|s| s.to_string()).collect();
-        let results: Vec<String> = lines.iter()
-            .filter(|line| line.contains("✅") || line.contains("❌"))
-            .cloned()
-            .collect();
-        
-        // Extract summary statistics
-        let successful_extractions = results.iter().filter(|r| r.contains("✅")).count() as u32;
-        let total_regions = results.len() as u32;
-        
-        // Extract total variants from summary
-        let total_variants = stdout
-            .lines()
-            .find(|line| line.contains("Total variants extracted:"))
-            .and_then(|line| line.split(':').last())
-            .and_then(|num| num.trim().replace(",", "").parse::<u32>().ok())
-            .unwrap_or(0);
-        
-        // Extract total size
-        let total_size = stdout
-            .lines()
-            .find(|line| line.contains("Total output size:"))
-            .and_then(|line| line.split(':').last())
-            .and_then(|size_str| {
-                // Extract the KB value
-                size_str.split("KB").next()
-                    .and_then(|num| num.trim().parse::<f32>().ok())
-                    .map(|kb| (kb * 1024.0) as u32) // Convert to bytes
+        // Try to parse as JSON, fall back to legacy parsing if needed
+        if let Ok(json_result) = serde_json::from_str::<serde_json::Value>(&stdout) {
+            // Parse JSON result
+            let success = json_result.get("success").and_then(|v| v.as_bool()).unwrap_or(false);
+            let total_regions = json_result.get("total_regions").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let successful_extractions = json_result.get("successful_extractions").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let total_variants = json_result.get("total_variants").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let total_size = json_result.get("total_size").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let results = json_result.get("results")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect())
+                .unwrap_or_default();
+            let error = json_result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
+            
+            Ok(ExtractRegionResult {
+                success,
+                total_regions,
+                successful_extractions,
+                total_variants,
+                total_size,
+                execution_time,
+                results,
+                error,
             })
-            .unwrap_or(0);
-        
-        Ok(ExtractRegionResult {
-            success: true,
-            total_regions,
-            successful_extractions,
-            total_variants,
-            total_size,
-            execution_time,
-            results,
-            error: None,
-        })
+        } else {
+            // Legacy parsing fallback
+            let lines: Vec<String> = stdout.lines().map(|s| s.to_string()).collect();
+            let results: Vec<String> = lines.iter()
+                .filter(|line| line.contains("✅") || line.contains("❌"))
+                .cloned()
+                .collect();
+            
+            // Extract summary statistics
+            let successful_extractions = results.iter().filter(|r| r.contains("✅")).count() as u32;
+            let total_regions = results.len() as u32;
+            
+            // Extract total variants from summary
+            let total_variants = stdout
+                .lines()
+                .find(|line| line.contains("Total variants extracted:"))
+                .and_then(|line| line.split(':').last())
+                .and_then(|num| num.trim().replace(",", "").parse::<u32>().ok())
+                .unwrap_or(0);
+            
+            // Extract total size
+            let total_size = stdout
+                .lines()
+                .find(|line| line.contains("Total output size:"))
+                .and_then(|line| line.split(':').last())
+                .and_then(|size_str| {
+                    // Extract the KB value
+                    size_str.split("KB").next()
+                        .and_then(|num| num.trim().parse::<f32>().ok())
+                        .map(|kb| (kb * 1024.0) as u32) // Convert to bytes
+                })
+                .unwrap_or(0);
+            
+            Ok(ExtractRegionResult {
+                success: true,
+                total_regions,
+                successful_extractions,
+                total_variants,
+                total_size,
+                execution_time,
+                results,
+                error: None,
+            })
+        }
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Extraction failed: {}", stderr))
@@ -183,11 +247,9 @@ async fn check_genomic_dependencies() -> Result<HashMap<String, bool>, String> {
 
 #[command]
 async fn get_available_vcf_files() -> Result<HashMap<String, String>, String> {
-    // This would call the Python config module to get available VCF files
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg("import sys; sys.path.append('src/api'); from config_data_source import get_vcf_files; import json; print(json.dumps(get_vcf_files()))")
-        .output()
+    // Execute the Python config script to get available VCF files
+    let args = vec!["--list-vcf-files", "--json"];
+    let output = execute_python("config_data_source", &args)
         .map_err(|e| e.to_string())?;
     
     if output.status.success() {
@@ -201,39 +263,15 @@ async fn get_available_vcf_files() -> Result<HashMap<String, String>, String> {
 
 #[command]
 async fn generate_test_fastq(output_dir: String, num_reads: u32) -> Result<HashMap<String, String>, String> {
-    let output = Command::new("python3")
-        .arg("-c")
-        .arg(format!(r#"
-import random
-import gzip
-import os
-import json
-
-output_dir = '{}'
-num_reads = {}
-os.makedirs(output_dir, exist_ok=True)
-
-def generate_fastq(filename, num_reads=1000, read_length=150):
-    bases = ['A', 'T', 'G', 'C']
-    filepath = os.path.join(output_dir, filename)
-    with gzip.open(filepath, 'wt') as f:
-        for i in range(num_reads):
-            seq = ''.join(random.choice(bases) for _ in range(read_length))
-            qual = 'I' * read_length
-            f.write(f'@read_{{i}}\n{{seq}}\n+\n{{qual}}\n')
-    return filepath
-
-file1 = generate_fastq('test_R1.fastq.gz', num_reads)
-file2 = generate_fastq('test_R2.fastq.gz', num_reads)
-
-result = {{
-    'success': True,
-    'file1': file1,
-    'file2': file2
-}}
-print(json.dumps(result))
-"#, output_dir, num_reads))
-        .output()
+    // Execute the Python script to generate test FASTQ files
+    let num_reads_str = num_reads.to_string();
+    let args = vec![
+        "--output-dir", &output_dir,
+        "--num-reads", &num_reads_str,
+        "--json"
+    ];
+    
+    let output = execute_python("generate_test_fastq", &args)
         .map_err(|e| e.to_string())?;
     
     if output.status.success() {
