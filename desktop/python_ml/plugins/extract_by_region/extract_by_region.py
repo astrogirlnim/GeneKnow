@@ -308,6 +308,43 @@ class GenomicExtractor:
             self.log(f"🏃 Variants per second: {total_variants/pipeline_time:.0f}")
             self.log("="*80)
 
+def cleanup_temp_files(output_dir=None):
+    """Clean up temporary files created during extraction process"""
+    try:
+        cleanup_paths = []
+        
+        # Clean up .tbi files in current directory
+        current_dir = os.getcwd()
+        cleanup_paths.append(current_dir)
+        
+        # Clean up .tbi files in output directory if specified
+        if output_dir and os.path.exists(output_dir):
+            cleanup_paths.append(output_dir)
+        
+        # Clean up .tbi files in project root
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        cleanup_paths.append(project_root)
+        
+        total_cleaned = 0
+        for path in cleanup_paths:
+            if os.path.exists(path):
+                for file in os.listdir(path):
+                    if file.endswith('.tbi') and not file.startswith('.'):
+                        file_path = os.path.join(path, file)
+                        try:
+                            os.remove(file_path)
+                            total_cleaned += 1
+                        except OSError as e:
+                            # Log but don't fail if we can't clean up
+                            print(f"Warning: Could not clean up {file_path}: {e}", file=sys.stderr)
+        
+        if total_cleaned > 0:
+            print(f"Cleaned up {total_cleaned} temporary index files", file=sys.stderr)
+            
+    except Exception as e:
+        # Don't fail the main process if cleanup fails
+        print(f"Warning: Cleanup failed: {e}", file=sys.stderr)
+
 def main():
     parser = argparse.ArgumentParser(description='Extract genomic regions from VCF files')
     parser.add_argument('--bed-file', required=True, help='BED file with regions to extract')
@@ -342,9 +379,9 @@ def main():
         else:
             print(f"❌ {error_msg}")
         sys.exit(1)
+    finally:
+        # Clean up temporary files
+        cleanup_temp_files(args.output_dir)
 
 if __name__ == "__main__":
-    main()
-    
-    # Clean up any .tbi files that ended up in root
-    # TODO: Add cleanup function if needed 
+    main() 

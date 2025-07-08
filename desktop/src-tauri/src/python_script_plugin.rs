@@ -143,13 +143,28 @@ impl PythonScriptPlugin {
         }
     }
     
-    /// Get script name without extension from manifest
+    /// Get the script name without the .py extension
     fn get_script_name(&self) -> String {
-        let script_path = &self.manifest.script_path;
-        if script_path.ends_with(".py") {
-            script_path[..script_path.len() - 3].to_string()
-        } else {
-            script_path.clone()
+        self.manifest.script_path
+            .strip_suffix(".py")
+            .unwrap_or(&self.manifest.script_path)
+            .to_string()
+    }
+    
+    /// Validate a field value against a JSON schema type
+    fn validate_field_type(&self, value: &Value, expected_type: &str) -> bool {
+        match expected_type {
+            "string" => value.is_string(),
+            "number" => value.is_number(),
+            "integer" => value.is_i64() || value.is_u64(),
+            "boolean" => value.is_boolean(),
+            "array" => value.is_array(),
+            "object" => value.is_object(),
+            "null" => value.is_null(),
+            _ => {
+                debug!("Unknown type '{}' in schema, allowing any value", expected_type);
+                true
+            }
         }
     }
 }
@@ -228,14 +243,51 @@ impl GenomicPlugin for PythonScriptPlugin {
         }
         
         // If input schema is provided, validate against it
-        if let Some(_input_schema) = &self.manifest.input_schema {
-            // TODO: Implement JSON schema validation
-            // For now, we'll just do basic validation
-            debug!("Input schema validation not yet implemented for plugin {}", self.manifest.id);
+        if let Some(input_schema) = &self.manifest.input_schema {
+            // Basic JSON schema validation implementation
+            debug!("Validating against input schema for plugin {}", self.manifest.id);
+            
+            // Check if schema defines required fields
+            if let Some(schema_required) = input_schema.get("required") {
+                if let Some(required_fields) = schema_required.as_array() {
+                    for field in required_fields {
+                        if let Some(field_name) = field.as_str() {
+                            if !args.get(field_name).is_some() {
+                                return Err(PluginError::ValidationFailed(
+                                    format!("Required field '{}' is missing", field_name)
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Check field types if properties are defined
+            if let Some(properties) = input_schema.get("properties") {
+                if let Some(props_obj) = properties.as_object() {
+                    for (field_name, field_schema) in props_obj {
+                        if let Some(field_value) = args.get(field_name) {
+                            if let Some(expected_type) = field_schema.get("type") {
+                                if let Some(type_str) = expected_type.as_str() {
+                                    if !self.validate_field_type(field_value, type_str) {
+                                        return Err(PluginError::ValidationFailed(
+                                            format!("Field '{}' has invalid type, expected: {}", 
+                                                   field_name, type_str)
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            debug!("Input schema validation passed for plugin {}", self.manifest.id);
+        } else {
+            debug!("No input schema provided for plugin {}, using basic validation", self.manifest.id);
         }
         
         // Plugin-specific validation can be added here
-        // For now, we'll just log the validation
         debug!("Argument validation passed for plugin {}", self.manifest.id);
         
         Ok(())
