@@ -77,9 +77,9 @@ const UploadPage: React.FC = () => {
         { type: "warning", title: "⚠️ Early Onset Risk", desc: "Childhood cancer surveillance needed" },
         { type: "info", title: "📊 Penetrance Data", desc: "90% lifetime cancer risk" },
         { type: "success", title: "✅ Functional Analysis", desc: "DNA binding domain affected" }
-      ]
-    }
-  } as const;
+              ]
+      }
+    };
 
   const handleFileSelect = (files: FileList) => {
     if (files.length > 0) {
