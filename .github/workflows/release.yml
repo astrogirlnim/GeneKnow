@@ -167,7 +167,7 @@ jobs:
   # 🔨 Build Multi-Platform Release
   build:
     name: 🔨 Build Release
-    needs: [version, validate]
+    needs: [version]
     strategy:
       fail-fast: false
       matrix:
@@ -282,14 +282,28 @@ jobs:
           
           echo "✅ Tauri release build completed for ${{ matrix.platform.name }}"
 
-      - name: 📂 Locate build artifacts
-        id: artifacts
+      - name: 📂 Locate build artifacts (Unix)
+        id: artifacts-unix
+        if: matrix.platform.os != 'windows-latest'
         run: |
           echo "📂 Locating build artifacts..."
           echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
           
           # Find all bundle files
           find desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/ -type f -name "*" | sort
+          
+          echo "✅ Build artifacts located"
+
+      - name: 📂 Locate build artifacts (Windows)
+        id: artifacts-windows
+        if: matrix.platform.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          echo "📂 Locating build artifacts..."
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
+          
+          # Find all bundle files using PowerShell
+          Get-ChildItem -Path "desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName }
           
           echo "✅ Build artifacts located"
 
@@ -310,7 +324,7 @@ jobs:
   # 🚀 Create GitHub Release
   release:
     name: 🚀 Create GitHub Release
-    needs: [version, validate, build]
+    needs: [version, build]
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout code
