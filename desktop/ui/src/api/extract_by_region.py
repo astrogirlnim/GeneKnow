@@ -12,7 +12,7 @@ from config_data_source import get_vcf_files, get_data_info, DATASET_FORMATS, DA
 
 # Performance Configuration
 CONFIG = {
-    "max_processes": None,  # None = use all CPU cores, or set to specific number
+    "max_processes": int(os.environ.get('MAX_PROCESSES', os.cpu_count() or 4)),  # Use env var or default
     "compression_level": 6,  # 1-9, higher = better compression but slower
     "temp_cleanup": True,    # Clean up temporary files
     "verbose_timing": True,  # Show detailed timing breakdown
@@ -24,8 +24,9 @@ CONFIG = {
 # Get VCF files from configuration
 VCF_FILES = get_vcf_files()
 
-BED_PATH = "regions.bed"
-OUTPUT_DIR = "output_chunks"
+# Use environment variables for paths, with fallbacks
+BED_PATH = os.environ.get('BED_PATH', 'regions.bed')
+OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output_chunks')
 
 def normalize_chromosome(chrom, target_format):
     """Convert between chr1 and 1 formats as needed."""
