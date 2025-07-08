@@ -7,6 +7,13 @@
 **Next Phase:** Phase 2 Data Layer - 🚀 **READY TO START**  
 **Overall Progress:** 45% Complete
 
+### 🛠️ **Recent CI/CD Pipeline Fix**
+- ✅ **Release Pipeline Fix:** Removed `beforeBuildCommand` from `tauri.conf.json` to align with proven PR pipeline pattern
+- ✅ **Root Cause:** CI environment path resolution issue with `cd ../ui && npm run build` executed from `desktop/src-tauri/`
+- ✅ **Solution:** Explicit frontend build step in release workflow (matching PR pipeline) + removed redundant beforeBuildCommand
+- ✅ **Verification:** Local testing confirms builds work correctly without beforeBuildCommand
+- ✅ **Impact:** Consistent, reliable CI/CD across all environments with better separation of concerns
+
 ## Recent Major Achievements
 
 ### 🎉 **Phase 1 COMPLETE - Foundation Excellence**
