@@ -159,3 +159,4 @@ external-data/
 remote_index_cache/
 comparison_output/
 remote_test_output/
+test-fastq/
