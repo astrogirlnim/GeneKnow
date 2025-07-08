@@ -1,4 +1,4 @@
-import React from 'react'
+import type { ReactNode, FC } from 'react'
 import { Link } from 'react-router-dom'
 
 const GeneKnowLogo = () => (
@@ -90,10 +90,10 @@ const Footer = () => (
 )
 
 interface LayoutProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => (
+const Layout: FC<LayoutProps> = ({ children }) => (
   <div style={{ fontFamily: 'var(--font-family-sans)', background: '#FFFFFF', color: 'var(--gray-800)', minHeight: '100vh' }}>
     <Header />
     <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>

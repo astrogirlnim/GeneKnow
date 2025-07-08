@@ -1,4 +1,4 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 import Layout from '../components/Layout'
 
 const CloudArrowUpIcon = () => (
@@ -19,7 +19,7 @@ const DocumentTextIcon = () => (
   </svg>
 )
 
-const FeatureCard = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
+const FeatureCard = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
   <div style={{ 
     textAlign: 'center', 
     height: '100%',
