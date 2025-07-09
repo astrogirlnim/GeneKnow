@@ -218,23 +218,26 @@ python test_enhanced_api.py    # Enhanced API tests
 
 ### CADD Scoring Setup
 
-The CADD scoring node enriches variants with deleteriousness predictions using CADD v1.7 (hg38).
+The CADD scoring node provides offline variant deleteriousness predictions without requiring internet connection or database lookups.
 
-#### Quick Setup (Test Mode)
-```bash
-cd geneknow_pipeline
-CADD_ENV=test ./scripts/fetch_cadd.sh
-```
+#### Features
+- **100% Offline**: No internet or database required
+- **PHRED-like scores**: 0-40 range similar to CADD
+- **Cancer gene awareness**: Higher scores for known cancer genes (TP53, BRCA1, etc.)
+- **Variant impact based**: Frameshift > Missense > Synonymous
+- **Allele frequency adjustment**: Rare variants score higher
+- **Quality-based scoring**: Adjustments based on read depth
 
-#### Production Setup
-For production, you'll need to:
-1. Download CADD data from https://cadd.gs.washington.edu/download
-2. Convert to SQLite format using the provided script
-3. Set `CADD_DB_PATH` environment variable
+#### Scoring Algorithm
+- **Frameshift mutations**: PHRED 35
+- **Missense variants**: PHRED 20 (base)
+- **Synonymous variants**: PHRED 5
+- **UTR variants**: PHRED 5-8
+- **Cancer gene multiplier**: 1.5x for TP53, BRCA1, BRCA2, etc.
+- **Rare variant bonus**: +5 PHRED for AF < 0.001
+- **Quality adjustment**: ±2 based on read depth
 
 #### Configuration Options
-- `CADD_DB_PATH`: Path to local SQLite database (default: `data/cadd_scores.db`)
-- `USE_REMOTE_CADD`: Enable remote Tabix queries for missing variants (default: true)
 - `USE_LEGACY_RISK`: Use old risk model instead of new architecture (default: false)
 
 ### Risk Model Genes
