@@ -47,7 +47,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('🧹 Starting artifact cleanup...');
+            console.log('🧹 Starting selective artifact cleanup...');
             
             // Get all artifacts
             const artifacts = await github.rest.actions.listArtifactsForRepo({
@@ -58,25 +58,52 @@ jobs:
             
             console.log(`📊 Found ${artifacts.data.total_count} artifacts`);
             
-            // Delete artifacts older than 7 days
+            // Only delete temporary build artifacts, not release artifacts
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - 7);
             
             let deletedCount = 0;
             for (const artifact of artifacts.data.artifacts) {
               const createdAt = new Date(artifact.created_at);
-              if (createdAt < cutoffDate) {
-                console.log(`🗑️  Deleting artifact: ${artifact.name} (created: ${artifact.created_at})`);
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: artifact.id
-                });
-                deletedCount++;
+              
+              // Delete strategy:
+              // - Failed builds: Delete immediately if older than 3 days
+              // - PR builds: Delete if older than 1 day (testing only)
+              // - Successful main builds: Keep for 14 days (until release is created)
+              const isFailedBuild = artifact.workflow_run.conclusion !== 'success';
+              const isPRBuild = artifact.workflow_run.head_branch !== 'main';
+              const isOld = createdAt < cutoffDate;
+              
+              let shouldDelete = false;
+              let reason = '';
+              
+              if (isFailedBuild && createdAt < new Date(Date.now() - 3*24*60*60*1000)) {
+                shouldDelete = true;
+                reason = 'failed build older than 3 days';
+              } else if (isPRBuild && createdAt < new Date(Date.now() - 1*24*60*60*1000)) {
+                shouldDelete = true;
+                reason = 'PR build older than 1 day';
+              } else if (!isFailedBuild && !isPRBuild && createdAt < new Date(Date.now() - 14*24*60*60*1000)) {
+                shouldDelete = true;
+                reason = 'successful main build older than 14 days';
               }
+              
+              if (shouldDelete) {
+                
+                 console.log(`🗑️  Deleting artifact: ${artifact.name} (${reason})`);
+                 await github.rest.actions.deleteArtifact({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   artifact_id: artifact.id
+                 });
+                 deletedCount++;
+               } else {
+                 console.log(`🔒 Keeping artifact: ${artifact.name} (within retention policy)`);
+               }
             }
             
-            console.log(`✅ Cleanup completed. Deleted ${deletedCount} old artifacts`);
+            console.log(`✅ Selective cleanup completed. Deleted ${deletedCount} temporary artifacts`);
+            console.log(`🔒 Release artifacts and recent builds preserved`);
 
   # 🏷️ Version Management
   version:
@@ -572,7 +599,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.name }} Build
-          path: desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/
+          path: |
+            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.dmg
+            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.msi
+            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.deb
+            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.AppImage
+            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.exe
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
@@ -607,33 +639,24 @@ jobs:
 
       - name: 🗂️ Organize artifacts by platform
         run: |
-          echo "🗂️ Organizing artifacts to prevent name conflicts..."
+          echo "🗂️ Organizing installer files for release..."
           mkdir -p ./release-assets
           
-          # Move Linux artifacts with platform prefix
-          if [ -d "./artifacts/Linux x64 Build" ]; then
-            echo "📦 Processing Linux artifacts..."
-            find "./artifacts/Linux x64 Build" -name "*.deb" -exec cp {} ./release-assets/ \;
-            find "./artifacts/Linux x64 Build" -name "*.rpm" -exec cp {} ./release-assets/ \;
-            find "./artifacts/Linux x64 Build" -name "*.AppImage" -exec cp {} ./release-assets/ \;
-          fi
+          # Copy all installer files from artifacts
+          find ./artifacts -name "*.dmg" -exec cp {} ./release-assets/ \;
+          find ./artifacts -name "*.msi" -exec cp {} ./release-assets/ \;
+          find ./artifacts -name "*.deb" -exec cp {} ./release-assets/ \;
+          find ./artifacts -name "*.AppImage" -exec cp {} ./release-assets/ \;
+          find ./artifacts -name "*.exe" -exec cp {} ./release-assets/ \;
           
-          # Move Windows artifacts with platform prefix
-          if [ -d "./artifacts/Windows x64 Build" ]; then
-            echo "📦 Processing Windows artifacts..."
-            find "./artifacts/Windows x64 Build" -name "*.msi" -exec cp {} ./release-assets/ \;
-            find "./artifacts/Windows x64 Build" -name "*.exe" -exec cp {} ./release-assets/ \;
-          fi
-          
-          # Move macOS artifacts with platform prefix
-          if [ -d "./artifacts/macOS x64 Build" ]; then
-            echo "📦 Processing macOS artifacts..."
-            find "./artifacts/macOS x64 Build" -name "*.dmg" -exec cp {} ./release-assets/ \;
-            find "./artifacts/macOS x64 Build" -name "*.app" -exec cp {} ./release-assets/ \;
-          fi
-          
-          echo "✅ Organized release assets:"
+          echo "✅ Organized installer files:"
           ls -la ./release-assets/
+          
+          # Verify we have installers for all platforms
+          echo "📊 Platform coverage:"
+          echo "🍎 macOS: $(ls ./release-assets/*.dmg 2>/dev/null | wc -l) installers"
+          echo "🪟 Windows: $(ls ./release-assets/*.msi 2>/dev/null | wc -l) MSI + $(ls ./release-assets/*.exe 2>/dev/null | wc -l) EXE"
+          echo "🐧 Linux: $(ls ./release-assets/*.deb 2>/dev/null | wc -l) DEB + $(ls ./release-assets/*.AppImage 2>/dev/null | wc -l) AppImage"
 
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v1

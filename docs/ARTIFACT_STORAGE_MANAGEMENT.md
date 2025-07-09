@@ -154,4 +154,120 @@ gh api repos/:owner/:repo/actions/artifacts --jq '.total_count'
 
 ---
 
-💡 **Pro Tip**: Set up a scheduled workflow to run cleanup weekly to prevent future issues. 
+💡 **Pro Tip**: Set up a scheduled workflow to run cleanup weekly to prevent future issues.
+
+## 🚀 **GitHub Plan Upgrade Options**
+
+### **Current Storage Limits by Plan:**
+
+| Plan | Artifact Storage | Monthly Cost | Best For |
+|------|------------------|--------------|----------|
+| **Free** | 500MB | $0 | Small projects, personal use |
+| **Pro** | 1GB | $4/month | Individual developers |
+| **Team** | 2GB | $4/user/month | Small teams |
+| **Enterprise** | 50GB | $21/user/month | Large organizations |
+
+### **Upgrade Recommendations:**
+
+**For GenePredict:**
+- **GitHub Pro** ($4/month) - Doubles storage to 1GB, sufficient for most development
+- **GitHub Team** ($4/user/month) - If you have collaborators
+- **Enterprise** - Only if you plan massive scale with many releases
+
+### **How to Upgrade:**
+1. Go to your GitHub account → **Settings** → **Billing**
+2. Choose **Change plan**
+3. Select **GitHub Pro** for individual use
+4. Billing is monthly, can cancel anytime
+
+## 🔧 **Optimizations Applied to Your Workflows**
+
+### **1. Selective Artifact Cleanup**
+```yaml
+# Smart cleanup strategy:
+- Failed builds: Delete after 3 days
+- PR builds: Delete after 1 day (testing only)
+- Successful main builds: Keep for 14 days (until release)
+```
+
+### **2. Optimized Artifact Uploads**
+**Before:** Uploaded entire bundle directory (~200MB per platform)
+**After:** Only upload essential installer files (~50MB per platform)
+
+```yaml
+# Only upload installer files
+path: |
+  desktop/src-tauri/target/*/release/bundle/**/*.dmg
+  desktop/src-tauri/target/*/release/bundle/**/*.msi
+  desktop/src-tauri/target/*/release/bundle/**/*.deb
+  desktop/src-tauri/target/*/release/bundle/**/*.AppImage
+  desktop/src-tauri/target/*/release/bundle/**/*.exe
+```
+
+### **3. Shorter Retention Periods**
+- **Artifacts**: 7 days (was 90 days)
+- **Compression**: Maximum level 9
+- **PR builds**: No artifacts uploaded (validation only)
+
+### **4. Release vs Artifact Protection**
+**Important:** Our cleanup **ONLY** affects temporary build artifacts, **NOT** permanent GitHub releases.
+
+| Type | What It Is | Retention | Protected |
+|------|------------|-----------|-----------|
+| **GitHub Actions Artifacts** | Temporary build files | 1-14 days | ❌ (cleaned up) |
+| **GitHub Releases** | Permanent download links | Forever | ✅ (protected) |
+
+## 📊 **Storage Usage Estimation**
+
+### **Before Optimization:**
+```
+Per release: 3 platforms × 200MB = 600MB
+With 90-day retention: 600MB × 10 releases = 6GB ❌
+```
+
+### **After Optimization:**
+```
+Per release: 3 platforms × 50MB = 150MB
+With 7-day retention: 150MB × 2 releases = 300MB ✅
+```
+
+### **With GitHub Pro (1GB):**
+```
+Headroom: 1GB - 300MB = 700MB available
+Can handle: ~13 releases simultaneously
+```
+
+## 🔒 **Release Protection Strategy**
+
+### **What Gets Deleted:**
+- ❌ Failed PR builds (after 3 days)
+- ❌ Successful PR builds (after 1 day)
+- ❌ Old successful main builds (after 14 days)
+
+### **What Stays Protected:**
+- ✅ Recent successful main builds (14 days)
+- ✅ GitHub releases (forever)
+- ✅ Release assets (forever)
+
+### **Release Creation Process:**
+1. **Build** → Creates temporary artifact
+2. **Test** → Validates build quality
+3. **Release** → Moves artifacts to permanent release
+4. **Cleanup** → Deletes temporary artifacts (not release!)
+
+## 💰 **Cost-Benefit Analysis**
+
+### **Free Plan + Optimizations:**
+- **Cost**: $0/month
+- **Storage**: 500MB
+- **Releases**: ~3 simultaneous releases
+- **Best for**: Solo development, infrequent releases
+
+### **Pro Plan + Optimizations:**
+- **Cost**: $4/month ($48/year)
+- **Storage**: 1GB
+- **Releases**: ~6 simultaneous releases
+- **Best for**: Active development, regular releases
+
+### **Recommendation:**
+Start with **optimized Free plan** → upgrade to **Pro** when you hit limits consistently. 
