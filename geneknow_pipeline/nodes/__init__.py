@@ -12,6 +12,7 @@ try:
     from . import qc_filter
     from . import population_mapper
     from . import cadd_scoring
+    from . import cadd_scoring_offline
     from . import feature_vector_builder
     from . import risk_model
     from . import formatter
@@ -25,6 +26,7 @@ except ImportError:
     import qc_filter
     import population_mapper
     import cadd_scoring
+    import cadd_scoring_offline
     import feature_vector_builder
     import risk_model
     import formatter
@@ -38,6 +40,7 @@ __all__ = [
     "qc_filter",
     "population_mapper",
     "cadd_scoring",
+    "cadd_scoring_offline",
     "feature_vector_builder",
     "risk_model",
     "formatter",
