@@ -108,12 +108,13 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
   </div>
 );
 
-// Mock data sets for different risk levels
+// Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
     probability: 82,
     hazardScore: 2.4,
-    patient: { name: 'Emma Rodriguez', condition: 'Hereditary Breast and Ovarian Cancer Syndrome' },
+    riskLevel: 'High Risk',
+    condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
     otherMetrics: [
       { 
         id: 1, 
@@ -200,7 +201,8 @@ const mockDataSets = {
   medium: {
     probability: 45,
     hazardScore: 1.8,
-    patient: { name: 'David Kim', condition: 'Lynch Syndrome' },
+    riskLevel: 'Medium Risk',
+    condition: 'Lynch Syndrome',
     otherMetrics: [
       { 
         id: 1, 
@@ -287,7 +289,8 @@ const mockDataSets = {
   low: {
     probability: 15,
     hazardScore: 0.9,
-    patient: { name: 'Sarah Johnson', condition: 'Li-Fraumeni Syndrome' },
+    riskLevel: 'Low Risk',
+    condition: 'Li-Fraumeni Syndrome',
     otherMetrics: [
       { 
         id: 1, 

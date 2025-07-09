@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Layout from '../components/Layout';
 
 // Type definitions
 interface Alert {
@@ -8,17 +9,13 @@ interface Alert {
   desc: string;
 }
 
-
-
-// Mock data sets for different risk levels
+// Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
-    name: 'Emma Rodriguez',
-    age: 38,
-    sex: 'Female',
+    riskLevel: 'High Risk',
+    riskScore: '82/100',
     condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
-    riskScore: '82/100 (High)',
-    details: 'Age: 38 • Female<br/>Family History: Breast Cancer<br/>Referral: Oncology<br/>Previous Tests: BRCA1/2 Panel',
+    details: 'Family History: Breast Cancer<br/>Referral: Oncology<br/>Previous Tests: BRCA1/2 Panel',
     alerts: [
       {
         type: 'critical' as const,
@@ -33,12 +30,10 @@ const mockDataSets = {
     ]
   },
   medium: {
-    name: 'David Kim',
-    age: 42,
-    sex: 'Male',
+    riskLevel: 'Medium Risk',
+    riskScore: '45/100',
     condition: 'Lynch Syndrome',
-    riskScore: '45/100 (Medium)',
-    details: 'Age: 42 • Male<br/>Family History: Colorectal Cancer<br/>Referral: Oncology<br/>Previous Tests: MSI-H positive',
+    details: 'Family History: Colorectal Cancer<br/>Referral: Oncology<br/>Previous Tests: MSI-H positive',
     alerts: [
       {
         type: 'warning' as const,
@@ -53,12 +48,10 @@ const mockDataSets = {
     ]
   },
   low: {
-    name: 'Sarah Johnson',
-    age: 29,
-    sex: 'Female',
+    riskLevel: 'Low Risk',
+    riskScore: '15/100',
     condition: 'Li-Fraumeni Syndrome',
-    riskScore: '15/100 (Low)',
-    details: 'Age: 29 • Female<br/>Family History: Multiple Sarcomas<br/>Referral: Genetics<br/>Previous Tests: TP53 Sequencing',
+    details: 'Family History: Multiple Sarcomas<br/>Referral: Genetics<br/>Previous Tests: TP53 Sequencing',
     alerts: [
       {
         type: 'info' as const,
@@ -81,68 +74,147 @@ const ClinicalViewPage: React.FC = () => {
   
   // Get the risk level from URL parameters, default to 'low' if not specified
   const riskLevel = searchParams.get('risk') || 'low';
-  const currentPatient = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'analysis':
         return (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🧬</div>
-            <h2 style={{ color: '#1e293b', marginBottom: '16px' }}>Genomic Analysis Complete</h2>
-            <p style={{ color: '#64748b', marginBottom: '24px' }}>Analysis for {currentPatient?.name} has been processed successfully.</p>
-            <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', maxWidth: '600px', margin: '0 auto' }}>
-              <h3 style={{ color: '#1e293b', marginBottom: '16px' }}>Analysis Summary</h3>
-              <div style={{ textAlign: 'left', color: '#64748b' }}>
-                <p><strong>Patient:</strong> {currentPatient?.name}</p>
-                <p><strong>Condition:</strong> {currentPatient?.condition}</p>
-                <p><strong>Risk Score:</strong> {currentPatient?.riskScore}</p>
-                <p><strong>Status:</strong> Analysis Complete</p>
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '3rem 2rem',
+            textAlign: 'center'
+          }}>
+            <h2 style={{ 
+              color: '#111827',
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              marginBottom: '1rem'
+            }}>
+              Genomic Analysis Complete
+            </h2>
+            <p style={{ 
+              color: '#4B5563',
+              fontSize: '1rem',
+              marginBottom: '2rem',
+              maxWidth: '600px'
+            }}>
+              Comprehensive genomic analysis has been processed successfully.
+            </p>
+            
+            <div style={{
+              background: '#FFFFFF',
+              padding: '2rem',
+              borderRadius: '0.75rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: '1px solid #E5E7EB',
+              maxWidth: '600px',
+              width: '100%',
+              textAlign: 'left'
+            }}>
+              <h3 style={{ 
+                color: '#111827',
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                marginBottom: '1rem'
+              }}>
+                Analysis Summary
+              </h3>
+              <div style={{ color: '#4B5563', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong style={{ color: '#111827' }}>Risk Level:</strong> {currentData?.riskLevel}
+                </p>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong style={{ color: '#111827' }}>Condition:</strong> {currentData?.condition}
+                </p>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong style={{ color: '#111827' }}>Risk Score:</strong> {currentData?.riskScore}
+                </p>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong style={{ color: '#111827' }}>Status:</strong> Analysis Complete
+                </p>
               </div>
+              
               <button 
-                style={{ 
-                  background: '#f0f9ff', 
-                  color: '#2563eb', 
-                  border: '1px solid #bfdbfe', 
-                  padding: '8px 16px', 
-                  borderRadius: '8px', 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  cursor: 'pointer', 
-                  marginTop: '20px' 
+                style={{
+                  marginTop: '1.5rem',
+                  padding: '0.5rem 1rem',
+                  background: '#DBEAFE',
+                  color: '#2563EB',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease'
                 }}
-                onClick={() => alert('🔍 Detailed Analysis\n\nThis would show:\n• Complete variant analysis\n• Statistical significance\n• Population frequencies\n• Clinical interpretations\n• Pathway involvement\n• Treatment recommendations')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#BFDBFE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#DBEAFE';
+                }}
+                onClick={() => alert('Detailed Analysis\n\nThis would display:\n• Complete variant analysis\n• Statistical significance\n• Population frequencies\n• Clinical interpretations\n• Pathway involvement\n• Treatment recommendations')}
               >
-                🔍 View Detailed Analysis
+                View Detailed Analysis
               </button>
             </div>
           </div>
         );
       default:
         return (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', color: '#64748b' }}>
-            <div style={{ fontSize: '64px', marginBottom: '24px', color: '#2563eb' }}>🔥</div>
-            <h3 style={{ marginBottom: '12px', color: '#1e293b' }}>Analysis Available</h3>
-            <p style={{ textAlign: 'center', maxWidth: '400px', lineHeight: 1.6, marginBottom: '24px' }}>
-              {activeTab === 'variants' && 'Variant heatmap and detailed analysis now available'}
-              {activeTab === 'pathways' && 'Biological pathway enrichment analysis completed'}
-              {activeTab === 'clinical' && 'Comprehensive clinical report generated'}
-              {activeTab === 'family' && 'Family pedigree and testing recommendations available'}
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            minHeight: '400px'
+          }}>
+            <h3 style={{ 
+              marginBottom: '1rem',
+              color: '#111827',
+              fontSize: '1.25rem',
+              fontWeight: '600'
+            }}>
+              Analysis Module Available
+            </h3>
+            <p style={{ 
+              textAlign: 'center',
+              maxWidth: '400px',
+              lineHeight: '1.6',
+              marginBottom: '2rem',
+              color: '#4B5563'
+            }}>
+              {activeTab === 'variants' && 'Comprehensive variant heatmap and detailed genomic analysis are now available for review.'}
+              {activeTab === 'pathways' && 'Biological pathway enrichment analysis has been completed and is ready for clinical interpretation.'}
+              {activeTab === 'clinical' && 'Comprehensive clinical report has been generated with actionable insights and recommendations.'}
+              {activeTab === 'family' && 'Family pedigree analysis and genetic testing recommendations are available for review.'}
             </p>
             <button 
-              style={{ 
-                background: '#f0f9ff', 
-                color: '#2563eb', 
-                border: '1px solid #bfdbfe', 
-                padding: '8px 16px', 
-                borderRadius: '8px', 
-                fontSize: '14px', 
-                fontWeight: '600', 
-                cursor: 'pointer' 
+              style={{
+                padding: '0.5rem 1rem',
+                background: '#DBEAFE',
+                color: '#2563EB',
+                border: '1px solid #BFDBFE',
+                borderRadius: '0.375rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 200ms ease'
               }}
-              onClick={() => alert(`📊 ${activeTab} data is now available for detailed analysis!`)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#BFDBFE';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#DBEAFE';
+              }}
+              onClick={() => alert(`${activeTab} analysis data is now available for detailed clinical review and interpretation.`)}
             >
-              📊 View {activeTab}
+              View {activeTab} Analysis
             </button>
           </div>
         );
@@ -150,304 +222,242 @@ const ClinicalViewPage: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-      color: '#2c3e50',
-      height: '100vh',
-      overflow: 'hidden'
-    }}>
-      <div style={{ 
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#f8fafc',
-        borderRadius: '16px',
-        margin: '8px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-        overflow: 'hidden',
-        position: 'relative'
+    <Layout>
+      <section style={{ 
+        background: '#F9FAFB',
+        minHeight: 'calc(100vh - 4rem)',
+        padding: '2rem 0'
       }}>
-        {/* Medical Header */}
         <div style={{ 
-          background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
-          color: 'white',
-          padding: '16px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-          position: 'relative',
-          zIndex: 200
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '0 1.5rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ 
-              fontSize: '24px', 
-              color: '#2563eb', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              width: '32px', 
-              height: '32px' 
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '28px', height: '28px', stroke: 'currentColor', strokeWidth: '2', fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-                <path d="M4 3c4 0 8 2 12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M4 7c4 0 8 2 12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M4 11c4 0 8 2 12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M4 15c4 0 8 2 12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M20 3c-4 0-8 2-12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M20 7c-4 0-8 2-12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M20 11c-4 0-8 2-12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M20 15c-4 0-8 2-12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <line x1="6" y1="5" x2="18" y2="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="10" y1="13" x2="14" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="4" cy="3" r="2" fill="currentColor"/>
-                <circle cx="20" cy="3" r="2" fill="currentColor"/>
-                <circle cx="4" cy="21" r="2" fill="currentColor"/>
-                <circle cx="20" cy="21" r="2" fill="currentColor"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontSize: '26px', fontWeight: '700', letterSpacing: '-0.5px' }}>GeneKnow</div>
-              <div style={{ fontSize: '14px', opacity: 0.9, fontWeight: '400' }}>Advanced Clinical Genomics Platform</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ 
-              background: 'rgba(16, 185, 129, 0.2)',
-              padding: '12px 20px',
-              borderRadius: '25px',
-              fontSize: '14px',
-              backdropFilter: 'blur(15px)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#10b981'
-            }}>
-              ✅ Analysis Complete • Clinical View Active
-            </div>
-          </div>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Medical Sidebar */}
-          <div style={{ 
-            width: '350px',
-            background: '#ffffff',
-            borderRight: '1px solid #e2e8f0',
+          {/* Header */}
+          <div style={{
             display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-            zIndex: 50,
-            position: 'relative',
-            height: '100%'
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem'
           }}>
-            <div style={{ 
-              padding: '18px',
-              background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
-              color: 'white',
-              margin: '12px 16px 8px 16px',
-              borderRadius: '12px',
-              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-              position: 'relative',
-              overflow: 'hidden',
-              zIndex: 2
-            }}>
-              <div style={{ fontSize: '17px', fontWeight: '700', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
-                {currentPatient.name}
-              </div>
-              <div style={{ fontSize: '12px', opacity: 0.95, lineHeight: 1.4, position: 'relative', zIndex: 2 }}>
-                <span dangerouslySetInnerHTML={{ __html: currentPatient.details }} />
-              </div>
-              <div style={{ 
-                background: 'rgba(255, 255, 255, 0.2)',
-                padding: '5px 10px',
-                borderRadius: '8px',
-                marginTop: '8px',
-                fontSize: '11px',
-                fontWeight: '600',
-                position: 'relative',
-                zIndex: 2
+            <div>
+              <h1 style={{
+                fontSize: '1.875rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '0.5rem'
               }}>
-                <strong>Risk Score: {currentPatient.riskScore}</strong>
+                Clinical Genomics Dashboard
+              </h1>
+              <p style={{
+                color: '#4B5563',
+                fontSize: '1rem'
+              }}>
+                Comprehensive genomic analysis • {currentData.riskLevel}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button 
+                onClick={() => navigate(`/dashboard?risk=${riskLevel}`)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#E5E7EB',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#D1D5DB';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#E5E7EB';
+                }}
+              >
+                Back to Dashboard
+              </button>
+              <div style={{
+                background: '#22C55E',
+                color: '#FFFFFF',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.375rem',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}>
+                Analysis Complete
               </div>
             </div>
+          </div>
 
-            <div style={{ 
-              padding: '12px 16px 8px 16px',
-              borderBottom: '1px solid #e2e8f0',
-              position: 'relative',
-              zIndex: 2
+          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
+            {/* Sidebar */}
+            <div style={{
+              background: '#FFFFFF',
+              borderRadius: '0.75rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: '1px solid #E5E7EB',
+              overflow: 'hidden'
             }}>
-              <div style={{ 
-                fontSize: '10px',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                color: '#64748b',
-                marginBottom: '10px'
-              }}>Clinical Workflow</div>
-              
-              {[
-                { id: 'analysis', icon: '🧬', label: 'Genomic Analysis' },
-                { id: 'variants', icon: '🔥', label: 'Variant Heatmap' },
-                { id: 'pathways', icon: '🔬', label: 'Pathway Analysis' },
-                { id: 'clinical', icon: '📋', label: 'Clinical Report' },
-                { id: 'family', icon: '👥', label: 'Family Analysis' }
-              ].map(item => (
-                <div 
-                  key={item.id}
-                  style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 12px',
-                    marginBottom: '4px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontWeight: '500',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    fontSize: '13px',
-                    ...(activeTab === item.id && { background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)', color: 'white', boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)', transform: 'translateX(6px)' })
-                  }}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <span style={{ fontSize: '16px', width: '18px', textAlign: 'center' }}>{item.icon}</span>
-                  <span>{item.label}</span>
+              {/* Risk Info */}
+              <div style={{
+                background: '#F9FAFB',
+                padding: '1.5rem',
+                borderBottom: '1px solid #E5E7EB'
+              }}>
+                <div style={{ 
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  marginBottom: '0.5rem',
+                  color: '#111827'
+                }}>
+                  {currentData.riskLevel}
                 </div>
-              ))}
-            </div>
+                <div style={{ 
+                  fontSize: '0.875rem',
+                  lineHeight: '1.4',
+                  color: '#4B5563'
+                }}>
+                  <span dangerouslySetInnerHTML={{ __html: currentData.details }} />
+                </div>
+                <div style={{
+                  background: '#DBEAFE',
+                  color: '#2563EB',
+                  padding: '0.5rem',
+                  borderRadius: '0.375rem',
+                  marginTop: '1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  textAlign: 'center'
+                }}>
+                  Risk Score: {currentData.riskScore}
+                </div>
+              </div>
 
-            <div style={{ 
-              flex: 1,
-              padding: '12px 16px 16px 16px',
-              overflowY: 'auto',
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <div style={{ 
-                fontSize: '10px',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                color: '#64748b',
-                marginBottom: '8px'
-              }}>Clinical Alerts</div>
-              
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                {currentPatient.alerts.map((alert: Alert, index: number) => (
+              {/* Navigation */}
+              <div style={{ padding: '1rem' }}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#4B5563',
+                  marginBottom: '0.75rem'
+                }}>
+                  Clinical Workflow
+                </div>
+                
+                {[
+                  { id: 'analysis', label: 'Genomic Analysis' },
+                  { id: 'variants', label: 'Variant Heatmap' },
+                  { id: 'pathways', label: 'Pathway Analysis' },
+                  { id: 'clinical', label: 'Clinical Report' },
+                  { id: 'family', label: 'Family Analysis' }
+                ].map(item => (
+                  <div 
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem',
+                      marginBottom: '0.25rem',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      transition: 'all 200ms ease',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: activeTab === item.id ? '#FFFFFF' : '#111827',
+                      background: activeTab === item.id ? '#2563EB' : 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== item.id) {
+                        e.currentTarget.style.background = '#F3F4F6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== item.id) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                    onClick={() => setActiveTab(item.id)}
+                  >
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Alerts */}
+              <div style={{ padding: '1rem', borderTop: '1px solid #E5E7EB' }}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#4B5563',
+                  marginBottom: '0.75rem'
+                }}>
+                  Clinical Alerts
+                </div>
+                
+                {currentData.alerts.map((alert: Alert, index: number) => (
                   <div 
                     key={index}
-                    style={{ 
-                      background: alert.type === 'critical' ? '#fff5f5' : alert.type === 'warning' ? '#fffbeb' : alert.type === 'info' ? '#eff6ff' : '#f0fdf4',
-                      border: `1px solid ${alert.type === 'critical' ? '#fecaca' : alert.type === 'warning' ? '#fcd34d' : alert.type === 'info' ? '#93c5fd' : '#86efac'}`,
-                      borderLeft: `3px solid ${alert.type === 'critical' ? '#ef4444' : alert.type === 'warning' ? '#f59e0b' : alert.type === 'info' ? '#2563eb' : '#10b981'}`,
-                      padding: '10px',
-                      marginBottom: '6px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      lineHeight: 1.3
+                    style={{
+                      background: alert.type === 'critical' ? '#FEF2F2' : 
+                                 alert.type === 'warning' ? '#FFFBEB' : 
+                                 alert.type === 'info' ? '#EFF6FF' : '#F0FDF4',
+                      border: `1px solid ${alert.type === 'critical' ? '#FECACA' : 
+                                           alert.type === 'warning' ? '#FDE68A' : 
+                                           alert.type === 'info' ? '#BFDBFE' : '#BBF7D0'}`,
+                      borderLeft: `3px solid ${alert.type === 'critical' ? '#EF4444' : 
+                                               alert.type === 'warning' ? '#F59E0B' : 
+                                               alert.type === 'info' ? '#2563EB' : '#22C55E'}`,
+                      padding: '0.75rem',
+                      marginBottom: '0.5rem',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
                     }}
                   >
-                    <div style={{ 
-                      width: '10px', 
-                      height: '10px', 
-                      borderRadius: '50%', 
-                      display: 'inline-block', 
-                      marginRight: '6px',
-                      background: alert.type === 'critical' ? '#ef4444' : alert.type === 'warning' ? '#f59e0b' : '#10b981'
-                    }}></div>
-                    <strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>{alert.title}</strong>
-                    <small style={{ fontSize: '11px', opacity: 0.9 }}>{alert.desc}</small>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '0.25rem'
+                    }}>
+                      <div style={{
+                        width: '0.5rem',
+                        height: '0.5rem',
+                        borderRadius: '50%',
+                        background: alert.type === 'critical' ? '#EF4444' : 
+                                   alert.type === 'warning' ? '#F59E0B' : 
+                                   alert.type === 'info' ? '#2563EB' : '#22C55E'
+                      }}></div>
+                      <strong style={{ fontSize: '0.8rem', color: '#111827' }}>{alert.title}</strong>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', opacity: 0.8, color: '#4B5563' }}>{alert.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Content Area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ 
-              background: 'white',
-              padding: '32px 32px 24px',
-              borderBottom: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-              position: 'relative',
-              zIndex: 2
-            }}>
-              <div style={{ 
-                fontSize: '32px',
-                fontWeight: '700',
-                color: '#1e293b',
-                marginBottom: '8px',
-                background: 'linear-gradient(135deg, #1e293b 0%, #2563eb 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>🧬 Genomic Analysis Dashboard</div>
-              <div style={{ color: '#64748b', fontSize: '16px', marginBottom: '20px' }}>
-                Comprehensive genomic analysis for {currentPatient.name}
-              </div>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => navigate(`/dashboard?risk=${riskLevel}`)}
-                  style={{ 
-                    background: '#f3f4f6',
-                    color: '#374151',
-                    border: '1px solid #d1d5db',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ← Back to Dashboard
-                </button>
-                {[
-                  '📄 Export Report',
-                  '📤 Share Findings', 
-                  '📅 Schedule Consult',
-                  '📊 View History'
-                ].map(label => (
-                  <button 
-                    key={label}
-                    style={{ 
-                      background: '#f0f9ff',
-                      color: '#2563eb',
-                      border: '1px solid #bfdbfe',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ 
-              flex: 1,
-              padding: '32px',
-              overflowY: 'auto',
-              background: '#fafbfc',
-              position: 'relative',
-              zIndex: 2
+            {/* Main Content */}
+            <div style={{
+              background: '#FFFFFF',
+              borderRadius: '0.75rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: '1px solid #E5E7EB',
+              minHeight: '600px'
             }}>
               {renderTabContent()}
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </Layout>
   );
 };
 

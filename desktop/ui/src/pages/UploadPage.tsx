@@ -12,17 +12,15 @@ const DocumentIcon = () => (
   </svg>
 );
 
-
-
-// Mock Patient Card component
-interface MockPatientCardProps {
-  emoji: string;
-  name: string;
+// Mock Test Case Card component
+interface MockTestCaseProps {
+  riskLevel: string;
   condition: string;
+  description: string;
   onClick: () => void;
 }
 
-const MockPatientCard: React.FC<MockPatientCardProps> = ({ emoji, name, condition, onClick }) => (
+const MockTestCase: React.FC<MockTestCaseProps> = ({ riskLevel, condition, description, onClick }) => (
   <div
     onClick={onClick}
     style={{
@@ -47,9 +45,9 @@ const MockPatientCard: React.FC<MockPatientCardProps> = ({ emoji, name, conditio
       e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
     }}
   >
-    <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{emoji}</div>
-    <h4 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.5rem', fontSize: '0.95rem' }}>{name}</h4>
-    <p style={{ fontSize: '0.8rem', color: '#6B7280', lineHeight: '1.25' }}>{condition}</p>
+    <h4 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.5rem', fontSize: '0.95rem' }}>{riskLevel}</h4>
+    <p style={{ fontSize: '0.85rem', color: '#4B5563', marginBottom: '0.5rem', fontWeight: '500' }}>{condition}</p>
+    <p style={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '1.25' }}>{description}</p>
   </div>
 );
 
@@ -173,61 +171,10 @@ const UploadPage: React.FC = () => {
     }
   };
 
-  const handleMockDataSelect = async (riskLevel: string) => {
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      // Ensure API server is running
-      await ensureApiRunning();
-
-      // Use a test MAF file from the test_data directory
-      const testFilePath = "/Users/noah/Gauntlet-Projects/LiteratureGapper/test_data/tcga_downloads/e631d7f1-5f9c-482f-8cd5-8f619e542607.wxs.aliquot_ensemble_masked.maf.gz";
-
-      try {
-        // Process the test file
-        const result = await processAndWait(
-          testFilePath,
-          {
-            language: 'en',
-            include_technical: true,
-            patient_data: {
-              age: 45,
-              sex: 'F',
-              family_history: false
-            }
-          },
-          (jobProgress) => {
-            setProgress(jobProgress);
-          }
-        );
-
-        navigate('/dashboard', { 
-          state: { 
-            results: result,
-            fileName: `Mock Patient - ${riskLevel} risk`,
-            mockRiskLevel: riskLevel
-          } 
-        });
-      } catch (processError) {
-        console.error('Error processing test file:', processError);
-        // Fall back to mock data
-        navigate('/dashboard', { 
-          state: { 
-            mockRiskLevel: riskLevel 
-          } 
-        });
-      }
-    } catch (err) {
-      console.error('Error in mock data selection:', err);
-      navigate('/dashboard', { 
-        state: { 
-          mockRiskLevel: riskLevel 
-        } 
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleMockDataSelect = (riskLevel: string) => {
+    // Navigate to dashboard with the risk level as a URL parameter
+    console.log('Selected mock test case risk level:', riskLevel);
+    navigate(`/dashboard?risk=${riskLevel}`);
   };
 
   return (
@@ -437,60 +384,58 @@ const UploadPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Mock Genome Data Section - Hidden during processing */}
-          {!isProcessing && (
-            <div style={{
-              padding: '1.5rem 0',
-              borderTop: '1px solid #E5E7EB'
+          {/* Mock Test Cases Section */}
+          <div style={{
+            padding: '1.5rem 0',
+            borderTop: '1px solid #E5E7EB'
+          }}>
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.5rem'
             }}>
-              <div style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                marginBottom: '1.5rem'
+              <svg style={{ width: '1.5rem', height: '1.5rem', color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+              </svg>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#111827'
               }}>
-                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#2563EB' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
-                <h3 style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
-                  color: '#111827'
-                }}>
-                  Or Use Mock Genome Data
-                </h3>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '1.5rem',
-                flexWrap: 'wrap',
-                maxWidth: '900px',
-                margin: '0 auto'
-              }}>
-                <MockPatientCard
-                  emoji="👩"
-                  name="Emma Rodriguez"
-                  condition="BRCA1/2 Positive High-risk profile"
-                  onClick={() => handleMockDataSelect('high')}
-                />
-                <MockPatientCard
-                  emoji="👨"
-                  name="David Kim"
-                  condition="Lynch Syndrome Colorectal cancer risk"
-                  onClick={() => handleMockDataSelect('medium')}
-                />
-                <MockPatientCard
-                  emoji="👩"
-                  name="Sarah Johnson"
-                  condition="TP53 Mutation Li-Fraumeni syndrome"
-                  onClick={() => handleMockDataSelect('low')}
-                />
-              </div>
+                Or Use Test Cases
+              </h3>
             </div>
-          )}
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '1.5rem',
+              flexWrap: 'wrap',
+              maxWidth: '900px',
+              margin: '0 auto'
+            }}>
+              <MockTestCase
+                riskLevel="High Risk"
+                condition="Hereditary Breast and Ovarian Cancer"
+                description="BRCA1/2 Positive - High-risk genetic profile with pathogenic variants"
+                onClick={() => handleMockDataSelect('high')}
+              />
+              <MockTestCase
+                riskLevel="Medium Risk"
+                condition="Lynch Syndrome"
+                description="Colorectal cancer predisposition with MSI-H positive markers"
+                onClick={() => handleMockDataSelect('medium')}
+              />
+              <MockTestCase
+                riskLevel="Low Risk"
+                condition="Li-Fraumeni Syndrome"
+                description="TP53 mutation with variant of uncertain significance"
+                onClick={() => handleMockDataSelect('low')}
+              />
+            </div>
+          </div>
         </div>
       </section>
     </Layout>
