@@ -65,7 +65,8 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                 elif t_depth > 0 and pd.notna(t_alt_count):
                     allele_freq = float(t_alt_count) / float(t_depth)
                 else:
-                    allele_freq = 0.5  # Default if no frequency data
+                    # Don't set a default - let downstream handle missing data
+                    allele_freq = None
                 
                 # Create variant in our standard format
                 variant = {
@@ -85,7 +86,6 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                     # Quality metrics (MAF files don't have QUAL like VCF)
                     'qual': 100.0,  # Default high quality for MAF variants
                     'depth': int(t_depth) if pd.notna(t_depth) else 100,
-                    'allele_freq': allele_freq,
                     
                     # Clinical interpretation
                     'clinical_significance': CLASSIFICATION_TO_SIGNIFICANCE.get(
@@ -101,6 +101,10 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                     'dbsnp_rs': str(row.get('dbSNP_RS', '')),
                     'existing_variation': str(row.get('Existing_variation', ''))
                 }
+                
+                # Only add allele_freq if we have valid data
+                if allele_freq is not None:
+                    variant['allele_freq'] = allele_freq
                 
                 # Only include variants that pass basic filters
                 if variant['ref'] not in ['N', '-', ''] and variant['alt'] not in ['N', '-', '']:

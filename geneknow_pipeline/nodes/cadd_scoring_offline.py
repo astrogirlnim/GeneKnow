@@ -128,8 +128,15 @@ def compute_cadd_score(variant: Dict[str, Any]) -> Dict[str, float]:
                       GENE_IMPORTANCE_MULTIPLIERS["default"])
     
     # Apply allele frequency penalty
-    af = variant.get("allele_frequency", 0.5)
-    af_penalty = calculate_af_penalty(af)
+    # Use None to indicate missing data, then apply conservative default
+    af = variant.get("allele_frequency", None)
+    if af is None:
+        # Missing allele frequency - use conservative approach
+        # Don't penalize or boost, just neutral
+        af_penalty = 1.0
+        logger.debug(f"No allele frequency for {variant.get('variant_id', 'unknown')}, using neutral penalty")
+    else:
+        af_penalty = calculate_af_penalty(af)
     
     # Apply quality adjustment
     quality = variant.get("quality", 100)
@@ -210,8 +217,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         
         # Process variants
         enriched_variants = []
+        # Add microseconds to ensure uniqueness
         stats = {
-            "job_id": f"cadd_offline_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "job_id": f"cadd_offline_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
             "total_variants": len(filtered_variants),
             "variants_scored": 0,
             "variants_in_cancer_genes": 0,
