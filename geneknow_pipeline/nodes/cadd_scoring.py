@@ -1,21 +1,21 @@
 """
 CADD scoring node.
 Enriches variants with CADD PHRED scores for deleteriousness assessment.
-Uses local SQLite cache with remote Tabix fallback.
+Uses cadd_scores table in population_variants.db with job tracking.
 """
 import os
 import sqlite3
 import logging
 import requests
+import uuid
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import json
 
 logger = logging.getLogger(__name__)
 
-# Configuration
-DEFAULT_CADD_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "cadd_scores.db")
-CADD_DB_PATH = os.environ.get("CADD_DB_PATH", DEFAULT_CADD_DB_PATH)
+# Configuration - use same database as population_mapper
+POP_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "population_variants.db")
 CADD_REMOTE_TABIX = os.environ.get("CADD_REMOTE_TABIX", "https://krishna.gs.washington.edu/download/CADD/v1.7/GRCh38/")
 USE_REMOTE_CADD = os.environ.get("USE_REMOTE_CADD", "true").lower() == "true"
 
@@ -29,83 +29,80 @@ CADD_PHRED_THRESHOLDS = {
 
 
 def normalize_chromosome(chrom: str) -> str:
-    """Normalize chromosome format (chr1 vs 1)."""
+    """Normalize chromosome format (remove 'chr' prefix to match population_variants)."""
     if chrom.startswith("chr"):
-        return chrom
-    return f"chr{chrom}"
+        return chrom[3:]
+    return chrom
 
 
 def lookup_cadd_score(chrom: str, pos: int, ref: str, alt: str, 
-                     conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, float]]:
+                     conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
     """
-    Look up CADD score for a variant.
+    Look up CADD score from local database.
     
     Args:
-        chrom: Chromosome (e.g., 'chr1' or '1')
-        pos: Position (1-based)
+        chrom: Chromosome
+        pos: Position
         ref: Reference allele
         alt: Alternative allele
-        conn: SQLite connection (optional, will create if not provided)
-    
+        conn: Database connection
+        
     Returns:
-        Dict with 'raw' and 'phred' scores, or None if not found
+        Dict with raw_score, phred_score, job_id if found, None otherwise
     """
-    logger.debug(f"Looking up CADD score for {chrom}:{pos} {ref}>{alt}")
+    cursor = conn.cursor()
     
     # Normalize chromosome
-    chrom_norm = normalize_chromosome(chrom)
+    norm_chrom = normalize_chromosome(chrom)
     
-    # Try local database first
-    close_conn = False
-    if conn is None and os.path.exists(CADD_DB_PATH):
-        logger.debug(f"Opening CADD database: {CADD_DB_PATH}")
-        conn = sqlite3.connect(CADD_DB_PATH, check_same_thread=False)
-        close_conn = True
-    
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT raw_score, phred_score FROM cadd WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?",
-                (chrom_norm, pos, ref, alt)
-            )
-            result = cursor.fetchone()
+    try:
+        # Query CADD scores table
+        cursor.execute("""
+        SELECT raw_score, phred_score, job_id, created_at
+        FROM cadd_scores
+        WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?
+        """, (norm_chrom, pos, ref, alt))
+        
+        row = cursor.fetchone()
+        if row:
+            return {
+                "raw": row[0],
+                "phred": row[1],
+                "job_id": row[2],
+                "created_at": row[3]
+            }
             
-            if result:
-                logger.debug(f"Found CADD score in local DB: raw={result[0]}, phred={result[1]}")
-                return {"raw": result[0], "phred": result[1]}
-            else:
-                logger.debug(f"CADD score not found in local DB for {chrom_norm}:{pos}")
-                
-        except Exception as e:
-            logger.error(f"Database lookup error: {str(e)}")
-        finally:
-            if close_conn:
-                conn.close()
-    
-    # Try remote Tabix query if enabled and local lookup failed
-    if USE_REMOTE_CADD:
-        logger.debug(f"Attempting remote CADD lookup for {chrom}:{pos}")
-        return query_remote_cadd(chrom_norm, pos, ref, alt)
-    
-    logger.debug(f"No CADD score found for {chrom}:{pos} {ref}>{alt}")
+    except Exception as e:
+        logger.error(f"Database error looking up CADD score: {e}")
+        
     return None
 
 
-def query_remote_cadd(chrom: str, pos: int, ref: str, alt: str) -> Optional[Dict[str, float]]:
+def query_remote_cadd(chrom: str, pos: int, ref: str, alt: str,
+                     job_id: str, conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
     """
-    Query remote CADD server via Tabix.
+    Query remote CADD service for variant score.
     
-    Note: This is a placeholder. In production, implement proper Tabix queries
-    or use CADD's REST API.
+    Args:
+        chrom: Chromosome
+        pos: Position  
+        ref: Reference allele
+        alt: Alternative allele
+        job_id: Job ID for tracking
+        conn: Database connection to cache results
+        
+    Returns:
+        Dict with raw and phred scores if successful
     """
+    # TODO: Implement actual Tabix remote query
+    # For now, just log that we would query
     logger.warning(f"Remote CADD query not implemented. Would query: {chrom}:{pos} {ref}>{alt}")
     
-    # Placeholder for remote query implementation
-    # In production:
-    # 1. Use pysam.TabixFile with remote URL
-    # 2. Or use CADD REST API: https://cadd.gs.washington.edu/api
-    # 3. Cache results in local DB for future use
+    # In production, this would:
+    # 1. Query CADD Tabix service
+    # 2. Parse response
+    # 3. Cache result in database with job_id
+    # 4. Return scores
     
     return None
 
@@ -135,6 +132,37 @@ def calculate_risk_weight(phred_score: float) -> float:
     else:
         # Scale 25+ to 0.8-1.0 (capped at 1.0)
         return min(0.8 + 0.2 * (phred_score - 25) / 10, 1.0)
+
+
+def create_job_record(conn: sqlite3.Connection, job_type: str = "pipeline_run") -> str:
+    """Create a job tracking record for this CADD scoring run."""
+    job_id = f"cadd_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO cadd_jobs (job_id, job_type, metadata)
+    VALUES (?, ?, ?)
+    """, (job_id, job_type, json.dumps({
+        "cadd_version": "v1.7",
+        "pipeline_node": "cadd_scoring",
+        "use_remote": USE_REMOTE_CADD
+    })))
+    
+    conn.commit()
+    return job_id
+
+
+def update_job_status(conn: sqlite3.Connection, job_id: str, 
+                     status: str, variant_count: int = 0) -> None:
+    """Update job tracking record."""
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE cadd_jobs 
+    SET status = ?, completed_at = ?, variant_count = ?
+    WHERE job_id = ?
+    """, (status, datetime.now() if status in ['completed', 'failed'] else None,
+          variant_count, job_id))
+    conn.commit()
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -171,17 +199,25 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Skipping {len(benign_variants)} benign variants")
         logger.info(f"  Found {len(all_risk_genes)} cancer risk genes from risk assessment")
         
-        # Connect to CADD database
-        conn = None
-        if os.path.exists(CADD_DB_PATH):
-            conn = sqlite3.connect(CADD_DB_PATH)
-            logger.info(f"Connected to CADD database at {CADD_DB_PATH}")
-        else:
-            logger.warning(f"CADD database not found at {CADD_DB_PATH}, will use remote lookups")
+        # Connect to population database
+        if not os.path.exists(POP_DB_PATH):
+            logger.warning(f"Population database not found at {POP_DB_PATH}")
+            state["cadd_enriched_variants"] = filtered_variants
+            state["cadd_stats"] = {"error": "Database not found"}
+            state["completed_nodes"].append("cadd_scoring")
+            return state
+            
+        conn = sqlite3.connect(POP_DB_PATH)
+        logger.info(f"Connected to population database at {POP_DB_PATH}")
+        
+        # Create job record
+        job_id = create_job_record(conn)
+        logger.info(f"Created CADD scoring job: {job_id}")
         
         # Process variants
         enriched_variants = []
         stats = {
+            "job_id": job_id,
             "total_variants": len(filtered_variants),
             "variants_scored": 0,
             "variants_skipped_benign": 0,
@@ -189,7 +225,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "mean_phred": 0.0,
             "max_phred": 0.0,
             "variants_gt20": 0,
-            "lookup_missing": 0
+            "lookup_missing": 0,
+            "remote_lookups": 0
         }
         
         phred_scores = []
@@ -222,6 +259,19 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 conn
             )
             
+            # Try remote lookup if not found locally and enabled
+            if not cadd_result and USE_REMOTE_CADD:
+                cadd_result = query_remote_cadd(
+                    variant["chrom"],
+                    variant["pos"],
+                    variant["ref"],
+                    variant["alt"],
+                    job_id,
+                    conn
+                )
+                if cadd_result:
+                    stats["remote_lookups"] += 1
+            
             # Create enriched variant
             enriched_variant = variant.copy()
             
@@ -233,6 +283,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 enriched_variant["cadd_phred"] = phred
                 enriched_variant["cadd_raw"] = raw
                 enriched_variant["cadd_risk_weight"] = risk_weight
+                enriched_variant["cadd_job_id"] = cadd_result.get("job_id", job_id)
                 
                 # Update existing risk weight if lower
                 if "risk_weight" in enriched_variant:
@@ -277,9 +328,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             max_cancer_phred = max(cancer_gene_scores)
             logger.info(f"Cancer gene CADD scores: mean={mean_cancer_phred:.1f}, max={max_cancer_phred:.1f}")
         
+        # Update job status
+        update_job_status(conn, job_id, "completed", stats["variants_scored"])
+        
         # Close database connection
-        if conn:
-            conn.close()
+        conn.close()
         
         # Update state
         state["cadd_enriched_variants"] = enriched_variants
@@ -289,6 +342,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Log summary
         logger.info("=" * 60)
         logger.info("CADD Scoring Summary:")
+        logger.info(f"  Job ID: {stats['job_id']}")
         logger.info(f"  Total variants: {stats['total_variants']}")
         logger.info(f"  Variants scored: {stats['variants_scored']}")
         logger.info(f"  Benign skipped: {stats['variants_skipped_benign']}")
@@ -297,6 +351,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Max PHRED score: {stats['max_phred']:.1f}")
         logger.info(f"  High-impact variants (>20): {stats['variants_gt20']}")
         logger.info(f"  Missing lookups: {stats['lookup_missing']}")
+        logger.info(f"  Remote lookups: {stats['remote_lookups']}")
         logger.info("=" * 60)
         
     except Exception as e:
