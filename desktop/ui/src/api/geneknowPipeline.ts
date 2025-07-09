@@ -117,7 +117,7 @@ export interface PipelineResult {
       cancer_gene_variants: number;
       description: string;
     };
-    [key: string]: any;
+    [key: string]: unknown;
   };
   variants?: Array<{
     gene: string;
