@@ -80,15 +80,15 @@ def run_tcga_frequency_analysis(state):
 
 def test_tcga_frequency_analysis_known_variant():
     """Test TCGA frequency analysis for a known variant that should be in the dataset."""
-    # Example input variant that should be in your TCGA dataset
+    # Use a real variant from our comprehensive TCGA dataset
     state = {
         "filtered_variants": [
             {
                 "chrom": "17",
-                "pos": 43044295,
-                "ref": "G",
-                "alt": "A",
-                "variant_id": "17:43044295:G>A",
+                "pos": 43111347,
+                "ref": "T",
+                "alt": "G",
+                "variant_id": "17:43111347:T>G",
                 "gene": "BRCA1"
             }
         ]
@@ -137,26 +137,26 @@ def test_tcga_multiple_variants():
         "filtered_variants": [
             {
                 "chrom": "17",
-                "pos": 43044295,
-                "ref": "G",
-                "alt": "A",
-                "variant_id": "17:43044295:G>A",
+                "pos": 43111347,
+                "ref": "T",
+                "alt": "G",
+                "variant_id": "17:43111347:T>G",
                 "gene": "BRCA1"
             },
             {
                 "chrom": "17",
-                "pos": 7674221,
+                "pos": 7675897,
                 "ref": "G",
                 "alt": "A",
-                "variant_id": "17:7674221:G>A",
+                "variant_id": "17:7675897:G>A",
                 "gene": "TP53"
             },
             {
                 "chrom": "12",
-                "pos": 25245350,
+                "pos": 25210833,
                 "ref": "G",
                 "alt": "A",
-                "variant_id": "12:25245350:G>A",
+                "variant_id": "12:25210833:G>A",
                 "gene": "KRAS"
             }
         ]
@@ -166,6 +166,7 @@ def test_tcga_multiple_variants():
 
     # Check that all variants got frequency data
     for i, variant in enumerate(updated_state["filtered_variants"]):
+        print(variant)
         assert "tcga_frequency" in variant, f"Variant {i} missing tcga_frequency"
         assert "tcga_patient_count" in variant, f"Variant {i} missing tcga_patient_count"
 
@@ -175,10 +176,10 @@ def test_tcga_state_structure():
         "filtered_variants": [
             {
                 "chrom": "17",
-                "pos": 43044295,
-                "ref": "G",
-                "alt": "A",
-                "variant_id": "17:43044295:G>A",
+                "pos": 43111347,
+                "ref": "T",
+                "alt": "G",
+                "variant_id": "17:43111347:T>G",
                 "gene": "BRCA1"
             }
         ]
@@ -238,13 +239,24 @@ if __name__ == "__main__":
     # Configure logging to reduce noise during testing
     logging.basicConfig(level=logging.WARNING)
     
-    # Check if TCGA database exists
-    tcga_db_path = Path(__file__).parent.parent / "tcga_variants.db"
-    if not tcga_db_path.exists():
-        print("❌ TCGA database not found!")
-        print(f"Expected location: {tcga_db_path}")
-        print("Run 'python setup_tcga.py' first to create the database.")
+    # Check if unified database exists
+    db_path = Path(__file__).parent.parent / "population_variants.db"
+    if not db_path.exists():
+        print("❌ Main database not found!")
+        print(f"Expected location: {db_path}")
+        print("Run database setup first.")
         sys.exit(1)
+    
+    # Check if TCGA table exists in the database
+    import sqlite3
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tcga_variants'")
+    if not cursor.fetchone():
+        print("❌ TCGA table not found in database!")
+        print("Run 'python setup_tcga.py' first to create the TCGA table.")
+        sys.exit(1)
+    conn.close()
     
     # Run the tests
     success = run_all_tests()

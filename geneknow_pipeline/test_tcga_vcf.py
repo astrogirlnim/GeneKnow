@@ -75,7 +75,7 @@ def test_tcga_with_vcf():
         # Test TCGA mapping
         print(f"\n🔍 Testing TCGA Database Queries:")
         
-        conn = sqlite3.connect('tcga_variants.db')
+        conn = sqlite3.connect('population_variants.db')
         cursor = conn.cursor()
         
         results = []

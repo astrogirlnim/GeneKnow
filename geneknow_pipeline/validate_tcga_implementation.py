@@ -20,11 +20,11 @@ def test_database_structure():
     print("🔍 Test 1: Database Structure Validation")
     print("-" * 50)
     
-    if not os.path.exists("tcga_variants.db"):
-        print("❌ TCGA database not found!")
+    if not os.path.exists("population_variants.db"):
+        print("❌ Main database not found!")
         return False
     
-    conn = sqlite3.connect("tcga_variants.db")
+    conn = sqlite3.connect("population_variants.db")
     cursor = conn.cursor()
     
     try:
@@ -81,7 +81,7 @@ def test_data_quality():
     print("\n🔍 Test 2: Data Quality Validation")
     print("-" * 50)
     
-    conn = sqlite3.connect("tcga_variants.db")
+    conn = sqlite3.connect("population_variants.db")
     cursor = conn.cursor()
     
     try:
@@ -168,7 +168,7 @@ def test_enrichment_calculations():
     print("\n🔍 Test 3: Enrichment Calculation Validation")
     print("-" * 50)
     
-    conn = sqlite3.connect("tcga_variants.db")
+    conn = sqlite3.connect("population_variants.db")
     cursor = conn.cursor()
     
     try:
@@ -217,7 +217,7 @@ def test_tcga_mapper_functions():
     import sqlite3
     
     def query_tcga_database(chrom, pos, ref, alt, cancer_type):
-        conn = sqlite3.connect("tcga_variants.db")
+        conn = sqlite3.connect("population_variants.db")
         cursor = conn.cursor()
         
         # Normalize chromosome
@@ -278,7 +278,7 @@ def test_biological_sensibility():
     print("\n🔍 Test 5: Biological Sensibility Check")
     print("-" * 50)
     
-    conn = sqlite3.connect("tcga_variants.db")
+    conn = sqlite3.connect("population_variants.db")
     cursor = conn.cursor()
     
     try:
@@ -351,7 +351,7 @@ def test_edge_cases():
     print("-" * 50)
     
     # Test with non-existent database
-    original_db = "tcga_variants.db"
+    original_db = "population_variants.db"
     fake_db = "fake_tcga.db"
     
     import sqlite3

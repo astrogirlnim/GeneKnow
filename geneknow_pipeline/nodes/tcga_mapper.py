@@ -13,8 +13,8 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-# Path to TCGA database
-TCGA_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "tcga_variants.db")
+# Path to unified database (contains both population_variants and tcga_variants tables)
+TCGA_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "population_variants.db")
 
 def normalize_chromosome(chrom: str) -> str:
     """Normalize chromosome format (remove 'chr' prefix)."""
