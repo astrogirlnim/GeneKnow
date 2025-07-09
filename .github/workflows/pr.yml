@@ -182,6 +182,7 @@ jobs:
           echo "📊 Build completed successfully for ${{ matrix.platform.name }}"
           echo "🔍 Build artifacts:"
           ls -la desktop/ui/dist/ || echo "No frontend dist found"
+          echo "ℹ️  Note: PR builds do not upload artifacts to save storage space"
 
   # 🛡️ Security Audit
   security-audit:

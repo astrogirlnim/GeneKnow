@@ -35,6 +35,49 @@ env:
   PNPM_VERSION: '10.12.1'
 
 jobs:
+  # 🧹 Cleanup old artifacts to free storage
+  cleanup:
+    name: 🧹 Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🧹 Delete old artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🧹 Starting artifact cleanup...');
+            
+            // Get all artifacts
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            console.log(`📊 Found ${artifacts.data.total_count} artifacts`);
+            
+            // Delete artifacts older than 7 days
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - 7);
+            
+            let deletedCount = 0;
+            for (const artifact of artifacts.data.artifacts) {
+              const createdAt = new Date(artifact.created_at);
+              if (createdAt < cutoffDate) {
+                console.log(`🗑️  Deleting artifact: ${artifact.name} (created: ${artifact.created_at})`);
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+                deletedCount++;
+              }
+            }
+            
+            console.log(`✅ Cleanup completed. Deleted ${deletedCount} old artifacts`);
+
   # 🏷️ Version Management
   version:
     name: 🏷️ Determine Version
@@ -368,7 +411,7 @@ jobs:
   # 🔨 Build Multi-Platform Release
   build:
     name: 🔨 Build Release
-    needs: [version]
+    needs: [cleanup, version]
     strategy:
       fail-fast: false
       matrix:
@@ -531,6 +574,8 @@ jobs:
           name: ${{ matrix.platform.name }} Build
           path: desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/
           if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
 
       - name: 📊 Build summary
         run: |
