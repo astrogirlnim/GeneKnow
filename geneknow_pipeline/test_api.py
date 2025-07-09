@@ -129,7 +129,7 @@ if __name__ == "__main__":
     print("🧬 GeneKnow API Test Script")
     print("=" * 50)
     print("\nMake sure the API server is running:")
-    print("  python api_server.py")
+    print("  python enhanced_api_server.py")
     print("\nPress Enter to run tests...")
     input()
     
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         test_analyze_path()
     except requests.exceptions.ConnectionError:
         print("❌ Error: Could not connect to API server")
-        print("Make sure the server is running: python api_server.py")
+        print("Make sure the server is running: python enhanced_api_server.py")
     
     show_curl_examples()
     show_typescript_example() 

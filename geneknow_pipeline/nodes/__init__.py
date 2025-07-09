@@ -10,7 +10,7 @@ try:
     from . import preprocess
     from . import variant_calling
     from . import qc_filter
-    from . import tcga_mapper
+    from . import population_mapper
     from . import risk_model
     from . import formatter
     from . import report_writer
@@ -21,7 +21,7 @@ except ImportError:
     import preprocess
     import variant_calling
     import qc_filter
-    import tcga_mapper
+    import population_mapper
     import risk_model
     import formatter
     import report_writer
@@ -32,7 +32,7 @@ __all__ = [
     "preprocess", 
     "variant_calling",
     "qc_filter",
-    "tcga_mapper",
+    "population_mapper",
     "risk_model",
     "formatter",
     "report_writer",
