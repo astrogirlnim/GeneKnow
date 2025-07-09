@@ -1,85 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <defs>
     <linearGradient id="dnaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2E86AB;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#37B5B6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- DNA double helix - left strand -->
-  <path d="M30 15 Q40 25 50 15 Q60 5 70 15 Q80 25 90 15" 
+  <!-- DNA double helix -->
+  <path d="M20 20 Q30 30 40 20 Q50 10 60 20 Q70 30 80 20" 
         stroke="url(#dnaGradient)" 
-        stroke-width="4" 
+        stroke-width="3" 
         fill="none"/>
   
-  <path d="M30 35 Q40 45 50 35 Q60 25 70 35 Q80 45 90 35" 
+  <path d="M20 40 Q30 50 40 40 Q50 30 60 40 Q70 50 80 40" 
         stroke="url(#dnaGradient)" 
-        stroke-width="4" 
+        stroke-width="3" 
         fill="none"/>
   
-  <path d="M30 55 Q40 65 50 55 Q60 45 70 55 Q80 65 90 55" 
+  <path d="M20 60 Q30 70 40 60 Q50 50 60 60 Q70 70 80 60" 
         stroke="url(#dnaGradient)" 
-        stroke-width="4" 
+        stroke-width="3" 
         fill="none"/>
   
-  <path d="M30 75 Q40 85 50 75 Q60 65 70 75 Q80 85 90 75" 
+  <path d="M20 80 Q30 90 40 80 Q50 70 60 80 Q70 90 80 80" 
         stroke="url(#dnaGradient)" 
-        stroke-width="4" 
+        stroke-width="3" 
         fill="none"/>
   
-  <path d="M30 95 Q40 105 50 95 Q60 85 70 95 Q80 105 90 95" 
-        stroke="url(#dnaGradient)" 
-        stroke-width="4" 
-        fill="none"/>
+  <!-- Connecting lines -->
+  <line x1="25" y1="25" x2="25" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="35" y1="25" x2="35" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="45" y1="25" x2="45" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="55" y1="25" x2="55" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="65" y1="25" x2="65" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="75" y1="25" x2="75" y2="35" stroke="url(#dnaGradient)" stroke-width="2"/>
   
-  <!-- DNA double helix - right strand -->
-  <path d="M30 25 Q40 15 50 25 Q60 35 70 25 Q80 15 90 25" 
-        stroke="url(#dnaGradient)" 
-        stroke-width="4" 
-        fill="none"/>
+  <line x1="25" y1="45" x2="25" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="35" y1="45" x2="35" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="45" y1="45" x2="45" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="55" y1="45" x2="55" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="65" y1="45" x2="65" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="75" y1="45" x2="75" y2="55" stroke="url(#dnaGradient)" stroke-width="2"/>
   
-  <path d="M30 45 Q40 35 50 45 Q60 55 70 45 Q80 35 90 45" 
-        stroke="url(#dnaGradient)" 
-        stroke-width="4" 
-        fill="none"/>
-  
-  <path d="M30 65 Q40 55 50 65 Q60 75 70 65 Q80 55 90 65" 
-        stroke="url(#dnaGradient)" 
-        stroke-width="4" 
-        fill="none"/>
-  
-  <path d="M30 85 Q40 75 50 85 Q60 95 70 85 Q80 75 90 85" 
-        stroke="url(#dnaGradient)" 
-        stroke-width="4" 
-        fill="none"/>
-  
-  <!-- Base pairs -->
-  <line x1="35" y1="20" x2="35" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="45" y1="20" x2="45" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="55" y1="20" x2="55" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="65" y1="20" x2="65" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="75" y1="20" x2="75" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="85" y1="20" x2="85" y2="30" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  
-  <line x1="35" y1="40" x2="35" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="45" y1="40" x2="45" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="55" y1="40" x2="55" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="65" y1="40" x2="65" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="75" y1="40" x2="75" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="85" y1="40" x2="85" y2="50" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  
-  <line x1="35" y1="60" x2="35" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="45" y1="60" x2="45" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="55" y1="60" x2="55" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="65" y1="60" x2="65" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="75" y1="60" x2="75" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="85" y1="60" x2="85" y2="70" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  
-  <line x1="35" y1="80" x2="35" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="45" y1="80" x2="45" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="55" y1="80" x2="55" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="65" y1="80" x2="65" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="75" y1="80" x2="75" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
-  <line x1="85" y1="80" x2="85" y2="90" stroke="url(#dnaGradient)" stroke-width="2.5"/>
+  <line x1="25" y1="65" x2="25" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="35" y1="65" x2="35" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="45" y1="65" x2="45" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="55" y1="65" x2="55" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="65" y1="65" x2="65" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
+  <line x1="75" y1="65" x2="75" y2="75" stroke="url(#dnaGradient)" stroke-width="2"/>
 </svg> 

@@ -240,26 +240,6 @@ a:hover {
     height: 32px;
 }
 
-.logo-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.logo-name {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.logo-tagline {
-    font-size: var(--font-size-xs);
-    font-weight: 400;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
 .nav {
     display: flex;
     align-items: center;
@@ -745,26 +725,6 @@ a:hover {
 .footer-logo-image {
     width: 32px;
     height: 32px;
-}
-
-.footer-logo-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.footer-logo-name {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    color: var(--text-light);
-}
-
-.footer-logo-tagline {
-    font-size: var(--font-size-xs);
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .footer-description {
