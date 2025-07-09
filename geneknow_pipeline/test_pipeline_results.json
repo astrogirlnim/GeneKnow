@@ -1,81 +1,26 @@
 {
   "file_path": "test-data/sample.fastq.gz",
   "file_type": null,
-  "file_metadata": {
-    "tcga_summary": {
-      "variants_matched": 0,
-      "total_variants": 0,
-      "match_rate": 0,
-      "cancer_types_analyzed": [
-        "breast",
-        "colon",
-        "lung",
-        "prostate",
-        "blood"
-      ],
-      "cohort_sizes": {
-        "blood": 200,
-        "breast": 1084,
-        "colon": 461,
-        "lung": 585,
-        "prostate": 498
-      }
-    }
-  },
+  "file_metadata": {},
   "raw_variants": [],
   "filtered_variants": [],
   "variant_count": 0,
-  "tcga_matches": {
-    "breast": {},
-    "colon": {},
-    "lung": {},
-    "prostate": {},
-    "blood": {}
+  "tcga_matches": {},
+  "cadd_enriched_variants": null,
+  "cadd_stats": {
+    "error": "division by zero"
   },
-  "risk_scores": {
-    "breast": 3.0,
-    "colon": 1.7,
-    "lung": 2.4,
-    "prostate": 2.9,
-    "blood": 1.7
-  },
-  "risk_genes": {
-    "breast": [],
-    "colon": [],
-    "lung": [],
-    "prostate": [],
-    "blood": []
-  },
+  "risk_scores": {},
   "structured_json": {
     "report_metadata": {
       "pipeline_version": "1.0.0",
-      "processing_time_seconds": 0.798714,
-      "generated_at": "2025-07-08T11:23:46.121198",
+      "processing_time_seconds": 0.005936,
+      "generated_at": "2025-07-09T16:24:49.937541",
       "language": "en"
     },
     "patient_data": {
       "file_type": null,
-      "file_metadata": {
-        "tcga_summary": {
-          "variants_matched": 0,
-          "total_variants": 0,
-          "match_rate": 0,
-          "cancer_types_analyzed": [
-            "breast",
-            "colon",
-            "lung",
-            "prostate",
-            "blood"
-          ],
-          "cohort_sizes": {
-            "blood": 200,
-            "breast": 1084,
-            "colon": 461,
-            "lung": 585,
-            "prostate": 498
-          }
-        }
-      }
+      "file_metadata": {}
     },
     "summary": {
       "total_variants_found": 0,
@@ -83,45 +28,27 @@
       "high_risk_findings": 0
     },
     "risk_assessment": {
-      "scores": {
-        "breast": 3.0,
-        "colon": 1.7,
-        "lung": 2.4,
-        "prostate": 2.9,
-        "blood": 1.7
-      },
+      "scores": {},
       "high_risk_findings": [],
-      "risk_genes": {
-        "breast": [],
-        "colon": [],
-        "lung": [],
-        "prostate": [],
-        "blood": []
-      }
+      "risk_genes": {}
     },
     "variant_details": [],
     "quality_control": {},
     "tcga_summary": {
-      "cancer_types_analyzed": [
-        "breast",
-        "colon",
-        "lung",
-        "prostate",
-        "blood"
-      ],
+      "cancer_types_analyzed": [],
       "cohort_sizes": {},
       "variants_with_tcga_data": 0
     },
     "warnings": []
   },
-  "report_markdown": "# Patient Genomic Risk Report\n\n**Generated**: 2025-07-08 at 11:23:46  \n**Pipeline Version**: 1.0.0\n\n## Summary\n\nThis report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.\n\n- Total variants analyzed: 0\n- Variants passing quality control: 0\n- High-risk findings: 0\n\n## Risk Assessment\n\n### \ud83d\udfe2 Breast Cancer\n- **Risk Score**: 3.0%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Prostate Cancer\n- **Risk Score**: 2.9%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Lung Cancer\n- **Risk Score**: 2.4%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Colon Cancer\n- **Risk Score**: 1.7%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n### \ud83d\udfe2 Blood Cancer\n- **Risk Score**: 1.7%\n- **Risk Level**: Low\n- **Affected Genes**: None\n- **Recommendation**: Standard screening guidelines apply\n\n## Key Genetic Variants\n\n| Gene | Variant | Consequence | TCGA Match | Clinical Significance |\n|------|---------|-------------|------------|-----------------------|\n\n## Important Notice\n\n- This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.\n- Genetic risk assessment is based on current scientific understanding and may change as new research emerges.\n- Not all genetic variants are included in this analysis.\n\n---\n*Report ID: GR-20250708-112346*\n*Processing time: 0.80 seconds*\n",
+  "report_markdown": "# Patient Genomic Risk Report\n\n**Generated**: 2025-07-09 at 16:24:49  \n**Pipeline Version**: 1.0.0\n\n## Summary\n\nThis report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.\n\n- Total variants analyzed: 0\n- Variants passing quality control: 0\n- High-risk findings: 0\n\n## Risk Assessment\n\n## Key Genetic Variants\n\n| Gene | Variant | Consequence | TCGA Match | Clinical Significance |\n|------|---------|-------------|------------|-----------------------|\n\n## Important Notice\n\n- This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.\n- Genetic risk assessment is based on current scientific understanding and may change as new research emerges.\n- Not all genetic variants are included in this analysis.\n\n---\n*Report ID: GR-20250709-162449*\n*Processing time: 0.01 seconds*\n",
   "report_sections": {
     "header": {
       "title": "Patient Genomic Risk Report",
-      "generated_date": "2025-07-08",
-      "generated_time": "11:23:46",
+      "generated_date": "2025-07-09",
+      "generated_time": "16:24:49",
       "pipeline_version": "1.0.0",
-      "processing_time_seconds": 0.798714,
+      "processing_time_seconds": 0.005936,
       "language": "en"
     },
     "summary": {
@@ -131,48 +58,7 @@
       "high_risk_findings_count": 0,
       "patient_info": {}
     },
-    "risk_findings": [
-      {
-        "cancer_type": "breast",
-        "risk_percentage": 3.0,
-        "risk_level": "low",
-        "affected_genes": [],
-        "gene_count": 0,
-        "recommendation": "Standard screening guidelines apply"
-      },
-      {
-        "cancer_type": "prostate",
-        "risk_percentage": 2.9,
-        "risk_level": "low",
-        "affected_genes": [],
-        "gene_count": 0,
-        "recommendation": "Standard screening guidelines apply"
-      },
-      {
-        "cancer_type": "lung",
-        "risk_percentage": 2.4,
-        "risk_level": "low",
-        "affected_genes": [],
-        "gene_count": 0,
-        "recommendation": "Standard screening guidelines apply"
-      },
-      {
-        "cancer_type": "colon",
-        "risk_percentage": 1.7,
-        "risk_level": "low",
-        "affected_genes": [],
-        "gene_count": 0,
-        "recommendation": "Standard screening guidelines apply"
-      },
-      {
-        "cancer_type": "blood",
-        "risk_percentage": 1.7,
-        "risk_level": "low",
-        "affected_genes": [],
-        "gene_count": 0,
-        "recommendation": "Standard screening guidelines apply"
-      }
-    ],
+    "risk_findings": [],
     "variant_table": [],
     "quality_control": {
       "total_variants": 0,
@@ -186,13 +72,7 @@
       }
     },
     "tcga_summary": {
-      "cancer_types_analyzed": [
-        "breast",
-        "colon",
-        "lung",
-        "prostate",
-        "blood"
-      ],
+      "cancer_types_analyzed": [],
       "total_cohort_size": 0,
       "cohort_sizes": {},
       "variants_with_matches": 0,
@@ -201,32 +81,12 @@
     "recommendations": [],
     "technical_details": {
       "pipeline_nodes": [
-        "tcga_mapper",
-        "risk_model",
-        "formatter",
+        "population_mapper",
+        "cadd_scoring",
+        "feature_vector_builder",
         "report_writer"
       ],
-      "file_metadata": {
-        "tcga_summary": {
-          "variants_matched": 0,
-          "total_variants": 0,
-          "match_rate": 0,
-          "cancer_types_analyzed": [
-            "breast",
-            "colon",
-            "lung",
-            "prostate",
-            "blood"
-          ],
-          "cohort_sizes": {
-            "blood": 200,
-            "breast": 1084,
-            "colon": 461,
-            "lung": 585,
-            "prostate": 498
-          }
-        }
-      },
+      "file_metadata": {},
       "alignment_stats": {},
       "variant_calling_method": "Mock DeepVariant (simulated)",
       "reference_genome": "GRCh38",
@@ -247,41 +107,51 @@
       "Not all genetic variants are included in this analysis."
     ],
     "metadata": {
-      "report_id": "GR-20250708-112346",
+      "report_id": "GR-20250709-162449",
       "model_version": "1.0.0",
       "warnings": [],
       "file_analyzed": "test-data/sample.fastq.gz"
     }
   },
-  "pipeline_start_time": "2025-07-08 11:23:45.322476",
+  "pipeline_start_time": "2025-07-09 16:24:49.931604",
   "errors": [
     {
       "node": "file_input",
-      "error": "Failed to parse FASTQ file: Not a gzipped file (b'Cr')",
-      "timestamp": "2025-07-08 11:23:45.328054"
+      "error": "File not found: test-data/sample.fastq.gz",
+      "timestamp": "2025-07-09 16:24:49.936072"
     },
     {
       "node": "preprocess",
       "error": "Unexpected file type in preprocess: None",
-      "timestamp": "2025-07-08 11:23:45.328363"
+      "timestamp": "2025-07-09 16:24:49.936252"
     },
     {
       "node": "variant_calling",
       "error": "'aligned_bam_path'",
-      "timestamp": "2025-07-08 11:23:45.328663"
+      "timestamp": "2025-07-09 16:24:49.936501"
+    },
+    {
+      "node": "cadd_scoring",
+      "error": "division by zero",
+      "timestamp": "2025-07-09 16:24:49.937109"
+    },
+    {
+      "node": "formatter",
+      "error": "'risk_genes'",
+      "timestamp": "2025-07-09 16:24:49.937428"
     }
   ],
   "warnings": [],
   "pipeline_status": "completed",
   "completed_nodes": [
-    "tcga_mapper",
-    "risk_model",
-    "formatter",
+    "population_mapper",
+    "cadd_scoring",
+    "feature_vector_builder",
     "report_writer"
   ],
   "current_node": "report_writer",
   "language": "en",
   "include_technical_details": true,
-  "pipeline_end_time": "2025-07-08 11:23:46.121610",
-  "processing_time_seconds": 0.799134
+  "pipeline_end_time": "2025-07-09 16:24:49.937699",
+  "processing_time_seconds": 0.006095
 }

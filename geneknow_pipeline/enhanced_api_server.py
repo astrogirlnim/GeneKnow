@@ -206,6 +206,8 @@ def process_file_async(job_id: str):
                     'risk_scores': result.get('risk_scores', {}),
                     'report_sections': result.get('report_sections', {}),
                     'processing_time': result.get('processing_time_seconds', 0),
+                    'cadd_stats': result.get('cadd_stats', {}),
+                    'structured_json': result.get('structured_json', {}),
                     'result_file': result_file
                 })
             })

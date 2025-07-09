@@ -89,7 +89,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "patient_info": state.get("patient_data", {})
             },
             
-            "risk_findings": _format_risk_findings(structured_data),
+            "risk_findings": _format_risk_findings(structured_data) if structured_data.get("risk_assessment") else [],
             
             "variant_table": _format_variant_table(structured_data),
             
@@ -106,6 +106,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             },
             
             "tcga_summary": _format_tcga_summary(structured_data),
+            
+            "cadd_summary": _format_cadd_summary(structured_data),
             
             "recommendations": _generate_recommendations(structured_data),
             
@@ -141,7 +143,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("Report generation complete")
         
     except Exception as e:
+        import traceback
         logger.error(f"Report generation failed: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         state["errors"].append({
             "node": "report_writer",
             "error": str(e),
@@ -156,7 +160,11 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Format risk findings for easy frontend consumption."""
     findings = []
     
-    for finding in data["risk_assessment"]["high_risk_findings"]:
+    risk_assessment = data.get("risk_assessment")
+    if not risk_assessment:
+        return findings
+    
+    for finding in risk_assessment.get("high_risk_findings", []):
         findings.append({
             "cancer_type": finding["cancer_type"],
             "risk_percentage": finding["risk_percentage"],
@@ -167,7 +175,7 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
         })
     
     # Add low-risk findings
-    all_scores = data["risk_assessment"]["scores"]
+    all_scores = risk_assessment.get("scores", {})
     high_risk_types = [f["cancer_type"] for f in findings]
     
     for cancer_type, score in all_scores.items():
@@ -176,8 +184,8 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "cancer_type": cancer_type,
                 "risk_percentage": score,
                 "risk_level": _get_risk_level(score),
-                "affected_genes": data["risk_assessment"]["risk_genes"].get(cancer_type, []),
-                "gene_count": len(data["risk_assessment"]["risk_genes"].get(cancer_type, [])),
+                "affected_genes": risk_assessment.get("risk_genes", {}).get(cancer_type, []),
+                "gene_count": len(risk_assessment.get("risk_genes", {}).get(cancer_type, [])),
                 "recommendation": _get_risk_recommendation(cancer_type, score)
             })
     
@@ -215,6 +223,8 @@ def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "depth": variant["quality_metrics"]["depth"],
             "allele_frequency": variant["quality_metrics"]["allele_freq"],
             "tcga_best_match": best_match,
+            "cadd_score": variant.get("cadd_scores", {}).get("phred") if "cadd_scores" in variant else None,
+            "cadd_interpretation": _interpret_cadd_score(variant.get("cadd_scores", {}).get("phred")) if "cadd_scores" in variant else None,
             "clinical_significance": _get_clinical_significance(variant["gene"])
         })
     
@@ -235,12 +245,50 @@ def _format_tcga_summary(data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Format CADD summary."""
+    cadd_summary = data.get("cadd_summary", {})
+    
+    if not cadd_summary:
+        return {
+            "enabled": False,
+            "variants_scored": 0,
+            "mean_phred_score": 0,
+            "max_phred_score": 0,
+            "high_impact_variants": 0,
+            "cancer_gene_variants": 0,
+            "description": "CADD scoring not available"
+        }
+    
+    return {
+        "enabled": True,
+        "variants_scored": cadd_summary.get("variants_scored", 0),
+        "mean_phred_score": round(cadd_summary.get("mean_phred", 0), 2),
+        "max_phred_score": round(cadd_summary.get("max_phred", 0), 2),
+        "high_impact_variants": cadd_summary.get("high_impact_variants", 0),
+        "cancer_gene_variants": cadd_summary.get("cancer_gene_variants", 0),
+        "description": "Combined Annotation Dependent Depletion (CADD) scores predict variant deleteriousness"
+    }
+
+
 def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Generate actionable recommendations based on findings."""
     recommendations = []
     
+    risk_assessment = data.get("risk_assessment")
+    if not risk_assessment:
+        # No risk assessment performed, provide general recommendations
+        recommendations.append({
+            "priority": "medium",
+            "category": "general",
+            "title": "Variant Analysis Complete",
+            "description": "Genetic variants have been identified and annotated. Consider consulting with a healthcare provider to discuss these findings.",
+            "genes_involved": []
+        })
+        return recommendations
+    
     # Check high-risk findings
-    for finding in data["risk_assessment"]["high_risk_findings"]:
+    for finding in risk_assessment.get("high_risk_findings", []):
         if finding["risk_percentage"] > 70:
             recommendations.append({
                 "priority": "high",
@@ -332,6 +380,22 @@ def _get_clinical_significance(gene: str) -> str:
         return "uncertain_significance"
 
 
+def _interpret_cadd_score(phred_score: float) -> str:
+    """Interpret CADD PHRED score into human-readable impact."""
+    if phred_score is None:
+        return "Not available"
+    elif phred_score >= 25:
+        return "Highly pathogenic"
+    elif phred_score >= 20:
+        return "Pathogenic"
+    elif phred_score >= 15:
+        return "Damaging"
+    elif phred_score >= 10:
+        return "Uncertain"
+    else:
+        return "Benign"
+
+
 def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
     """Generate markdown report from structured sections (for PDF export)."""
     md = f"""# {sections['header']['title']}
@@ -352,25 +416,32 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
 """
     
     # Add risk findings
-    for finding in sections['risk_findings']:
-        level_emoji = "🔴" if finding['risk_level'] == 'high' else "🟡" if finding['risk_level'] == 'moderate' else "🟢"
-        md += f"### {level_emoji} {finding['cancer_type'].capitalize()} Cancer\n"
-        md += f"- **Risk Score**: {finding['risk_percentage']}%\n"
-        md += f"- **Risk Level**: {finding['risk_level'].capitalize()}\n"
-        md += f"- **Affected Genes**: {', '.join(finding['affected_genes']) if finding['affected_genes'] else 'None'}\n"
-        md += f"- **Recommendation**: {finding['recommendation']}\n\n"
+    if 'risk_findings' in sections and sections['risk_findings']:
+        for finding in sections['risk_findings']:
+            level_emoji = "🔴" if finding['risk_level'] == 'high' else "🟡" if finding['risk_level'] == 'moderate' else "🟢"
+            md += f"### {level_emoji} {finding['cancer_type'].capitalize()} Cancer\n"
+            md += f"- **Risk Score**: {finding['risk_percentage']}%\n"
+            md += f"- **Risk Level**: {finding['risk_level'].capitalize()}\n"
+            md += f"- **Affected Genes**: {', '.join(finding['affected_genes']) if finding['affected_genes'] else 'None'}\n"
+            md += f"- **Recommendation**: {finding['recommendation']}\n\n"
+    else:
+        md += "*No risk assessment performed*\n\n"
     
     # Add variant table
     md += "## Key Genetic Variants\n\n"
-    md += "| Gene | Variant | Consequence | TCGA Match | Clinical Significance |\n"
-    md += "|------|---------|-------------|------------|-----------------------|\n"
+    md += "| Gene | Variant | Consequence | TCGA Match | Clinical Significance | CADD Score |\n"
+    md += "|------|---------|-------------|------------|-----------------------|------------|\n"
     
     for variant in sections['variant_table'][:5]:
         tcga_text = "No match"
         if variant['tcga_best_match']:
             tcga_text = f"{variant['tcga_best_match']['frequency']:.1f}% in {variant['tcga_best_match']['cancer_type']}"
         
-        md += f"| {variant['gene']} | {variant['variant_id'][:20]}... | {variant['consequence']} | {tcga_text} | {variant['clinical_significance']} |\n"
+        cadd_text = "Score not available"
+        if variant['cadd_score'] is not None:
+            cadd_text = f"{variant['cadd_score']:.1f} ({variant['cadd_interpretation']})"
+        
+        md += f"| {variant['gene']} | {variant['variant_id'][:20]}... | {variant['consequence']} | {tcga_text} | {variant['clinical_significance']} | {cadd_text} |\n"
     
     # Add recommendations
     if sections['recommendations']:
