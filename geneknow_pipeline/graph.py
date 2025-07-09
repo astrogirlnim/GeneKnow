@@ -148,16 +148,10 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("population_mapper", "cadd_scoring")
     workflow.add_edge("cadd_scoring", "feature_vector_builder")
     
-    # Check for legacy risk model flag
-    use_legacy_risk = os.environ.get("USE_LEGACY_RISK", "false").lower() == "true"
-    
-    if use_legacy_risk:
-        # Legacy path: feature_vector_builder -> risk_model -> formatter
-        workflow.add_edge("feature_vector_builder", "risk_model") 
-        workflow.add_edge("risk_model", "formatter")
-    else:
-        # New path: feature_vector_builder -> formatter (bypass risk_model)
-        workflow.add_edge("feature_vector_builder", "formatter")
+    # Always include risk model in the pipeline
+    # The flow is: cadd_scoring -> feature_vector_builder -> risk_model -> formatter
+    workflow.add_edge("feature_vector_builder", "risk_model") 
+    workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")
     workflow.add_edge("report_writer", END)
