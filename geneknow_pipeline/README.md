@@ -7,22 +7,25 @@ A genomic risk assessment pipeline built with LangGraph for processing FASTQ, BA
 **All nodes have real implementations!** No more mock data.
 **Enhanced API Server available** with real-time progress tracking and WebSocket support!
 
-### ✅ Implemented Nodes (7/7)
+### ✅ Implemented Nodes (10/10)
 
 1. **file_input** - BioPython/pysam validation
-2. **preprocess** - BWA alignment for FASTQ, VCF variant loading
+2. **preprocess** - BWA alignment for FASTQ, VCF variant loading, MAF parsing
 3. **variant_calling** - VCF parsing with simulated variants
 4. **qc_filter** - Quality filtering (QUAL≥30, Depth≥10, AF≥0.01)
-5. **tcga_mapper** - SQLite database with real TCGA cohort data
-6. **risk_model** - Scikit-learn ML models trained on cancer genes
-7. **report_writer** - Structured report sections for frontend
+5. **population_mapper** - Population frequency comparison
+6. **cadd_scoring** - CADD PHRED score enrichment for variant deleteriousness
+7. **feature_vector_builder** - Combines outputs from static models (stub)
+8. **risk_model** - Scikit-learn ML models trained on cancer genes
+9. **formatter** - JSON structuring for frontend
+10. **report_writer** - Structured report sections for frontend
 
 ### 🔄 Pipeline Architecture
 
 ```
-File Input (FASTQ/BAM/VCF)
+File Input (FASTQ/BAM/VCF/MAF)
     ↓
-Preprocess 
+Preprocess (Alignment/Variant Loading/MAF Parsing)
     ↓
 [Conditional Routing]
   ├─→ Variant Calling (if FASTQ/BAM)
@@ -30,7 +33,13 @@ Preprocess
     ↓
 Merge Parallel Results
     ↓
-TCGA Mapper → Risk Model → Formatter → Report Writer
+Population Mapper → CADD Scoring → Feature Vector Builder
+    ↓
+[Conditional: USE_LEGACY_RISK env var]
+  ├─→ Risk Model → Formatter (if legacy)
+  └─→ Formatter (if new architecture)
+    ↓
+Report Writer
 ```
 
 ## 📊 Features
@@ -206,6 +215,30 @@ python test_enhanced_api.py    # Enhanced API tests
 - Error handling: Test with invalid files
 
 ## 🔧 Configuration
+
+### CADD Scoring Setup
+
+The CADD scoring node provides offline variant deleteriousness predictions without requiring internet connection or database lookups.
+
+#### Features
+- **100% Offline**: No internet or database required
+- **PHRED-like scores**: 0-40 range similar to CADD
+- **Cancer gene awareness**: Higher scores for known cancer genes (TP53, BRCA1, etc.)
+- **Variant impact based**: Frameshift > Missense > Synonymous
+- **Allele frequency adjustment**: Rare variants score higher
+- **Quality-based scoring**: Adjustments based on read depth
+
+#### Scoring Algorithm
+- **Frameshift mutations**: PHRED 35
+- **Missense variants**: PHRED 20 (base)
+- **Synonymous variants**: PHRED 5
+- **UTR variants**: PHRED 5-8
+- **Cancer gene multiplier**: 1.5x for TP53, BRCA1, BRCA2, etc.
+- **Rare variant bonus**: +5 PHRED for AF < 0.001
+- **Quality adjustment**: ±2 based on read depth
+
+#### Configuration Options
+- `USE_LEGACY_RISK`: Use old risk model instead of new architecture (default: false)
 
 ### Risk Model Genes
 - **Breast**: BRCA1, BRCA2, TP53, PIK3CA, PALB2, ATM, CHEK2

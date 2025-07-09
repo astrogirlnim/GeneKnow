@@ -11,6 +11,8 @@ try:
     from . import variant_calling
     from . import qc_filter
     from . import population_mapper
+    from . import cadd_scoring
+    from . import feature_vector_builder
     from . import risk_model
     from . import formatter
     from . import report_writer
@@ -22,6 +24,8 @@ except ImportError:
     import variant_calling
     import qc_filter
     import population_mapper
+    import cadd_scoring
+    import feature_vector_builder
     import risk_model
     import formatter
     import report_writer
@@ -33,6 +37,8 @@ __all__ = [
     "variant_calling",
     "qc_filter",
     "population_mapper",
+    "cadd_scoring",
+    "feature_vector_builder",
     "risk_model",
     "formatter",
     "report_writer",

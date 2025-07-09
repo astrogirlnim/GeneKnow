@@ -100,6 +100,25 @@ export interface PipelineResult {
   risk_scores: Record<string, number>;
   report_sections: Record<string, ReportSection>;
   processing_time_seconds: number;
+  cadd_stats?: {
+    variants_scored: number;
+    mean_phred: number;
+    max_phred: number;
+    variants_gt20: number;
+    variants_in_cancer_genes: number;
+  };
+  structured_json?: {
+    cadd_summary?: {
+      enabled: boolean;
+      variants_scored: number;
+      mean_phred_score: number;
+      max_phred_score: number;
+      high_impact_variants: number;
+      cancer_gene_variants: number;
+      description: string;
+    };
+    [key: string]: unknown;
+  };
   variants?: Array<{
     gene: string;
     position: string;

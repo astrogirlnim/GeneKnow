@@ -127,6 +127,13 @@ Desktop.ini
 *.log
 logs/
 
+# Test reports and results
+*_test_report_*.json
+*_direct_results.json
+*_pipeline_results_*.json
+test_results_*.json
+cadd_test_report_*.json
+
 # Temporary files
 *.tmp
 *.temp
@@ -173,3 +180,5 @@ DEMO_SCRIPT.md
 DEMO_SETUP_GUIDE.md
 setup_demo_files.py
 geneknow_pipeline/population_variants.db
+geneknow_pipeline/data/cadd_scores.db
+geneknow_pipeline/data/

@@ -206,6 +206,8 @@ def process_file_async(job_id: str):
                     'risk_scores': result.get('risk_scores', {}),
                     'report_sections': result.get('report_sections', {}),
                     'processing_time': result.get('processing_time_seconds', 0),
+                    'cadd_stats': result.get('cadd_stats', {}),
+                    'structured_json': result.get('structured_json', {}),
                     'result_file': result_file
                 })
             })
@@ -247,8 +249,11 @@ def pipeline_info():
                 {'id': 'preprocess', 'name': 'Preprocessing', 'description': 'Aligns FASTQ or loads variants'},
                 {'id': 'variant_calling', 'name': 'Variant Calling', 'description': 'Identifies genetic variants'},
                 {'id': 'qc_filter', 'name': 'Quality Control', 'description': 'Filters low-quality variants'},
-                {'id': 'tcga_mapper', 'name': 'TCGA Mapping', 'description': 'Maps to cancer database'},
+                {'id': 'population_mapper', 'name': 'Population Mapping', 'description': 'Maps variants to population frequencies'},
+                {'id': 'cadd_scoring', 'name': 'CADD Scoring', 'description': 'Enriches variants with deleteriousness scores'},
+                {'id': 'feature_vector_builder', 'name': 'Feature Vector Builder', 'description': 'Combines static model outputs'},
                 {'id': 'risk_model', 'name': 'Risk Assessment', 'description': 'ML-based risk prediction'},
+                {'id': 'formatter', 'name': 'Result Formatting', 'description': 'Formats results for frontend'},
                 {'id': 'report_writer', 'name': 'Report Generation', 'description': 'Creates final report'}
             ],
             'cancer_types': ['breast', 'colon', 'lung', 'prostate', 'blood'],

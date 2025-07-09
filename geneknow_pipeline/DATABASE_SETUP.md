@@ -12,7 +12,9 @@ The GeneKnow pipeline relies on a population database containing clinical varian
 
 ## Database Structure
 
-The database contains a single table `population_variants` with the following schema:
+The database contains multiple tables that work together to provide comprehensive variant annotations:
+
+### 1. Main Population Variants Table
 
 ```sql
 CREATE TABLE population_variants (
@@ -28,6 +30,65 @@ CREATE TABLE population_variants (
     review_status TEXT,            -- ClinVar review status
     PRIMARY KEY (chrom, pos, ref, alt)
 );
+```
+
+### 2. CADD Scores Table
+
+```sql
+CREATE TABLE cadd_scores (
+    -- Primary key matching population_variants
+    chrom TEXT NOT NULL,
+    pos INTEGER NOT NULL,
+    ref TEXT NOT NULL,
+    alt TEXT NOT NULL,
+    
+    -- CADD scores
+    raw_score REAL,
+    phred_score REAL,
+    
+    -- Job tracking
+    job_id TEXT,
+    source TEXT DEFAULT 'local',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (chrom, pos, ref, alt),
+    FOREIGN KEY (chrom, pos, ref, alt) 
+        REFERENCES population_variants(chrom, pos, ref, alt)
+);
+```
+
+### 3. Job Tracking Table
+
+```sql
+CREATE TABLE cadd_jobs (
+    job_id TEXT PRIMARY KEY,
+    job_type TEXT NOT NULL,      -- 'batch_import', 'api_lookup', 'test'
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    variant_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'running', -- 'running', 'completed', 'failed'
+    metadata TEXT                 -- JSON string with additional info
+);
+```
+
+### 4. Variant Annotations View
+
+A convenient view that joins population and CADD data:
+
+```sql
+CREATE VIEW variant_annotations AS
+SELECT 
+    pv.chrom, pv.pos, pv.ref, pv.alt, pv.gene,
+    pv.gnomad_af, pv.clinical_significance, pv.is_pathogenic,
+    pv.consequence, pv.review_status,
+    cs.raw_score as cadd_raw, cs.phred_score as cadd_phred,
+    cs.job_id as cadd_job_id, cs.created_at as cadd_scored_at
+FROM population_variants pv
+LEFT JOIN cadd_scores cs ON 
+    pv.chrom = cs.chrom AND 
+    pv.pos = cs.pos AND 
+    pv.ref = cs.ref AND 
+    pv.alt = cs.alt;
 ```
 
 ## Quick Setup (Recommended)
@@ -58,7 +119,18 @@ python create_population_database.py --cancer-genes-only
 python create_population_database.py
 ```
 
-### 3. Verify Setup
+### 3. Add CADD Scores Table
+After creating the population database, add the CADD scores table:
+
+```bash
+# Add test CADD data for development
+./scripts/fetch_cadd.sh --test
+
+# OR for production setup (creates table structure only)
+./scripts/fetch_cadd.sh
+```
+
+### 4. Verify Setup
 ```bash
 # Check database exists and is valid
 python -c "
@@ -66,7 +138,9 @@ import sqlite3
 conn = sqlite3.connect('population_variants.db')
 cursor = conn.cursor()
 cursor.execute('SELECT COUNT(*) FROM population_variants')
-print(f'Database contains {cursor.fetchone()[0]:,} variants')
+print(f'Population variants: {cursor.fetchone()[0]:,}')
+cursor.execute('SELECT COUNT(*) FROM cadd_scores')
+print(f'CADD scores: {cursor.fetchone()[0]:,}')
 conn.close()
 "
 ```
@@ -127,6 +201,46 @@ The script automatically validates the database:
 2024-01-15 10:12:00 - INFO - ✓ Found 987 variants in BRCA2
 2024-01-15 10:12:00 - INFO - ✓ Found 2,345 variants in TP53
 2024-01-15 10:12:00 - INFO - ✅ Database creation completed successfully!
+```
+
+## CADD Scores Integration
+
+### Adding CADD Scores
+
+The CADD (Combined Annotation Dependent Depletion) scores provide deleteriousness predictions for variants:
+
+1. **Test Data Setup** (for development):
+   ```bash
+   ./scripts/fetch_cadd.sh --test
+   ```
+   This adds 5 sample CADD scores for testing.
+
+2. **Production Import** (requires CADD data files):
+   ```bash
+   # Download CADD data (warning: >100GB)
+   wget https://krishna.gs.washington.edu/download/CADD/v1.7/GRCh38/whole_genome_SNVs.tsv.gz
+   
+   # Import using custom script (to be implemented)
+   python create_cadd_import.py --input whole_genome_SNVs.tsv.gz --job-id cadd_v1.7_import
+   ```
+
+3. **Remote Lookup Alternative**:
+   For development, the pipeline can use remote CADD lookups instead of local storage.
+   Set `USE_REMOTE_CADD=true` environment variable.
+
+### Job Tracking
+
+Each CADD scoring run creates a job record for tracking:
+
+```sql
+-- View recent CADD jobs
+SELECT job_id, job_type, status, variant_count, completed_at
+FROM cadd_jobs
+ORDER BY started_at DESC
+LIMIT 10;
+
+-- View variants from a specific job
+SELECT COUNT(*) FROM cadd_scores WHERE job_id = 'cadd_20240115_123456_abc123';
 ```
 
 ## Usage Options
@@ -203,6 +317,9 @@ sqlite3 population_variants.db ".schema"
 # Check record count
 sqlite3 population_variants.db "SELECT COUNT(*) FROM population_variants;"
 
+# Check CADD scores
+sqlite3 population_variants.db "SELECT COUNT(*) FROM cadd_scores;"
+
 # Check cancer genes
 sqlite3 population_variants.db "SELECT gene, COUNT(*) FROM population_variants WHERE gene IN ('BRCA1', 'BRCA2', 'TP53') GROUP BY gene;"
 ```
@@ -214,6 +331,9 @@ rm -f population_variants.db
 
 # Recreate
 python create_population_database.py --cancer-genes-only --force
+
+# Re-add CADD scores
+./scripts/fetch_cadd.sh --test
 ```
 
 ## Database Maintenance
@@ -247,6 +367,7 @@ gzip population_variants_backup_$(date +%Y%m%d).db
 1. Create the database once:
    ```bash
    python create_population_database.py --cancer-genes-only
+   ./scripts/fetch_cadd.sh --test
    ```
 
 2. Share the database file with team members via:
@@ -278,11 +399,16 @@ The database includes optimized indexes:
 - `idx_gene`: Fast gene-based lookups
 - `idx_position`: Fast position-based lookups
 - `idx_pathogenic`: Fast pathogenicity filtering
+- `idx_cadd_location`: Fast CADD score lookups
+- `idx_cadd_phred`: Fast CADD threshold queries
+- `idx_cadd_job`: Fast job-based filtering
 
 Typical query times:
 - Single variant lookup: <1ms
 - Gene-based queries: <10ms
 - Population frequency queries: <5ms
+- CADD score lookup: <1ms
+- Combined annotation lookup: <5ms
 
 ## Security Considerations
 

@@ -5,6 +5,7 @@ Orchestrates the flow from FASTQ/BAM/VCF/MAF input to final PDF report.
 from langgraph.graph import StateGraph, END
 from datetime import datetime
 import logging
+import os
 
 try:
     # Try relative imports first (when used as a package)
@@ -15,6 +16,8 @@ try:
         variant_calling,
         qc_filter,
         population_mapper,
+        cadd_scoring,
+        feature_vector_builder,
         risk_model,
         formatter,
         report_writer
@@ -28,6 +31,8 @@ except ImportError:
         variant_calling,
         qc_filter,
         population_mapper,
+        cadd_scoring,
+        feature_vector_builder,
         risk_model,
         formatter,
         report_writer
@@ -112,6 +117,8 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("qc_filter", qc_filter.process)
     workflow.add_node("merge_parallel", merge_variants)
     workflow.add_node("population_mapper", population_mapper.process)
+    workflow.add_node("cadd_scoring", cadd_scoring.process)
+    workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -136,8 +143,16 @@ def create_genomic_pipeline() -> StateGraph:
     # MAF files skip directly to population mapping (no merge needed)
     # Continue with linear flow after merge
     workflow.add_edge("merge_parallel", "population_mapper")
-    workflow.add_edge("population_mapper", "risk_model")
+    
+    # New flow with CADD scoring
+    workflow.add_edge("population_mapper", "cadd_scoring")
+    workflow.add_edge("cadd_scoring", "feature_vector_builder")
+    
+    # Always include risk model in the pipeline
+    # The flow is: cadd_scoring -> feature_vector_builder -> risk_model -> formatter
+    workflow.add_edge("feature_vector_builder", "risk_model") 
     workflow.add_edge("risk_model", "formatter")
+    
     workflow.add_edge("formatter", "report_writer")
     workflow.add_edge("report_writer", END)
     
@@ -170,6 +185,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "filtered_variants": [],
         "variant_count": 0,
         "tcga_matches": {},
+        "cadd_enriched_variants": None,
+        "cadd_stats": None,
         "risk_scores": {},
         "structured_json": {},
         "report_markdown": "",
