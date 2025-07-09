@@ -46,6 +46,28 @@ Build:     Vite 7.0 + pnpm 10.12
 Platform:  Cross-platform desktop (macOS/Windows/Linux)
 ```
 
+### 🔖 **Version Management**
+GenePredict uses automated semantic versioning with GitHub Actions:
+- **Automated Releases**: Push to `main` triggers automatic version bumping and release builds
+- **Cross-Platform Builds**: macOS, Windows, and Linux binaries generated automatically
+- **No Manual Tags**: The release pipeline handles all version management to prevent conflicts
+
+**For Developers:**
+```bash
+# Let the pipeline handle versioning (recommended)
+git push origin main
+
+# Manual version bump during development only
+./scripts/bump-version.sh patch  # 0.1.0 → 0.1.1
+./scripts/bump-version.sh minor  # 0.1.0 → 0.2.0
+./scripts/bump-version.sh major  # 0.1.0 → 1.0.0
+
+# Install git hooks to prevent conflicts
+./scripts/install-git-hooks.sh
+```
+
+📖 **Full Guidelines**: See [`docs/VERSIONING_GUIDELINES.md`](docs/VERSIONING_GUIDELINES.md) for complete versioning workflow and troubleshooting.
+
 ---
 
 ## 🚀 Quick Start Guide
