@@ -58,7 +58,7 @@ def lookup_cadd_score(chrom: str, pos: int, ref: str, alt: str,
     try:
         # Query CADD scores table
         cursor.execute("""
-        SELECT raw_score, phred_score, job_id, created_at
+        SELECT raw_score, phred_score, job_id
         FROM cadd_scores
         WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?
         """, (norm_chrom, pos, ref, alt))
@@ -68,8 +68,7 @@ def lookup_cadd_score(chrom: str, pos: int, ref: str, alt: str,
             return {
                 "raw": row[0],
                 "phred": row[1],
-                "job_id": row[2],
-                "created_at": row[3]
+                "job_id": row[2]
             }
             
     except Exception as e:
