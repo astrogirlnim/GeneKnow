@@ -1,4 +1,4 @@
-// Main JavaScript functionality for GenePredict website
+// Main JavaScript functionality for GeneKnow website
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all functionality
@@ -184,7 +184,7 @@ function debounce(func, wait) {
 
 // Error handling
 function showError(message) {
-    console.error('GenePredict Website Error:', message);
+    console.error('GeneKnow Website Error:', message);
     
     // You can add more sophisticated error handling here
     // For example, showing a toast notification or modal
@@ -233,7 +233,7 @@ function trackDownload(platform, fileName) {
 }
 
 // Export functions for use in other scripts
-window.GenePredict = {
+window.GeneKnow = {
     formatBytes,
     formatDate,
     detectPlatform,

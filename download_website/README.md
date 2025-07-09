@@ -1,6 +1,6 @@
-# GenePredict Download Website
+# GeneKnow Download Website
 
-This is the static website for hosting GenePredict downloads and serving as a marketing landing page. The website is automatically deployed to GitHub Pages and fetches the latest releases from the GitHub API.
+This is the static website for hosting GeneKnow downloads and serving as a marketing landing page. The website is automatically deployed to GitHub Pages and fetches the latest releases from the GitHub API.
 
 ## 🌟 Features
 
@@ -163,7 +163,7 @@ The website fetches data from the GitHub API using client-side JavaScript. This 
 
 ## 📄 License
 
-This download website template is part of the GenePredict project and follows the same licensing terms as the main repository.
+This download website template is part of the GeneKnow project and follows the same licensing terms as the main repository.
 
 ## 🤝 Contributing
 
@@ -186,4 +186,4 @@ If you encounter issues with the download website:
 
 ---
 
-Made with ❤️ by the GenePredict team 
+Made with ❤️ by the GeneKnow team 

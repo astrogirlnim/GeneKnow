@@ -1,4 +1,4 @@
-// GitHub releases integration for GenePredict website
+// GitHub releases integration for GeneKnow website
 
 // Configuration
 const GITHUB_API_BASE = 'https://api.github.com/repos';
@@ -52,7 +52,7 @@ function updateVersionInfo(release) {
     
     if (releaseDate) {
         const date = new Date(release.published_at);
-        releaseDate.textContent = `Released on ${window.GenePredict.formatDate(date)}`;
+        releaseDate.textContent = `Released on ${window.GeneKnow.formatDate(date)}`;
     }
 }
 
@@ -110,10 +110,15 @@ function updatePlatformDownloads(platform, assets) {
     
     container.innerHTML = '';
     
-    assets.forEach(asset => {
-        const downloadItem = createDownloadItem(asset, platform);
+    // Get the best/recommended asset for this platform
+    const recommendedAsset = getRecommendedAsset(platform, { [platform]: assets });
+    
+    if (recommendedAsset) {
+        const downloadItem = createDownloadItem(recommendedAsset, platform);
         container.appendChild(downloadItem);
-    });
+    } else {
+        container.innerHTML = '<div class="no-downloads">No downloads available for this platform</div>';
+    }
 }
 
 // Create download item element
@@ -130,7 +135,7 @@ function createDownloadItem(asset, platform) {
     
     const fileSize = document.createElement('div');
     fileSize.className = 'file-size';
-    fileSize.textContent = window.GenePredict.formatBytes(asset.size);
+    fileSize.textContent = window.GeneKnow.formatBytes(asset.size);
     
     fileInfo.appendChild(fileName);
     fileInfo.appendChild(fileSize);
@@ -149,7 +154,7 @@ function createDownloadItem(asset, platform) {
 // Handle file download
 function downloadFile(asset, platform) {
     // Track download
-    window.GenePredict.trackDownload(platform, asset.name);
+    window.GeneKnow.trackDownload(platform, asset.name);
     
     // Create temporary link and trigger download
     const link = document.createElement('a');
@@ -204,7 +209,7 @@ function setupRecommendedDownload(release) {
     
     if (!recommendedBtn) return;
     
-    const userPlatform = window.GenePredict.detectPlatform();
+    const userPlatform = window.GeneKnow.detectPlatform();
     const assets = release.assets || [];
     const platformAssets = groupAssetsByPlatform(assets);
     
@@ -271,13 +276,13 @@ function showErrorState() {
         releaseDate.textContent = 'Unable to load release information';
     }
     
-    if (releaseContent) {
-        releaseContent.innerHTML = `
-            <p>Unable to load release information. Please visit our 
-            <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
-            to download the latest version.</p>
-        `;
-    }
+            if (releaseContent) {
+            releaseContent.innerHTML = `
+                <p>Unable to load release information. Please visit our 
+                <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
+                to download the latest version of GeneKnow.</p>
+            `;
+        }
     
     // Update download sections
     const downloadSections = ['windows-downloads', 'macos-downloads', 'linux-downloads'];

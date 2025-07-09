@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenePredict - Privacy-First Genomic Risk Assessment</title>
-    <meta name="description" content="Privacy-first genomic risk assessment platform. Analyze your genetic data securely on your own device.">
+    <title>GeneKnow - Decode Disease</title>
+    <meta name="description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
     <meta name="keywords" content="genomics, privacy, risk assessment, genetic analysis, TCGA, biomarkers">
     <meta name="author" content="GenePredict Team">
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="GenePredict - Privacy-First Genomic Risk Assessment">
-    <meta property="og:description" content="Privacy-first genomic risk assessment platform. Analyze your genetic data securely on your own device.">
+    <meta property="og:title" content="GeneKnow - Decode Disease">
+    <meta property="og:description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://github.com/genepredict/genepredict">
+    <meta property="og:url" content="https://github.com/astrogirlnim/GeneKnow">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="GenePredict - Privacy-First Genomic Risk Assessment">
-    <meta name="twitter:description" content="Privacy-first genomic risk assessment platform. Analyze your genetic data securely on your own device.">
+    <meta name="twitter:title" content="GeneKnow - Decode Disease">
+    <meta name="twitter:description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/favicon.png">
@@ -37,14 +37,13 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <img src="assets/images/logo.svg" alt="GenePredict Logo" class="logo-image">
-                    <span class="logo-text">GenePredict</span>
+                    <span class="logo-text">GeneKnow</span>
                 </div>
                 <nav class="nav">
                     <a href="#features" class="nav-link">Features</a>
                     <a href="#download" class="nav-link">Download</a>
                     <a href="#about" class="nav-link">About</a>
-                    <a href="https://github.com/genepredict/genepredict" target="_blank" class="nav-link">GitHub</a>
+                    <a href="https://github.com/astrogirlnim/GeneKnow" target="_blank" class="nav-link">GitHub</a>
                 </nav>
                 <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
                     <span></span>
@@ -61,22 +60,19 @@
             <div class="hero-content">
                 <div class="hero-text">
                     <h1 class="hero-title">
-                        Privacy-First<br>
-                        <span class="gradient-text">Genomic Risk Assessment</span>
+                        Decode Disease<br>
+                        <span class="gradient-text">Through Genomic Analysis</span>
                     </h1>
                     <p class="hero-description">
                         Analyze your genetic data securely on your own device. No cloud uploads, no data sharing. 
-                        Get personalized risk insights using advanced machine learning models trained on TCGA data.
+                        Decode disease patterns using advanced machine learning models trained on TCGA data.
                     </p>
                     <div class="hero-buttons">
-                        <a href="#download" class="btn btn-primary">
-                            <span class="btn-icon">📥</span>
+                        <a href="#download" class="btn btn-primary btn-large btn-icon">
+                            <span class="icon">⬇️</span>
                             Download Now
                         </a>
-                        <a href="#features" class="btn btn-secondary">
-                            <span class="btn-icon">🔍</span>
-                            Learn More
-                        </a>
+                        <a href="#about" class="btn btn-secondary btn-large">Learn More</a>
                     </div>
                     <div class="hero-badges">
                         <span class="badge">🔒 Privacy-First</span>
@@ -87,256 +83,341 @@
                 <div class="hero-visual">
                     <div class="hero-image">
                         <div class="dna-visualization">
-                            <div class="dna-strand"></div>
-                            <div class="data-points"></div>
+                            <div class="dna-helix-3d" id="dna-helix-3d">
+                                <!-- 3D DNA will be generated here -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Why Choose GenePredict?</h2>
-                <p class="section-description">
-                    Built with privacy and accuracy in mind, GenePredict offers cutting-edge genomic analysis without compromising your data security.
-                </p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3 class="feature-title">Privacy-First</h3>
-                    <p class="feature-description">
-                        Your genetic data never leaves your device. All processing happens locally, ensuring complete privacy and security.
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Why Choose GeneKnow?</h2>
+                    <p class="section-description">
+                        Built with privacy and accuracy in mind, GeneKnow offers cutting-edge genomic analysis to decode disease without compromising your data security.
                     </p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🧬</div>
-                    <h3 class="feature-title">TCGA-Trained Models</h3>
-                    <p class="feature-description">
-                        Advanced machine learning models trained on comprehensive TCGA datasets for accurate risk assessment.
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3 class="feature-title">Privacy-First</h3>
+                        <p class="feature-description">
+                            Your genetic data never leaves your device. All processing happens locally, ensuring complete privacy and security.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🧬</div>
+                        <h3 class="feature-title">TCGA-Trained Models</h3>
+                        <p class="feature-description">
+                            Advanced machine learning models trained on comprehensive TCGA datasets for accurate risk assessment.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Fast Processing</h3>
+                        <p class="feature-description">
+                            Optimized algorithms deliver results in minutes, not hours. Get insights quickly without waiting.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">Comprehensive Reports</h3>
+                        <p class="feature-description">
+                            Detailed reports with visualizations, risk scores, and actionable insights for healthcare decisions.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔧</div>
+                        <h3 class="feature-title">Easy to Use</h3>
+                        <p class="feature-description">
+                            Intuitive interface designed for both researchers and healthcare professionals. No technical expertise required.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3 class="feature-title">Cross-Platform</h3>
+                        <p class="feature-description">
+                            Available on Windows, macOS, and Linux. Same powerful features across all your devices.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="download" class="download">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Download GeneKnow</h2>
+                    <p class="section-description">
+                        Get the latest version of GeneKnow for your operating system
                     </p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3 class="feature-title">Fast Processing</h3>
-                    <p class="feature-description">
-                        Optimized algorithms deliver results in minutes, not hours. Get insights quickly without waiting.
-                    </p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3 class="feature-title">Comprehensive Reports</h3>
-                    <p class="feature-description">
-                        Detailed reports with visualizations, risk scores, and actionable insights for healthcare decisions.
-                    </p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔧</div>
-                    <h3 class="feature-title">Easy to Use</h3>
-                    <p class="feature-description">
-                        Intuitive interface designed for both researchers and healthcare professionals. No technical expertise required.
-                    </p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🌐</div>
-                    <h3 class="feature-title">Cross-Platform</h3>
-                    <p class="feature-description">
-                        Available on Windows, macOS, and Linux. Same powerful features across all your devices.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Download Section -->
-    <section id="download" class="download">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Download GenePredict</h2>
-                <p class="section-description">
-                    Get the latest version of GenePredict for your operating system
-                </p>
-            </div>
-            
-            <!-- Version Info -->
-            <div class="version-info">
-                <div class="version-badge">
-                    <span class="version-label">Latest Version</span>
-                    <span class="version-number" id="version-number">Loading...</span>
-                </div>
-                <div class="release-date">
-                    <span id="release-date">Loading...</span>
-                </div>
-            </div>
-
-            <!-- Platform Detection -->
-            <div class="platform-detection">
-                <div class="detected-platform">
-                    <span class="platform-icon" id="platform-icon">🖥️</span>
-                    <span class="platform-text">
-                        Detected: <span id="detected-os">Detecting...</span>
-                    </span>
-                </div>
-                <button class="btn btn-primary btn-large" id="recommended-download">
-                    <span class="btn-icon">📥</span>
-                    <span class="btn-text">Download for <span id="recommended-os">Your OS</span></span>
-                </button>
-            </div>
-
-            <!-- Download Options -->
-            <div class="download-options">
-                <h3 class="download-options-title">All Platforms</h3>
-                <div class="download-grid">
-                    <!-- Windows -->
-                    <div class="download-card">
-                        <div class="download-platform">
-                            <span class="platform-icon">🪟</span>
-                            <span class="platform-name">Windows</span>
-                        </div>
-                        <div class="download-files" id="windows-downloads">
-                            <div class="loading-placeholder">Loading downloads...</div>
-                        </div>
+                
+                <!-- Version Info -->
+                <div class="version-info">
+                    <div class="version-badge">
+                        <span class="version-label">Latest Version</span>
+                        <span class="version-number" id="version-number">Loading...</span>
                     </div>
-
-                    <!-- macOS -->
-                    <div class="download-card">
-                        <div class="download-platform">
-                            <span class="platform-icon">🍎</span>
-                            <span class="platform-name">macOS</span>
-                        </div>
-                        <div class="download-files" id="macos-downloads">
-                            <div class="loading-placeholder">Loading downloads...</div>
-                        </div>
+                    <div class="release-date">
+                        <span id="release-date">Loading...</span>
                     </div>
+                </div>
 
-                    <!-- Linux -->
-                    <div class="download-card">
-                        <div class="download-platform">
-                            <span class="platform-icon">🐧</span>
-                            <span class="platform-name">Linux</span>
+                <!-- Platform Detection -->
+                <div class="platform-detection">
+                    <div class="detected-platform">
+                        <span class="platform-icon" id="platform-icon">🖥️</span>
+                        <span class="platform-text">
+                            Detected: <span id="detected-os">Detecting...</span>
+                        </span>
+                    </div>
+                    <button class="btn btn-primary btn-large" id="recommended-download">
+                        <span class="btn-icon">📥</span>
+                        <span class="btn-text">Download for <span id="recommended-os">Your OS</span></span>
+                    </button>
+                </div>
+
+                <!-- Download Options -->
+                <div class="download-options">
+                    <h3 class="download-options-title">All Platforms</h3>
+                    <div class="download-grid">
+                        <!-- Windows -->
+                        <div class="download-card">
+                            <div class="download-platform">
+                                <span class="platform-icon">🪟</span>
+                                <span class="platform-name">Windows</span>
+                            </div>
+                            <div class="download-files" id="windows-downloads">
+                                <div class="loading-placeholder">Loading downloads...</div>
+                            </div>
                         </div>
-                        <div class="download-files" id="linux-downloads">
-                            <div class="loading-placeholder">Loading downloads...</div>
+
+                        <!-- macOS -->
+                        <div class="download-card">
+                            <div class="download-platform">
+                                <span class="platform-icon">🍎</span>
+                                <span class="platform-name">macOS</span>
+                            </div>
+                            <div class="download-files" id="macos-downloads">
+                                <div class="loading-placeholder">Loading downloads...</div>
+                            </div>
+                        </div>
+
+                        <!-- Linux -->
+                        <div class="download-card">
+                            <div class="download-platform">
+                                <span class="platform-icon">🐧</span>
+                                <span class="platform-name">Linux</span>
+                            </div>
+                            <div class="download-files" id="linux-downloads">
+                                <div class="loading-placeholder">Loading downloads...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Release Notes -->
-            <div class="release-notes">
-                <h3 class="release-notes-title">Release Notes</h3>
-                <div class="release-content" id="release-content">
-                    <div class="loading-placeholder">Loading release notes...</div>
-                </div>
-                <a href="#" class="view-all-releases" id="view-all-releases" target="_blank">
-                    View All Releases on GitHub →
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <div class="about-content">
-                <div class="about-text">
-                    <h2 class="section-title">About GenePredict</h2>
-                    <p class="about-description">
-                        GenePredict is a privacy-first genomic risk assessment platform that empowers individuals 
-                        and healthcare professionals with accurate, actionable insights from genetic data. Built 
-                        with cutting-edge machine learning models trained on TCGA datasets, our platform ensures 
-                        your genetic information remains secure while delivering reliable risk assessments.
-                    </p>
-                    <div class="about-features">
-                        <div class="about-feature">
-                            <span class="feature-icon">🔬</span>
-                            <span class="feature-text">Advanced ML Models</span>
-                        </div>
-                        <div class="about-feature">
-                            <span class="feature-icon">📈</span>
-                            <span class="feature-text">Accurate Risk Scores</span>
-                        </div>
-                        <div class="about-feature">
-                            <span class="feature-icon">🛡️</span>
-                            <span class="feature-text">Complete Privacy</span>
-                        </div>
+                <!-- Release Notes -->
+                <div class="release-notes">
+                    <h3 class="release-notes-title">Release Notes</h3>
+                    <div class="release-content" id="release-content">
+                        <div class="loading-placeholder">Loading release notes...</div>
                     </div>
-                </div>
-                <div class="about-stats">
-                    <div class="stat">
-                        <div class="stat-number">10,000+</div>
-                        <div class="stat-label">TCGA Samples</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">99.9%</div>
-                        <div class="stat-label">Privacy Protection</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">3</div>
-                        <div class="stat-label">Platforms Supported</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <div class="footer-logo">
-                        <img src="assets/images/logo.svg" alt="GenePredict Logo" class="footer-logo-image">
-                        <span class="footer-logo-text">GenePredict</span>
-                    </div>
-                    <p class="footer-description">
-                        Privacy-first genomic risk assessment platform
-                    </p>
-                </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Product</h4>
-                    <ul class="footer-links">
-                        <li><a href="#features">Features</a></li>
-                        <li><a href="#download">Download</a></li>
-                        <li><a href="#about">About</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Resources</h4>
-                    <ul class="footer-links">
-                        <li><a href="https://github.com/genepredict/genepredict" target="_blank">GitHub</a></li>
-                        <li><a href="https://github.com/genepredict/genepredict/issues" target="_blank">Issues</a></li>
-                        <li><a href="https://github.com/genepredict/genepredict/discussions" target="_blank">Discussions</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Legal</h4>
-                    <ul class="footer-links">
-                        <li><a href="privacy.html">Privacy Policy</a></li>
-                        <li><a href="terms.html">Terms of Service</a></li>
-                        <li><a href="https://github.com/genepredict/genepredict/blob/main/LICENSE" target="_blank">License</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p class="footer-copyright">
-                    © 2025 GenePredict. Open source project.
-                </p>
-                <div class="footer-social">
-                    <a href="https://github.com/genepredict/genepredict" target="_blank" class="social-link">
-                        <span class="social-icon">⭐</span>
+                    <a href="#" class="view-all-releases" id="view-all-releases" target="_blank">
+                        View All Releases on GitHub →
                     </a>
                 </div>
             </div>
-        </div>
-    </footer>
+        </section>
 
-    <!-- Scripts -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/releases.js"></script>
-</body>
-</html> 
+        <!-- About Section -->
+        <section id="about" class="about">
+            <div class="container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <h2 class="section-title">About GeneKnow</h2>
+                        <p class="about-description">
+                            GeneKnow is a privacy-first genomic analysis platform that empowers individuals 
+                            and healthcare professionals to decode disease through genetic data. Built 
+                            with cutting-edge machine learning models trained on TCGA datasets, our platform ensures 
+                            your genetic information remains secure while delivering reliable disease insights.
+                        </p>
+                        <div class="about-features">
+                            <div class="about-feature">
+                                <span class="feature-icon">🔬</span>
+                                <span class="feature-text">Advanced ML Models</span>
+                            </div>
+                            <div class="about-feature">
+                                <span class="feature-icon">📈</span>
+                                <span class="feature-text">Accurate Risk Scores</span>
+                            </div>
+                            <div class="about-feature">
+                                <span class="feature-icon">🛡️</span>
+                                <span class="feature-text">Complete Privacy</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-stats">
+                        <div class="stat">
+                            <div class="stat-number">10,000+</div>
+                            <div class="stat-label">TCGA Samples</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">99.9%</div>
+                            <div class="stat-label">Privacy Protection</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">3</div>
+                            <div class="stat-label">Platforms Supported</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <div class="footer-logo">
+                            <img src="assets/images/logo.svg" alt="GeneKnow Logo" class="footer-logo-image">
+                            <span class="footer-logo-text">GeneKnow</span>
+                        </div>
+                        <p class="footer-description">
+                            Decode disease through genomic analysis
+                        </p>
+                    </div>
+                    <div class="footer-section">
+                        <h4 class="footer-title">Product</h4>
+                        <ul class="footer-links">
+                            <li><a href="#features">Features</a></li>
+                            <li><a href="#download">Download</a></li>
+                            <li><a href="#about">About</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4 class="footer-title">Resources</h4>
+                        <ul class="footer-links">
+                            <li><a href="https://github.com/astrogirlnim/GeneKnow" target="_blank">GitHub</a></li>
+                            <li><a href="https://github.com/astrogirlnim/GeneKnow/issues" target="_blank">Issues</a></li>
+                            <li><a href="https://github.com/astrogirlnim/GeneKnow/discussions" target="_blank">Discussions</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4 class="footer-title">Legal</h4>
+                        <ul class="footer-links">
+                            <li><a href="privacy.html">Privacy Policy</a></li>
+                            <li><a href="terms.html">Terms of Service</a></li>
+                            <li><a href="https://github.com/astrogirlnim/GeneKnow/blob/main/LICENSE" target="_blank">License</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p class="footer-copyright">
+                        © 2025 GeneKnow. Open source project.
+                    </p>
+                    <div class="footer-social">
+                        <a href="https://github.com/astrogirlnim/GeneKnow" target="_blank" class="social-link">
+                            <span class="social-icon">⭐</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Scripts -->
+        <script src="assets/js/main.js"></script>
+        <script src="assets/js/releases.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dnaContainer = document.getElementById('dna-helix-3d');
+            
+            if (dnaContainer) {
+                const segments = 30;
+                const helixHeight = 420;
+                const radius = 80;
+                const turns = 2.5;
+                
+                // Create the DNA helix
+                for (let i = 0; i < segments; i++) {
+                    const t = i / segments;
+                    const y = (t * helixHeight);
+                    const angle = t * turns * 2 * Math.PI;
+                    
+                    // Calculate positions for both strands
+                    const x1 = Math.cos(angle) * radius;
+                    const z1 = Math.sin(angle) * radius;
+                    const x2 = Math.cos(angle + Math.PI) * radius;
+                    const z2 = Math.sin(angle + Math.PI) * radius;
+                    
+                    // Create strand segments
+                    if (i > 0) {
+                        const prevT = (i - 1) / segments;
+                        const prevY = (prevT * helixHeight);
+                        const prevAngle = prevT * turns * 2 * Math.PI;
+                        const prevX1 = Math.cos(prevAngle) * radius;
+                        const prevZ1 = Math.sin(prevAngle) * radius;
+                        const prevX2 = Math.cos(prevAngle + Math.PI) * radius;
+                        const prevZ2 = Math.sin(prevAngle + Math.PI) * radius;
+                        
+                        // Blue strand segment
+                        const segment1 = document.createElement('div');
+                        segment1.className = 'dna-strand-3d strand-blue';
+                        const length1 = Math.sqrt((x1-prevX1)**2 + (y-prevY)**2 + (z1-prevZ1)**2);
+                        segment1.style.height = length1 + 'px';
+                        segment1.style.left = '50%';
+                        segment1.style.top = prevY + 'px';
+                        segment1.style.marginLeft = '-4px';
+                        segment1.style.transformOrigin = 'bottom center';
+                        
+                        // Calculate rotation for the segment
+                        const dx1 = x1 - prevX1;
+                        const dy1 = y - prevY;
+                        const dz1 = z1 - prevZ1;
+                        const angleX1 = Math.atan2(dz1, dy1) * 180 / Math.PI;
+                        const angleZ1 = Math.atan2(dx1, dy1) * 180 / Math.PI;
+                        
+                        segment1.style.transform = `translate3d(${prevX1}px, 0, ${prevZ1}px) rotateX(${angleX1}deg) rotateZ(${-angleZ1}deg)`;
+                        dnaContainer.appendChild(segment1);
+                        
+                        // Green strand segment
+                        const segment2 = document.createElement('div');
+                        segment2.className = 'dna-strand-3d strand-green';
+                        const length2 = Math.sqrt((x2-prevX2)**2 + (y-prevY)**2 + (z2-prevZ2)**2);
+                        segment2.style.height = length2 + 'px';
+                        segment2.style.left = '50%';
+                        segment2.style.top = prevY + 'px';
+                        segment2.style.marginLeft = '-4px';
+                        segment2.style.transformOrigin = 'bottom center';
+                        
+                        // Calculate rotation for the segment
+                        const dx2 = x2 - prevX2;
+                        const dy2 = y - prevY;
+                        const dz2 = z2 - prevZ2;
+                        const angleX2 = Math.atan2(dz2, dy2) * 180 / Math.PI;
+                        const angleZ2 = Math.atan2(dx2, dy2) * 180 / Math.PI;
+                        
+                        segment2.style.transform = `translate3d(${prevX2}px, 0, ${prevZ2}px) rotateX(${angleX2}deg) rotateZ(${-angleZ2}deg)`;
+                        dnaContainer.appendChild(segment2);
+                    }
+                    
+                    // Create base pairs every 4 segments
+                    if (i % 4 === 0) {
+                        const basePair = document.createElement('div');
+                        basePair.className = 'dna-base-3d';
+                        basePair.style.top = y + 'px';
+                        basePair.style.transform = `rotateY(${angle * 180 / Math.PI}deg) translateZ(0)`;
+                        dnaContainer.appendChild(basePair);
+                    }
+                }
+            }
+        });
+    </script>
+    </body>
+    </html> 
