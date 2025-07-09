@@ -11,6 +11,7 @@ try:
     from . import variant_calling
     from . import qc_filter
     from . import population_mapper
+    from . import tcga_mapper
     from . import cadd_scoring
     from . import feature_vector_builder
     from . import risk_model
@@ -24,6 +25,7 @@ except ImportError:
     import variant_calling
     import qc_filter
     import population_mapper
+    import tcga_mapper
     import cadd_scoring
     import feature_vector_builder
     import risk_model
@@ -37,6 +39,7 @@ __all__ = [
     "variant_calling",
     "qc_filter",
     "population_mapper",
+    "tcga_mapper",
     "cadd_scoring",
     "feature_vector_builder",
     "risk_model",

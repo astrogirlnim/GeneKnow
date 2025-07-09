@@ -16,6 +16,7 @@ try:
         variant_calling,
         qc_filter,
         population_mapper,
+        tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
         risk_model,
@@ -31,6 +32,7 @@ except ImportError:
         variant_calling,
         qc_filter,
         population_mapper,
+        tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
         risk_model,
@@ -117,6 +119,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("qc_filter", qc_filter.process)
     workflow.add_node("merge_parallel", merge_variants)
     workflow.add_node("population_mapper", population_mapper.process)
+    workflow.add_node("tcga_mapper", tcga_mapper.process)
     workflow.add_node("cadd_scoring", cadd_scoring.process)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("risk_model", risk_model.process)
@@ -140,17 +143,14 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("variant_calling", "merge_parallel")
     workflow.add_edge("qc_filter", "merge_parallel")
     
-    # MAF files skip directly to population mapping (no merge needed)
-    # Continue with linear flow after merge
+    # Connect parallel paths and direct MAF path to population mapping
     workflow.add_edge("merge_parallel", "population_mapper")
     
-    # New flow with CADD scoring
-    workflow.add_edge("population_mapper", "cadd_scoring")
+    # Complete flow with both TCGA mapping and CADD scoring
+    workflow.add_edge("population_mapper", "tcga_mapper")
+    workflow.add_edge("tcga_mapper", "cadd_scoring")
     workflow.add_edge("cadd_scoring", "feature_vector_builder")
-    
-    # Always include risk model in the pipeline
-    # The flow is: cadd_scoring -> feature_vector_builder -> risk_model -> formatter
-    workflow.add_edge("feature_vector_builder", "risk_model") 
+    workflow.add_edge("feature_vector_builder", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")
