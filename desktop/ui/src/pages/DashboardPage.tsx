@@ -1,6 +1,7 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
+import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions
 interface MetricData {
@@ -386,18 +387,137 @@ const baseTooltips = {
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   
-  // Get the risk level from URL parameters, default to 'low' if not specified
-  const riskLevel = searchParams.get('risk') || 'low';
-  const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  // Check if we have real results from the pipeline
+  const pipelineResults = location.state?.results as PipelineResult | undefined;
+  const fileName = location.state?.fileName as string | undefined;
+  const mockRiskLevel = location.state?.mockRiskLevel as string | undefined;
+  
+  // Get the risk level from URL parameters or state, default to 'low' if not specified
+  const riskLevel = searchParams.get('risk') || mockRiskLevel || 'low';
+  const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  
+  // Use real data if available, otherwise use mock data
+  const displayData = React.useMemo(() => {
+    if (pipelineResults) {
+      // Extract the highest risk score for display
+      const riskScores = Object.entries(pipelineResults.risk_scores);
+      const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
+        score > prev.score ? { cancer, score } : prev,
+        { cancer: '', score: 0 }
+      );
+      
+      // Use pipeline results directly (already in percentage format)
+      const probability = Math.round(highestRisk.score);
+      const hazardScore = (highestRisk.score / 100 * 3).toFixed(1); // Convert from percentage to hazard score scale
+      
+      // Extract key metrics from the pipeline results
+      const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
+      const variantCount = pipelineResults.variant_count || 0;
+      
+      const otherMetrics: MetricData[] = [
+        {
+          id: 1,
+          title: "Highest Risk Cancer",
+          value: highestRisk.cancer || "None detected",
+          unit: "",
+          tooltipContent: {
+            content: "The cancer type with the highest predicted risk based on genetic analysis.",
+            link: "#"
+          }
+        },
+        {
+          id: 2,
+          title: "Total Variants",
+          value: variantCount,
+          unit: "found",
+          tooltipContent: {
+            content: "Total number of genetic variants identified in the sample.",
+            link: "#"
+          }
+        },
+        {
+          id: 3,
+          title: "Processing Time",
+          value: pipelineResults.processing_time_seconds.toFixed(1),
+          unit: "seconds",
+          tooltipContent: {
+            content: "Time taken to process and analyze the genomic data.",
+            link: "#"
+          }
+        },
+        {
+          id: 4,
+          title: "File Analyzed",
+          value: fileName || "Unknown",
+          unit: "",
+          tooltipContent: {
+            content: "The genomic file that was analyzed.",
+            link: "#"
+          }
+        }
+      ];
+      
+      // Add variant details if available
+      if (keyVariants.length > 0) {
+        keyVariants.forEach((variant, index) => {
+          otherMetrics.push({
+            id: 5 + index,
+            title: `Variant ${index + 1}`,
+            value: variant.gene,
+            unit: variant.type,
+            tooltipContent: {
+              content: `${variant.impact} impact variant at position ${variant.position}`,
+              link: "#"
+            }
+          });
+        });
+      }
+      
+      // Add risk scores for other cancer types
+      let metricId = 8;
+      riskScores.forEach(([cancer, score]) => {
+        if (cancer !== highestRisk.cancer) {
+          otherMetrics.push({
+            id: metricId++,
+            title: `${cancer} Risk`,
+            value: score.toFixed(1),
+            unit: "%",
+            tooltipContent: {
+              content: `Predicted risk score for ${cancer}.`,
+              link: "#"
+            }
+          });
+        }
+      });
+      
+      return {
+        probability,
+        hazardScore,
+        patient: { 
+          name: fileName || 'Analyzed Sample', 
+          condition: `${highestRisk.cancer} - ${probability}% risk` 
+        },
+        otherMetrics
+      };
+    } else {
+      // Use mock data
+      return mockData;
+    }
+  }, [pipelineResults, fileName, mockData]);
 
   const handleNewAnalysis = () => {
     navigate('/upload');
   };
 
   const handleClinicalView = () => {
-    // Navigate to clinical view with the risk level parameter
-    navigate(`/clinical?risk=${riskLevel}`);
+    // Navigate to clinical view with the results or risk level
+    if (pipelineResults) {
+      navigate('/clinical', { state: { results: pipelineResults, fileName } });
+    } else {
+      navigate(`/clinical?risk=${riskLevel}`);
+    }
   };
 
   return (
@@ -418,13 +538,24 @@ const DashboardPage: React.FC = () => {
             alignItems: 'center',
             marginBottom: '2rem'
           }}>
-            <h2 style={{
-              fontSize: '1.875rem',
-              fontWeight: 'bold',
-              color: '#111827'
-            }}>
-              Analysis Dashboard
-            </h2>
+            <div>
+              <h2 style={{
+                fontSize: '1.875rem',
+                fontWeight: 'bold',
+                color: '#111827'
+              }}>
+                Analysis Dashboard
+              </h2>
+              {pipelineResults && (
+                <p style={{
+                  fontSize: '0.875rem',
+                  color: '#6B7280',
+                  marginTop: '0.25rem'
+                }}>
+                  Analysis completed for: {fileName}
+                </p>
+              )}
+            </div>
             <div style={{ 
               display: 'flex',
               alignItems: 'center',
@@ -477,6 +608,46 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Report Sections from Pipeline Results */}
+          {pipelineResults && pipelineResults.report_sections && (
+            <div style={{
+              marginBottom: '2rem',
+              padding: '1.5rem',
+              background: '#FFFFFF',
+              borderRadius: '0.75rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: '1px solid #E5E7EB'
+            }}>
+              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem' }}>
+                Analysis Report
+              </h3>
+              {Object.entries(pipelineResults.report_sections).map(([key, section]) => (
+                <div key={key} style={{ marginBottom: '1rem' }}>
+                  <h4 style={{ 
+                    fontWeight: '600', 
+                    fontSize: '1rem',
+                    color: section.severity === 'high' ? '#DC2626' : 
+                           section.severity === 'medium' ? '#F59E0B' : '#059669',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {section.title}
+                  </h4>
+                  <p style={{ color: '#4B5563', lineHeight: '1.5' }}>{section.content}</p>
+                  {section.technical_details && (
+                    <details style={{ marginTop: '0.5rem' }}>
+                      <summary style={{ cursor: 'pointer', color: '#6B7280', fontSize: '0.875rem' }}>
+                        Technical Details
+                      </summary>
+                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
+                        {section.technical_details}
+                      </p>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Headline Metrics */}
           <div style={{
             display: 'grid',
@@ -485,12 +656,12 @@ const DashboardPage: React.FC = () => {
             marginBottom: '2rem'
           }}>
             <ProbabilityCard 
-              value={currentData.probability} 
+              value={displayData.probability} 
               tooltipContent={baseTooltips.probability} 
             />
             <MetricCard 
               title="Hazard Score" 
-              value={currentData.hazardScore} 
+              value={displayData.hazardScore} 
               unit="" 
               tooltipContent={baseTooltips.hazardScore} 
             />
@@ -502,7 +673,7 @@ const DashboardPage: React.FC = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '1.5rem'
           }}>
-            {currentData.otherMetrics.map((metric: MetricData) => (
+            {displayData.otherMetrics.map((metric: MetricData) => (
               <MetricCard 
                 key={metric.id} 
                 title={metric.title} 

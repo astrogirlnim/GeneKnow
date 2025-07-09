@@ -18,9 +18,32 @@ import logging
 import json
 from pathlib import Path
 from werkzeug.utils import secure_filename
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
 
 # Import the pipeline
 from graph import run_pipeline
+
+# Custom JSON encoder to handle numpy types and datetime
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if HAS_NUMPY:
+            if isinstance(obj, (np.integer, np.int64)):
+                return int(obj)
+            elif isinstance(obj, (np.floating, np.float64)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+        # Handle datetime objects
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        # Handle pandas NaN/None
+        if obj is None or (hasattr(obj, '__str__') and str(obj) == 'nan'):
+            return None
+        return super().default(obj)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,13 +51,14 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
+# Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configuration
 class Config:
     MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
-    ALLOWED_EXTENSIONS = {'.fastq', '.fq', '.fastq.gz', '.fq.gz', '.bam', '.vcf', '.vcf.gz', '.maf'}
+    ALLOWED_EXTENSIONS = {'.fastq', '.fq', '.fastq.gz', '.fq.gz', '.bam', '.vcf', '.vcf.gz', '.maf', '.maf.gz'}
     UPLOAD_FOLDER = tempfile.mkdtemp(prefix='geneknow_uploads_')
     RESULTS_FOLDER = tempfile.mkdtemp(prefix='geneknow_results_')
     SESSION_TIMEOUT = 3600  # 1 hour
@@ -60,9 +84,48 @@ def get_file_type(filename: str) -> str:
         return 'bam'
     elif filename_lower.endswith(('.vcf', '.vcf.gz')):
         return 'vcf'
-    elif filename_lower.endswith('.maf'):
+    elif filename_lower.endswith(('.maf', '.maf.gz')):
         return 'maf'
     return 'unknown'
+
+def convert_numpy_types(obj):
+    """Convert numpy types and other non-JSON-serializable types to Python native types."""
+    if HAS_NUMPY:
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        elif isinstance(obj, np.str_):
+            return str(obj)
+    
+    # Handle datetime objects
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    
+    # Handle pandas NaN/None and other special values
+    if obj is None:
+        return None
+    if hasattr(obj, '__str__') and str(obj) == 'nan':
+        return None
+    
+    # Handle dictionaries
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    
+    # Handle lists and tuples
+    elif isinstance(obj, (list, tuple)):
+        return [convert_numpy_types(item) for item in obj]
+    
+    # Handle sets
+    elif isinstance(obj, set):
+        return [convert_numpy_types(item) for item in obj]
+    
+    # Return as-is for other types
+    return obj
 
 def create_job(file_path: str, preferences: dict) -> str:
     """Create a new job entry."""
@@ -88,6 +151,8 @@ def update_job(job_id: str, updates: dict):
     """Update job status and emit progress via WebSocket."""
     with job_lock:
         if job_id in jobs:
+            # Convert any numpy types before updating
+            updates = convert_numpy_types(updates)
             jobs[job_id].update(updates)
             # Emit progress update via WebSocket
             socketio.emit('job_progress', {
@@ -124,22 +189,25 @@ def process_file_async(job_id: str):
         
         # Process results
         if result.get('pipeline_status') == 'completed':
+            # Convert all numpy types in the result before saving
+            converted_result = convert_numpy_types(result)
+            
             # Save results to file
             result_file = os.path.join(Config.RESULTS_FOLDER, f"{job_id}_result.json")
             with open(result_file, 'w') as f:
-                json.dump(result, f, indent=2, default=str)
+                json.dump(converted_result, f, indent=2)
             
             update_job(job_id, {
                 'status': 'completed',
                 'completed_at': datetime.now().isoformat(),
                 'progress': 100,
-                'result': {
+                'result': convert_numpy_types({
                     'variant_count': result.get('variant_count', 0),
                     'risk_scores': result.get('risk_scores', {}),
                     'report_sections': result.get('report_sections', {}),
                     'processing_time': result.get('processing_time_seconds', 0),
                     'result_file': result_file
-                }
+                })
             })
         else:
             raise Exception(result.get('errors', ['Unknown error'])[0])
@@ -328,7 +396,9 @@ def job_status(job_id: str):
         # Remove internal data
         job.pop('file_path', None)
         
-        return jsonify(job)
+        # Ensure all numpy types are converted before returning
+        converted_job = convert_numpy_types(job)
+        return jsonify(converted_job)
 
 @app.route('/api/results/<job_id>', methods=['GET'])
 def job_results(job_id: str):
@@ -348,9 +418,13 @@ def job_results(job_id: str):
         if result_file and os.path.exists(result_file):
             with open(result_file, 'r') as f:
                 full_results = json.load(f)
-            return jsonify(full_results)
+            # Ensure all numpy types are converted before returning
+            converted_results = convert_numpy_types(full_results)
+            return jsonify(converted_results)
         else:
-            return jsonify(job['result'])
+            # Fallback to job result, ensure it's converted
+            converted_result = convert_numpy_types(job['result'])
+            return jsonify(converted_result)
 
 @app.route('/api/results/<job_id>/download', methods=['GET'])
 def download_results(job_id: str):
