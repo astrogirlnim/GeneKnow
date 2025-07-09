@@ -1,6 +1,0 @@
-Hugo_Symbol	Chromosome	Start_Position	End_Position	Variant_Classification	Variant_Type	Reference_Allele	Tumor_Seq_Allele1	Tumor_Seq_Allele2	Tumor_Sample_Barcode	HGVSp	t_depth	t_alt_count	allele_frequency	population_frequency	clinical_significance	gene	variant_id	consequence	quality
-BRCA1	17	41234451	41234451	Silent	SNP	A	A	G	HEALTHY_1000G_HG00096	p.BRCA1_41234451	50	6	0.12	0.12	Benign	BRCA1	chr17:41234451:A>G	synonymous_variant	100.0
-BRCA2	13	32906729	32906729	Silent	SNP	G	G	A	HEALTHY_1000G_HG00096	p.BRCA2_32906729	50	4	0.08	0.08	Benign	BRCA2	chr13:32906729:G>A	synonymous_variant	100.0
-TP53	17	7579472	7579472	Missense_Mutation	SNP	G	G	C	HEALTHY_1000G_HG00096	p.TP53_7579472	50	19	0.39	0.39	Benign	TP53	chr17:7579472:G>C	missense_variant	100.0
-KRAS	12	25398208	25398208	Silent	SNP	C	C	T	HEALTHY_1000G_HG00096	p.KRAS_25398208	50	7	0.15	0.15	Benign	KRAS	chr12:25398208:C>T	synonymous_variant	100.0
-APC	5	112707478	112707478	Silent	SNP	T	T	C	HEALTHY_1000G_HG00096	p.APC_112707478	50	11	0.22	0.22	Benign	APC	chr5:112707478:T>C	synonymous_variant	100.0
