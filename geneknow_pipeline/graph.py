@@ -14,7 +14,7 @@ try:
         preprocess,
         variant_calling,
         qc_filter,
-        tcga_mapper,
+        population_mapper,
         risk_model,
         formatter,
         report_writer
@@ -27,7 +27,7 @@ except ImportError:
         preprocess,
         variant_calling,
         qc_filter,
-        tcga_mapper,
+        population_mapper,
         risk_model,
         formatter,
         report_writer
@@ -60,7 +60,7 @@ def merge_variants(state: dict) -> dict:
             state["variant_count"] = 0
     
     # Log merge results
-    logger.info(f"Merge complete: {state['variant_count']} filtered variants ready for TCGA mapping")
+    logger.info(f"Merge complete: {state['variant_count']} filtered variants ready for population frequency mapping")
     
     return state
 
@@ -72,8 +72,8 @@ def route_after_preprocess(state: dict) -> list:
     """
     # Check if this is a MAF file that already has filtered variants
     if state.get("file_type") == "maf" and state.get("filtered_variants"):
-        logger.info("MAF file detected with pre-processed variants, skipping to TCGA mapping")
-        return ["tcga_mapper"]
+        logger.info("MAF file detected with pre-processed variants, skipping to population mapping")
+        return ["population_mapper"]
     
     nodes_to_run = []
     
@@ -111,7 +111,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("variant_calling", variant_calling.process)
     workflow.add_node("qc_filter", qc_filter.process)
     workflow.add_node("merge_parallel", merge_variants)
-    workflow.add_node("tcga_mapper", tcga_mapper.process)
+    workflow.add_node("population_mapper", population_mapper.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -133,10 +133,10 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("variant_calling", "merge_parallel")
     workflow.add_edge("qc_filter", "merge_parallel")
     
-    # MAF files skip directly to TCGA mapping (no merge needed)
+    # MAF files skip directly to population mapping (no merge needed)
     # Continue with linear flow after merge
-    workflow.add_edge("merge_parallel", "tcga_mapper")
-    workflow.add_edge("tcga_mapper", "risk_model")
+    workflow.add_edge("merge_parallel", "population_mapper")
+    workflow.add_edge("population_mapper", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     workflow.add_edge("formatter", "report_writer")
     workflow.add_edge("report_writer", END)

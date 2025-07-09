@@ -17,7 +17,7 @@ def test_pipeline():
     # 1. Start the API server
     print("\n1️⃣ Starting API server...")
     server_process = subprocess.Popen(
-        [sys.executable, "api_server.py"],
+        [sys.executable, "enhanced_api_server.py"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
@@ -29,7 +29,7 @@ def test_pipeline():
         # 2. Test if server is running
         print("2️⃣ Checking server status...")
         try:
-            response = requests.get("http://localhost:5001/health")
+            response = requests.get("http://localhost:5001/api/health")
             print(f"   ✅ Server is running: {response.json()}")
         except Exception as e:
             print(f"   ❌ Server not responding: {e}")
@@ -43,7 +43,7 @@ def test_pipeline():
             return
             
         response = requests.post(
-            "http://localhost:5001/analyze_path",
+            "http://localhost:5001/api/process",
             json={
                 "file_path": test_file,
                 "preferences": {
@@ -55,8 +55,8 @@ def test_pipeline():
         if response.status_code == 200:
             result = response.json()
             print("   ✅ FASTQ processing successful!")
-            print(f"   📊 Found {len(result.get('variants', []))} variants")
-            print(f"   🎯 Risk scores: {json.dumps(result.get('risk_scores', {}), indent=2)}")
+            print(f"   📊 Job ID: {result.get('job_id')}")
+            print(f"   🎯 Status: {result.get('status')}")
         else:
             print(f"   ❌ Processing failed: {response.status_code}")
             print(f"   Error: {response.text}")
@@ -64,7 +64,7 @@ def test_pipeline():
         # 4. Check key components
         print("\n4️⃣ Checking key components:")
         components = {
-            "TCGA Database": "tcga_data/tcga_variants.db",
+            "Population Database": "population_variants.db",
             "ML Models": "models/breast_model.pkl",
             "Test Reference": "test_reference/test_genome.fa",
             "Test VCF": "test_data/test_variants.vcf"
@@ -88,7 +88,7 @@ def test_pipeline():
     print("\n📝 Next steps:")
     print("  - Run `python test_pipeline.py` for full tests")
     print("  - Run `python test_parallelization.py` for parallel tests")
-    print("  - Start server with `python api_server.py` for manual testing")
+    print("  - Start server with `python enhanced_api_server.py` for manual testing")
 
 if __name__ == "__main__":
     test_pipeline() 
