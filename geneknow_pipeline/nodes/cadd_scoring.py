@@ -1,192 +1,204 @@
 """
-CADD scoring node.
-Enriches variants with CADD PHRED scores for deleteriousness assessment.
-Uses cadd_scores table in population_variants.db with job tracking.
+CADD scoring node for GeneKnow pipeline.
+Computes CADD-like deleteriousness scores locally without any external dependencies.
+This is the only CADD scoring implementation - designed for offline desktop applications.
+No database lookups or remote queries are performed.
 """
-import os
-import sqlite3
 import logging
-import requests
-import uuid
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from datetime import datetime
-import json
+import math
 
 logger = logging.getLogger(__name__)
 
-# Configuration - use same database as population_mapper
-POP_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "population_variants.db")
-CADD_REMOTE_TABIX = os.environ.get("CADD_REMOTE_TABIX", "https://krishna.gs.washington.edu/download/CADD/v1.7/GRCh38/")
-USE_REMOTE_CADD = os.environ.get("USE_REMOTE_CADD", "true").lower() == "true"
-
-# Risk weight calculation thresholds
-CADD_PHRED_THRESHOLDS = {
-    "benign": 10.0,        # < 10: likely benign
-    "uncertain": 15.0,     # 10-15: uncertain
-    "damaging": 20.0,      # 15-20: possibly damaging  
-    "pathogenic": 25.0     # > 25: likely pathogenic
+# Variant impact severity scores (CADD-like approach)
+IMPACT_SCORES = {
+    # Loss of function variants
+    "frameshift_variant": 35.0,
+    "stop_gained": 34.0,
+    "stop_lost": 33.0,
+    "start_lost": 32.0,
+    "splice_acceptor_variant": 31.0,
+    "splice_donor_variant": 30.0,
+    
+    # High impact
+    "nonsense_mutation": 28.0,
+    "nonstop_mutation": 27.0,
+    "frameshift_deletion": 26.0,
+    "frameshift_insertion": 25.0,
+    
+    # Moderate impact
+    "missense_variant": 20.0,
+    "missense_mutation": 20.0,
+    "inframe_deletion": 18.0,
+    "inframe_insertion": 17.0,
+    "protein_altering_variant": 16.0,
+    
+    # Low impact
+    "synonymous_variant": 5.0,
+    "silent": 5.0,
+    "stop_retained_variant": 8.0,
+    
+    # Regulatory
+    "regulatory_region_variant": 12.0,
+    "5_prime_utr_variant": 10.0,
+    "3_prime_utr_variant": 9.0,
+    "intron_variant": 6.0,
+    "intron": 6.0,
+    
+    # Splice region
+    "splice_region_variant": 15.0,
+    "splice_region": 15.0,
+    
+    # Other
+    "downstream_gene_variant": 3.0,
+    "upstream_gene_variant": 3.0,
+    "intergenic_variant": 1.0,
+    
+    # Default
+    "unknown": 10.0
 }
 
+# Conservation-based adjustments
+GENE_IMPORTANCE_MULTIPLIERS = {
+    # Tumor suppressors
+    "TP53": 1.5, "BRCA1": 1.5, "BRCA2": 1.5, "APC": 1.4, "PTEN": 1.4,
+    "RB1": 1.4, "VHL": 1.3, "MLH1": 1.3, "MSH2": 1.3, "MSH6": 1.3,
+    
+    # Oncogenes
+    "KRAS": 1.4, "EGFR": 1.4, "BRAF": 1.4, "PIK3CA": 1.3, "MYC": 1.3,
+    "ALK": 1.3, "RET": 1.3, "MET": 1.3, "HER2": 1.3, "ERBB2": 1.3,
+    
+    # DNA repair genes
+    "ATM": 1.3, "ATR": 1.3, "CHEK1": 1.2, "CHEK2": 1.2, "RAD51": 1.2,
+    
+    # Cell cycle regulators
+    "CDKN2A": 1.3, "CDK4": 1.2, "CCND1": 1.2, "RB1": 1.3,
+    
+    # Chromatin modifiers
+    "ARID1A": 1.2, "SMARCA4": 1.2, "SMARCB1": 1.2, "EZH2": 1.2,
+    
+    # Default for unknown genes
+    "default": 1.0
+}
 
-def normalize_chromosome(chrom: str) -> str:
-    """Normalize chromosome format (remove 'chr' prefix to match population_variants)."""
-    if chrom.startswith("chr"):
-        return chrom[3:]
-    return chrom
+# Allele frequency penalty (rare variants are more likely deleterious)
+def calculate_af_penalty(af: float) -> float:
+    """Calculate penalty based on allele frequency (rare = higher score)."""
+    if af < 0.0001:  # Ultra-rare
+        return 1.5
+    elif af < 0.001:  # Very rare
+        return 1.3
+    elif af < 0.01:   # Rare
+        return 1.1
+    elif af < 0.05:   # Low frequency
+        return 1.0
+    else:             # Common
+        return 0.8
 
 
-def lookup_cadd_score(chrom: str, pos: int, ref: str, alt: str, 
-                     conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
+def calculate_quality_adjustment(quality: float, depth: int) -> float:
+    """Adjust score based on variant quality and read depth."""
+    quality_factor = min(quality / 100.0, 1.0) if quality > 0 else 0.5
+    depth_factor = min(math.log10(depth + 1) / 3.0, 1.0) if depth > 0 else 0.5
+    return (quality_factor + depth_factor) / 2.0
+
+
+def compute_cadd_score(variant: Dict[str, Any]) -> Dict[str, float]:
     """
-    Look up CADD score from local database.
+    Compute CADD-like scores locally based on variant features.
     
-    Args:
-        chrom: Chromosome
-        pos: Position
-        ref: Reference allele
-        alt: Alternative allele
-        conn: Database connection
-        
-    Returns:
-        Dict with raw_score, phred_score, job_id if found, None otherwise
+    Returns dict with:
+    - raw_score: Raw CADD-like score
+    - phred_score: PHRED-scaled score (like CADD PHRED)
     """
-    cursor = conn.cursor()
+    # Get base impact score
+    consequence = variant.get("consequence", "").lower()
+    impact = variant.get("impact", "").lower()
+    variant_class = variant.get("variant_classification", "").lower()
     
-    # Normalize chromosome
-    norm_chrom = normalize_chromosome(chrom)
+    # Try multiple fields to find the consequence
+    base_score = IMPACT_SCORES.get(consequence, 
+                 IMPACT_SCORES.get(impact,
+                 IMPACT_SCORES.get(variant_class, 
+                 IMPACT_SCORES["unknown"])))
     
-    try:
-        # Query CADD scores table
-        cursor.execute("""
-        SELECT raw_score, phred_score, job_id
-        FROM cadd_scores
-        WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?
-        """, (norm_chrom, pos, ref, alt))
-        
-        row = cursor.fetchone()
-        if row:
-            return {
-                "raw": row[0],
-                "phred": row[1],
-                "job_id": row[2]
-            }
-            
-    except Exception as e:
-        logger.error(f"Database error looking up CADD score: {e}")
-        
-    return None
-
-
-def query_remote_cadd(chrom: str, pos: int, ref: str, alt: str,
-                     job_id: str, conn: sqlite3.Connection) -> Optional[Dict[str, Any]]:
-    """
-    Query remote CADD service for variant score.
+    # Apply gene importance multiplier
+    gene = variant.get("gene", "")
+    gene_multiplier = GENE_IMPORTANCE_MULTIPLIERS.get(gene, 
+                      GENE_IMPORTANCE_MULTIPLIERS["default"])
     
-    Args:
-        chrom: Chromosome
-        pos: Position  
-        ref: Reference allele
-        alt: Alternative allele
-        job_id: Job ID for tracking
-        conn: Database connection to cache results
-        
-    Returns:
-        Dict with raw and phred scores if successful
-    """
-    # TODO: Implement actual Tabix remote query
-    # For now, just log that we would query
-    logger.warning(f"Remote CADD query not implemented. Would query: {chrom}:{pos} {ref}>{alt}")
+    # Apply allele frequency penalty
+    af = variant.get("allele_frequency", 0.5)
+    af_penalty = calculate_af_penalty(af)
     
-    # In production, this would:
-    # 1. Query CADD Tabix service
-    # 2. Parse response
-    # 3. Cache result in database with job_id
-    # 4. Return scores
+    # Apply quality adjustment
+    quality = variant.get("quality", 100)
+    depth = variant.get("depth", 30)
+    quality_adj = calculate_quality_adjustment(quality, depth)
     
-    return None
+    # Calculate final raw score
+    raw_score = base_score * gene_multiplier * af_penalty * quality_adj
+    
+    # Convert to PHRED scale (similar to CADD)
+    # CADD uses -10 * log10(rank/total) but we'll use a simpler mapping
+    # Raw scores 0-50 map to PHRED 0-40
+    phred_score = min(raw_score * 0.8, 40.0)
+    
+    # Add noise for variants with clinical significance
+    clinical_sig = variant.get("clinical_significance", "").lower()
+    if "pathogenic" in clinical_sig:
+        phred_score = max(phred_score, 25.0)
+    elif "likely_pathogenic" in clinical_sig:
+        phred_score = max(phred_score, 20.0)
+    elif "benign" in clinical_sig or "likely_benign" in clinical_sig:
+        phred_score = min(phred_score, 10.0)
+    
+    return {
+        "raw": round(raw_score, 3),
+        "phred": round(phred_score, 1)
+    }
 
 
 def calculate_risk_weight(phred_score: float) -> float:
     """
     Calculate normalized risk weight (0-1) from CADD PHRED score.
     
-    Uses min-max scaling with thresholds:
+    Uses thresholds:
     - PHRED < 10: 0.1 (benign)
     - PHRED 10-15: 0.1-0.3 (uncertain)
     - PHRED 15-20: 0.3-0.6 (damaging)
     - PHRED 20-25: 0.6-0.8 (likely pathogenic)
     - PHRED > 25: 0.8-1.0 (pathogenic)
     """
-    if phred_score < CADD_PHRED_THRESHOLDS["benign"]:
+    if phred_score < 10:
         return 0.1
-    elif phred_score < CADD_PHRED_THRESHOLDS["uncertain"]:
-        # Scale 10-15 to 0.1-0.3
+    elif phred_score < 15:
         return 0.1 + 0.2 * (phred_score - 10) / 5
-    elif phred_score < CADD_PHRED_THRESHOLDS["damaging"]:
-        # Scale 15-20 to 0.3-0.6
+    elif phred_score < 20:
         return 0.3 + 0.3 * (phred_score - 15) / 5
-    elif phred_score < CADD_PHRED_THRESHOLDS["pathogenic"]:
-        # Scale 20-25 to 0.6-0.8
+    elif phred_score < 25:
         return 0.6 + 0.2 * (phred_score - 20) / 5
     else:
-        # Scale 25+ to 0.8-1.0 (capped at 1.0)
         return min(0.8 + 0.2 * (phred_score - 25) / 10, 1.0)
-
-
-def create_job_record(conn: sqlite3.Connection, job_type: str = "pipeline_run") -> str:
-    """Create a job tracking record for this CADD scoring run."""
-    job_id = f"cadd_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
-    
-    cursor = conn.cursor()
-    cursor.execute("""
-    INSERT INTO cadd_jobs (job_id, job_type, metadata)
-    VALUES (?, ?, ?)
-    """, (job_id, job_type, json.dumps({
-        "cadd_version": "v1.7",
-        "pipeline_node": "cadd_scoring",
-        "use_remote": USE_REMOTE_CADD
-    })))
-    
-    conn.commit()
-    return job_id
-
-
-def update_job_status(conn: sqlite3.Connection, job_id: str, 
-                     status: str, variant_count: int = 0) -> None:
-    """Update job tracking record."""
-    cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE cadd_jobs 
-    SET status = ?, completed_at = ?, variant_count = ?
-    WHERE job_id = ?
-    """, (status, datetime.now() if status in ['completed', 'failed'] else None,
-          variant_count, job_id))
-    conn.commit()
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Enrich variants with CADD scores for deleteriousness assessment.
+    Compute CADD-like scores locally for all variants.
     
-    Uses metadata from prior steps:
-    - Only processes non-benign variants (filtered by population_mapper)
-    - Uses gene information already in variants
-    - Leverages risk_genes from risk_model if available
+    This implementation works completely offline without any database lookups
+    or remote queries, suitable for desktop applications.
     
     Updates state with:
-    - cadd_enriched_variants: variants with CADD annotations
+    - cadd_enriched_variants: variants with computed CADD scores
     - cadd_stats: summary statistics
     """
-    logger.info("Starting CADD scoring enrichment")
+    logger.info("Starting offline CADD scoring")
     state["current_node"] = "cadd_scoring"
     
     try:
         filtered_variants = state["filtered_variants"]
-        
-        # Get variants to score based on prior assessments
-        # Skip benign variants (already identified by population_mapper)
-        benign_variants = set(state.get("benign_variants", []))
-        pathogenic_variants = set(state.get("pathogenic_variants", []))
         
         # Get cancer genes from risk assessment if available
         risk_genes = state.get("risk_genes", {})
@@ -194,38 +206,20 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         for cancer_type, genes in risk_genes.items():
             all_risk_genes.update(genes)
         
-        logger.info(f"Processing {len(filtered_variants)} variants")
-        logger.info(f"  Skipping {len(benign_variants)} benign variants")
-        logger.info(f"  Found {len(all_risk_genes)} cancer risk genes from risk assessment")
-        
-        # Connect to population database
-        if not os.path.exists(POP_DB_PATH):
-            logger.warning(f"Population database not found at {POP_DB_PATH}")
-            state["cadd_enriched_variants"] = filtered_variants
-            state["cadd_stats"] = {"error": "Database not found"}
-            state["completed_nodes"].append("cadd_scoring")
-            return state
-            
-        conn = sqlite3.connect(POP_DB_PATH)
-        logger.info(f"Connected to population database at {POP_DB_PATH}")
-        
-        # Create job record
-        job_id = create_job_record(conn)
-        logger.info(f"Created CADD scoring job: {job_id}")
+        logger.info(f"Computing CADD scores for {len(filtered_variants)} variants")
+        logger.info("Using offline scoring algorithm (no database required)")
         
         # Process variants
         enriched_variants = []
         stats = {
-            "job_id": job_id,
+            "job_id": f"cadd_offline_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             "total_variants": len(filtered_variants),
             "variants_scored": 0,
-            "variants_skipped_benign": 0,
             "variants_in_cancer_genes": 0,
             "mean_phred": 0.0,
             "max_phred": 0.0,
             "variants_gt20": 0,
-            "lookup_missing": 0,
-            "remote_lookups": 0
+            "scoring_method": "offline_algorithm"
         }
         
         phred_scores = []
@@ -235,84 +229,50 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
             gene = variant.get("gene", "Unknown")
             
-            # Skip if already classified as benign
-            if variant_id in benign_variants:
-                logger.debug(f"Skipping benign variant: {variant_id}")
-                enriched_variants.append(variant)  # Pass through unchanged
-                stats["variants_skipped_benign"] += 1
-                continue
-            
-            logger.debug(f"Processing variant {i+1}/{len(filtered_variants)}: {variant_id} in gene {gene}")
-            
             # Track if this is a cancer gene
             is_cancer_gene = gene in all_risk_genes
             if is_cancer_gene:
                 stats["variants_in_cancer_genes"] += 1
             
-            # Look up CADD score
-            cadd_result = lookup_cadd_score(
-                variant["chrom"],
-                variant["pos"],
-                variant["ref"],
-                variant["alt"],
-                conn
-            )
-            
-            # Try remote lookup if not found locally and enabled
-            if not cadd_result and USE_REMOTE_CADD:
-                cadd_result = query_remote_cadd(
-                    variant["chrom"],
-                    variant["pos"],
-                    variant["ref"],
-                    variant["alt"],
-                    job_id,
-                    conn
-                )
-                if cadd_result:
-                    stats["remote_lookups"] += 1
+            # Compute CADD score locally
+            logger.debug(f"Computing score for variant {i+1}/{len(filtered_variants)}: {variant_id}")
+            cadd_result = compute_cadd_score(variant)
             
             # Create enriched variant
             enriched_variant = variant.copy()
             
-            if cadd_result:
-                phred = cadd_result["phred"]
-                raw = cadd_result["raw"]
-                risk_weight = calculate_risk_weight(phred)
-                
-                enriched_variant["cadd_phred"] = phred
-                enriched_variant["cadd_raw"] = raw
-                enriched_variant["cadd_risk_weight"] = risk_weight
-                enriched_variant["cadd_job_id"] = cadd_result.get("job_id", job_id)
-                
-                # Update existing risk weight if lower
-                if "risk_weight" in enriched_variant:
-                    logger.debug(f"Variant {variant_id}: existing risk_weight={enriched_variant['risk_weight']}, CADD risk_weight={risk_weight}")
-                    enriched_variant["risk_weight"] = max(enriched_variant["risk_weight"], risk_weight)
-                else:
-                    enriched_variant["risk_weight"] = risk_weight
-                
-                # Log detailed scoring info
+            phred = cadd_result["phred"]
+            raw = cadd_result["raw"]
+            risk_weight = calculate_risk_weight(phred)
+            
+            enriched_variant["cadd_phred"] = phred
+            enriched_variant["cadd_raw"] = raw
+            enriched_variant["cadd_risk_weight"] = risk_weight
+            enriched_variant["cadd_source"] = "computed_offline"
+            
+            # Update existing risk weight if lower
+            if "risk_weight" in enriched_variant:
+                logger.debug(f"Variant {variant_id}: existing risk_weight={enriched_variant['risk_weight']}, CADD risk_weight={risk_weight}")
+                enriched_variant["risk_weight"] = max(enriched_variant["risk_weight"], risk_weight)
+            else:
+                enriched_variant["risk_weight"] = risk_weight
+            
+            # Log scoring info for significant variants
+            if phred > 15 or is_cancer_gene:
                 log_msg = f"Variant {variant_id}: CADD PHRED={phred:.1f}, raw={raw:.3f}, risk_weight={risk_weight:.2f}"
                 if is_cancer_gene:
                     log_msg += f" [CANCER GENE: {gene}]"
-                if variant_id in pathogenic_variants:
-                    log_msg += " [PATHOGENIC]"
-                    
                 logger.info(log_msg)
-                
-                # Update statistics
-                stats["variants_scored"] += 1
-                phred_scores.append(phred)
-                if is_cancer_gene:
-                    cancer_gene_scores.append(phred)
-                
-                if phred > 20:
-                    stats["variants_gt20"] += 1
-                    logger.warning(f"High CADD score (>20): {variant_id} in {gene} - PHRED={phred:.1f}")
-                    
-            else:
-                stats["lookup_missing"] += 1
-                logger.debug(f"No CADD score found for {variant_id}")
+            
+            # Update statistics
+            stats["variants_scored"] += 1
+            phred_scores.append(phred)
+            if is_cancer_gene:
+                cancer_gene_scores.append(phred)
+            
+            if phred > 20:
+                stats["variants_gt20"] += 1
+                logger.warning(f"High CADD score (>20): {variant_id} in {gene} - PHRED={phred:.1f}")
                 
             enriched_variants.append(enriched_variant)
         
@@ -327,12 +287,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             max_cancer_phred = max(cancer_gene_scores)
             logger.info(f"Cancer gene CADD scores: mean={mean_cancer_phred:.1f}, max={max_cancer_phred:.1f}")
         
-        # Update job status
-        update_job_status(conn, job_id, "completed", stats["variants_scored"])
-        
-        # Close database connection
-        conn.close()
-        
         # Update state
         state["cadd_enriched_variants"] = enriched_variants
         state["cadd_stats"] = stats
@@ -340,17 +294,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         
         # Log summary
         logger.info("=" * 60)
-        logger.info("CADD Scoring Summary:")
+        logger.info("Offline CADD Scoring Summary:")
         logger.info(f"  Job ID: {stats['job_id']}")
         logger.info(f"  Total variants: {stats['total_variants']}")
-        logger.info(f"  Variants scored: {stats['variants_scored']}")
-        logger.info(f"  Benign skipped: {stats['variants_skipped_benign']}")
+        logger.info(f"  Variants scored: {stats['variants_scored']} (100%)")
         logger.info(f"  Cancer gene variants: {stats['variants_in_cancer_genes']}")
         logger.info(f"  Mean PHRED score: {stats['mean_phred']:.1f}")
         logger.info(f"  Max PHRED score: {stats['max_phred']:.1f}")
         logger.info(f"  High-impact variants (>20): {stats['variants_gt20']}")
-        logger.info(f"  Missing lookups: {stats['lookup_missing']}")
-        logger.info(f"  Remote lookups: {stats['remote_lookups']}")
+        logger.info(f"  Scoring method: Offline algorithm (no internet required)")
         logger.info("=" * 60)
         
     except Exception as e:

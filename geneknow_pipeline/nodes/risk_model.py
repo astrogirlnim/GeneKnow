@@ -61,12 +61,8 @@ def extract_enhanced_features(variants: List[Dict[str, Any]], genes: List[str]) 
             features.append(avg_quality / 100.0)  # Normalize to 0-1
             
             # 4. Maximum allele frequency
-            afs = [v.get("allele_frequency") for v in variants_in_gene if v.get("allele_frequency") is not None]
-            if afs:
-                max_af = max(afs)
-            else:
-                # No allele frequency data - use neutral value
-                max_af = 0.1  # Conservative estimate for unknown
+            afs = [v.get("allele_frequency", 0.5) for v in variants_in_gene]
+            max_af = max(afs) if afs else 0.5
             features.append(max_af)
             
             # 5. Has severe consequence (frameshift, nonsense)
@@ -82,8 +78,7 @@ def extract_enhanced_features(variants: List[Dict[str, Any]], genes: List[str]) 
             has_homozygous = 0
             for v in variants_in_gene:
                 genotype = v.get("genotype", "")
-                af = v.get("allele_frequency")
-                if genotype == "1/1" or (af is not None and af > 0.9):
+                if genotype == "1/1" or v.get("allele_frequency", 0) > 0.9:
                     has_homozygous = 1
                     break
             features.append(has_homozygous)

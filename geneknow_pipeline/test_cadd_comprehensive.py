@@ -21,14 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import CADD module
 from nodes.cadd_scoring import (
-    normalize_chromosome,
-    lookup_cadd_score,
     calculate_risk_weight,
-    process,
-    create_job_record,
-    update_job_status,
-    query_remote_cadd,
-    CADD_PHRED_THRESHOLDS
+    compute_cadd_score,
+    process
 )
 
 # Set up logging for tests

@@ -16,7 +16,7 @@ try:
         variant_calling,
         qc_filter,
         population_mapper,
-        cadd_scoring_offline as cadd_scoring,  # Use offline implementation
+        cadd_scoring,
         feature_vector_builder,
         risk_model,
         formatter,
@@ -31,7 +31,7 @@ except ImportError:
         variant_calling,
         qc_filter,
         population_mapper,
-        cadd_scoring_offline as cadd_scoring,  # Use offline implementation
+        cadd_scoring,
         feature_vector_builder,
         risk_model,
         formatter,
