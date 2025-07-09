@@ -14,6 +14,7 @@ try:
     from . import tcga_mapper
     from . import cadd_scoring
     from . import feature_vector_builder
+    from . import prs_calculator
     from . import risk_model
     from . import formatter
     from . import report_writer
@@ -28,6 +29,7 @@ except ImportError:
     import tcga_mapper
     import cadd_scoring
     import feature_vector_builder
+    import prs_calculator
     import risk_model
     import formatter
     import report_writer
@@ -42,6 +44,7 @@ __all__ = [
     "tcga_mapper",
     "cadd_scoring",
     "feature_vector_builder",
+    "prs_calculator",
     "risk_model",
     "formatter",
     "report_writer",

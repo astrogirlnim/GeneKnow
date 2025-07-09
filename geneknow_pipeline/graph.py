@@ -19,6 +19,7 @@ try:
         tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
+        prs_calculator,
         risk_model,
         formatter,
         report_writer
@@ -35,6 +36,7 @@ except ImportError:
         tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
+        prs_calculator,
         risk_model,
         formatter,
         report_writer
@@ -228,6 +230,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("cadd_scoring", cadd_scoring.process)
     workflow.add_node("merge_tcga_cadd", merge_tcga_cadd_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
+    workflow.add_node("prs_calculator", prs_calculator.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -262,7 +265,12 @@ def create_genomic_pipeline() -> StateGraph:
     
     # Continue with feature vector building after merge
     workflow.add_edge("merge_tcga_cadd", "feature_vector_builder")
-    workflow.add_edge("feature_vector_builder", "risk_model")
+    
+    # Add PRS calculation after feature vector building
+    workflow.add_edge("feature_vector_builder", "prs_calculator")
+    
+    # PRS calculator feeds into risk model
+    workflow.add_edge("prs_calculator", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")
