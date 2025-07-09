@@ -26,6 +26,10 @@ class GenomicState(TypedDict):
     # TCGA matching results
     tcga_matches: Dict[str, Dict[str, Any]]  # {cancer_type: {variant_id: match_info}}
     
+    # CADD enrichment results
+    cadd_enriched_variants: Optional[List[Dict[str, Any]]]  # Variants with CADD annotations
+    cadd_stats: Optional[Dict[str, Any]]  # CADD scoring statistics
+    
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}
     risk_genes: Dict[str, List[str]]  # {cancer_type: [affected_genes]}

@@ -7,22 +7,25 @@ A genomic risk assessment pipeline built with LangGraph for processing FASTQ, BA
 **All nodes have real implementations!** No more mock data.
 **Enhanced API Server available** with real-time progress tracking and WebSocket support!
 
-### ✅ Implemented Nodes (7/7)
+### ✅ Implemented Nodes (10/10)
 
 1. **file_input** - BioPython/pysam validation
-2. **preprocess** - BWA alignment for FASTQ, VCF variant loading
+2. **preprocess** - BWA alignment for FASTQ, VCF variant loading, MAF parsing
 3. **variant_calling** - VCF parsing with simulated variants
 4. **qc_filter** - Quality filtering (QUAL≥30, Depth≥10, AF≥0.01)
-5. **tcga_mapper** - SQLite database with real TCGA cohort data
-6. **risk_model** - Scikit-learn ML models trained on cancer genes
-7. **report_writer** - Structured report sections for frontend
+5. **population_mapper** - Population frequency comparison
+6. **cadd_scoring** - CADD PHRED score enrichment for variant deleteriousness
+7. **feature_vector_builder** - Combines outputs from static models (stub)
+8. **risk_model** - Scikit-learn ML models trained on cancer genes
+9. **formatter** - JSON structuring for frontend
+10. **report_writer** - Structured report sections for frontend
 
 ### 🔄 Pipeline Architecture
 
 ```
-File Input (FASTQ/BAM/VCF)
+File Input (FASTQ/BAM/VCF/MAF)
     ↓
-Preprocess 
+Preprocess (Alignment/Variant Loading/MAF Parsing)
     ↓
 [Conditional Routing]
   ├─→ Variant Calling (if FASTQ/BAM)
@@ -30,7 +33,13 @@ Preprocess
     ↓
 Merge Parallel Results
     ↓
-TCGA Mapper → Risk Model → Formatter → Report Writer
+Population Mapper → CADD Scoring → Feature Vector Builder
+    ↓
+[Conditional: USE_LEGACY_RISK env var]
+  ├─→ Risk Model → Formatter (if legacy)
+  └─→ Formatter (if new architecture)
+    ↓
+Report Writer
 ```
 
 ## 📊 Features
@@ -206,6 +215,27 @@ python test_enhanced_api.py    # Enhanced API tests
 - Error handling: Test with invalid files
 
 ## 🔧 Configuration
+
+### CADD Scoring Setup
+
+The CADD scoring node enriches variants with deleteriousness predictions using CADD v1.7 (hg38).
+
+#### Quick Setup (Test Mode)
+```bash
+cd geneknow_pipeline
+CADD_ENV=test ./scripts/fetch_cadd.sh
+```
+
+#### Production Setup
+For production, you'll need to:
+1. Download CADD data from https://cadd.gs.washington.edu/download
+2. Convert to SQLite format using the provided script
+3. Set `CADD_DB_PATH` environment variable
+
+#### Configuration Options
+- `CADD_DB_PATH`: Path to local SQLite database (default: `data/cadd_scores.db`)
+- `USE_REMOTE_CADD`: Enable remote Tabix queries for missing variants (default: true)
+- `USE_LEGACY_RISK`: Use old risk model instead of new architecture (default: false)
 
 ### Risk Model Genes
 - **Breast**: BRCA1, BRCA2, TP53, PIK3CA, PALB2, ATM, CHEK2
