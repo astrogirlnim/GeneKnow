@@ -20,17 +20,22 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     state["current_node"] = "formatter"
     
     try:
-        # Extract high-risk findings
+        # Extract high-risk findings if risk scores are available
         high_risk_findings = []
         risk_threshold = state.get("risk_threshold_percentage", 50.0)
         
-        for cancer_type, risk_score in state["risk_scores"].items():
-            if risk_score >= risk_threshold:
-                high_risk_findings.append({
-                    "cancer_type": cancer_type,
-                    "risk_percentage": risk_score,
-                    "affected_genes": state["risk_genes"].get(cancer_type, [])
-                })
+        risk_scores = state.get("risk_scores", {})
+        risk_genes = state.get("risk_genes", {})
+        
+        # Only process risk findings if risk assessment was performed
+        if risk_scores:
+            for cancer_type, risk_score in risk_scores.items():
+                if risk_score >= risk_threshold:
+                    high_risk_findings.append({
+                        "cancer_type": cancer_type,
+                        "risk_percentage": risk_score,
+                        "affected_genes": risk_genes.get(cancer_type, [])
+                    })
         
         # Format variant summary with TCGA matches
         variant_summary = []
@@ -53,8 +58,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             if "clinical_significance" in variant:
                 variant_info["clinical_significance"] = variant["clinical_significance"]
             
+            # Add CADD scores if available
+            if "cadd_phred" in variant:
+                variant_info["cadd_scores"] = {
+                    "phred": variant.get("cadd_phred"),
+                    "raw": variant.get("cadd_raw"),
+                    "risk_weight": variant.get("cadd_risk_weight")
+                }
+            
             # Add TCGA match info
-            for cancer_type, matches in state["tcga_matches"].items():
+            tcga_matches = state.get("tcga_matches", {})
+            for cancer_type, matches in tcga_matches.items():
                 if variant.get("variant_id") in matches:
                     match_info = matches[variant["variant_id"]]
                     variant_info["tcga_matches"][cancer_type] = {
@@ -71,11 +85,25 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             processing_time = (datetime.now() - state["pipeline_start_time"]).total_seconds()
         
         # Build TCGA summary
+        tcga_matches = state.get("tcga_matches", {})
         tcga_summary = {
-            "cancer_types_analyzed": list(state.get("tcga_matches", {}).keys()),
+            "cancer_types_analyzed": list(tcga_matches.keys()),
             "cohort_sizes": state.get("tcga_cohort_sizes", {}),
             "variants_with_tcga_data": len([v for v in variant_summary if v["tcga_matches"]])
         }
+        
+        # Include CADD statistics if available
+        cadd_stats = state.get("cadd_stats", {})
+        if cadd_stats and "variants_scored" in cadd_stats:
+            cadd_summary = {
+                "variants_scored": cadd_stats.get("variants_scored", 0),
+                "mean_phred": cadd_stats.get("mean_phred", 0),
+                "max_phred": cadd_stats.get("max_phred", 0),
+                "high_impact_variants": cadd_stats.get("variants_gt20", 0),
+                "cancer_gene_variants": cadd_stats.get("variants_in_cancer_genes", 0)
+            }
+        else:
+            cadd_summary = None
         
         structured_json = {
             "report_metadata": {
@@ -94,13 +122,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "high_risk_findings": len(high_risk_findings)
             },
             "risk_assessment": {
-                "scores": state["risk_scores"],
+                "scores": risk_scores,
                 "high_risk_findings": high_risk_findings,
-                "risk_genes": state["risk_genes"]
-            },
+                "risk_genes": risk_genes
+            } if risk_scores else None,
             "variant_details": variant_summary,
             "quality_control": state["file_metadata"].get("qc_stats", {}),
             "tcga_summary": tcga_summary,
+            "cadd_summary": cadd_summary,
             "warnings": state["warnings"]
         }
         

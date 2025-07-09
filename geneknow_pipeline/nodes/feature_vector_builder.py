@@ -12,22 +12,27 @@ logger = logging.getLogger(__name__)
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Build feature vector from all static model outputs.
+    Feature vector builder node (STUB).
     
-    Currently a passthrough stub. Will eventually:
-    1. Collect CADD scores
-    2. Collect PRS scores
-    3. Collect ClinVar annotations
-    4. Collect TCGA frequency matches
-    5. Collect Gene/Pathway burden scores
+    Future: Will build feature vectors from all 5 static models:
+    - PRS (Polygenic Risk Scores)
+    - ClinVar annotations  
+    - CADD scores
+    - TCGA frequency matching
+    - Gene/Pathway burden
     
-    Updates state with:
-    - feature_vector: Combined features for risk fusion model
+    For now: Passes through enriched variants from CADD scoring.
     """
     logger.info("Starting feature vector builder (STUB)")
     state["current_node"] = "feature_vector_builder"
     
     try:
+        # Use CADD enriched variants if available, otherwise use filtered variants
+        enriched_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
+        
+        # Update filtered_variants with enriched data for downstream nodes
+        state["filtered_variants"] = enriched_variants
+        
         # Log what we have so far
         logger.info("=" * 60)
         logger.info("Feature Vector Builder - Current Inputs:")
@@ -37,6 +42,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             logger.info(f"✓ CADD scores available: {state['cadd_stats'].get('variants_scored', 0)} variants")
             logger.info(f"  Mean PHRED: {state['cadd_stats'].get('mean_phred', 0):.1f}")
             logger.info(f"  Max PHRED: {state['cadd_stats'].get('max_phred', 0):.1f}")
+            logger.info(f"  Cancer gene variants: {state['cadd_stats'].get('variants_in_cancer_genes', 0)}")
         else:
             logger.info("✗ CADD scores not available")
         
@@ -56,6 +62,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("✗ Gene/Pathway burden not implemented yet")
         logger.info("=" * 60)
         
+        # Count variants with each type of annotation
+        variants_with_cadd = sum(1 for v in enriched_variants if "cadd_phred" in v)
+        variants_with_population = sum(1 for v in enriched_variants if "population_frequency" in v)
+        variants_with_pathogenic = sum(1 for v in enriched_variants if v.get("is_pathogenic"))
+        
+        logger.info(f"Variant annotation summary:")
+        logger.info(f"  Total variants: {len(enriched_variants)}")
+        logger.info(f"  With CADD scores: {variants_with_cadd}")
+        logger.info(f"  With population data: {variants_with_population}")
+        logger.info(f"  Pathogenic: {variants_with_pathogenic}")
+        
         # For now, just pass through
         # In future, build actual feature vector here
         state["feature_vector"] = {
@@ -67,6 +84,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "clinvar": False,
                 "tcga": "tcga_matches" in state,
                 "gene_burden": False
+            },
+            "annotation_summary": {
+                "total_variants": len(enriched_variants),
+                "with_cadd": variants_with_cadd,
+                "with_population": variants_with_population,
+                "pathogenic": variants_with_pathogenic
             }
         }
         
@@ -80,6 +103,5 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "error": str(e),
             "timestamp": datetime.now()
         })
-        state["pipeline_status"] = "failed"
     
     return state 
