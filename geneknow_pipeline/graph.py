@@ -185,6 +185,23 @@ def merge_static_model_results(state: dict) -> dict:
         # Ensure filtered_variants is updated with the merged data
         state["filtered_variants"] = merged_variants
         
+        # Update file_metadata with summary statistics from all parallel nodes
+        file_metadata = state.get("file_metadata", {})
+        
+        # Add TCGA summary
+        if "tcga_summary" in state:
+            file_metadata["tcga_summary"] = state["tcga_summary"]
+            
+        # Add ClinVar summary
+        if "clinvar_stats" in state:
+            file_metadata["clinvar_summary"] = state["clinvar_stats"]
+            
+        # Add CADD summary
+        if "cadd_stats" in state:
+            file_metadata["cadd_summary"] = state["cadd_stats"]
+        
+        state["file_metadata"] = file_metadata
+        
         logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, and ClinVar annotations")
         logger.info(f"PRS calculation completed for {len(state['prs_results'])} cancer types")
         

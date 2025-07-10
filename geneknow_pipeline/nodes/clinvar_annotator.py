@@ -467,9 +467,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                                           if a.get("cancer_related")])
         }
         
-        # Update file metadata
-        file_metadata = state.get("file_metadata", {})
-        file_metadata["clinvar_summary"] = clinvar_stats
+        # Summary statistics (will be handled by merge function)
         
         # Log summary
         logger.info(f"ClinVar annotation complete:")
@@ -491,8 +489,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "clinvar_benign_variants": benign_variants,
             "clinvar_vus_variants": vus_variants,
             "clinvar_drug_response_variants": drug_response_variants,
-            "clinvar_risk_factor_variants": risk_factor_variants,
-            "file_metadata": file_metadata
+            "clinvar_risk_factor_variants": risk_factor_variants
         }
         
     except Exception as e:
