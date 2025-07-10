@@ -163,7 +163,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - tcga_cohort_sizes: sample sizes for each cancer type
     """
     logger.info("Starting TCGA frequency mapping")
-    state["current_node"] = "tcga_mapper"
+    # Note: Don't set current_node to avoid concurrent updates during parallel execution
     
     try:
         filtered_variants = state["filtered_variants"]
@@ -227,20 +227,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 total_variants_matched += 1
                 cancer_assessment = assess_cancer_relevance(variant, variant_tcga_matches)
                 
-                # Update variant with cancer relevance data
-                variant["tcga_cancer_relevance"] = cancer_assessment["cancer_relevance_score"]
-                variant["tcga_best_match"] = cancer_assessment["best_match"]
-                
+                # Note: We don't modify the original variant in place to avoid concurrent modification issues
+                # The merge node will handle combining TCGA and CADD results
                 logger.info(f"🔬 TCGA match: {variant_id} - relevance: {cancer_assessment['cancer_relevance_score']:.2f}, "
                            f"matched in {cancer_assessment['cancer_types_matched']} cancer types")
         
-        # Update state
-        state["tcga_matches"] = tcga_matches
-        state["tcga_cohort_sizes"] = tcga_cohort_sizes
-        state["tcga_enriched_variants"] = enriched_variants
-        
-        # Add summary metadata
-        state["file_metadata"]["tcga_summary"] = {
+        # Update file metadata
+        file_metadata = state.get("file_metadata", {})
+        file_metadata["tcga_summary"] = {
             "variants_matched": total_variants_matched,
             "total_variants": len(filtered_variants),
             "match_rate": total_variants_matched / len(filtered_variants) if filtered_variants else 0,
@@ -256,14 +250,23 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Match rate: {total_variants_matched/len(filtered_variants)*100:.1f}%" if filtered_variants else "0%")
         logger.info(f"  Highly enriched variants: {len([v for v in enriched_variants if v['enrichment'] > 50])}")
         
-        state["completed_nodes"].append("tcga_mapper")
+        # Note: Don't append to completed_nodes to avoid concurrent updates
+        # The merge node will handle tracking completion
+        
+        # Return only the keys this node updates
+        return {
+            "tcga_matches": tcga_matches,
+            "tcga_cohort_sizes": tcga_cohort_sizes,
+            "tcga_enriched_variants": enriched_variants,
+            "file_metadata": file_metadata
+        }
         
     except Exception as e:
         logger.error(f"TCGA mapping failed: {str(e)}")
-        state["errors"].append({
-            "node": "tcga_mapper",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-    
-    return state 
+        return {
+            "errors": [{
+                "node": "tcga_mapper",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        } 

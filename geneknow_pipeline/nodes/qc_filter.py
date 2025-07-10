@@ -61,16 +61,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - filtered_variants: variants passing QC
     """
     logger.info("Starting QC filtering")
-    state["current_node"] = "qc_filter"
+    # Note: Don't set current_node to avoid concurrent updates during parallel execution
     
     try:
         raw_variants = state["raw_variants"]
         
         # Use the shared apply_qc_filters function
         filtered_variants = apply_qc_filters(raw_variants)
-        
-        # Update state
-        state["filtered_variants"] = filtered_variants
         
         # Calculate filtering stats
         total_variants = len(raw_variants)
@@ -79,8 +76,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         
         logger.info(f"QC filtering complete: {passed_variants}/{total_variants} passed ({filter_rate:.1f}% filtered)")
         
-        # Add filtering stats to metadata
-        state["file_metadata"]["qc_stats"] = {
+        # Prepare metadata update
+        file_metadata = state.get("file_metadata", {})
+        file_metadata["qc_stats"] = {
             "total_variants": total_variants,
             "passed_qc": passed_variants,
             "failed_qc": total_variants - passed_variants,
@@ -92,15 +90,22 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
         }
         
-        state["completed_nodes"].append("qc_filter")
+        # Note: Don't append to completed_nodes to avoid concurrent updates
+        # The merge node will handle tracking completion
+        
+        # Return only the keys this node updates
+        return {
+            "filtered_variants": filtered_variants,
+            "file_metadata": file_metadata
+        }
         
     except Exception as e:
         logger.error(f"QC filtering failed: {str(e)}")
-        state["errors"].append({
-            "node": "qc_filter",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-    
-    return state 
+        return {
+            "errors": [{
+                "node": "qc_filter",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }],
+            "pipeline_status": "failed"
+        } 

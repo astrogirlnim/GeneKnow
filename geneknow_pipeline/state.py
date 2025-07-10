@@ -2,15 +2,16 @@
 State schema for GeneKnow LangGraph pipeline.
 Defines the data structure passed between nodes.
 """
-from typing import TypedDict, List, Dict, Optional, Any
+from typing import TypedDict, List, Dict, Optional, Any, Annotated
 from datetime import datetime
+import operator
 
 
 class GenomicState(TypedDict):
     """Main state object passed through the LangGraph pipeline."""
     
     # Input data
-    file_path: str
+    file_path: str  # Read-only input field
     file_type: str  # 'fastq' or 'bam'
     file_metadata: Dict[str, Any]  # size, read count, etc.
     
@@ -46,12 +47,12 @@ class GenomicState(TypedDict):
     processing_time_seconds: Optional[float]
     
     # Error tracking
-    errors: List[Dict[str, Any]]  # {node: str, error: str, timestamp: datetime}
-    warnings: List[Dict[str, Any]]  # Non-fatal issues
+    errors: Annotated[List[Dict[str, Any]], operator.add]  # {node: str, error: str, timestamp: datetime}
+    warnings: Annotated[List[Dict[str, Any]], operator.add]  # Non-fatal issues
     pipeline_status: str  # 'running', 'completed', 'failed', 'partial'
     
     # Node completion tracking
-    completed_nodes: List[str]
+    completed_nodes: Annotated[List[str], operator.add]
     current_node: str
     
     # User preferences (from UI)
