@@ -125,6 +125,28 @@ gh api repos/:owner/:repo/actions/cache/usage --jq '.total_active_cache_size_in_
 
 ## 💡 Future Recommendations
 
+### **Immediate Solution: GitHub Pro Upgrade (Recommended)**
+**Cost**: $4/month ($48/year)
+**Benefit**: Doubles storage to 1GB - solves the problem completely
+
+```
+Current: 900MB per release × 1 retention = 900MB (exceeds 500MB limit)
+With Pro: 900MB per release × 1 retention = 900MB (within 1GB limit)
+```
+
+**How to Upgrade**:
+1. Go to GitHub account → **Settings** → **Billing**
+2. Click **Change plan** → **GitHub Pro**
+3. Immediate relief - no workflow changes needed
+
+### **Alternative: Technical Optimizations**
+If you prefer to stay on the free plan:
+
+1. **Conditional artifact uploads** - Only upload on tagged releases
+2. **Split platform builds** - Upload platforms separately to reduce peak usage
+3. **External storage** - Use releases only, skip temporary artifacts
+4. **Reduced retention** - 1 day maximum (already implemented)
+
 ### Immediate Term
 1. **Consider GitHub Pro** ($4/month) - Doubles storage to 1GB
 2. **Split artifacts** - Upload platforms separately
