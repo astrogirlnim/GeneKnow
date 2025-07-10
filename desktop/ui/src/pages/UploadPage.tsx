@@ -169,7 +169,6 @@ const UploadPage: React.FC = () => {
       });
       
       setFilePath(tempPath);
-      console.log('File saved temporarily at:', tempPath);
     } catch (err) {
       console.error('Error handling file:', err);
       setError('Failed to handle file');
@@ -204,14 +203,8 @@ const UploadPage: React.FC = () => {
     setProgress(null);
 
     try {
-      console.log('=== Starting Analysis ===');
-      console.log('File:', file?.name);
-      console.log('File Path:', filePath);
-      
       // Ensure API server is running
-      console.log('Step 1: Ensuring API server is running...');
       await ensureApiRunning();
-      console.log('Step 1: API server is running');
 
       // For desktop app, we need a file path
       if (!filePath) {
@@ -221,8 +214,6 @@ const UploadPage: React.FC = () => {
       }
 
       // Process the file with progress tracking
-      console.log('Step 2: Starting file processing...');
-      
       const result = await processAndWait(
         filePath,
         {
@@ -236,14 +227,8 @@ const UploadPage: React.FC = () => {
         },
         (jobProgress) => {
           setProgress(jobProgress);
-          console.log('Processing progress:', jobProgress);
         }
       );
-
-      console.log('Step 3: Processing complete!');
-      console.log('Result type:', typeof result);
-      console.log('Result keys:', result ? Object.keys(result) : 'no result');
-      console.log('Full result:', result);
       
       if (!result) {
         throw new Error('No results returned from processing');
@@ -252,27 +237,20 @@ const UploadPage: React.FC = () => {
       // Clean up the temporary file
       try {
         await invoke('delete_temp_file', { filePath });
-        console.log('Cleaned up temporary file:', filePath);
       } catch (cleanupError) {
         console.warn('Failed to clean up temporary file:', cleanupError);
       }
       
       // Navigate to dashboard with results
-      console.log('Step 4: Navigating to dashboard...');
       navigate('/dashboard', { 
         state: { 
           results: result,
           fileName: file?.name 
         } 
       });
-      console.log('Step 4: Navigation complete');
       
     } catch (err) {
-      console.error('=== Processing Error ===');
-      console.error('Error:', err);
-      console.error('Error type:', typeof err);
-      console.error('Error message:', err instanceof Error ? err.message : String(err));
-      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
+      console.error('Processing error:', err);
       
       const errorMessage = err instanceof Error ? err.message : 'Failed to process file';
       setError(`Processing failed: ${errorMessage}`);
@@ -281,7 +259,6 @@ const UploadPage: React.FC = () => {
       if (filePath) {
         try {
           await invoke('delete_temp_file', { filePath });
-          console.log('Cleaned up temporary file after error:', filePath);
         } catch (cleanupError) {
           console.warn('Failed to clean up temporary file:', cleanupError);
         }
@@ -293,62 +270,10 @@ const UploadPage: React.FC = () => {
 
   const handleMockDataSelect = (riskLevel: string) => {
     // Navigate to dashboard with the risk level as a URL parameter
-    console.log('Selected mock test case risk level:', riskLevel);
     navigate(`/dashboard?risk=${riskLevel}`);
   };
 
-  const handleTestNavigation = () => {
-    // Test navigation to dashboard with mock data
-    console.log('Testing navigation to dashboard...');
-    const mockResults = {
-      pipeline_status: 'completed',
-      variant_count: 42,
-      risk_scores: { overall_risk: 0.65 },
-      report_sections: {},
-      processing_time_seconds: 45,
-      variants: [
-        { gene: 'BRCA1', position: 'chr17:41234567', type: 'SNV', impact: 'HIGH' },
-        { gene: 'TP53', position: 'chr17:7578406', type: 'SNV', impact: 'MODERATE' }
-      ]
-    };
-    
-    navigate('/dashboard', { 
-      state: { 
-        results: mockResults,
-        fileName: 'test-file.vcf' 
-      } 
-    });
-  };
 
-  const handleTestLoadingFlow = () => {
-    // Test the complete loading → dashboard flow
-    console.log('Testing complete loading flow...');
-    setIsProcessing(true);
-    setProgress({ job_id: 'test', status: 'processing', progress: 50, current_step: 'Testing modal flow...' });
-    
-    // Simulate processing for 3 seconds, then navigate
-    setTimeout(() => {
-      const mockResults = {
-        pipeline_status: 'completed',
-        variant_count: 42,
-        risk_scores: { overall_risk: 0.65 },
-        report_sections: {},
-        processing_time_seconds: 3,
-        variants: [
-          { gene: 'BRCA1', position: 'chr17:41234567', type: 'SNV', impact: 'HIGH' },
-          { gene: 'TP53', position: 'chr17:7578406', type: 'SNV', impact: 'MODERATE' }
-        ]
-      };
-      
-      setIsProcessing(false);
-      navigate('/dashboard', { 
-        state: { 
-          results: mockResults,
-          fileName: file?.name || 'test-file.vcf' 
-        } 
-      });
-    }, 3000);
-  };
 
   return (
     <Layout>
@@ -494,58 +419,7 @@ const UploadPage: React.FC = () => {
               >
                 Back
               </button>
-              <button
-                onClick={handleTestNavigation}
-                disabled={isProcessing}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  fontWeight: 'bold',
-                  color: '#FFFFFF',
-                  background: '#059669',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: isProcessing ? 'not-allowed' : 'pointer',
-                  transition: 'all 200ms ease',
-                  fontSize: '0.875rem',
-                  opacity: isProcessing ? 0.6 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!isProcessing) {
-                    e.currentTarget.style.background = '#047857';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#059669';
-                }}
-              >
-                Test Dashboard
-              </button>
-              <button
-                onClick={handleTestLoadingFlow}
-                disabled={isProcessing}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  fontWeight: 'bold',
-                  color: '#FFFFFF',
-                  background: '#7C3AED',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: isProcessing ? 'not-allowed' : 'pointer',
-                  transition: 'all 200ms ease',
-                  fontSize: '0.875rem',
-                  opacity: isProcessing ? 0.6 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!isProcessing) {
-                    e.currentTarget.style.background = '#6D28D9';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#7C3AED';
-                }}
-              >
-                Test Loading
-              </button>
+
               <button
                 onClick={handleStartAnalysis}
                                  disabled={(!file && !filePath) || isProcessing}
