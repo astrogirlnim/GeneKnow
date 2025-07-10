@@ -7,18 +7,22 @@ A genomic risk assessment pipeline built with LangGraph for processing FASTQ, BA
 **All nodes have real implementations!** No more mock data.
 **Enhanced API Server available** with real-time progress tracking and WebSocket support!
 
-### ✅ Implemented Nodes (10/10)
+### ✅ Implemented Nodes (14/14)
 
 1. **file_input** - BioPython/pysam validation
 2. **preprocess** - BWA alignment for FASTQ, VCF variant loading, MAF parsing
 3. **variant_calling** - VCF parsing with simulated variants
 4. **qc_filter** - Quality filtering (QUAL≥30, Depth≥10, AF≥0.01)
 5. **population_mapper** - Population frequency comparison
-6. **cadd_scoring** - CADD PHRED score enrichment for variant deleteriousness
-7. **feature_vector_builder** - Combines outputs from static models (stub)
-8. **risk_model** - Scikit-learn ML models trained on cancer genes
-9. **formatter** - JSON structuring for frontend
-10. **report_writer** - Structured report sections for frontend
+6. **tcga_mapper** - TCGA cancer frequency matching and tumor enrichment
+7. **cadd_scoring** - CADD PHRED score enrichment for variant deleteriousness
+8. **clinvar_annotator** - Clinical significance annotations from ClinVar database
+9. **prs_calculator** - Polygenic Risk Score calculation from GWAS data
+10. **pathway_burden** - Gene/pathway-level variant burden analysis
+11. **feature_vector_builder** - Combines outputs from static models for ML input
+12. **risk_model** - Scikit-learn ML models trained on cancer genes
+13. **formatter** - JSON structuring for frontend
+14. **report_writer** - Structured report sections for frontend
 
 ### 🔄 Pipeline Architecture
 
@@ -33,11 +37,18 @@ Preprocess (Alignment/Variant Loading/MAF Parsing)
     ↓
 Merge Parallel Results
     ↓
-Population Mapper → CADD Scoring → Feature Vector Builder
+Population Mapper
     ↓
-[Conditional: USE_LEGACY_RISK env var]
-  ├─→ Risk Model → Formatter (if legacy)
-  └─→ Formatter (if new architecture)
+[5 Static Models - Execute in Parallel]
+  ├─→ TCGA Mapper (Cancer Frequency Match)
+  ├─→ CADD Scoring (Variant Deleteriousness)
+  ├─→ ClinVar Annotator (Clinical Significance)
+  ├─→ PRS Calculator (Polygenic Risk Score)
+  └─→ Pathway Burden (Gene/Pathway Analysis)
+    ↓
+Merge Static Models (Feature Consolidation)
+    ↓
+Feature Vector Builder → Risk Model → Formatter
     ↓
 Report Writer
 ```
