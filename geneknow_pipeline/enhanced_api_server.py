@@ -293,7 +293,7 @@ def supported_formats():
             {
                 'extension': '.maf',
                 'description': 'Mutation Annotation Format',
-                'compressed': [],
+                'compressed': ['.maf.gz'],
                 'paired_end_support': False
             }
         ]

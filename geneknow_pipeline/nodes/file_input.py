@@ -260,6 +260,9 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
     return metadata
 
 
+
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate input file and extract metadata.

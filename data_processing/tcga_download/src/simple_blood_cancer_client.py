@@ -97,7 +97,7 @@ def search_blood_cancer_files(max_results: int = 50) -> List[TCGAFile]:
                 "op": "in",
                 "content": {
                     "field": "files.data_format",
-                    "value": ["TSV", "TXT", "MAF"]
+                    "value": ["MAF"]
                 }
             },
             {
