@@ -157,6 +157,14 @@ const UploadPage: React.FC = () => {
         throw new Error('No results returned from processing');
       }
       
+      // Clean up the temporary file
+      try {
+        await invoke('delete_temp_file', { filePath });
+        console.log('Cleaned up temporary file:', filePath);
+      } catch (cleanupError) {
+        console.warn('Failed to clean up temporary file:', cleanupError);
+      }
+      
       // Navigate to dashboard with results
       navigate('/dashboard', { 
         state: { 
@@ -167,6 +175,17 @@ const UploadPage: React.FC = () => {
     } catch (err) {
       console.error('Processing error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process file');
+      
+      // Clean up the temporary file on error too
+      if (filePath) {
+        try {
+          await invoke('delete_temp_file', { filePath });
+          console.log('Cleaned up temporary file after error:', filePath);
+        } catch (cleanupError) {
+          console.warn('Failed to clean up temporary file:', cleanupError);
+        }
+      }
+      
       setIsProcessing(false);
     }
   };
