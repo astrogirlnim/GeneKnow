@@ -63,6 +63,10 @@ out/
 desktop/ui/dist/
 desktop/ui/build/
 
+# Bundled resources for deployment
+desktop/bundled_resources/
+desktop/bundled_resources.tar.gz
+
 # Rust/Tauri
 desktop/src-tauri/target/
 desktop/src-tauri/Cargo.lock

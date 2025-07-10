@@ -654,6 +654,20 @@ jobs:
           pnpm build
           echo "✅ Frontend build completed"
 
+      - name: 🐍 Bundle Python runtime and dependencies
+        working-directory: desktop
+        shell: bash
+        run: |
+          echo "🐍 Bundling Python runtime for ${{ matrix.name }}..."
+          
+          # Make script executable
+          chmod +x scripts/bundle-python.sh
+          
+          # Run the bundling script
+          ./scripts/bundle-python.sh
+          
+          echo "✅ Python runtime bundled successfully"
+
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri
         env:

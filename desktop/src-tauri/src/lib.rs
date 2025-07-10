@@ -432,61 +432,84 @@ async fn start_api_server() -> Result<bool, String> {
         return Ok(true);
     }
 
-    // Get the path to the Python script relative to the workspace root
-    // The Tauri app is in desktop/src-tauri, so we need to go up 2 levels
-    let mut api_script = std::env::current_exe()
-        .map_err(|e| format!("Failed to get executable path: {}", e))?;
-    
-    // Go up to find the workspace root
-    // In dev: target/debug/app -> ../../.. = workspace root  
-    // In prod: Contents/MacOS/app -> ../../../.. = workspace root (approximate)
-    for _ in 0..5 {
-        api_script.pop();
-        if api_script.join("geneknow_pipeline/enhanced_api_server.py").exists() {
-            break;
+    // Determine if we're running in production (bundled) or development mode
+    let (startup_script, working_dir) = if cfg!(debug_assertions) {
+        // Development mode: use local Python and script
+        log::info!("Running in development mode");
+        
+        // Get the path to the Python script relative to the workspace root
+        let mut api_script = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        
+        // Go up to find the workspace root
+        for _ in 0..5 {
+            api_script.pop();
+            if api_script.join("geneknow_pipeline/enhanced_api_server.py").exists() {
+                break;
+            }
         }
-    }
-    
-    let api_script = api_script.join("geneknow_pipeline/enhanced_api_server.py");
-    
-    // Verify the script exists
-    if !api_script.exists() {
-        return Err(format!("API server script not found at: {:?}", api_script));
-    }
-    
-    log::info!("API server script path: {:?}", api_script);
-
-    // Find the venv Python executable
-    let mut venv_python = api_script.parent()
-        .ok_or("Failed to get parent directory")?
-        .join("venv");
-    
-    #[cfg(target_os = "windows")]
-    let python_exe = venv_python.join("Scripts").join("python.exe");
-    #[cfg(not(target_os = "windows"))]
-    let python_exe = venv_python.join("bin").join("python");
-    
-    // Check if venv exists, otherwise fall back to system Python
-    let python_cmd = if python_exe.exists() {
-        log::info!("Using venv Python at: {:?}", python_exe);
-        python_exe
-    } else {
-        log::warn!("Venv not found, falling back to system Python");
+        
+        let api_script = api_script.join("geneknow_pipeline/enhanced_api_server.py");
+        
+        // Verify the script exists
+        if !api_script.exists() {
+            return Err(format!("API server script not found at: {:?}", api_script));
+        }
+        
+        // In development, use system Python
         #[cfg(target_os = "windows")]
-        let sys_python = PathBuf::from("python");
+        let python_cmd = PathBuf::from("python");
         #[cfg(not(target_os = "windows"))]
-        let sys_python = PathBuf::from("python3");
-        sys_python
+        let python_cmd = PathBuf::from("python3");
+        
+        (python_cmd, api_script.parent().unwrap().to_path_buf())
+    } else {
+        // Production mode: use bundled Python and resources
+        log::info!("Running in production mode");
+        
+        // Get the resource directory from the app bundle
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources");
+        
+        log::info!("Resource directory: {:?}", resource_dir);
+        
+        // Use the appropriate startup script for the platform
+        #[cfg(target_os = "windows")]
+        let startup_script = resource_dir.join("start_api_server.bat");
+        #[cfg(not(target_os = "windows"))]
+        let startup_script = resource_dir.join("start_api_server.sh");
+        
+        if !startup_script.exists() {
+            return Err(format!("Startup script not found at: {:?}", startup_script));
+        }
+        
+        (startup_script.clone(), resource_dir)
     };
 
     // Start the API server
-    let mut cmd = Command::new(python_cmd);
-    let child = cmd
-        .arg(api_script)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to start API server: {}", e))?;
+    let child = if cfg!(debug_assertions) {
+        // Development mode: run Python directly
+        Command::new(&startup_script)
+            .arg("enhanced_api_server.py")
+            .current_dir(&working_dir)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to start API server: {}", e))?
+    } else {
+        // Production mode: run the startup script
+        Command::new(&startup_script)
+            .current_dir(&working_dir)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to start API server: {}", e))?
+    };
 
     // Store the process handle and drop the guard immediately
     {
