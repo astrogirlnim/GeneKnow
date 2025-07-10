@@ -724,7 +724,6 @@ jobs:
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.dmg
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.msi
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.deb
-            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.AppImage
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.exe
           if-no-files-found: error
           retention-days: 1
@@ -754,7 +753,6 @@ jobs:
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.msi" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.deb" -exec cp {} ./release-ready/ \; 2>/dev/null || true
-          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.AppImage" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.exe" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           
           echo "✅ Artifacts prepared for release storage:"
@@ -805,7 +803,6 @@ jobs:
           find ./artifacts -name "*.dmg" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.msi" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.deb" -exec cp {} ./release-assets/ \;
-          find ./artifacts -name "*.AppImage" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.exe" -exec cp {} ./release-assets/ \;
           
           echo "✅ Organized installer files:"
@@ -815,7 +812,7 @@ jobs:
           echo "📊 Platform coverage:"
           echo "🍎 macOS: $(ls ./release-assets/*.dmg 2>/dev/null | wc -l) installers"
           echo "🪟 Windows: $(ls ./release-assets/*.msi 2>/dev/null | wc -l) MSI + $(ls ./release-assets/*.exe 2>/dev/null | wc -l) EXE"
-          echo "🐧 Linux: $(ls ./release-assets/*.deb 2>/dev/null | wc -l) DEB + $(ls ./release-assets/*.AppImage 2>/dev/null | wc -l) AppImage"
+          echo "🐧 Linux: $(ls ./release-assets/*.deb 2>/dev/null | wc -l) DEB packages"
 
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -842,7 +839,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Available Downloads" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐧 **Linux**: .deb and .AppImage installers" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐧 **Linux**: .deb packages" >> $GITHUB_STEP_SUMMARY
           echo "- 🪟 **Windows**: .msi and .exe installers" >> $GITHUB_STEP_SUMMARY
           echo "- 🍎 **macOS**: .dmg installer (Universal Binary)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
