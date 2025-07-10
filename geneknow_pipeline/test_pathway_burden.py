@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import json
+import time
 from datetime import datetime
 
 # Add current directory to path
@@ -290,6 +291,9 @@ def test_performance():
     for pathway_data in CANCER_PATHWAYS.values():
         cancer_genes.extend(pathway_data['genes'])
     
+    # Time the variant creation too
+    creation_start = time.perf_counter()
+    
     # Create 1000 test variants
     for i in range(1000):
         gene = cancer_genes[i % len(cancer_genes)]
@@ -303,30 +307,84 @@ def test_performance():
         )
         large_variants.append(variant)
     
+    creation_time = time.perf_counter() - creation_start
+    
     test_state = {"filtered_variants": large_variants}
     
-    start_time = datetime.now()
-    result = process(test_state)
-    end_time = datetime.now()
+    # Use perf_counter for high-precision timing
+    start_time = time.perf_counter()
     
-    processing_time = (end_time - start_time).total_seconds()
+    # Time individual components - already imported at the top
+    
+    # Test 1: Time damage assessment only
+    damage_start = time.perf_counter()
+    damage_results = []
+    for variant in large_variants[:100]:  # Test first 100
+        damage_results.append(is_damaging_variant(variant))
+    damage_time = time.perf_counter() - damage_start
+    
+    # Test 2: Time full process
+    process_start = time.perf_counter()
+    result = process(test_state)
+    process_time = time.perf_counter() - process_start
+    
+    end_time = time.perf_counter()
+    
+    processing_time = end_time - start_time
     
     print(f"\nPerformance Test Results:")
     print(f"  Variants processed: {len(large_variants)}")
-    print(f"  Processing time: {processing_time:.2f} seconds")
-    print(f"  Variants per second: {len(large_variants) / processing_time:.0f}")
+    print(f"  Variant creation time: {creation_time * 1000:.2f} milliseconds")
+    print(f"  Damage assessment (100 variants): {damage_time * 1000:.2f} milliseconds")
+    print(f"  Damage assessment rate: {100 / damage_time:.0f} variants/second")
+    
+    # Show more precise timing for fast operations
+    if process_time < 0.01:
+        print(f"  Full pathway burden analysis: {process_time * 1000:.2f} milliseconds")
+    else:
+        print(f"  Full pathway burden analysis: {process_time:.2f} seconds")
+    
+    # Ensure we don't divide by zero
+    if process_time > 0:
+        print(f"  Analysis rate: {len(large_variants) / process_time:.0f} variants/second")
+    else:
+        print(f"  Analysis rate: >1,000,000 (too fast to measure accurately)")
+    
+    print(f"\nWork actually performed:")
     print(f"  Total damaging variants found: {result['pathway_burden_summary']['total_damaging_variants']}")
+    print(f"  Pathways analyzed: {result['pathway_burden_summary']['pathways_analyzed']}")
+    print(f"  High burden pathways: {len(result['pathway_burden_summary']['high_burden_pathways'])}")
+    print(f"  Multi-pathway genes: {len(result['pathway_burden_summary']['multi_pathway_genes'])}")
+    
+    # Verify some actual results to ensure work was done
+    dna_repair_result = result['pathway_burden_results'].get('dna_repair', {})
+    print(f"\nExample pathway (DNA repair):")
+    print(f"  Variants in pathway: {dna_repair_result.get('total_variants', 0)}")
+    print(f"  Damaging variants: {dna_repair_result.get('damaging_variants', 0)}")
+    print(f"  Burden score: {dna_repair_result.get('burden_score', 0):.3f}")
     
     # Performance should be reasonable
-    variants_per_second = len(large_variants) / processing_time
-    if variants_per_second > 100:
-        print(f"  ✅ Performance: GOOD ({variants_per_second:.0f} variants/sec)")
-    elif variants_per_second > 50:
-        print(f"  ⚠️  Performance: MODERATE ({variants_per_second:.0f} variants/sec)")
+    if process_time > 0:
+        variants_per_second = len(large_variants) / process_time
+        if variants_per_second > 100:
+            print(f"\n  ✅ Performance: GOOD ({variants_per_second:.0f} variants/sec)")
+        elif variants_per_second > 50:
+            print(f"  ⚠️  Performance: MODERATE ({variants_per_second:.0f} variants/sec)")
+        else:
+            print(f"  ❌ Performance: SLOW ({variants_per_second:.0f} variants/sec)")
     else:
-        print(f"  ❌ Performance: SLOW ({variants_per_second:.0f} variants/sec)")
+        print(f"\n  ✅ Performance: EXCELLENT (processing completed in <1ms)")
     
-    return processing_time
+    # Let's also test with a smaller dataset to see if timing scales linearly
+    print(f"\nScaling test:")
+    for size in [100, 500, 2000]:
+        test_variants = large_variants[:size] if size <= 1000 else large_variants * (size // 1000)
+        small_start = time.perf_counter()
+        process({"filtered_variants": test_variants})
+        small_time = time.perf_counter() - small_start
+        print(f"  {size} variants: {small_time * 1000:.2f} ms ({size / small_time:.0f} variants/sec)")
+    
+    return process_time
 
 def run_all_tests():
     """Run all pathway burden tests."""
@@ -356,7 +414,10 @@ def run_all_tests():
             json.dump(serializable_result, f, indent=2)
         
         print(f"\n💾 Detailed results saved to: {output_file}")
-        print(f"🚀 Processing time: {processing_time:.2f} seconds")
+        if processing_time < 0.01:
+            print(f"🚀 Processing time: {processing_time * 1000:.2f} milliseconds")
+        else:
+            print(f"🚀 Processing time: {processing_time:.2f} seconds")
         
         return True
         

@@ -171,6 +171,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             logger.info("Input is MAF, passing to MAF parser")
             # Import and call MAF parser
             from . import maf_parser
+            # MAF parser will handle its own state updates
             return maf_parser.process(state)
         
         # Check if input is VCF - load variants directly
@@ -203,11 +204,22 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     
                     variants.append(variant_data)
             
+            # Update state with variants
+            updated_fields = {
+                "raw_variants": variants,
+                "variant_count": len(variants)
+            }
+            
+            # Update the actual state
             state["raw_variants"] = variants
             state["variant_count"] = len(variants)
-            logger.info(f"Loaded {len(variants)} variants from VCF")
             state["completed_nodes"].append("preprocess")
-            return state
+            
+            logger.info(f"Loaded {len(variants)} variants from VCF")
+            
+            # Return only the fields this node updates
+            # This is important for LangGraph parallel execution
+            return updated_fields
         
         # For FASTQ files, run alignment
         if file_type == "fastq":
@@ -254,6 +266,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         state["completed_nodes"].append("preprocess")
         logger.info(f"Preprocessing complete. BAM path: {state['aligned_bam_path']}")
         
+        # For FASTQ/BAM files, return only the fields we updated
+        return {
+            "aligned_bam_path": state["aligned_bam_path"],
+            "file_metadata": state["file_metadata"]
+        }
+        
     except Exception as e:
         logger.error(f"Preprocessing failed: {str(e)}")
         state["errors"].append({
@@ -262,5 +280,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "timestamp": datetime.now()
         })
         state["pipeline_status"] = "failed"
+        
+        # Return error state
+        return {
+            "errors": state["errors"],
+            "pipeline_status": state["pipeline_status"]
+        }
     
-    return state 
+    # This should never be reached
+    return {} 
