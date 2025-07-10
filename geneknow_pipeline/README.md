@@ -6,8 +6,9 @@ A genomic risk assessment pipeline built with LangGraph for processing FASTQ, BA
 
 **All nodes have real implementations!** No more mock data.
 **Enhanced API Server available** with real-time progress tracking and WebSocket support!
+**ML Fusion Models NOW INTEGRATED!** Using trained gradient boosting models for sophisticated risk prediction.
 
-### ✅ Implemented Nodes (14/14)
+### ✅ Implemented Nodes (15/15)
 
 1. **file_input** - BioPython/pysam validation
 2. **preprocess** - BWA alignment for FASTQ, VCF variant loading, MAF parsing
@@ -20,9 +21,10 @@ A genomic risk assessment pipeline built with LangGraph for processing FASTQ, BA
 9. **prs_calculator** - Polygenic Risk Score calculation from GWAS data
 10. **pathway_burden** - Gene/pathway-level variant burden analysis
 11. **feature_vector_builder** - Combines outputs from static models for ML input
-12. **risk_model** - Scikit-learn ML models trained on cancer genes
-13. **formatter** - JSON structuring for frontend
-14. **report_writer** - Structured report sections for frontend
+12. **ml_fusion** - Advanced ML fusion layer combining all 5 static model outputs
+13. **risk_model** - Cancer risk calculation using ML fusion predictions
+14. **formatter** - JSON structuring for frontend
+15. **report_writer** - Structured report sections for frontend
 
 ### 🔄 Pipeline Architecture
 
@@ -48,7 +50,11 @@ Population Mapper
     ↓
 Merge Static Models (Feature Consolidation)
     ↓
-Feature Vector Builder → Risk Model → Formatter
+Feature Vector Builder
+    ↓
+ML Fusion (Gradient Boosting Model)
+    ↓
+Risk Model → Formatter
     ↓
 Report Writer
 ```
@@ -57,7 +63,8 @@ Report Writer
 
 - **Multiple file formats**: FASTQ, BAM, VCF, MAF
 - **Parallel execution paths** based on input type
-- **Real ML risk models** for 5 cancer types
+- **ML Fusion Model** - Advanced gradient boosting model combining 5 static risk assessments
+- **Real ML risk models** for 5 cancer types with sophisticated pathogenicity prediction
 - **TCGA database** with 2,828 patient cohort data
 - **Structured JSON output** for easy frontend integration
 - **RESTful API** for Tauri integration

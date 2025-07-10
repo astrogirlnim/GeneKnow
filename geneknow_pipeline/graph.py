@@ -22,6 +22,7 @@ try:
         feature_vector_builder,
         prs_calculator,
         pathway_burden,
+        ml_fusion_node,
         risk_model,
         formatter,
         report_writer
@@ -41,6 +42,7 @@ except ImportError:
         feature_vector_builder,
         prs_calculator,
         pathway_burden,
+        ml_fusion_node,
         risk_model,
         formatter,
         report_writer
@@ -387,6 +389,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("merge_static_models", merge_static_model_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("prs_calculator", prs_calculator.process)
+    workflow.add_node("ml_fusion", ml_fusion_node.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -428,8 +431,9 @@ def create_genomic_pipeline() -> StateGraph:
     # Continue with feature vector building after merge
     workflow.add_edge("merge_static_models", "feature_vector_builder")
     
-    # Feature vector builder feeds directly into risk model
-    workflow.add_edge("feature_vector_builder", "risk_model")
+    # Feature vector builder -> ML fusion -> risk model
+    workflow.add_edge("feature_vector_builder", "ml_fusion")
+    workflow.add_edge("ml_fusion", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")

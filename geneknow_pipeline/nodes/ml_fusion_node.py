@@ -18,7 +18,8 @@ import logging
 sys.path.append(str(Path(__file__).parent.parent / 'ml_models'))
 
 from fusion_layer import FusionLayer, StaticModelInputs, FusionOutput
-from ..state import GeneKnowState
+# Use Dict instead of GeneKnowState for compatibility
+from typing import Dict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +65,7 @@ class MLFusionNode:
             logger.error(f"Error loading fusion model: {e}")
             self.is_loaded = False
     
-    def _extract_static_model_outputs(self, state: GeneKnowState) -> List[StaticModelInputs]:
+    def _extract_static_model_outputs(self, state: Dict[str, Any]) -> List[StaticModelInputs]:
         """
         Extract static model outputs from the pipeline state.
         
@@ -76,11 +77,14 @@ class MLFusionNode:
         """
         static_inputs = []
         
-        # Get variants from state
-        variants = state.get('variants', [])
+        # Get ML-ready variants from feature vector builder
+        variants = state.get('ml_ready_variants', [])
         if not variants:
-            logger.warning("No variants found in pipeline state")
-            return static_inputs
+            # Fallback to filtered_variants if ml_ready_variants not available
+            variants = state.get('filtered_variants', [])
+            if not variants:
+                logger.warning("No variants found in pipeline state")
+                return static_inputs
         
         for variant in variants:
             # Extract PRS score (default to population average if not available)
@@ -213,7 +217,7 @@ class MLFusionNode:
             'individual_risk_scores': risk_scores
         }
     
-    def process(self, state: GeneKnowState) -> GeneKnowState:
+    def process(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process the ML fusion step of the pipeline.
         
@@ -287,7 +291,7 @@ class MLFusionNode:
         return state
 
 # LangGraph node function
-def ml_fusion_node(state: GeneKnowState) -> GeneKnowState:
+def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     LangGraph node function for ML fusion processing.
     
@@ -311,7 +315,7 @@ def create_ml_fusion_node(model_path: str = None):
     Returns:
         Configured ML fusion node function
     """
-    def custom_ml_fusion_node(state: GeneKnowState) -> GeneKnowState:
+    def custom_ml_fusion_node(state: Dict[str, Any]) -> Dict[str, Any]:
         fusion_node = MLFusionNode(model_path=model_path)
         return fusion_node.process(state)
     
@@ -342,7 +346,7 @@ if __name__ == "__main__":
     }
     
     # Process with fusion node
-    result_state = ml_fusion_node(mock_state)
+    result_state = process(mock_state)
     
     # Print results
     if 'ml_fusion_results' in result_state:

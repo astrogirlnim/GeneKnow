@@ -1,143 +1,145 @@
 """
-Feature vector builder node (STUB).
-Collects outputs from all static risk model nodes and builds a unified feature vector.
-Currently a passthrough - will be implemented when all 5 models are ready.
+Feature vector builder node.
+Collects outputs from all static risk model nodes and builds feature vectors for ML fusion.
 """
 import logging
 from datetime import datetime
 from typing import Dict, Any, List
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Feature vector builder node (STUB).
+    Build feature vectors from all static model outputs for ML fusion.
     
-    Future: Will build feature vectors from all 5 static models:
+    Prepares variants with scores from:
     - PRS (Polygenic Risk Scores)
     - ClinVar annotations  
     - CADD scores
     - TCGA frequency matching
     - Gene/Pathway burden
-    
-    For now: Analyzes available data without modifying filtered_variants
-    (since merge node already combined parallel results).
     """
-    logger.info("Starting feature vector builder (STUB)")
+    logger.info("Building comprehensive feature vectors from static models")
     state["current_node"] = "feature_vector_builder"
     
     try:
-        # Use the merged variants from the parallel processing
-        # Don't modify filtered_variants since merge node already handled this
+        # Get merged variants with all annotations
         filtered_variants = state.get("filtered_variants", [])
         
-        # Debug logging to understand the actual variant content
+        # Get state-level scores
+        prs_results = state.get("prs_results", {})
+        prs_summary = state.get("prs_summary", {})
+        pathway_burden_results = state.get("pathway_burden_results", {})
+        pathway_burden_summary = state.get("pathway_burden_summary", {})
+        
         logger.info(f"Feature vector builder received {len(filtered_variants)} variants")
-        if filtered_variants and len(filtered_variants) > 0:
-            # Log details of first few variants
-            for i, variant in enumerate(filtered_variants[:3]):
-                logger.info(f"Variant {i+1} sample:")
-                logger.info(f"  Keys: {sorted(variant.keys())}")
-                logger.info(f"  Gene: {variant.get('gene', 'N/A')}")
-                logger.info(f"  CADD PHRED: {variant.get('cadd_phred', 'MISSING')}")
-                logger.info(f"  TCGA relevance: {variant.get('tcga_cancer_relevance', 'MISSING')}")
-                logger.info(f"  ClinVar significance: {variant.get('clinvar_clinical_significance', 'MISSING')}")
-                logger.info(f"  Has pathway_damage_assessment: {'pathway_damage_assessment' in variant}")
         
-        # Log what we have so far
+        # Prepare enriched variants for ML fusion
+        ml_ready_variants = []
+        
+        for variant in filtered_variants:
+            # Create enhanced variant with all scores needed for ML fusion
+            enhanced_variant = variant.copy()
+            
+            # 1. PRS Score - use highest cancer-specific PRS as proxy
+            # Since PRS is population-level, we'll use the highest risk score
+            prs_scores = []
+            for cancer_type, prs_data in prs_results.items():
+                raw_score = prs_data.get("raw_score", 0.0)
+                percentile = prs_data.get("percentile", 50) / 100.0
+                # Use percentile as normalized PRS score
+                prs_scores.append(percentile)
+            
+            enhanced_variant["prs_score"] = max(prs_scores) if prs_scores else 0.5
+            
+            # 2. ClinVar classification
+            clinvar_sig = variant.get("clinvar_clinical_significance")
+            if clinvar_sig:
+                enhanced_variant["clinvar"] = {
+                    "clinical_significance": clinvar_sig,
+                    "risk_score": variant.get("clinvar_risk_score", 0.0),
+                    "interpretation": variant.get("clinvar_interpretation", "unknown")
+                }
+            else:
+                enhanced_variant["clinvar"] = {
+                    "clinical_significance": "not_found",
+                    "risk_score": 0.0,
+                    "interpretation": "not_found"
+                }
+            
+            # 3. CADD Score
+            cadd_phred = variant.get("cadd_phred", 0.0)
+            enhanced_variant["cadd_score"] = float(cadd_phred)
+            
+            # 4. TCGA Enrichment
+            tcga_relevance = variant.get("tcga_cancer_relevance", 0.0)
+            tcga_match = variant.get("tcga_best_match", {})
+            if tcga_match:
+                # Use enrichment score if available
+                enhanced_variant["tcga_enrichment"] = tcga_match.get("enrichment", 1.0)
+            else:
+                # Otherwise use cancer relevance
+                enhanced_variant["tcga_enrichment"] = max(tcga_relevance * 10.0, 1.0)
+            
+            # 5. Gene/Pathway Burden Score
+            pathway_damage = variant.get("pathway_damage_assessment", {})
+            if pathway_damage:
+                enhanced_variant["gene_burden_score"] = pathway_damage.get("damage_score", 0.0)
+            else:
+                # Fallback: calculate from pathway burden results
+                gene = variant.get("gene", "")
+                burden_score = 0.0
+                for pathway_name, pathway_data in pathway_burden_results.items():
+                    if gene in pathway_data.get("damaging_genes", []):
+                        burden_score = max(burden_score, pathway_data.get("burden_score", 0.0))
+                enhanced_variant["gene_burden_score"] = burden_score
+            
+            # Add additional metadata for risk calculation
+            enhanced_variant["is_high_impact"] = (
+                cadd_phred > 20 or 
+                "pathogenic" in str(clinvar_sig).lower() or
+                burden_score > 0.5
+            )
+            
+            ml_ready_variants.append(enhanced_variant)
+        
+        # Log feature extraction summary
         logger.info("=" * 60)
-        logger.info("Feature Vector Builder - Current Inputs:")
+        logger.info("Feature Vector Builder Summary:")
+        logger.info(f"  Total variants: {len(ml_ready_variants)}")
+        logger.info(f"  Variants with PRS data: {sum(1 for v in ml_ready_variants if v.get('prs_score', 0) != 0.5)}")
+        logger.info(f"  Variants with ClinVar: {sum(1 for v in ml_ready_variants if v['clinvar']['clinical_significance'] != 'not_found')}")
+        logger.info(f"  Variants with CADD > 20: {sum(1 for v in ml_ready_variants if v.get('cadd_score', 0) > 20)}")
+        logger.info(f"  Variants with TCGA enrichment > 2: {sum(1 for v in ml_ready_variants if v.get('tcga_enrichment', 1) > 2)}")
+        logger.info(f"  Variants with pathway burden > 0: {sum(1 for v in ml_ready_variants if v.get('gene_burden_score', 0) > 0)}")
+        logger.info(f"  High impact variants: {sum(1 for v in ml_ready_variants if v.get('is_high_impact', False))}")
         
-        # CADD scores
-        if "cadd_stats" in state:
-            logger.info(f"✓ CADD scores available: {state['cadd_stats'].get('variants_scored', 0)} variants")
-            logger.info(f"  Mean PHRED: {state['cadd_stats'].get('mean_phred', 0):.1f}")
-            logger.info(f"  Max PHRED: {state['cadd_stats'].get('max_phred', 0):.1f}")
-            logger.info(f"  Cancer gene variants: {state['cadd_stats'].get('variants_in_cancer_genes', 0)}")
-        else:
-            logger.info("✗ CADD scores not available")
+        # Log a sample variant
+        if ml_ready_variants:
+            sample = ml_ready_variants[0]
+            logger.info("Sample ML-ready variant:")
+            logger.info(f"  Gene: {sample.get('gene', 'N/A')}")
+            logger.info(f"  PRS score: {sample.get('prs_score', 'N/A')}")
+            logger.info(f"  ClinVar: {sample['clinvar']['clinical_significance']}")
+            logger.info(f"  CADD score: {sample.get('cadd_score', 'N/A')}")
+            logger.info(f"  TCGA enrichment: {sample.get('tcga_enrichment', 'N/A')}")
+            logger.info(f"  Gene burden: {sample.get('gene_burden_score', 'N/A')}")
         
-        # PRS scores  
-        if "prs_results" in state:
-            logger.info(f"✓ PRS scores available: {len(state.get('prs_results', {}))} cancer types")
-            prs_summary = state.get('prs_summary', {})
-            if prs_summary:
-                logger.info(f"  Overall PRS confidence: {prs_summary.get('overall_confidence', 'unknown')}")
-        else:
-            logger.info("✗ PRS scores not available")
-        
-        # ClinVar annotations 
-        if "clinvar_stats" in state:
-            logger.info(f"✓ ClinVar annotations available: {state['clinvar_stats'].get('variants_annotated', 0)} variants")
-            logger.info(f"  Pathogenic variants: {state['clinvar_stats'].get('pathogenic_variants', 0)}")
-            logger.info(f"  Likely pathogenic variants: {state['clinvar_stats'].get('likely_pathogenic_variants', 0)}")
-            logger.info(f"  Cancer-related variants: {state['clinvar_stats'].get('cancer_related_variants', 0)}")
-        else:
-            logger.info("✗ ClinVar annotations not available")
-        
-        # TCGA frequency matches (existing, need to integrate)
-        if "tcga_matches" in state:
-            logger.info(f"✓ TCGA matches available: {len(state.get('tcga_matches', {}))} cancer types")
-        else:
-            logger.info("✗ TCGA matches not available")
-        
-        # Gene/Pathway burden
-        if "pathway_burden_results" in state:
-            pathway_results = state.get("pathway_burden_results", {})
-            pathway_summary = state.get("pathway_burden_summary", {})
-            logger.info(f"✓ Pathway burden analysis available: {len(pathway_results)} pathways")
-            if pathway_summary:
-                logger.info(f"  Overall burden score: {pathway_summary.get('overall_burden_score', 0):.3f}")
-                high_burden = pathway_summary.get('high_burden_pathways', [])
-                if high_burden:
-                    logger.info(f"  High burden pathways: {', '.join(high_burden)}")
-        else:
-            logger.info("✗ Pathway burden analysis not available")
         logger.info("=" * 60)
         
-        # Count variants with each type of annotation
-        variants_with_cadd = sum(1 for v in filtered_variants if "cadd_phred" in v)
-        variants_with_population = sum(1 for v in filtered_variants if "population_frequency" in v)
-        variants_with_pathogenic = sum(1 for v in filtered_variants if v.get("is_pathogenic"))
-        variants_with_tcga = sum(1 for v in filtered_variants if v.get("tcga_cancer_relevance"))
-        variants_with_clinvar = sum(1 for v in filtered_variants if v.get("clinvar_clinical_significance"))
-        variants_with_pathway_burden = sum(1 for v in filtered_variants if "pathway_damage_assessment" in v)
-        
-        logger.info(f"Variant annotation summary:")
-        logger.info(f"  Total variants: {len(filtered_variants)}")
-        logger.info(f"  With CADD scores: {variants_with_cadd}")
-        logger.info(f"  With population data: {variants_with_population}")
-        logger.info(f"  With TCGA relevance: {variants_with_tcga}")
-        logger.info(f"  With ClinVar annotations: {variants_with_clinvar}")
-        logger.info(f"  With pathway burden assessment: {variants_with_pathway_burden}")
-        logger.info(f"  Pathogenic: {variants_with_pathogenic}")
-        
-        # For now, just pass through
-        # In future, build actual feature vector here
+        # Update state with ML-ready variants
+        state["ml_ready_variants"] = ml_ready_variants
         state["feature_vector"] = {
-            "status": "stub",
-            "message": "Feature vector builder not yet implemented",
-            "available_inputs": {
-                "cadd": "cadd_stats" in state,
-                "prs": "prs_results" in state,
-                "clinvar": "clinvar_stats" in state,
-                "tcga": "tcga_matches" in state,
-                "pathway_burden": "pathway_burden_results" in state
-            },
-            "annotation_summary": {
-                "total_variants": len(filtered_variants),
-                "with_cadd": variants_with_cadd,
-                "with_population": variants_with_population,
-                "with_tcga": variants_with_tcga,
-                "with_clinvar": variants_with_clinvar,
-                "with_pathway_burden": variants_with_pathway_burden,
-                "pathogenic": variants_with_pathogenic
-            }
+            "status": "complete",
+            "variant_count": len(ml_ready_variants),
+            "features_extracted": ["prs_score", "clinvar", "cadd_score", "tcga_enrichment", "gene_burden_score"],
+            "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False))
         }
         
         state["completed_nodes"].append("feature_vector_builder")
-        logger.info("Feature vector builder complete (passthrough)")
+        logger.info("Feature vector builder complete - data ready for ML fusion")
         
     except Exception as e:
         logger.error(f"Feature vector builder failed: {str(e)}")
@@ -146,5 +148,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "error": str(e),
             "timestamp": datetime.now()
         })
+        # Provide empty results so pipeline can continue
+        state["ml_ready_variants"] = []
+        state["feature_vector"] = {"status": "failed", "error": str(e)}
     
     return state 
