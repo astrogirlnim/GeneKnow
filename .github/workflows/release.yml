@@ -44,11 +44,11 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🧹 Delete old artifacts (AGGRESSIVE)
+      - name: 🧹 Delete old artifacts (ULTRA AGGRESSIVE)
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('🧹 Starting AGGRESSIVE artifact cleanup to free storage...');
+            console.log('🧹 Starting ULTRA AGGRESSIVE artifact cleanup to free storage...');
             
             // Get all artifacts
             const artifacts = await github.rest.actions.listArtifactsForRepo({
@@ -64,21 +64,22 @@ jobs:
               new Date(b.created_at) - new Date(a.created_at)
             );
             
-            // AGGRESSIVE CLEANUP: Keep only the most recent 3 artifacts
+            // ULTRA AGGRESSIVE CLEANUP: Keep only the SINGLE most recent artifact
             let deletedCount = 0;
             let preservedCount = 0;
+            let totalSizeFreed = 0;
             
             for (let i = 0; i < sortedArtifacts.length; i++) {
               const artifact = sortedArtifacts[i];
               const sizeMB = Math.round(artifact.size_in_bytes / 1024 / 1024);
               
-              if (i < 3) {
-                // Keep the 3 most recent artifacts
-                console.log(`🔒 Keeping artifact: ${artifact.name} (${sizeMB}MB) - Recent artifact #${i+1}`);
+              if (i < 1) {
+                // Keep only the SINGLE most recent artifact
+                console.log(`🔒 Keeping artifact: ${artifact.name} (${sizeMB}MB) - Most recent artifact`);
                 preservedCount++;
               } else {
-                // Delete all older artifacts
-                console.log(`🗑️  Deleting artifact: ${artifact.name} (${sizeMB}MB) - Older than 3 most recent`);
+                // Delete ALL other artifacts
+                console.log(`🗑️  Deleting artifact: ${artifact.name} (${sizeMB}MB)`);
                 try {
                   await github.rest.actions.deleteArtifact({
                     owner: context.repo.owner,
@@ -86,16 +87,18 @@ jobs:
                     artifact_id: artifact.id
                   });
                   deletedCount++;
+                  totalSizeFreed += sizeMB;
                 } catch (error) {
                   console.log(`⚠️  Failed to delete ${artifact.name}: ${error.message}`);
                 }
               }
             }
             
-            console.log(`✅ AGGRESSIVE cleanup completed!`);
-            console.log(`🗑️  Deleted ${deletedCount} old artifacts`);
-            console.log(`🔒 Preserved ${preservedCount} recent artifacts`);
-            console.log(`💾 Storage should now be available for new builds`);
+            console.log(`✅ ULTRA AGGRESSIVE cleanup completed!`);
+            console.log(`🗑️  Deleted ${deletedCount} artifacts`);
+            console.log(`💾 Freed approximately ${totalSizeFreed}MB of storage`);
+            console.log(`🔒 Preserved ${preservedCount} recent artifact`);
+            console.log(`🚀 Maximum storage now available for new builds`);
 
   # 🏷️ Version Management
   version:
@@ -598,7 +601,7 @@ jobs:
             desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.AppImage
             desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.exe
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
           compression-level: 9
 
       - name: 📊 Build summary

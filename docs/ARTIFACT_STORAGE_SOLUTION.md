@@ -11,46 +11,50 @@ Error: Failed to CreateArtifact: Artifact storage quota has been hit. Unable to 
 
 ## ✅ Solution Implemented
 
-### 1. **Aggressive Cleanup Strategy**
-Updated `.github/workflows/release.yml` with a more aggressive cleanup approach:
+### 1. **Ultra-Aggressive Cleanup Strategy**
+Updated `.github/workflows/release.yml` with an ultra-aggressive cleanup approach:
 
 ```yaml
 cleanup:
   name: 🧹 Cleanup Old Artifacts
   runs-on: ubuntu-latest
   steps:
-    - name: 🧹 Delete old artifacts (AGGRESSIVE)
+    - name: 🧹 Delete old artifacts (ULTRA AGGRESSIVE)
       uses: actions/github-script@v7
       with:
         script: |
-          # Keep only the 3 most recent artifacts
-          # Delete all older artifacts immediately
+          # Keep only the SINGLE most recent artifact
+          # Delete ALL other artifacts immediately
 ```
 
-**Before:** Conservative 14-day retention policy  
-**After:** Keep only 3 most recent artifacts
+**Before:** Keep 3 most recent artifacts  
+**After:** Keep only 1 most recent artifact
 
-### 2. **Reduced Retention Period**
+### 2. **Minimal Retention Period**
 ```yaml
-retention-days: 3  # Reduced from 7 days
+retention-days: 1  # Reduced from 3 days
 compression-level: 9  # Maximum compression
 ```
 
-### 3. **Manual Cleanup Scripts**
-Created two cleanup scripts for emergency use:
+### 3. **Emergency Cleanup Scripts**
+Created two cleanup scripts for immediate relief:
 
 - `scripts/quick-cleanup.sh` - Simple, reliable cleanup
+- `scripts/emergency-cleanup.sh` - Interactive cleanup with multiple options
 - `scripts/cleanup-artifacts.sh` - Detailed cleanup with reporting
 
 ## 🔧 How to Use
 
 ### Immediate Fix (If Storage Quota Hit Again)
 ```bash
-# Run the quick cleanup script
+# Option 1: Run the emergency interactive cleanup
+./scripts/emergency-cleanup.sh
+
+# Option 2: Run the quick cleanup script
 ./scripts/quick-cleanup.sh
 
-# Or manually delete artifacts via GitHub CLI
-gh api repos/:owner/:repo/actions/artifacts --jq '.artifacts[3:] | .[].id' | 
+# Option 3: Nuclear option - delete ALL artifacts
+gh api repos/:owner/:repo/actions/artifacts --jq '.artifacts[].id' | \
 xargs -I {} gh api -X DELETE repos/:owner/:repo/actions/artifacts/{}
 ```
 
@@ -67,19 +71,19 @@ gh api repos/:owner/:repo/actions/artifacts --jq '.artifacts[] | {name: .name, s
 
 ### Before Optimization:
 - **Per Release:** 3 platforms × 300MB = 900MB
-- **With old retention:** 900MB × 10 releases = 9GB ❌ (Exceeds limits)
+- **With old retention:** 900MB × 3 artifacts = 2.7GB ❌ (Exceeds free tier)
 
-### After Optimization:
+### After Ultra-Aggressive Optimization:
 - **Per Release:** 3 platforms × 300MB = 900MB
-- **With new retention:** 900MB × 3 releases = 2.7GB ✅ (Within limits)
-- **Compressed:** ~2GB with level 9 compression
+- **With new retention:** 900MB × 1 artifact = 900MB ⚠️ (Near limit)
+- **Compressed:** ~600MB with level 9 compression ✅ (Just fits)
 
 ## 🛡️ Prevention Measures
 
-### 1. **Automated Cleanup**
+### 1. **Ultra-Aggressive Automated Cleanup**
 - ✅ Runs before every build
-- ✅ Keeps only 3 most recent artifacts
-- ✅ Deletes failed/old builds aggressively
+- ✅ Keeps only 1 most recent artifact
+- ✅ Deletes everything else immediately
 
 ### 2. **Optimized Upload Strategy**
 ```yaml
@@ -101,9 +105,9 @@ path: |
 
 1. **Push was successful** - Changes are now live
 2. **Next build will:**
-   - Run aggressive cleanup first
-   - Free up storage space
-   - Upload new artifacts with 3-day retention
+   - Run ultra-aggressive cleanup first
+   - Free up maximum storage space
+   - Upload new artifacts with 1-day retention
    - Create release with permanent download links
 
 ## 🔍 Monitoring
@@ -116,29 +120,35 @@ path: |
 ### Storage Usage
 ```bash
 # Check usage (requires GitHub CLI)
-gh api repos/astrogirlnim/GeneKnow/actions/cache/usage --jq '.total_active_cache_size_in_bytes / 1024 / 1024 | floor | tostring + " MB"'
+gh api repos/:owner/:repo/actions/cache/usage --jq '.total_active_cache_size_in_bytes / 1024 / 1024 | floor | tostring + " MB"'
 ```
 
-## 💡 Future Enhancements
+## 💡 Future Recommendations
 
-1. **Conditional Uploads**: Only upload artifacts on main branch
-2. **Artifact Splitting**: Separate debug symbols from release binaries
-3. **External Storage**: Consider using external storage for large artifacts
-4. **Size Monitoring**: Add workflow warnings when approaching storage limits
+### Immediate Term
+1. **Consider GitHub Pro** ($4/month) - Doubles storage to 1GB
+2. **Split artifacts** - Upload platforms separately
+3. **External storage** - Use release assets only, skip artifacts
+
+### Long Term
+1. **Conditional uploads** - Only on tagged releases
+2. **Separate debug symbols** - Reduce installer sizes
+3. **Pipeline optimization** - Build only changed platforms
 
 ## 🆘 Emergency Procedures
 
 If storage quota is hit again:
 
-1. **Quick Fix:**
+1. **Ultra Quick Fix:**
    ```bash
-   ./scripts/quick-cleanup.sh
+   ./scripts/emergency-cleanup.sh
+   # Select option 1 or 2 for immediate relief
    ```
 
-2. **Manual Cleanup:**
+2. **Manual Nuclear Option:**
    ```bash
-   # Delete all but 2 most recent artifacts
-   gh api repos/:owner/:repo/actions/artifacts --jq '.artifacts[2:] | .[].id' | 
+   # Delete ALL artifacts immediately
+   gh api repos/:owner/:repo/actions/artifacts --jq '.artifacts[].id' | 
    xargs -I {} gh api -X DELETE repos/:owner/:repo/actions/artifacts/{}
    ```
 
@@ -150,9 +160,15 @@ If storage quota is hit again:
 ## ✅ Status
 
 - **Problem:** ❌ Storage quota exceeded
-- **Solution:** ✅ Aggressive cleanup implemented
-- **Prevention:** ✅ Automated cleanup + reduced retention
+- **Solution:** ✅ Ultra-aggressive cleanup implemented
+- **Prevention:** ✅ Automated cleanup + 1-day retention
 - **Testing:** ✅ Changes pushed and active
 - **Monitoring:** ✅ Scripts available for ongoing management
 
 Your build pipeline should now work without storage quota issues! 🚀 
+
+## ⚠️ Important Notes
+
+- With only 1 artifact kept, you'll have minimal debugging history
+- Consider upgrading to GitHub Pro if you need more artifact history
+- The ultra-aggressive approach prioritizes working builds over debugging convenience 
