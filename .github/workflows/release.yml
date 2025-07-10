@@ -44,11 +44,11 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🧹 Delete old artifacts (AGGRESSIVE)
+      - name: 🧹 Delete old artifacts (ULTRA AGGRESSIVE)
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('🧹 Starting AGGRESSIVE artifact cleanup to free storage...');
+            console.log('🧹 Starting ULTRA AGGRESSIVE artifact cleanup to free storage...');
             
             // Get all artifacts
             const artifacts = await github.rest.actions.listArtifactsForRepo({
@@ -64,21 +64,22 @@ jobs:
               new Date(b.created_at) - new Date(a.created_at)
             );
             
-            // AGGRESSIVE CLEANUP: Keep only the most recent 3 artifacts
+            // ULTRA AGGRESSIVE CLEANUP: Keep only the SINGLE most recent artifact
             let deletedCount = 0;
             let preservedCount = 0;
+            let totalSizeFreed = 0;
             
             for (let i = 0; i < sortedArtifacts.length; i++) {
               const artifact = sortedArtifacts[i];
               const sizeMB = Math.round(artifact.size_in_bytes / 1024 / 1024);
               
-              if (i < 3) {
-                // Keep the 3 most recent artifacts
-                console.log(`🔒 Keeping artifact: ${artifact.name} (${sizeMB}MB) - Recent artifact #${i+1}`);
+              if (i < 1) {
+                // Keep only the SINGLE most recent artifact
+                console.log(`🔒 Keeping artifact: ${artifact.name} (${sizeMB}MB) - Most recent artifact`);
                 preservedCount++;
               } else {
-                // Delete all older artifacts
-                console.log(`🗑️  Deleting artifact: ${artifact.name} (${sizeMB}MB) - Older than 3 most recent`);
+                // Delete ALL other artifacts
+                console.log(`🗑️  Deleting artifact: ${artifact.name} (${sizeMB}MB)`);
                 try {
                   await github.rest.actions.deleteArtifact({
                     owner: context.repo.owner,
@@ -86,16 +87,18 @@ jobs:
                     artifact_id: artifact.id
                   });
                   deletedCount++;
+                  totalSizeFreed += sizeMB;
                 } catch (error) {
                   console.log(`⚠️  Failed to delete ${artifact.name}: ${error.message}`);
                 }
               }
             }
             
-            console.log(`✅ AGGRESSIVE cleanup completed!`);
-            console.log(`🗑️  Deleted ${deletedCount} old artifacts`);
-            console.log(`🔒 Preserved ${preservedCount} recent artifacts`);
-            console.log(`💾 Storage should now be available for new builds`);
+            console.log(`✅ ULTRA AGGRESSIVE cleanup completed!`);
+            console.log(`🗑️  Deleted ${deletedCount} artifacts`);
+            console.log(`💾 Freed approximately ${totalSizeFreed}MB of storage`);
+            console.log(`🔒 Preserved ${preservedCount} recent artifact`);
+            console.log(`🚀 Maximum storage now available for new builds`);
 
   # 🏷️ Version Management
   version:
@@ -353,10 +356,73 @@ jobs:
           echo "ℹ️  Note: Version files are updated locally for build process only"
           echo "ℹ️  Use ./scripts/bump-version.sh to update version files in repository"
 
+  # 🔍 Platform Change Detection
+  detect-changes:
+    name: 🔍 Detect Platform Changes
+    runs-on: ubuntu-latest
+    outputs:
+      build-linux: ${{ steps.changes.outputs.linux }}
+      build-windows: ${{ steps.changes.outputs.windows }}
+      build-macos: ${{ steps.changes.outputs.macos }}
+      build-all: ${{ steps.changes.outputs.all }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect platform-specific changes
+        id: changes
+        run: |
+          echo "🔍 Analyzing changes to determine which platforms need rebuilding..."
+          
+          # Get the list of changed files since last tag
+          LAST_TAG=$(git tag -l --sort=-version:refname | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found, building all platforms"
+            echo "linux=true" >> $GITHUB_OUTPUT
+            echo "windows=true" >> $GITHUB_OUTPUT
+            echo "macos=true" >> $GITHUB_OUTPUT
+            echo "all=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "📊 Comparing changes since: $LAST_TAG"
+          CHANGED_FILES=$(git diff --name-only $LAST_TAG..HEAD)
+          
+          # Check for core changes that affect all platforms
+          CORE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(desktop/src-tauri/|desktop/ui/|\.github/workflows/release\.yml)" | wc -l)
+          
+          # Check for platform-specific changes
+          LINUX_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.deb|\.AppImage|linux)" | wc -l)
+          WINDOWS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.msi|\.exe|windows)" | wc -l)
+          MACOS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.dmg|macos|darwin)" | wc -l)
+          
+          echo "📋 Change Analysis:"
+          echo "  Core changes: $CORE_CHANGES files"
+          echo "  Linux-specific: $LINUX_CHANGES files"
+          echo "  Windows-specific: $WINDOWS_CHANGES files"
+          echo "  macOS-specific: $MACOS_CHANGES files"
+          
+          # Determine which platforms to build
+          if [ $CORE_CHANGES -gt 0 ]; then
+            echo "🔨 Core changes detected - building all platforms"
+            echo "linux=true" >> $GITHUB_OUTPUT
+            echo "windows=true" >> $GITHUB_OUTPUT
+            echo "macos=true" >> $GITHUB_OUTPUT
+            echo "all=true" >> $GITHUB_OUTPUT
+          else
+            echo "🎯 Platform-specific changes detected"
+            echo "linux=$([[ $LINUX_CHANGES -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "windows=$([[ $WINDOWS_CHANGES -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "macos=$([[ $MACOS_CHANGES -gt 0 ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "all=false" >> $GITHUB_OUTPUT
+          fi
+
   # 🧪 Validation & Testing
   validate:
     name: 🧪 Validation & Testing
-    needs: version
+    needs: [version, detect-changes]
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout code
@@ -430,32 +496,67 @@ jobs:
   # 🔨 Build Multi-Platform Release
   build:
     name: 🔨 Build Release
-    needs: [cleanup, version]
+    needs: [cleanup, version, detect-changes]
     strategy:
       fail-fast: false
       matrix:
-        platform:
+        include:
           - os: ubuntu-latest
             rust-target: x86_64-unknown-linux-gnu
             name: 'Linux x64'
             emoji: '🐧'
+            build-key: 'linux'
           - os: windows-latest
             rust-target: x86_64-pc-windows-msvc
             name: 'Windows x64'
             emoji: '🪟'
+            build-key: 'windows'
           - os: macos-latest
             rust-target: x86_64-apple-darwin
             name: 'macOS x64'
             emoji: '🍎'
-
-    runs-on: ${{ matrix.platform.os }}
+            build-key: 'macos'
+    runs-on: ${{ matrix.os }}
     steps:
+      - name: 🔍 Check if platform needs building
+        id: should-build
+        run: |
+          BUILD_ALL="${{ needs.detect-changes.outputs.build-all }}"
+          BUILD_LINUX="${{ needs.detect-changes.outputs.build-linux }}"
+          BUILD_WINDOWS="${{ needs.detect-changes.outputs.build-windows }}"
+          BUILD_MACOS="${{ needs.detect-changes.outputs.build-macos }}"
+          PLATFORM="${{ matrix.build-key }}"
+          
+          echo "🔍 Platform: $PLATFORM"
+          echo "📊 Build signals - All: $BUILD_ALL, Linux: $BUILD_LINUX, Windows: $BUILD_WINDOWS, macOS: $BUILD_MACOS"
+          
+          SHOULD_BUILD="false"
+          if [ "$BUILD_ALL" = "true" ]; then
+            SHOULD_BUILD="true"
+            echo "✅ Building $PLATFORM - core changes detected"
+          elif [ "$PLATFORM" = "linux" ] && [ "$BUILD_LINUX" = "true" ]; then
+            SHOULD_BUILD="true"
+            echo "✅ Building $PLATFORM - Linux-specific changes detected"
+          elif [ "$PLATFORM" = "windows" ] && [ "$BUILD_WINDOWS" = "true" ]; then
+            SHOULD_BUILD="true"
+            echo "✅ Building $PLATFORM - Windows-specific changes detected"
+          elif [ "$PLATFORM" = "macos" ] && [ "$BUILD_MACOS" = "true" ]; then
+            SHOULD_BUILD="true"
+            echo "✅ Building $PLATFORM - macOS-specific changes detected"
+          else
+            echo "⏭️ Skipping $PLATFORM - no relevant changes detected"
+          fi
+          
+          echo "should-build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
       - name: 📥 Checkout code
+        if: steps.should-build.outputs.should-build == 'true'
         uses: actions/checkout@v4
         with:
           ref: main
 
       - name: 🔄 Update version files for build
+        if: steps.should-build.outputs.should-build == 'true'
         shell: bash
         run: |
           echo "🔄 Updating version files to ${{ needs.version.outputs.version }}..."
@@ -473,23 +574,27 @@ jobs:
           echo "🎯 Version files updated for build process"
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        if: steps.should-build.outputs.should-build == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: 📦 Install pnpm
+        if: steps.should-build.outputs.should-build == 'true'
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
 
       - name: 🦀 Setup Rust ${{ env.RUST_VERSION }}
+        if: steps.should-build.outputs.should-build == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_VERSION }}
-          targets: ${{ matrix.platform.rust-target }}
+          targets: ${{ matrix.rust-target }}
 
       - name: 🚀 Rust cache
+        if: steps.should-build.outputs.should-build == 'true'
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
@@ -527,7 +632,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: 🔧 Install system dependencies (Linux)
-        if: matrix.platform.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           echo "🔧 Installing Linux system dependencies..."
           sudo apt-get update
@@ -554,65 +659,103 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          echo "${{ matrix.platform.emoji }} Building Tauri release for ${{ matrix.platform.name }}..."
-          echo "🎯 Target: ${{ matrix.platform.rust-target }}"
+          echo "${{ matrix.emoji }} Building Tauri release for ${{ matrix.name }}..."
+          echo "🎯 Target: ${{ matrix.rust-target }}"
           echo "📦 Version: ${{ needs.version.outputs.version }}"
           
-          cargo tauri build --target ${{ matrix.platform.rust-target }}
+          cargo tauri build --target ${{ matrix.rust-target }}
           
-          echo "✅ Tauri release build completed for ${{ matrix.platform.name }}"
+          echo "✅ Tauri release build completed for ${{ matrix.name }}"
 
       - name: 📂 Locate build artifacts (Unix)
         id: artifacts-unix
-        if: matrix.platform.os != 'windows-latest'
+        if: matrix.os != 'windows-latest'
         run: |
           echo "📂 Locating build artifacts..."
-          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/"
           
           # Find all bundle files
-          find desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/ -type f -name "*" | sort
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f -name "*" | sort
           
           echo "✅ Build artifacts located"
 
       - name: 📂 Locate build artifacts (Windows)
         id: artifacts-windows
-        if: matrix.platform.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           echo "📂 Locating build artifacts..."
-          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/"
+          echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/"
           
           # Find all bundle files using PowerShell
-          Get-ChildItem -Path "desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName }
+          Get-ChildItem -Path "desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName }
           
           echo "✅ Build artifacts located"
 
       - name: 📤 Upload build artifacts
+        # Only upload artifacts for tagged releases to save storage
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.name }} Build
+          name: ${{ matrix.name }}-${{ needs.version.outputs.version }}
           path: |
-            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.dmg
-            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.msi
-            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.deb
-            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.AppImage
-            desktop/src-tauri/target/${{ matrix.platform.rust-target }}/release/bundle/**/*.exe
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.dmg
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.msi
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.deb
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.AppImage
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.exe
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
           compression-level: 9
 
       - name: 📊 Build summary
         run: |
-          echo "📊 Build completed successfully for ${{ matrix.platform.name }}"
+          echo "📊 Build completed successfully for ${{ matrix.name }}"
           echo "🎯 Version: ${{ needs.version.outputs.version }}"
           echo "🏷️ Tag: ${{ needs.version.outputs.tag }}"
-          echo "📦 Artifacts uploaded to GitHub Actions"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "📦 Artifacts uploaded to GitHub Actions (tagged release)"
+            echo "🏪 Artifacts will be permanently stored in GitHub Release"
+          else
+            echo "📦 Artifacts built but not uploaded (main branch push - saves storage)"
+            echo "🔍 Build validation completed without storage usage"
+          fi
+
+      - name: 🏪 Store artifacts for release (Direct Storage)
+        # For tagged releases, also prepare artifacts for direct release upload
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "🏪 Preparing artifacts for direct release storage..."
+          mkdir -p ./release-ready
+          
+          # Copy all installer files to release-ready directory
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.msi" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.deb" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.AppImage" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.exe" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          
+          echo "✅ Artifacts prepared for release storage:"
+          ls -la ./release-ready/ || echo "No artifacts found"
+
+      - name: 📤 Upload release-ready artifacts
+        # Upload prepared artifacts for the release job
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ready-${{ matrix.name }}-${{ needs.version.outputs.version }}
+          path: ./release-ready/*
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 9
 
   # 🚀 Create GitHub Release
   release:
     name: 🚀 Create GitHub Release
     needs: [version, build]
     runs-on: ubuntu-latest
+    # Only create releases for tagged builds (when artifacts are uploaded)
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -623,6 +766,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
+          pattern: "release-ready-*-${{ needs.version.outputs.version }}"
+          merge-multiple: true
 
       - name: 📂 List artifacts
         run: |
