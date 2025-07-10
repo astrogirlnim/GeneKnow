@@ -1,0 +1,271 @@
+name: 📊 Storage Monitoring & Alerts
+
+on:
+  schedule:
+    # Run every 6 hours to monitor storage usage
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+  workflow_run:
+    # Run after release pipeline completes
+    workflows: ["🚀 Release Pipeline"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  monitor-storage:
+    name: 📊 Monitor Storage Usage
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📊 Check storage usage
+        id: storage-check
+        run: |
+          echo "📊 Checking GitHub Actions storage usage..."
+          
+          # Get current storage usage
+          USAGE_JSON=$(gh api repos/${{ github.repository }}/actions/cache/usage 2>/dev/null || echo '{"total_active_caches_size_in_bytes": 0}')
+          TOTAL_BYTES=$(echo "$USAGE_JSON" | jq -r '.total_active_caches_size_in_bytes // 0')
+          
+          # Get artifact usage
+          ARTIFACTS_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate 2>/dev/null || echo '{"artifacts": []}')
+          ARTIFACT_COUNT=$(echo "$ARTIFACTS_JSON" | jq -r '.artifacts | length')
+          ARTIFACT_SIZE=$(echo "$ARTIFACTS_JSON" | jq -r '[.artifacts[].size_in_bytes] | add // 0')
+          
+          # Calculate totals
+          TOTAL_USAGE=$((TOTAL_BYTES + ARTIFACT_SIZE))
+          
+          # Format sizes
+          format_bytes() {
+            local bytes=$1
+            if [ $bytes -lt 1048576 ]; then
+              echo "$((bytes / 1024))KB"
+            elif [ $bytes -lt 1073741824 ]; then
+              echo "$((bytes / 1048576))MB"
+            else
+              echo "$((bytes / 1073741824))GB"
+            fi
+          }
+          
+          CACHE_SIZE_MB=$((TOTAL_BYTES / 1048576))
+          ARTIFACT_SIZE_MB=$((ARTIFACT_SIZE / 1048576))
+          TOTAL_SIZE_MB=$((TOTAL_USAGE / 1048576))
+          
+          echo "📦 Storage Analysis:"
+          echo "  Cache storage: $(format_bytes $TOTAL_BYTES)"
+          echo "  Artifact storage: $(format_bytes $ARTIFACT_SIZE) ($ARTIFACT_COUNT artifacts)"
+          echo "  Total usage: $(format_bytes $TOTAL_USAGE)"
+          
+          # Determine storage limits based on plan
+          # Note: GitHub API doesn't expose plan info, so we'll assume and adjust
+          FREE_LIMIT_MB=500
+          PRO_LIMIT_MB=1024
+          
+          # Calculate percentages for both plans
+          FREE_PERCENT=$((TOTAL_SIZE_MB * 100 / FREE_LIMIT_MB))
+          PRO_PERCENT=$((TOTAL_SIZE_MB * 100 / PRO_LIMIT_MB))
+          
+          echo "💰 Plan Analysis:"
+          echo "  Free plan usage: ${TOTAL_SIZE_MB}MB / ${FREE_LIMIT_MB}MB (${FREE_PERCENT}%)"
+          echo "  Pro plan usage: ${TOTAL_SIZE_MB}MB / ${PRO_LIMIT_MB}MB (${PRO_PERCENT}%)"
+          
+          # Set alert levels
+          ALERT_LEVEL="none"
+          ALERT_MESSAGE=""
+          
+          if [ $TOTAL_SIZE_MB -gt $FREE_LIMIT_MB ]; then
+            ALERT_LEVEL="critical"
+            ALERT_MESSAGE="🚨 CRITICAL: Over free plan quota! Usage: ${TOTAL_SIZE_MB}MB > ${FREE_LIMIT_MB}MB"
+          elif [ $FREE_PERCENT -gt 90 ]; then
+            ALERT_LEVEL="high"
+            ALERT_MESSAGE="⚠️ HIGH: Near free plan limit! Usage: ${FREE_PERCENT}% of free plan quota"
+          elif [ $FREE_PERCENT -gt 75 ]; then
+            ALERT_LEVEL="medium"
+            ALERT_MESSAGE="📢 MEDIUM: Approaching free plan limit! Usage: ${FREE_PERCENT}% of free plan quota"
+          elif [ $FREE_PERCENT -gt 50 ]; then
+            ALERT_LEVEL="low"
+            ALERT_MESSAGE="📊 LOW: Moderate usage detected. Usage: ${FREE_PERCENT}% of free plan quota"
+          fi
+          
+          # Set outputs
+          echo "total-size-mb=$TOTAL_SIZE_MB" >> $GITHUB_OUTPUT
+          echo "free-percent=$FREE_PERCENT" >> $GITHUB_OUTPUT
+          echo "pro-percent=$PRO_PERCENT" >> $GITHUB_OUTPUT
+          echo "alert-level=$ALERT_LEVEL" >> $GITHUB_OUTPUT
+          echo "alert-message=$ALERT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "artifact-count=$ARTIFACT_COUNT" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 Analyze artifacts
+        id: artifact-analysis
+        run: |
+          echo "🔍 Analyzing artifact details..."
+          
+          # Get detailed artifact information
+          ARTIFACTS_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate 2>/dev/null || echo '{"artifacts": []}')
+          
+          # Find largest artifacts
+          echo "🏆 Largest artifacts:"
+          echo "$ARTIFACTS_JSON" | jq -r '.artifacts | sort_by(.size_in_bytes) | reverse | .[0:5] | .[] | "  \(.name): \(.size_in_bytes / 1048576 | floor)MB (\(.created_at | split("T")[0]))"' || echo "  No artifacts found"
+          
+          # Count by workflow
+          echo ""
+          echo "📊 Artifacts by workflow:"
+          echo "$ARTIFACTS_JSON" | jq -r '.artifacts | group_by(.workflow_run.name) | .[] | "  \(.[0].workflow_run.name): \(length) artifacts, \(([.[].size_in_bytes] | add) / 1048576 | floor)MB"' 2>/dev/null || echo "  No workflow data available"
+          
+          # Check for old artifacts
+          ONE_WEEK_AGO=$(date -d '7 days ago' -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)
+          OLD_ARTIFACTS=$(echo "$ARTIFACTS_JSON" | jq -r --arg date "$ONE_WEEK_AGO" '[.artifacts[] | select(.created_at < $date)] | length')
+          
+          echo ""
+          echo "⏰ Artifact age analysis:"
+          echo "  Artifacts older than 7 days: $OLD_ARTIFACTS"
+          
+          if [ "$OLD_ARTIFACTS" -gt 0 ]; then
+            echo "💡 Recommendation: Run cleanup to remove old artifacts"
+            echo "cleanup-recommended=true" >> $GITHUB_OUTPUT
+          else
+            echo "cleanup-recommended=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📢 Create issue for critical alerts
+        if: steps.storage-check.outputs.alert-level == 'critical'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const alertMessage = '${{ steps.storage-check.outputs.alert-message }}';
+            const totalSize = '${{ steps.storage-check.outputs.total-size-mb }}';
+            const artifactCount = '${{ steps.storage-check.outputs.artifact-count }}';
+            
+            const issueBody = `
+            ## 🚨 Critical Storage Alert
+            
+            **Alert**: ${alertMessage}
+            
+            ### Current Usage
+            - **Total Storage**: ${totalSize}MB
+            - **Artifacts**: ${artifactCount} artifacts
+            - **Status**: ❌ OVER FREE PLAN QUOTA
+            
+            ### Immediate Actions Required
+            
+            1. **Run Emergency Cleanup** (Immediate Relief):
+               \`\`\`bash
+               ./scripts/emergency-cleanup.sh
+               \`\`\`
+            
+            2. **Upgrade to GitHub Pro** (Permanent Solution):
+               - Go to [GitHub Billing Settings](https://github.com/settings/billing)
+               - Upgrade to GitHub Pro ($4/month)
+               - Doubles storage to 1GB
+            
+            3. **Monitor Usage**:
+               \`\`\`bash
+               ./scripts/check-artifact-sizes.sh
+               \`\`\`
+            
+            ### Why This Happened
+            - Your GenePredict app creates ~900MB artifacts per release
+            - Free plan only provides 500MB storage
+            - Multiple releases exceeded the quota
+            
+            ### Permanent Solution
+            **Upgrade to GitHub Pro** for $4/month to get 1GB storage and eliminate quota issues permanently.
+            
+            ---
+            *This issue was automatically created by the storage monitoring system.*
+            `;
+            
+            // Check if a similar issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['storage-alert'],
+              per_page: 10
+            });
+            
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Critical: GitHub Actions Storage Quota Exceeded',
+                body: issueBody,
+                labels: ['storage-alert', 'critical', 'automation']
+              });
+              console.log('Created critical storage alert issue');
+            } else {
+              console.log('Critical storage alert issue already exists');
+            }
+
+      - name: 💬 Post storage summary to workflow
+        run: |
+          echo "# 📊 Storage Monitoring Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Current Usage" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Storage**: ${{ steps.storage-check.outputs.total-size-mb }}MB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifacts**: ${{ steps.storage-check.outputs.artifact-count }} artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **Free Plan Usage**: ${{ steps.storage-check.outputs.free-percent }}% of 500MB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pro Plan Usage**: ${{ steps.storage-check.outputs.pro-percent }}% of 1GB" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          ALERT_LEVEL="${{ steps.storage-check.outputs.alert-level }}"
+          case $ALERT_LEVEL in
+            "critical")
+              echo "## 🚨 Status: CRITICAL" >> $GITHUB_STEP_SUMMARY
+              echo "${{ steps.storage-check.outputs.alert-message }}" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Immediate Actions:" >> $GITHUB_STEP_SUMMARY
+              echo "1. Run \`./scripts/emergency-cleanup.sh\`" >> $GITHUB_STEP_SUMMARY
+              echo "2. [Upgrade to GitHub Pro](https://github.com/settings/billing)" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "high")
+              echo "## ⚠️ Status: HIGH USAGE" >> $GITHUB_STEP_SUMMARY
+              echo "${{ steps.storage-check.outputs.alert-message }}" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Recommendations:" >> $GITHUB_STEP_SUMMARY
+              echo "1. Consider [upgrading to GitHub Pro](https://github.com/settings/billing)" >> $GITHUB_STEP_SUMMARY
+              echo "2. Monitor usage more frequently" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "medium")
+              echo "## 📢 Status: MEDIUM USAGE" >> $GITHUB_STEP_SUMMARY
+              echo "${{ steps.storage-check.outputs.alert-message }}" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "low")
+              echo "## 📊 Status: LOW USAGE" >> $GITHUB_STEP_SUMMARY
+              echo "${{ steps.storage-check.outputs.alert-message }}" >> $GITHUB_STEP_SUMMARY
+              ;;
+            *)
+              echo "## ✅ Status: NORMAL" >> $GITHUB_STEP_SUMMARY
+              echo "Storage usage is within normal limits." >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Tools & Resources" >> $GITHUB_STEP_SUMMARY
+          echo "- **Monitor Usage**: \`./scripts/check-artifact-sizes.sh\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Emergency Cleanup**: \`./scripts/emergency-cleanup.sh\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub Pro Upgrade**: [Billing Settings](https://github.com/settings/billing)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Documentation**: [docs/GITHUB_PRO_UPGRADE_GUIDE.md](docs/GITHUB_PRO_UPGRADE_GUIDE.md)" >> $GITHUB_STEP_SUMMARY
+
+  cleanup-recommendation:
+    name: 🧹 Cleanup Recommendation
+    needs: monitor-storage
+    runs-on: ubuntu-latest
+    if: needs.monitor-storage.outputs.cleanup-recommended == 'true'
+    steps:
+      - name: 📢 Recommend cleanup
+        run: |
+          echo "🧹 Cleanup recommended based on storage analysis"
+          echo "💡 Run ./scripts/emergency-cleanup.sh to free up space"
+          echo "⏰ Found old artifacts that can be safely removed" 
