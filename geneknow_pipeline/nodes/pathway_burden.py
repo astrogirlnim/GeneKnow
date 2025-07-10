@@ -391,21 +391,37 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion
         
-        # Return only the keys this node updates
+        # IMPORTANT: Return the modified filtered_variants with pathway_damage_assessment added
+        # Since we modified variants in-place during calculate_pathway_burden, we need to
+        # return them to ensure the modifications are preserved after parallel execution
+        # 
+        # Also create a separate key for pathway-enriched variants to avoid conflicts
+        # with other parallel nodes that might also be modifying filtered_variants
         return {
             "pathway_burden_results": pathway_results,
-            "pathway_burden_summary": burden_summary
+            "pathway_burden_summary": burden_summary,
+            "pathway_enriched_variants": filtered_variants  # Use a unique key to avoid conflicts
         }
         
     except Exception as e:
         logger.error(f"Pathway burden analysis failed: {str(e)}")
+        # Still return empty results so the merge node can detect completion
         return {
             "pathway_burden_results": {},
             "pathway_burden_summary": {
                 "error": str(e),
-                "overall_burden_score": 0.0
+                "overall_burden_score": 0.0,
+                "high_burden_pathways": [],
+                "moderate_burden_pathways": [],
+                "primary_concern": None,
+                "total_damaging_variants": 0,
+                "total_variants": 0,
+                "pathways_analyzed": 0,
+                "multi_pathway_genes": {},
+                "pathway_crosstalk": False
             },
-            "errors": [{
+            "pathway_enriched_variants": state.get("filtered_variants", []),  # Return unchanged variants
+            "errors": state.get("errors", []) + [{
                 "node": "pathway_burden",
                 "error": str(e),
                 "timestamp": datetime.now()

@@ -1,0 +1,478 @@
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Loading plugin manifest from: "/Users/noah/Gauntlet-Projects/GeneKnow/desktop/python_ml/plugins/fastq_to_vcf/manifest.json"
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Successfully loaded plugin manifest: FASTQ to VCF Converter (fastq_to_vcf)
+[1] [2025-07-10][19:17:43][app_lib::plugin_registry][INFO] Successfully loaded plugin: fastq_to_vcf
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Loading plugin manifest from: "/Users/noah/Gauntlet-Projects/GeneKnow/desktop/python_ml/plugins/generate_test_fastq/manifest.json"
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Successfully loaded plugin manifest: Test FASTQ Generator (generate_test_fastq)
+[1] [2025-07-10][19:17:43][app_lib::plugin_registry][WARN] Failed to load plugin from "/Users/noah/Gauntlet-Projects/GeneKnow/desktop/python_ml/plugins/generate_test_fastq": Plugin manifest invalid: Script file not found: "/Users/noah/Gauntlet-Projects/GeneKnow/desktop/python_ml/plugins/generate_test_fastq/generate_test_fastq.py"
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Loading plugin manifest from: "/Users/noah/Gauntlet-Projects/GeneKnow/desktop/python_ml/plugins/extract_by_region/manifest.json"
+[1] [2025-07-10][19:17:43][app_lib::plugin][INFO] Successfully loaded plugin manifest: Genomic Region Extractor (extract_by_region)
+[1] [2025-07-10][19:17:43][app_lib::plugin_registry][INFO] Successfully loaded plugin: extract_by_region
+[1] [2025-07-10][19:17:43][app_lib::plugin_registry][INFO] Plugin discovery complete. Discovered: 4, Loaded: 2/50
+[1] [2025-07-10][19:17:43][app_lib::plugin_registry][INFO] Plugin registry initialized successfully. Loaded 2 plugins.
+[1] [2025-07-10][19:17:43][app_lib][INFO] Plugin registry initialized successfully
+[1] [2025-07-10][19:17:43][app_lib][INFO] Development mode: API server will be started on demand
+[1] [2025-07-10][19:17:45][app_lib][INFO] Attempting to start API server in development mode...
+[1] [2025-07-10][19:17:45][app_lib][INFO] Running in development mode
+[1] [2025-07-10][19:17:45][app_lib][INFO] Starting Python API server in development mode
+[1] [2025-07-10][19:17:45][app_lib][INFO] Captured API server port from file: 5001
+[1] [Python API] Starting GeneKnow Enhanced API Server...
+[1] [Python API] Eventlet monkey patching completed
+[1] [Python API ERROR] Server initialized for eventlet.
+[1] [Python API ERROR] INFO:engineio.server:Server initialized for eventlet.
+[1] [Python API] SocketIO initialized with async_mode: eventlet
+[1] [Python API] API_SERVER_PORT:5001
+[1] [Python API] Starting GeneKnow Pipeline API Server on port 5001
+[1] [Python API] Debug mode: False
+[1] [Python API] Async mode: eventlet
+[1] [Python API ERROR] INFO:__main__:Starting GeneKnow Pipeline API Server on port 5001
+[1] [2025-07-10][19:17:47][app_lib][INFO] GeneKnow API server started successfully
+[1] [2025-07-10][19:17:47][app_lib][INFO] ✅ API server started in development mode
+[1] [2025-07-10][19:17:47][app_lib][INFO] Saved temporary file: "/var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz"
+[1] [Python API ERROR] emitting event "job_progress" to c9c6b64b-d62d-48ba-a044-a675b9384efa [/]
+[1] [Python API ERROR] INFO:socketio.server:emitting event "job_progress" to c9c6b64b-d62d-48ba-a044-a675b9384efa [/]
+[1] [Python API ERROR] INFO:graph:Starting genomic pipeline for: /var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz
+[1] [Python API ERROR] INFO:nodes.file_input:Processing file input: /var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz
+[1] [Python API ERROR] INFO:nodes.file_input:File validation successful: maf format detected
+[1] [Python API ERROR] INFO:nodes.file_input:File metadata: {'format': 'MAF', 'compression': 'gzip', 'file_size_mb': 0.042336463928222656, 'column_count': 140, 'has_required_columns': True, 'variant_count': 141}
+[1] [Python API ERROR] INFO:nodes.preprocess:Starting preprocessing node
+[1] [Python API ERROR] INFO:nodes.preprocess:Input is MAF, passing to MAF parser
+[1] [Python API ERROR] INFO:nodes.maf_parser:Processing MAF file
+[1] [Python API ERROR] INFO:nodes.maf_parser:Parsing MAF file: /var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz
+[1] [Python API ERROR] INFO:nodes.maf_parser:Loaded MAF with 141 variants
+[1] [Python API ERROR] INFO:nodes.maf_parser:Successfully parsed 133 variants from MAF
+[1] [Python API ERROR] INFO:nodes.maf_parser:MAF processing complete: 133 variants
+[1] [Python API ERROR] INFO:graph:MAF file detected with pre-processed variants, skipping to population mapping
+[1] [Python API ERROR] INFO:nodes.population_mapper:Starting population frequency mapping
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:973988:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr1:973988:C>T - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:10411505:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:10411505:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:28715282:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:28715282:T>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:32102441:G>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:32102441:G>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:34757497:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:34757497:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:35434679:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:35434679:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:74198329:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr1:74198329:G>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:109231008:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:109231008:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:115034286:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:115034286:T>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:115695114:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:115695114:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:153774011:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:153774011:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:207046590:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr1:207046590:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr1:220618420:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr1:220618420:C>T - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:43852779:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:43852779:T>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:61241606:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:61241606:T>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:62706932:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:62706932:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:88885961:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:88885961:C>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:88885962:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:88885962:T>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:102397001:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:102397001:T>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:173226013:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:173226013:A>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:218449969:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:218449969:A>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:218642212:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:218642212:T>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr2:230328821:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr2:230328821:A>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:12897822:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:12897822:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:16433860:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:16433860:T>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:16433970:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr3:16433970:C>T - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:46811290:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:46811290:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:57301850:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:57301850:G>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:79018491:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:79018491:C>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:119744073:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:119744073:G>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:138296678:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:138296678:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:142380109:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:142380109:A>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr3:165772968:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr3:165772968:T>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr4:37443607:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr4:37443607:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr4:78317380:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr4:78317380:C>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr4:139388454:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr4:139388454:A>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr5:55937840:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr5:55937840:A>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr5:126632603:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr5:126632603:T>C - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr5:151664127:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr5:151664127:G>T - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr5:172336955:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr5:172336955:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr6:31159540:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr6:31159540:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr6:31580807:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr6:31580807:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr6:31633520:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr6:31633520:A>G - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr6:41190402:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr6:41190402:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr6:109528998:CAAAACTACTTACCTCCCTCC>AAACTACTTACCTCCCTCCT
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr6:109528998:CAAAACTACTTACCTCCCTCC>AAACTACTTACCTCCCTCCT (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:6026776:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr7:6026776:T>C - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:66377415:G>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:66377415:G>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:73331749:C>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:73331749:C>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:73682314:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:73682314:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:74796279:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:74796279:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:82914508:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:82914508:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:83648495:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:83648495:T>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:86879346:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:86879346:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:107959829:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:107959829:C>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr7:139524067:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr7:139524067:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:1933942:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr8:1933942:G>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:11434884:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr8:11434884:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:20248962:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr8:20248962:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:63038681:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr8:63038681:T>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:106770088:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr8:106770088:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr8:109579921:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr8:109579921:A>T - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr9:13106956:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr9:13106956:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr9:68466488:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr9:68466488:T>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr9:128388411:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr9:128388411:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr10:16592154:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr10:16592154:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr10:68072943:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr10:68072943:A>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr10:68984157:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr10:68984157:T>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr10:74138290:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr10:74138290:A>G - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr11:64667641:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr11:64667641:T>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr11:92353337:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr11:92353337:T>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:868805:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:868805:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:23949648:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:23949648:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] WARNING:nodes.population_mapper:⚠️  Pathogenic variant: chr12:25245350:C>T - Annotated as pathogenic
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:54233356:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:54233356:A>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:72022451:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:72022451:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:92145411:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:92145411:T>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:106496845:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:106496845:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:108522586:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:108522586:C>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr12:109085747:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr12:109085747:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr13:19782396:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr13:19782396:A>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr13:73076253:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr13:73076253:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr13:87676037:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr13:87676037:T>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr13:98395436:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr13:98395436:G>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr14:24232531:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr14:24232531:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr14:63317704:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr14:63317704:C>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr14:81533712:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr14:81533712:C>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr14:106770692:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr14:106770692:G>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:42970560:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:42970560:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:48427991:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:48427991:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:59372582:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:59372582:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:59372752:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:59372752:T>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:70852270:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:70852270:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:90981855:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:90981855:A>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:97876305:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:97876305:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr15:100973897:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr15:100973897:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:1978954:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:1978954:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:57758384:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:57758384:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:69465692:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:69465692:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:71774454:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:71774454:A>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:79597927:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:79597927:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:87417713:G>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:87417713:G>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:88651029:G>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:88651029:G>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr16:89948726:G>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr16:89948726:G>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr17:7574403:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr17:7574403:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr17:19867744:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr17:19867744:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr17:28924446:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr17:28924446:T>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr17:81915684:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr17:81915684:G>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr18:31626316:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr18:31626316:T>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr18:55259959:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr18:55259959:T>G - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr18:72783890:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr18:72783890:A>G (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:2110947:C>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:2110947:C>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:2936657:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:2936657:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:7441991:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr19:7441991:G>A - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:8698143:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:8698143:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:10230423:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:10230423:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:11033470:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:11033470:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:11904907:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:11904907:A>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:21056938:T>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:21056938:T>A (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr19:31592461:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr19:31592461:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr20:29641784:T>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr20:29641784:T>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr20:38578024:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr20:38578024:A>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr21:26965944:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr21:26965944:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr21:28969464:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr21:28969464:A>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr21:37203109:T>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr21:37203109:T>G (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:18077962:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr22:18077962:C>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:20241923:C>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr22:20241923:C>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:22881180:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr22:22881180:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:22888177:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr22:22888177:A>C (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:22888185:A>G
+[1] [Python API ERROR] INFO:nodes.population_mapper:✅ Benign variant: chr22:22888185:A>G - Synonymous variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chr22:50627719:G>A
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chr22:50627719:G>A (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chrX:119930151:A>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chrX:119930151:A>T (AF: 0.00000) - Rare missense variant
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chrX:123117454:A>C
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chrX:123117454:A>C (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Variant not found in population database: chrX:155780955:G>T
+[1] [Python API ERROR] INFO:nodes.population_mapper:🔬 Rare variant: chrX:155780955:G>T (AF: 0.00000) - Insufficient evidence
+[1] [Python API ERROR] INFO:nodes.population_mapper:Population mapping complete:
+[1] [Python API ERROR] INFO:nodes.population_mapper:  Total variants: 133
+[1] [Python API ERROR] INFO:nodes.population_mapper:  Benign variants: 17
+[1] [Python API ERROR] INFO:nodes.population_mapper:  Rare variants: 115
+[1] [Python API ERROR] INFO:nodes.population_mapper:  Pathogenic variants: 1
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:Starting ClinVar annotation
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Starting offline CADD scoring
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Computing CADD scores for 133 variants
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Using offline scoring algorithm (no database required)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr4:78317380:C>A: CADD PHRED=19.1, raw=23.846, risk_weight=0.55
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr7:107959829:C>A: CADD PHRED=19.1, raw=23.813, risk_weight=0.55
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr8:106770088:G>A: CADD PHRED=19.6, raw=24.439, risk_weight=0.58
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr12:25245350:C>T: CADD PHRED=25.0, raw=21.062, risk_weight=0.80
+[1] [Python API ERROR] WARNING:nodes.cadd_scoring:High CADD score (>20): chr12:25245350:C>T in KRAS - PHRED=25.0
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr19:21056938:T>A: CADD PHRED=18.4, raw=22.976, risk_weight=0.50
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Variant chr21:28969464:A>G: CADD PHRED=16.3, raw=20.345, risk_weight=0.38
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Starting pathway burden analysis
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:============================================================
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Starting PRS calculation
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for BRCA
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing pathway burden for 133 variants across 10 pathways
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:Offline CADD Scoring Summary:
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:Starting TCGA frequency mapping
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing dna_repair pathway (13 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Job ID: cadd_offline_20250710_141748
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing mismatch_repair pathway (6 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Total variants: 133
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing tumor_suppressors pathway (10 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Variants scored: 133 (100%)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing oncogenes pathway (12 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Cancer gene variants: 0
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:🔴 HIGH burden in oncogenes: 1/1 variants (score: 0.935)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Mean PHRED score: 7.2
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:  Top variant: chr12:25245350:C>T in KRAS (damage score: 1.00)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Max PHRED score: 25.0
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing cell_cycle pathway (9 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  High-impact variants (>20): 1
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing chromatin_remodeling pathway (9 genes)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:  Scoring method: Offline algorithm (no internet required)
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:🔴 HIGH burden in chromatin_remodeling: 1/1 variants (score: 0.675)
+[1] [Python API ERROR] INFO:nodes.cadd_scoring:============================================================
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:  Top variant: chr19:11033470:C>T in SMARCA4 (damage score: 0.50)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing apoptosis pathway (10 genes)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing wnt_signaling pathway (9 genes)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing pi3k_akt pathway (9 genes)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Analyzing ras_mapk pathway (9 genes)
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:🔴 HIGH burden in ras_mapk: 1/1 variants (score: 0.842)
+[1] [Python API ERROR] WARNING:nodes.pathway_burden:  Top variant: chr12:25245350:C>T in KRAS (damage score: 1.00)
+[1] [Python API ERROR] INFO:nodes.pathway_burden:============================================================
+[1] [Python API ERROR] INFO:nodes.pathway_burden:Pathway Burden Analysis Summary:
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Overall burden score: 0.817
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  High burden pathways: oncogenes, chromatin_remodeling, ras_mapk
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Moderate burden pathways: None
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Primary concern: oncogenes
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Total damaging variants: 3
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Pathway crosstalk detected: True
+[1] [Python API ERROR] INFO:nodes.pathway_burden:  Multi-pathway genes: 1
+[1] [Python API ERROR] INFO:nodes.pathway_burden:    KRAS: oncogenes, ras_mapk
+[1] [Python API ERROR] INFO:nodes.pathway_burden:============================================================
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  BRCA PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for OVCA
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:ClinVar annotation complete:
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Total variants: 133
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Variants annotated: 0
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Annotation rate: 0.0%
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Pathogenic: 0
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Likely pathogenic: 0
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Benign: 0
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  VUS: 0
+[1] [Python API ERROR] INFO:nodes.clinvar_annotator:  Cancer-related: 0
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  OVCA PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for PRAD
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  PRAD PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for LUAD
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  LUAD PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for COAD
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  COAD PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:Calculating PRS for PANCA
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  PANCA PRS: 0.000 (coverage: 0.0%, percentile: 50%, confidence: low)
+[1] [Python API ERROR] INFO:nodes.prs_calculator:PRS calculation complete:
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  High-risk cancers: None
+[1] [Python API ERROR] INFO:nodes.prs_calculator:  Overall confidence: low
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:  Limitations:
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for BRCA PRS (0.0%)
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for OVCA PRS (0.0%)
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for PRAD PRS (0.0%)
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for LUAD PRS (0.0%)
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for COAD PRS (0.0%)
+[1] [Python API ERROR] WARNING:nodes.prs_calculator:    - Low SNP coverage for PANCA PRS (0.0%)
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:TCGA mapping complete:
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:  Total variants: 133
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:  Variants matched: 0
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:  Match rate: 0.0%
+[1] [Python API ERROR] INFO:nodes.tcga_mapper:  Highly enriched variants: 0
+[1] [Python API ERROR] INFO:graph:Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden
+[1] [Python API ERROR] WARNING:graph:Incomplete parallel processing - TCGA: True, CADD: True, ClinVar: True, PRS: True, Pathway Burden: False
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Starting feature vector builder (STUB)
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Feature vector builder received 133 variants
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Variant 1 sample:
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Keys: ['allele_freq', 'alt', 'assessment_rationale', 'chrom', 'clinical_significance', 'consequence', 'dbsnp_rs', 'depth', 'existing_variation', 'gene', 'is_pathogenic', 'normal_sample_id', 'population_frequency', 'pos', 'protein_change', 'qual', 'ref', 'risk_weight', 'sample_id', 'variant_classification', 'variant_id', 'variant_type']
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Gene: PLEKHN1
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  CADD PHRED: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  TCGA relevance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  ClinVar significance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Has pathway_damage_assessment: False
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Variant 2 sample:
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Keys: ['allele_freq', 'alt', 'assessment_rationale', 'chrom', 'clinical_significance', 'consequence', 'dbsnp_rs', 'depth', 'existing_variation', 'gene', 'is_pathogenic', 'normal_sample_id', 'population_frequency', 'pos', 'protein_change', 'qual', 'ref', 'risk_weight', 'sample_id', 'variant_classification', 'variant_id', 'variant_type']
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Gene: PGD
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  CADD PHRED: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  TCGA relevance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  ClinVar significance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Has pathway_damage_assessment: False
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Variant 3 sample:
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Keys: ['allele_freq', 'alt', 'assessment_rationale', 'chrom', 'clinical_significance', 'consequence', 'dbsnp_rs', 'depth', 'existing_variation', 'gene', 'is_pathogenic', 'normal_sample_id', 'population_frequency', 'pos', 'protein_change', 'qual', 'ref', 'risk_weight', 'sample_id', 'variant_classification', 'variant_id', 'variant_type']
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Gene: GMEB1
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  CADD PHRED: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  TCGA relevance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  ClinVar significance: MISSING
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Has pathway_damage_assessment: False
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:============================================================
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Feature Vector Builder - Current Inputs:
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:✓ CADD scores available: 133 variants
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Mean PHRED: 7.2
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Max PHRED: 25.0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Cancer gene variants: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:✓ PRS scores available: 6 cancer types
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Overall PRS confidence: low
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:✓ ClinVar annotations available: 0 variants
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Pathogenic variants: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Likely pathogenic variants: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Cancer-related variants: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:✓ TCGA matches available: 5 cancer types
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:✗ Pathway burden analysis not available
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:============================================================
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Variant annotation summary:
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Total variants: 133
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  With CADD scores: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  With population data: 133
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  With TCGA relevance: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  With ClinVar annotations: 0
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  With pathway burden assessment: 2
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:  Pathogenic: 1
+[1] [Python API ERROR] INFO:nodes.feature_vector_builder:Feature vector builder complete (passthrough)
+[1] [Python API ERROR] INFO:nodes.risk_model:Starting risk model prediction
+[1] [Python API ERROR] WARNING:nodes.risk_model:ML models not found, using simple risk calculation
+[1] [Python API ERROR] WARNING:nodes.risk_model:Using simple risk calculation (ML models not available)
+[1] [Python API ERROR] INFO:nodes.risk_model:Incorporating PRS scores into risk calculation
+[1] [Python API ERROR] WARNING:nodes.risk_model:Pathogenic variant in KRAS increases colon risk by 22.6%
+[1] [Python API ERROR] WARNING:nodes.risk_model:Pathogenic variant in KRAS increases lung risk by 26.3%
+[1] [Python API ERROR] INFO:nodes.risk_model:Simple risk calculation: 1 cancer genes affected out of 133 variants
+[1] [Python API ERROR] INFO:nodes.risk_model:  Benign variants: 0 (excluded from risk)
+[1] [Python API ERROR] INFO:nodes.risk_model:  Pathogenic variants: 2
+[1] [Python API ERROR] INFO:nodes.risk_model:colon: 24.3% (genes: ['KRAS'], pathogenic: ['KRAS'], benign: [])
+[1] [Python API ERROR] INFO:nodes.risk_model:lung: 28.7% (genes: ['KRAS'], pathogenic: ['KRAS'], benign: [])
+[1] [Python API ERROR] INFO:nodes.risk_model:Risk calculation integrated PRS data: []
+[1] [Python API ERROR] INFO:nodes.formatter:Starting result formatting
+[1] [Python API ERROR] INFO:nodes.formatter:Formatting complete
+[1] [Python API ERROR] INFO:nodes.report_writer:Starting report generation
+[1] [Python API ERROR] INFO:nodes.report_writer:Report sections created with keys: ['header', 'summary', 'risk_findings', 'variant_table', 'quality_control', 'tcga_summary', 'cadd_summary', 'recommendations', 'technical_details', 'disclaimers', 'metadata']
+[1] [Python API ERROR] INFO:nodes.report_writer:Report sections header: {'title': 'Patient Genomic Risk Report', 'generated_date': '2025-07-10', 'generated_time': '14:17:48', 'pipeline_version': '1.0.0', 'processing_time_seconds': 0.257847, 'language': 'en'}
+[1] [Python API ERROR] INFO:nodes.report_writer:Report generation complete
+[1] [Python API ERROR] INFO:graph:Pipeline completed in 0.26 seconds
+[1] [Python API ERROR] INFO:graph:Final state keys: ['file_path', 'file_type', 'file_metadata', 'raw_variants', 'filtered_variants', 'variant_count', 'tcga_matches', 'tcga_cohort_sizes', 'tcga_summary', 'cadd_enriched_variants', 'cadd_stats', 'clinvar_annotations', 'clinvar_stats', 'clinvar_pathogenic_variants', 'clinvar_likely_pathogenic_variants', 'clinvar_benign_variants', 'clinvar_vus_variants', 'prs_results', 'prs_summary', 'risk_scores', 'risk_genes', 'structured_json', 'report_markdown', 'report_sections', 'pipeline_start_time', 'errors', 'warnings', 'pipeline_status', 'completed_nodes', 'current_node', 'language', 'include_technical_details', 'pipeline_end_time', 'processing_time_seconds']
+[1] [Python API ERROR] INFO:graph:Report sections in final state: {'header': {'title': 'Patient Genomic Risk Report', 'generated_date': '2025-07-10', 'generated_time': '14:17:48', 'pipeline_version': '1.0.0', 'processing_time_seconds': 0.257847, 'language': 'en'}, 'summary': {'description': 'This report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.', 'total_variants_found': 133, 'variants_passed_qc': 133, 'high_risk_findings_count': 0, 'patient_info': {}}, 'risk_findings': [{'cancer_type': 'lung', 'risk_percentage': 28.715789473684207, 'risk_level': 'low', 'affected_genes': ['KRAS'], 'gene_count': 1, 'recommendation': 'Standard screening guidelines apply'}, {'cancer_type': 'colon', 'risk_percentage': 24.25639097744361, 'risk_level': 'low', 'affected_genes': ['KRAS'], 'gene_count': 1, 'recommendation': 'Standard screening guidelines apply'}, {'cancer_type': 'breast', 'risk_percentage': 3.0, 'risk_level': 'low', 'affected_genes': [], 'gene_count': 0, 'recommendation': 'Standard screening guidelines apply'}, {'cancer_type': 'prostate', 'risk_percentage': 2.9, 'risk_level': 'low', 'affected_genes': [], 'gene_count': 0, 'recommendation': 'Standard screening guidelines apply'}, {'cancer_type': 'bone', 'risk_percentage': 1.9, 'risk_level': 'low', 'affected_genes': [], 'gene_count': 0, 'recommendation': 'Standard screening guidelines apply'}, {'cancer_type': 'blood', 'risk_percentage': 1.7, 'risk_level': 'low', 'affected_genes': [], 'gene_count': 0, 'recommendation': 'Standard screening guidelines apply'}], 'variant_table': [{'gene': 'PLEKHN1', 'variant_id': 'chr1:973988:C>T', 'consequence': 'synonymous_variant', 'hgvs_c': '', 'hgvs_p': 'p.Ala582=', 'quality_score': 100.0, 'depth': 75, 'allele_frequency': 0.5466666666666666, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'PGD', 'variant_id': 'chr1:10411505:C>T', 'consequence': 'missense_variant', 'hgvs_c': '', 'hgvs_p': 'p.His203Tyr', 'quality_score': 100.0, 'depth': 145, 'allele_frequency': 0.43448275862068964, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'GMEB1', 'variant_id': 'chr1:28715282:T>G', 'consequence': 'downstream_gene_variant', 'hgvs_c': '', 'hgvs_p': nan, 'quality_score': 100.0, 'depth': 36, 'allele_frequency': 0.4722222222222222, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'TMEM39B', 'variant_id': 'chr1:32102441:G>C', 'consequence': 'missense_variant', 'hgvs_c': '', 'hgvs_p': 'p.Ser416Thr', 'quality_score': 100.0, 'depth': 146, 'allele_frequency': 0.3082191780821918, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'GJB5', 'variant_id': 'chr1:34757497:G>A', 'consequence': 'missense_variant', 'hgvs_c': '', 'hgvs_p': 'p.Arg56His', 'quality_score': 100.0, 'depth': 407, 'allele_frequency': 0.12776412776412777, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'KIAA0319L', 'variant_id': 'chr1:35434679:A>G', 'consequence': '3_prime_UTR_variant', 'hgvs_c': '', 'hgvs_p': nan, 'quality_score': 100.0, 'depth': 104, 'allele_frequency': 0.07692307692307693, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'FPGT-TNNI3K', 'variant_id': 'chr1:74198329:G>A', 'consequence': 'synonymous_variant', 'hgvs_c': '', 'hgvs_p': 'p.Gln30=', 'quality_score': 100.0, 'depth': 140, 'allele_frequency': 0.5785714285714286, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'SARS1', 'variant_id': 'chr1:109231008:G>A', 'consequence': 'missense_variant', 'hgvs_c': '', 'hgvs_p': 'p.Gly193Glu', 'quality_score': 100.0, 'depth': 67, 'allele_frequency': 0.373134328358209, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'TSHB', 'variant_id': 'chr1:115034286:T>A', 'consequence': '3_prime_UTR_variant', 'hgvs_c': '', 'hgvs_p': nan, 'quality_score': 100.0, 'depth': 212, 'allele_frequency': 0.12735849056603774, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}, {'gene': 'VANGL1', 'variant_id': 'chr1:115695114:C>T', 'consequence': 'downstream_gene_variant', 'hgvs_c': '', 'hgvs_p': nan, 'quality_score': 100.0, 'depth': 101, 'allele_frequency': 0.42574257425742573, 'tcga_best_match': None, 'cadd_score': None, 'cadd_interpretation': None, 'clinical_significance': 'uncertain_significance'}], 'quality_control': {'total_variants': 133, 'passed_variants': 133, 'filtered_variants': 0, 'pass_rate_percent': 100.0, 'filter_criteria': {'min_quality': 30, 'min_depth': 10, 'min_allele_frequency': 0.01}}, 'tcga_summary': {'cancer_types_analyzed': ['breast', 'colon', 'lung', 'prostate', 'blood'], 'total_cohort_size': 2828, 'cohort_sizes': {'breast': 1084, 'colon': 461, 'lung': 585, 'prostate': 498, 'blood': 200}, 'variants_with_matches': 0, 'match_rate_percent': 0.0}, 'cadd_summary': {'enabled': True, 'variants_scored': 133, 'mean_phred_score': 7.23, 'max_phred_score': 25.0, 'high_impact_variants': 1, 'cancer_gene_variants': 0, 'description': 'Combined Annotation Dependent Depletion (CADD) scores predict variant deleteriousness'}, 'recommendations': [], 'technical_details': {'pipeline_nodes': ['file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'formatter', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'file_input', 'file_input', 'maf_parser', 'file_input', 'file_input', 'maf_parser', 'population_mapper', 'tcga_mapper', 'cadd_scoring', 'clinvar_annotator', 'prs_calculator', 'feature_vector_builder', 'formatter', 'report_writer'], 'file_metadata': {'format': 'MAF', 'compression': 'gzip', 'file_size_mb': 0.042336463928222656, 'column_count': 140, 'has_required_columns': True, 'variant_count': 141, 'variant_source': 'MAF', 'total_variants': 133, 'maf_info': {'unique_genes': 129, 'unique_samples': 1, 'variant_classifications': {'Missense_Mutation': np.int64(48), "3'UTR": np.int64(29), 'Silent': np.int64(16), 'Intron': np.int64(15), "5'UTR": np.int64(8), 'RNA': np.int64(5), 'Nonsense_Mutation': np.int64(4), "3'Flank": np.int64(3), 'Splice_Site': np.int64(2), 'Splice_Region': np.int64(2)}, 'top_mutated_genes': {'IGKV4-1': np.int64(2), 'IGLL5': np.int64(2), 'RFTN1': np.int64(2), 'MYO1E': np.int64(2), 'PLEKHN1': np.int64(1), 'LARP6': np.int64(1), 'IGHV2-70': np.int64(1), 'UBR1': np.int64(1), 'FBN1': np.int64(1), 'PRC1': np.int64(1)}}}, 'alignment_stats': {}, 'variant_calling_method': 'Mock DeepVariant (simulated)', 'reference_genome': 'GRCh38', 'quality_thresholds': {'min_quality_score': 30, 'min_read_depth': 10, 'min_allele_frequency': 0.01}, 'model_details': {'type': 'logistic_regression', 'version': '1.0.0', 'training_date': '2025-01-07'}}, 'disclaimers': ['This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.', 'Genetic risk assessment is based on current scientific understanding and may change as new research emerges.', 'Not all genetic variants are included in this analysis.'], 'metadata': {'report_id': 'GR-20250710-141748', 'model_version': '1.0.0', 'warnings': ['Using simple risk calculation - ML models not available', 'Using simple risk calculation - ML models not available', 'Using simple risk calculation - ML models not available', 'Using simple risk calculation - ML models not available', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully', 'Pathway burden analysis did not complete successfully'], 'file_analyzed': '/var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz'}}
+[1] [Python API ERROR] emitting event "job_progress" to c9c6b64b-d62d-48ba-a044-a675b9384efa [/]
+[1] [Python API ERROR] INFO:socketio.server:emitting event "job_progress" to c9c6b64b-d62d-48ba-a044-a675b9384efa [/]
+[1] [Python API ERROR] INFO:__main__:Cleaned up temporary file: /var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_temp/242b87b1-bf7c-4c1a-bed2-bb077e5ccd00.wxs.aliquot_ensemble_masked.maf.gz
+[1] [Python API ERROR] INFO:__main__:Cleaned up result file: /var/folders/h1/z8jkzhqs5vndclm5b08kgp5r0000gn/T/geneknow_results_0ay13w28/c9c6b64b-d62d-48ba-a044-a675b9384efa_result.json

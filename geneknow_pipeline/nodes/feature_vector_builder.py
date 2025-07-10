@@ -32,6 +32,19 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Don't modify filtered_variants since merge node already handled this
         filtered_variants = state.get("filtered_variants", [])
         
+        # Debug logging to understand the actual variant content
+        logger.info(f"Feature vector builder received {len(filtered_variants)} variants")
+        if filtered_variants and len(filtered_variants) > 0:
+            # Log details of first few variants
+            for i, variant in enumerate(filtered_variants[:3]):
+                logger.info(f"Variant {i+1} sample:")
+                logger.info(f"  Keys: {sorted(variant.keys())}")
+                logger.info(f"  Gene: {variant.get('gene', 'N/A')}")
+                logger.info(f"  CADD PHRED: {variant.get('cadd_phred', 'MISSING')}")
+                logger.info(f"  TCGA relevance: {variant.get('tcga_cancer_relevance', 'MISSING')}")
+                logger.info(f"  ClinVar significance: {variant.get('clinvar_clinical_significance', 'MISSING')}")
+                logger.info(f"  Has pathway_damage_assessment: {'pathway_damage_assessment' in variant}")
+        
         # Log what we have so far
         logger.info("=" * 60)
         logger.info("Feature Vector Builder - Current Inputs:")

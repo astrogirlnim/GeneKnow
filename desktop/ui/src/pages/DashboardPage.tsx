@@ -405,7 +405,7 @@ const DashboardPage: React.FC = () => {
   const displayData = React.useMemo(() => {
     if (pipelineResults) {
       // Extract the highest risk score for display
-      const riskScores = Object.entries(pipelineResults.risk_scores);
+      const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
         score > prev.score ? { cancer, score } : prev,
         { cancer: '', score: 0 }
@@ -413,7 +413,7 @@ const DashboardPage: React.FC = () => {
       
       // Use pipeline results directly (already in percentage format)
       const probability = Math.round(highestRisk.score);
-      const hazardScore = (highestRisk.score / 100 * 3).toFixed(1); // Convert from percentage to hazard score scale
+      const hazardScore = highestRisk.score ? (highestRisk.score / 100 * 3).toFixed(1) : "0.0"; // Convert from percentage to hazard score scale
       
       // Extract key metrics from the pipeline results
       const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
@@ -443,8 +443,8 @@ const DashboardPage: React.FC = () => {
         {
           id: 3,
           title: "Processing Time",
-          value: pipelineResults.processing_time_seconds.toFixed(1),
-          unit: "seconds",
+          value: pipelineResults.processing_time_seconds ? pipelineResults.processing_time_seconds.toFixed(1) : "N/A",
+          unit: pipelineResults.processing_time_seconds ? "seconds" : "",
           tooltipContent: {
             content: "Time taken to process and analyze the genomic data.",
             link: "#"
@@ -485,7 +485,7 @@ const DashboardPage: React.FC = () => {
           otherMetrics.push({
             id: metricId++,
             title: `${cancer} Risk`,
-            value: score.toFixed(1),
+            value: score ? score.toFixed(1) : "0.0",
             unit: "%",
             tooltipContent: {
               content: `Predicted risk score for ${cancer}.`,
@@ -624,7 +624,7 @@ const DashboardPage: React.FC = () => {
               <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem' }}>
                 Analysis Report
               </h3>
-              {Object.entries(pipelineResults.report_sections).map(([key, section]) => (
+              {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
                 <div key={key} style={{ marginBottom: '1rem' }}>
                   <h4 style={{ 
                     fontWeight: '600', 
