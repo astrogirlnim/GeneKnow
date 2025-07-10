@@ -17,6 +17,7 @@ try:
     from . import prs_calculator
     from . import pathway_burden
     from . import risk_model
+    from . import metrics_calculator
     from . import formatter
     from . import report_writer
     from . import maf_parser
@@ -33,6 +34,7 @@ except ImportError:
     import prs_calculator
     import pathway_burden
     import risk_model
+    import metrics_calculator
     import formatter
     import report_writer
     import maf_parser
@@ -49,6 +51,7 @@ __all__ = [
     "prs_calculator",
     "pathway_burden",
     "risk_model",
+    "metrics_calculator",
     "formatter",
     "report_writer",
     "maf_parser"
