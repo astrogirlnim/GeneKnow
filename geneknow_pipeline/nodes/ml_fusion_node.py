@@ -1,29 +1,25 @@
-#!/usr/bin/env python3
 """
-ML Fusion Node for GeneKnow Pipeline
-
-This node integrates the ML fusion layer into the LangGraph pipeline.
-It takes outputs from the 5 static models and produces a final risk assessment.
+ML Fusion Node for LangGraph genomic pipeline.
+Combines outputs from static models using a trained fusion layer.
 """
-
 import os
-import sys
-import json
-import numpy as np
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import logging
-
-# Add the ml_models directory to the path
-sys.path.append(str(Path(__file__).parent.parent / 'ml_models'))
-
-from fusion_layer import FusionLayer, StaticModelInputs, FusionOutput
-# Use Dict instead of GeneKnowState for compatibility
-from typing import Dict
+from pathlib import Path
+import numpy as np
+from typing import Dict, Any, List
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import fusion layer
+try:
+    from ..ml_models.fusion_layer import FusionLayer, StaticModelInputs, FusionOutput
+except ImportError:
+    # Fallback for direct execution
+    import sys
+    sys.path.append(str(Path(__file__).parent.parent))
+    from ml_models.fusion_layer import FusionLayer, StaticModelInputs, FusionOutput
+
 
 class MLFusionNode:
     """
@@ -67,9 +63,9 @@ class MLFusionNode:
                     str(Path(__file__).parent.parent / 'ml_models' / 'fusion_random_forest.pkl'),
                     str(Path(__file__).parent.parent / 'ml_models_no_leakage' / 'best_model.pkl')
                 ]
-                
+
                 logger.warning(f"⚠️ ML Fusion model not found at primary path: {self.model_path}")
-                
+
                 for alt_path in alternative_paths:
                     if os.path.exists(alt_path):
                         logger.info(f"✅ Found alternative model at: {alt_path}")
@@ -78,7 +74,7 @@ class MLFusionNode:
                         self.is_loaded = True
                         logger.info(f"✅ ML Fusion model loaded successfully from alternative: {alt_path}")
                         break
-                
+
                 if not self.is_loaded:
                     logger.error("❌ No ML Fusion models found in any location!")
                     logger.error("Searched paths:")
@@ -261,13 +257,26 @@ class MLFusionNode:
 
         # Check if model is loaded
         if not self.is_loaded:
-            logger.error("ML Fusion model not loaded. Cannot process.")
             return {
                 'ml_fusion_results': {
                     'error': 'Model not loaded',
                     'aggregate_risk_score': 0.0,
                     'risk_category': 'unknown',
+                    'confidence': 0.0,
                     'processing_successful': False
+                }
+            }
+
+        # Get variants from state
+        ml_ready_variants = state.get('ml_ready_variants', [])
+
+        if not ml_ready_variants:
+            logger.warning("No variants found in pipeline state")
+            return {
+                'ml_fusion_results': {
+                    'error': 'No static model inputs',
+                    'aggregate_risk_score': 0.0,
+                    'risk_category': 'unknown'
                 }
             }
 
@@ -308,7 +317,7 @@ class MLFusionNode:
             }
 
             # Log results
-            logger.info(f"ML Fusion completed successfully:")
+            logger.info("ML Fusion completed successfully:")
             logger.info(f"  Processed {len(fusion_outputs)} variants")
             logger.info(f"  Aggregate risk score: {aggregate_results['aggregate_risk_score']:.3f}")
             logger.info(f"  Risk category: {aggregate_results['risk_category']}")
@@ -329,6 +338,8 @@ class MLFusionNode:
             }
 
 # LangGraph node function
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     LangGraph node function for ML fusion processing.
@@ -341,6 +352,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     fusion_node = MLFusionNode()
     return fusion_node.process(state)
+
 
 # Alternative node function for custom model path
 def create_ml_fusion_node(model_path: str = None):
@@ -358,6 +370,7 @@ def create_ml_fusion_node(model_path: str = None):
         return fusion_node.process(state)
 
     return custom_ml_fusion_node
+
 
 if __name__ == "__main__":
     # Test the fusion node with mock data
@@ -391,7 +404,7 @@ if __name__ == "__main__":
         fusion_results = result_state['ml_fusion_results']
         if fusion_results.get('processing_successful'):
             aggregate = fusion_results['aggregate_risk_assessment']
-            print(f"✅ Fusion processing successful")
+            print("✅ Fusion processing successful")
             print(f"Aggregate risk score: {aggregate['aggregate_risk_score']:.3f}")
             print(f"Risk category: {aggregate['risk_category']}")
             print(f"Variants processed: {aggregate['variant_count']}")
