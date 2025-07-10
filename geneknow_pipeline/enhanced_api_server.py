@@ -61,7 +61,6 @@ class NumpyEncoder(json.JSONEncoder):
             return None
         return super().default(obj)
 
-
 # Configure logging with proper formatting and unbuffered output
 logging.basicConfig(
     level=logging.INFO,
@@ -91,10 +90,21 @@ app = Flask(__name__)
 CORS(
     app, origins=["tauri://localhost", "http://localhost:*"]
 )  # Allow Tauri and local dev
-socketio = SocketIO(
-    app, cors_allowed_origins="*"
-)  # Let SocketIO choose the best available async mode
 
+# Configure eventlet properly to avoid blocking issues
+try:
+    import eventlet
+    # Patch standard library for async operation, but preserve stdout/stderr
+    eventlet.monkey_patch(socket=True, select=True, thread=False)
+    print("Eventlet monkey patching completed", flush=True)
+except ImportError:
+    print("WARNING: eventlet not installed, falling back to threading mode", flush=True)
+    eventlet = None
+
+# Initialize SocketIO with appropriate async mode
+async_mode = 'eventlet' if eventlet else 'threading'
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode, logger=True, engineio_logger=True)
+print(f"SocketIO initialized with async_mode: {async_mode}", flush=True)
 
 # Configuration
 class Config:
@@ -858,6 +868,7 @@ if __name__ == "__main__":
 
     # Print configuration for debugging
     print(f"Debug mode: {debug}", flush=True)
+    print(f"Async mode: {socketio.async_mode}", flush=True)
 
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag
