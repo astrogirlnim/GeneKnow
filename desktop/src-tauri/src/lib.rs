@@ -18,9 +18,11 @@ use plugin_registry::PluginRegistryApi;
 use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
+use std::io::{BufRead, BufReader};
 
-// Global API server process handle
+// Global API server process handle and port
 static API_SERVER_PROCESS: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
+static API_SERVER_PORT: Lazy<Mutex<Option<u16>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FastqToVcfOptions {
@@ -410,11 +412,29 @@ async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<Stri
 // ========================================
 
 #[command]
+async fn get_api_port() -> Result<u16, String> {
+    let port_guard = API_SERVER_PORT.lock().unwrap();
+    match *port_guard {
+        Some(port) => Ok(port),
+        None => Err("API server not started".to_string()),
+    }
+}
+
+#[command]
 async fn check_api_health() -> Result<bool, String> {
+    // Get the current port
+    let port = {
+        let port_guard = API_SERVER_PORT.lock().unwrap();
+        match *port_guard {
+            Some(port) => port,
+            None => return Ok(false), // Server not started
+        }
+    };
+    
     let client = reqwest::Client::new();
     
     let response = client
-        .get("http://localhost:5001/api/health")
+        .get(format!("http://localhost:{}/api/health", port))
         .timeout(std::time::Duration::from_secs(2))
         .send()
         .await;
@@ -493,18 +513,23 @@ async fn start_api_server() -> Result<bool, String> {
         (startup_script.clone(), resource_dir)
     };
 
-    // Start the API server
-    let child = if cfg!(debug_assertions) {
+    // Create port file path
+    let port_file = working_dir.join(".api_server_port");
+    
+    // Add port file argument
+    let mut child = if cfg!(debug_assertions) {
         // Development mode: run Python directly
         Command::new(&startup_script)
             .arg("enhanced_api_server.py")
+            .arg("--port-file")
+            .arg(&port_file)
             .current_dir(&working_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| format!("Failed to start API server: {}", e))?
     } else {
-        // Production mode: run the startup script
+        // Production mode: run the startup script (which already includes port file)
         Command::new(&startup_script)
             .current_dir(&working_dir)
             .stdout(Stdio::piped())
@@ -512,12 +537,40 @@ async fn start_api_server() -> Result<bool, String> {
             .spawn()
             .map_err(|e| format!("Failed to start API server: {}", e))?
     };
-
-    // Store the process handle and drop the guard immediately
+    
+    // Store the process handle
     {
         let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
         *process_guard = Some(child);
-    } // Guard is dropped here
+    }
+    
+    // Wait for port file to be created
+    let start_time = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(10);
+    let mut captured_port: Option<u16> = None;
+    
+    while start_time.elapsed() < timeout {
+        if port_file.exists() {
+            if let Ok(contents) = fs::read_to_string(&port_file) {
+                if let Ok(port) = contents.trim().parse::<u16>() {
+                    captured_port = Some(port);
+                    log::info!("Captured API server port from file: {}", port);
+                    break;
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    // Store the port
+    if let Some(port) = captured_port {
+        let mut port_guard = API_SERVER_PORT.lock().unwrap();
+        *port_guard = Some(port);
+    } else {
+        // Clean up the process if we failed to get the port
+        stop_api_server().await?;
+        return Err("Failed to capture API server port".to_string());
+    }
 
     // Wait for server to start (with timeout)
     let start_time = std::time::Instant::now();
@@ -545,6 +598,10 @@ async fn stop_api_server() -> Result<(), String> {
         log::info!("GeneKnow API server stopped");
     }
     
+    // Clear the port
+    let mut port_guard = API_SERVER_PORT.lock().unwrap();
+    *port_guard = None;
+    
     Ok(())
 }
 
@@ -553,10 +610,22 @@ async fn get_api_server_status() -> Result<serde_json::Value, String> {
     let is_healthy = check_api_health().await.unwrap_or(false);
     
     if is_healthy {
+        // Get the current port
+        let port = {
+            let port_guard = API_SERVER_PORT.lock().unwrap();
+            match *port_guard {
+                Some(port) => port,
+                None => return Ok(serde_json::json!({
+                    "status": "stopped",
+                    "service": "GeneKnow Pipeline API"
+                })),
+            }
+        };
+        
         // Get detailed health info
         let client = reqwest::Client::new();
         let response = client
-            .get("http://localhost:5001/api/health")
+            .get(format!("http://localhost:{}/api/health", port))
             .send()
             .await
             .map_err(|e| e.to_string())?;
@@ -586,6 +655,9 @@ async fn process_genomic_file(
         start_api_server().await?;
     }
 
+    // Get the current port
+    let port = get_api_port().await?;
+
     let client = reqwest::Client::new();
     
     let request_body = serde_json::json!({
@@ -594,7 +666,7 @@ async fn process_genomic_file(
     });
     
     let response = client
-        .post("http://localhost:5001/api/process")
+        .post(format!("http://localhost:{}/api/process", port))
         .json(&request_body)
         .send()
         .await
@@ -619,10 +691,13 @@ async fn process_genomic_file(
 
 #[command]
 async fn get_job_status(job_id: String) -> Result<serde_json::Value, String> {
+    // Get the current port
+    let port = get_api_port().await?;
+    
     let client = reqwest::Client::new();
     
     let response = client
-        .get(format!("http://localhost:5001/api/status/{}", job_id))
+        .get(format!("http://localhost:{}/api/status/{}", port, job_id))
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
@@ -723,11 +798,17 @@ async fn initialize_database() -> Result<bool, String> {
 
 #[command]
 async fn test_pipeline_connectivity() -> Result<bool, String> {
+    // Get the current port
+    let port = match get_api_port().await {
+        Ok(port) => port,
+        Err(_) => return Ok(false), // Server not started
+    };
+    
     // Test basic connectivity to the pipeline API
     let client = reqwest::Client::new();
     
     let response = client
-        .get("http://localhost:5001/api/pipeline-info")
+        .get(format!("http://localhost:{}/api/pipeline-info", port))
         .timeout(std::time::Duration::from_secs(5))
         .send()
         .await;
@@ -740,10 +821,13 @@ async fn test_pipeline_connectivity() -> Result<bool, String> {
 
 #[command]
 async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
+    // Get the current port
+    let port = get_api_port().await?;
+    
     let client = reqwest::Client::new();
     
     let response = client
-        .get(format!("http://localhost:5001/api/results/{}", job_id))
+        .get(format!("http://localhost:{}/api/results/{}", port, job_id))
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
@@ -813,6 +897,7 @@ pub fn run() {
         start_api_server,
         stop_api_server,
         get_api_server_status,
+        get_api_port,
         process_genomic_file,
         get_job_status,
         get_job_results,

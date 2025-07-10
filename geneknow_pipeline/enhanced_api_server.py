@@ -25,7 +25,12 @@ except ImportError:
     HAS_NUMPY = False
 
 # Import the pipeline
-from graph import run_pipeline
+try:
+    # Try relative import first (when running as module)
+    from .graph import run_pipeline
+except ImportError:
+    # Fall back to absolute import (when running directly)
+    from graph import run_pipeline
 
 # Custom JSON encoder to handle numpy types and datetime
 class NumpyEncoder(json.JSONEncoder):
@@ -568,14 +573,49 @@ def cleanup_temp_files():
 
 atexit.register(cleanup_temp_files)
 
+def find_available_port(start_port=5000, max_attempts=100):
+    """Find an available port starting from start_port"""
+    import socket
+    
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            # Try to bind to the port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+                s.close()
+                return port
+        except OSError:
+            # Port is in use, try the next one
+            continue
+    
+    raise RuntimeError(f"No available ports found in range {start_port}-{start_port + max_attempts}")
+
 # Main entry point
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='GeneKnow Pipeline API Server')
+    parser.add_argument('--port', type=int, default=5000, help='Starting port to try (will find next available)')
+    parser.add_argument('--port-file', help='File to write the actual port to')
+    args = parser.parse_args()
+    
+    # Find an available port
+    actual_port = find_available_port(args.port)
+    
+    # Write the port to a file if requested (for Tauri to read)
+    if args.port_file:
+        with open(args.port_file, 'w') as f:
+            f.write(str(actual_port))
+        logger.info(f"Wrote port {actual_port} to {args.port_file}")
+    
+    # Also write to stdout for the parent process to capture
+    print(f"API_SERVER_PORT:{actual_port}", flush=True)
+    
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     
-    logger.info(f"Starting Enhanced GeneKnow API Server on port {port}")
+    logger.info(f"Starting Enhanced GeneKnow API Server on port {actual_port}")
     logger.info(f"Upload folder: {Config.UPLOAD_FOLDER}")
     logger.info(f"Results folder: {Config.RESULTS_FOLDER}")
     logger.info(f"WebSocket support enabled")
     
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug) 
+    socketio.run(app, host='0.0.0.0', port=actual_port, debug=debug) 

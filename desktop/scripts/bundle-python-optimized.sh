@@ -180,9 +180,12 @@ export PYTHONDONTWRITEBYTECODE=1  # Don't create .pyc files
 # Change to the bundled resources directory (parent of geneknow_pipeline)
 cd "$SCRIPT_DIR"
 
-# Start the API server using module syntax
+# Create port file path
+PORT_FILE="$SCRIPT_DIR/.api_server_port"
+
+# Start the API server using module syntax with port file
 echo "🚀 Starting GeneKnow API Server (Optimized)..."
-exec "$PYTHON_EXE" -m geneknow_pipeline.enhanced_api_server "$@"
+exec "$PYTHON_EXE" -m geneknow_pipeline.enhanced_api_server --port-file "$PORT_FILE" "$@"
 EOF
 
 chmod +x "$BUNDLE_DIR/start_api_server.sh"
