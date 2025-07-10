@@ -270,6 +270,10 @@ def process_file_async(job_id: str):
                     'prs_results': result.get('prs_results', {}),
                     'prs_summary': result.get('prs_summary', {}),
                     'structured_json': result.get('structured_json', {}),
+                    'ml_fusion_results': result.get('ml_fusion_results', {}),
+                    'ml_risk_assessment': result.get('ml_risk_assessment', {}),
+                    'completed_nodes': result.get('completed_nodes', []),
+                    'warnings': result.get('warnings', []),
                     'result_file': result_file
                 })
             })

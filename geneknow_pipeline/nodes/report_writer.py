@@ -327,7 +327,7 @@ def _format_technical_details(state: Dict[str, Any]) -> Dict[str, Any]:
         "pipeline_nodes": state.get("completed_nodes", []),
         "file_metadata": state.get("file_metadata", {}),
         "alignment_stats": state.get("alignment_stats", {}),
-        "variant_calling_method": "Mock DeepVariant (simulated)",
+        "variant_calling_method": state.get("variant_calling_method", "Direct variant loading from file"),
         "reference_genome": "GRCh38",
         "quality_thresholds": {
             "min_quality_score": 30,

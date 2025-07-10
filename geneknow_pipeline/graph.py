@@ -353,6 +353,7 @@ def merge_static_model_results(state: dict) -> dict:
             completed.append(node)
 
     logger.info("Merge static models completed successfully")
+    logger.info(f"Updated completed nodes: {completed}")
 
     # Return the full merge results
     result = {"_merge_call_count": call_count}  # Return the call count update

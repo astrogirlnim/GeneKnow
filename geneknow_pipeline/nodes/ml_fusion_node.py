@@ -256,6 +256,8 @@ class MLFusionNode:
             Updated pipeline state with fusion results
         """
         logger.info("🔬 Starting ML Fusion processing")
+        logger.info(f"ML Fusion Node - Model loaded: {self.is_loaded}")
+        logger.info(f"ML Fusion Node - Model path: {self.model_path}")
 
         # Check if model is loaded
         if not self.is_loaded:
@@ -264,7 +266,8 @@ class MLFusionNode:
                 'ml_fusion_results': {
                     'error': 'Model not loaded',
                     'aggregate_risk_score': 0.0,
-                    'risk_category': 'unknown'
+                    'risk_category': 'unknown',
+                    'processing_successful': False
                 }
             }
 
