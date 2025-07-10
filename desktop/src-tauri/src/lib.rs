@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
+use std::fs;
+use std::thread;
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
@@ -18,7 +21,6 @@ use plugin_registry::PluginRegistryApi;
 use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use std::io::{BufRead, BufReader};
 
 // Global API server process handle and port
 static API_SERVER_PROCESS: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
