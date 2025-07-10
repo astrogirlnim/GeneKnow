@@ -9,14 +9,6 @@ import sys
 import subprocess
 
 def main():
-    # Get port file from command line if provided
-    port_file = None
-    if '--port-file' in sys.argv:
-        idx = sys.argv.index('--port-file')
-        if idx + 1 < len(sys.argv):
-            port_file = sys.argv[idx + 1]
-            os.environ['PORT_FILE'] = port_file
-    
     # Set up Gunicorn command
     gunicorn_cmd = [
         sys.executable, '-m', 'gunicorn',
@@ -35,5 +27,5 @@ def main():
         print(f"Error running Gunicorn: {e}")
         sys.exit(1)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main() 

@@ -655,7 +655,6 @@ if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='GeneKnow Pipeline API Server')
     parser.add_argument('--port', type=int, help='Port to run the server on')
-    parser.add_argument('--port-file', type=str, help='File to write the actual port to')
     parser.add_argument('--debug', action='store_true', help='Run in debug mode')
     
     args = parser.parse_args()
@@ -664,23 +663,8 @@ if __name__ == '__main__':
     port = args.port if args.port else find_available_port()
     actual_port = port
     
-    # Write port to file if requested
-    if args.port_file:
-        # Try to bind first to ensure port is actually available
-        try:
-            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            test_socket.bind(('', port))
-            test_socket.close()
-            
-            with open(args.port_file, 'w') as f:
-                f.write(str(port))
-            print(f"API_SERVER_PORT:{port}")  # For process monitoring
-        except OSError:
-            logger.error(f"Port {port} is not available")
-            actual_port = find_available_port()
-            with open(args.port_file, 'w') as f:
-                f.write(str(actual_port))
-            print(f"API_SERVER_PORT:{actual_port}")
+    # Always announce the port to stdout for Rust backend to capture
+    print(f"API_SERVER_PORT:{actual_port}", flush=True)
     
     # Start the server (Flask development server - for Gunicorn, this block won't run)
     print(f"Starting GeneKnow Pipeline API Server on port {actual_port}", flush=True)

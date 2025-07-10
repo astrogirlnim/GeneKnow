@@ -544,17 +544,11 @@ async fn start_api_server() -> Result<bool, String> {
         (startup_script.clone(), resource_dir)
     };
 
-    // Create port file path
-    let port_file = working_dir.join(".api_server_port");
-    
-    // Add port file argument
-    let mut child = if cfg!(debug_assertions) {
+    let child = if cfg!(debug_assertions) {
         // Development mode: run Python directly
         log::info!("Starting Python API server in development mode");
         Command::new(&startup_script)
             .arg("enhanced_api_server.py")
-            .arg("--port-file")
-            .arg(&port_file)
             .current_dir(&working_dir)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -593,88 +587,100 @@ async fn start_api_server() -> Result<bool, String> {
         child
     };
     
-    // In development mode, spawn threads to stream output
-    if cfg!(debug_assertions) {
-        // Take ownership of stdout and stderr
-        if let Some(stdout) = child.stdout.take() {
-            thread::spawn(move || {
-                use std::io::{BufRead, BufReader};
-                let reader = BufReader::new(stdout);
-                for line in reader.lines() {
-                    if let Ok(line) = line {
-                        println!("[Python API] {}", line);
-                    }
-                }
-            });
-        }
-        
-        if let Some(stderr) = child.stderr.take() {
-            thread::spawn(move || {
-                use std::io::{BufRead, BufReader};
-                let reader = BufReader::new(stderr);
-                for line in reader.lines() {
-                    if let Ok(line) = line {
-                        eprintln!("[Python API ERROR] {}", line);
-                    }
-                }
-            });
-        }
-    }
+    // Capture stdout to get the port announcement
+    let mut captured_port: Option<u16> = None;
+    let mut last_error: Option<String> = None;
     
-    // Store the process handle
+    // Store the process handle first
     {
         let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
         *process_guard = Some(child);
     }
     
-    // Wait for port file to be created with better error handling
-    let start_time = std::time::Instant::now();
-    let timeout = std::time::Duration::from_secs(20); // Increased timeout
-    let mut captured_port: Option<u16> = None;
-    let mut last_error: Option<String> = None;
+    // Get a reference to the child for stdout/stderr handling
+    let child_ref = {
+        let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+        process_guard.as_mut().unwrap()
+    };
     
-    while start_time.elapsed() < timeout {
-        // Check if process is still running
-        {
-            let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
-            if let Some(ref mut child) = *process_guard {
-                match child.try_wait() {
-                    Ok(Some(status)) => {
-                        // Process exited, collect error output
-                        let mut stderr = String::new();
-                        if let Some(ref mut stderr_handle) = child.stderr {
-                            use std::io::Read;
-                            let _ = stderr_handle.read_to_string(&mut stderr);
-                        }
-                        
-                        last_error = Some(format!("API server process exited with status: {:?}. Error: {}", 
-                                                 status, stderr));
-                        log::error!("Server startup failed: {}", last_error.as_ref().unwrap());
-                        break;
-                    }
-                    Ok(None) => {
-                        // Still running, continue
-                    }
-                    Err(e) => {
-                        last_error = Some(format!("Failed to check process status: {}", e));
-                        break;
-                    }
-                }
-            }
-        }
+    if let Some(stdout) = child_ref.stdout.take() {
+        use std::sync::mpsc;
+        let (port_tx, port_rx) = mpsc::channel();
         
-        if port_file.exists() {
-            if let Ok(contents) = fs::read_to_string(&port_file) {
-                if let Ok(port) = contents.trim().parse::<u16>() {
-                    captured_port = Some(port);
-                    log::info!("Captured API server port from file: {}", port);
-                    break;
+        thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    println!("[Python API] {}", line);
+                    
+                    // Look for port announcement
+                    if line.starts_with("API_SERVER_PORT:") {
+                        if let Some(port_str) = line.strip_prefix("API_SERVER_PORT:") {
+                            if let Ok(port) = port_str.trim().parse::<u16>() {
+                                let _ = port_tx.send(port);
+                            }
+                        }
+                    }
                 }
             }
+        });
+        
+        // Wait for port announcement with timeout
+        let start_time = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(20);
+        
+        while start_time.elapsed() < timeout {
+            // Check if process is still running
+            {
+                let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+                if let Some(ref mut child) = *process_guard {
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            last_error = Some(format!("API server process exited with status: {:?}", status));
+                            log::error!("Server startup failed: {}", last_error.as_ref().unwrap());
+                            break;
+                        }
+                        Ok(None) => {
+                            // Still running, continue
+                        }
+                        Err(e) => {
+                            last_error = Some(format!("Failed to check process status: {}", e));
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Check for port announcement
+            if let Ok(port) = port_rx.try_recv() {
+                captured_port = Some(port);
+                log::info!("Captured API server port from stdout: {}", port);
+                break;
+            }
+            
+            thread::sleep(Duration::from_millis(100));
         }
-        thread::sleep(Duration::from_millis(100));
     }
-
+    
+    // Handle stderr output in a separate thread
+    let child_ref = {
+        let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+        process_guard.as_mut().unwrap()
+    };
+    
+    if let Some(stderr) = child_ref.stderr.take() {
+        thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    eprintln!("[Python API ERROR] {}", line);
+                }
+            }
+        });
+    }
+    
     // Store the port
     if let Some(port) = captured_port {
         let mut port_guard = API_SERVER_PORT.lock().unwrap();
