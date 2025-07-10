@@ -5,12 +5,14 @@ on:
     branches: [ main ]
     paths:
       - 'desktop/**'
+      - 'geneknow_pipeline/**'  # Add this to trigger on Python pipeline changes
       - 'langgraph/**'
       - '.github/workflows/release.yml'
       - 'package.json'
       - 'README.md'
       - '*.py'
       - 'requirements.txt'
+      - 'requirements-lite.txt'  # Add this for optimized requirements
       - 'docs/**'
   workflow_dispatch:
     inputs:

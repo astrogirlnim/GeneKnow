@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 interface SetupStep {
@@ -45,11 +45,7 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
   // const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    runSetup();
-  }, []);
-
-  const updateStep = (stepId: string, status: SetupStep['status'], error?: string) => {
+  const updateStep = useCallback((stepId: string, status: SetupStep['status'], error?: string) => {
     setSteps(prevSteps => 
       prevSteps.map(step => 
         step.id === stepId 
@@ -57,9 +53,9 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
           : step
       )
     );
-  };
+  }, []);
 
-  const runSetup = async () => {
+  const runSetup = useCallback(async () => {
     try {
       // Step 1: Check environment
       updateStep('check-env', 'running');
@@ -151,7 +147,11 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
         updateStep(failedStep.id, 'error', errorMessage);
       }
     }
-  };
+  }, [steps, updateStep, onComplete]);
+
+  useEffect(() => {
+    runSetup();
+  }, [runSetup]);
 
   const getStepIcon = (status: SetupStep['status']) => {
     switch (status) {

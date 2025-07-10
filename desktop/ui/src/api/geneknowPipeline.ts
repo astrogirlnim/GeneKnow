@@ -408,7 +408,8 @@ export function useGeneKnowPipeline() {
     if (typeof window !== 'undefined') {
       client.connectWebSocket().catch(console.error);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // client is a stable singleton, so we don't need it in deps
 
   return {
     client,

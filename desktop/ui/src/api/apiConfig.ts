@@ -8,7 +8,10 @@ import { invoke } from '@tauri-apps/api/core';
 // Declare Tauri on window object
 declare global {
   interface Window {
-    __TAURI__?: any;
+    __TAURI__?: {
+      invoke: typeof invoke;
+      // Add other Tauri API methods as needed
+    };
   }
 }
 
