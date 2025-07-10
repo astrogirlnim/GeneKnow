@@ -1,4 +1,4 @@
-# 🧪 GenePredict Testing Guide
+# 🧪 GeneKnow Testing Guide
 
 This guide explains how to test the Rust ⇄ Python ML integration implemented in Phase 1, Step 2.
 

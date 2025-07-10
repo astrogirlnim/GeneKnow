@@ -1,8 +1,8 @@
-# 🧬 GenePredict CI/CD Pipeline Guide
+# 🧬 GeneKnow CI/CD Pipeline Guide
 
 ## 📋 Overview
 
-The GenePredict CI/CD pipeline is designed to ensure high-quality, secure, and automated deployment of our privacy-first genomic risk assessment platform. Our pipeline consists of two main workflows:
+The GeneKnow CI/CD pipeline is designed to ensure high-quality, secure, and automated deployment of our privacy-first genomic risk assessment platform. Our pipeline consists of two main workflows:
 
 1. **🔍 PR Validation Pipeline** - Validates code quality, security, and cross-platform compatibility for pull requests
 2. **🚀 Release Pipeline** - Automates versioning, building, and deploying production releases
@@ -380,6 +380,6 @@ If you encounter issues with the CI/CD pipeline:
 
 ---
 
-🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform
+🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform
 
-*This documentation is maintained by the GenePredict development team. Last updated: January 2025* 
+*This documentation is maintained by the GeneKnow development team. Last updated: January 2025* 

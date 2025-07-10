@@ -1,8 +1,8 @@
-# 🚀 Release Pipeline Guide for GenePredict
+# 🚀 Release Pipeline Guide for GeneKnow
 
 ## Overview
 
-GenePredict uses an automated GitHub Actions release pipeline that builds the desktop application for all major platforms. The pipeline automatically versions, builds, and releases the app when changes are pushed to the main branch.
+GeneKnow uses an automated GitHub Actions release pipeline that builds the desktop application for all major platforms. The pipeline automatically versions, builds, and releases the app when changes are pushed to the main branch.
 
 ## 🎯 Key Features
 

@@ -1,4 +1,4 @@
-# 🧬 GenePredict - AI-Powered Genomic Risk Assessment
+# 🧬 GeneKnow - AI-Powered Genomic Risk Assessment
 
 > **Local-First Genomic Analysis Platform** • Built with Tauri, React, and Rust for maximum privacy and security
 
@@ -10,7 +10,7 @@
 
 ## 🎯 Project Overview
 
-GenePredict is a **privacy-first genomic risk assessment platform** that processes genetic data entirely on your local machine. No data ever leaves your device, ensuring complete privacy and HIPAA compliance for sensitive genetic information.
+GeneKnow is a **privacy-first genomic risk assessment platform** that processes genetic data entirely on your local machine. No data ever leaves your device, ensuring complete privacy and HIPAA compliance for sensitive genetic information.
 
 ### 🔬 Core Capabilities (Planned)
 - **FASTQ/BAM File Processing**: Native support for genomic data formats
@@ -33,7 +33,7 @@ GenePredict is a **privacy-first genomic risk assessment platform** that process
 - **Logging Infrastructure**: Comprehensive logging with `useLogger` hook
 
 ### 🎨 **UI Status**
-- **Landing Page**: Beautiful gradient design with GenePredict branding
+- **Landing Page**: Beautiful gradient design with GeneKnow branding
 - **Interactive Components**: Sample analysis counter with state management
 - **Responsive Design**: Mobile-first Tailwind implementation
 - **Developer Experience**: Hot reload working for both React and Rust
@@ -47,7 +47,7 @@ Platform:  Cross-platform desktop (macOS/Windows/Linux)
 ```
 
 ### 🔖 **Version Management**
-GenePredict uses automated semantic versioning with GitHub Actions:
+GeneKnow uses automated semantic versioning with GitHub Actions:
 - **Automated Releases**: Push to `main` triggers automatic version bumping and release builds
 - **Cross-Platform Builds**: macOS, Windows, and Linux binaries generated automatically
 - **No Manual Tags**: The release pipeline handles all version management to prevent conflicts
@@ -80,8 +80,8 @@ git push origin main
 
 ### 1. Clone & Setup
 ```bash
-git clone <repository-url>
-cd LiteratureGapper
+git clone https://github.com/astrogirlnim/GeneKnow.git
+cd GeneKnow
 ```
 
 ### 2. Install Dependencies
@@ -170,7 +170,7 @@ python3 python_ml/config_data_source.py --list-vcf-files --json
 
 ## 🧬 Genomic Parallel Extraction Pipeline
 
-A production-ready pipeline for extracting specific genomic regions from massive VCF files using parallel processing. This component handles the data processing layer of GenePredict.
+A production-ready pipeline for extracting specific genomic regions from massive VCF files using parallel processing. This component handles the data processing layer of GeneKnow.
 
 ### Quick Start (Team Setup)
 
@@ -288,7 +288,7 @@ Large Files (11GB+)     Shared Storage        Project Directory
 ## 🏗️ Project Architecture
 
 ```
-LiteratureGapper/
+GeneKnow/
 ├── desktop/                    # Cross-platform desktop application
 │   ├── src-tauri/             # Rust backend (Tauri framework)
 │   │   ├── src/
@@ -359,7 +359,7 @@ pnpm install  # Reinstall dependencies including @tauri-apps/cli
 ```bash
 # Ensure you're in the correct directory
 cd desktop/ui
-pwd  # Should show .../LiteratureGapper/desktop/ui
+pwd  # Should show .../GeneKnow/desktop/ui
 
 # Check if dependencies are installed
 ls node_modules/.bin/tauri  # Should exist
@@ -375,7 +375,7 @@ pkill -f "vite|cargo|tauri"
 **"No such file or directory"**
 ```bash
 # Ensure you're in the correct directory:
-pwd  # Should show .../LiteratureGapper/desktop/ui for UI commands
+pwd  # Should show .../GeneKnow/desktop/ui for UI commands
 ```
 
 **Python script errors**
@@ -428,7 +428,7 @@ python3 python_ml/config_data_source.py --help
 ## 📚 Documentation
 
 - [`docs/Phase1_Foundation_Tauri_Setup_Plan.md`](docs/Phase1_Foundation_Tauri_Setup_Plan.md) - Detailed setup plan
-- [`documentation/GenePredict_BrainLift/`](documentation/GenePredict_BrainLift/) - Technical specifications
+- [`documentation/GenePredict_BrainLift/`](documentation/GenePredict_BrainLift/) - Technical specifications (legacy)
 - [`PRD_V2.md`](PRD_V2.md) - Product Requirements Document
 
 ---

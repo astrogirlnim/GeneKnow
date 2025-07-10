@@ -44,8 +44,8 @@ npm --version     # Should show 8+
 
 ### **1. Clone Repository**
 ```bash
-git clone <repository-url>
-cd LiteratureGapper
+git clone https://github.com/astrogirlnim/GeneKnow.git
+cd GeneKnow
 ```
 
 ### **2. Setup Python Environment**
