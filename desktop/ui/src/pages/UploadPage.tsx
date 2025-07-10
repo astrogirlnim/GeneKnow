@@ -12,6 +12,91 @@ const DocumentIcon = () => (
   </svg>
 );
 
+// Loading Spinner component
+const LoadingSpinner = () => (
+  <div style={{
+    width: '3rem',
+    height: '3rem',
+    border: '4px solid #E5E7EB',
+    borderTop: '4px solid #2563EB',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  }}>
+    <style>
+      {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+    </style>
+  </div>
+);
+
+// Loading Modal component
+const LoadingModal: React.FC<{ isVisible: boolean; currentStep?: string }> = ({ isVisible, currentStep }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        borderRadius: '0.75rem',
+        padding: '4rem 3rem',
+        maxWidth: '800px',
+        width: '90%',
+        minHeight: '500px',
+        textAlign: 'center',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          marginBottom: '2rem',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <LoadingSpinner />
+        </div>
+        <h3 style={{
+          fontSize: '1.25rem',
+          fontWeight: '600',
+          color: '#111827',
+          marginBottom: '1rem'
+        }}>
+          Analyzing Your Genomic Data
+        </h3>
+        <p style={{
+          fontSize: '0.875rem',
+          color: '#6B7280',
+          marginBottom: '0.5rem'
+        }}>
+          {currentStep || 'Processing your file...'}
+        </p>
+        <p style={{
+          fontSize: '0.75rem',
+          color: '#9CA3AF'
+        }}>
+          This may take a few moments. Please don't close the application.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Mock Test Case Card component
 interface MockTestCaseProps {
   riskLevel: string;
@@ -84,7 +169,6 @@ const UploadPage: React.FC = () => {
       });
       
       setFilePath(tempPath);
-      console.log('File saved temporarily at:', tempPath);
     } catch (err) {
       console.error('Error handling file:', err);
       setError('Failed to handle file');
@@ -130,8 +214,6 @@ const UploadPage: React.FC = () => {
       }
 
       // Process the file with progress tracking
-      console.log('Starting file processing for:', filePath);
-      
       const result = await processAndWait(
         filePath,
         {
@@ -145,13 +227,8 @@ const UploadPage: React.FC = () => {
         },
         (jobProgress) => {
           setProgress(jobProgress);
-          console.log('Processing progress:', jobProgress);
         }
       );
-
-      console.log('Processing complete:', result);
-      console.log('Result type:', typeof result);
-      console.log('Result keys:', result ? Object.keys(result) : 'no result');
       
       if (!result) {
         throw new Error('No results returned from processing');
@@ -160,7 +237,6 @@ const UploadPage: React.FC = () => {
       // Clean up the temporary file
       try {
         await invoke('delete_temp_file', { filePath });
-        console.log('Cleaned up temporary file:', filePath);
       } catch (cleanupError) {
         console.warn('Failed to clean up temporary file:', cleanupError);
       }
@@ -172,15 +248,17 @@ const UploadPage: React.FC = () => {
           fileName: file?.name 
         } 
       });
+      
     } catch (err) {
       console.error('Processing error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to process file');
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process file';
+      setError(`Processing failed: ${errorMessage}`);
       
       // Clean up the temporary file on error too
       if (filePath) {
         try {
           await invoke('delete_temp_file', { filePath });
-          console.log('Cleaned up temporary file after error:', filePath);
         } catch (cleanupError) {
           console.warn('Failed to clean up temporary file:', cleanupError);
         }
@@ -192,9 +270,10 @@ const UploadPage: React.FC = () => {
 
   const handleMockDataSelect = (riskLevel: string) => {
     // Navigate to dashboard with the risk level as a URL parameter
-    console.log('Selected mock test case risk level:', riskLevel);
     navigate(`/dashboard?risk=${riskLevel}`);
   };
+
+
 
   return (
     <Layout>
@@ -244,40 +323,8 @@ const UploadPage: React.FC = () => {
               </div>
             )}
 
-            {/* Processing status */}
-            {isProcessing && progress && (
-              <div style={{
-                padding: '1.5rem',
-                marginBottom: '1.5rem',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #93C5FD',
-                borderRadius: '0.75rem',
-                maxWidth: '600px',
-                margin: '0 auto 1.5rem'
-              }}>
-                <h3 style={{ fontWeight: '600', color: '#1E40AF', marginBottom: '0.5rem' }}>
-                  Processing Your File
-                </h3>
-                <div style={{
-                  width: '100%',
-                  height: '8px',
-                  backgroundColor: '#DBEAFE',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  marginBottom: '0.5rem'
-                }}>
-                  <div style={{
-                    width: `${progress.progress}%`,
-                    height: '100%',
-                    backgroundColor: '#2563EB',
-                    transition: 'width 300ms ease'
-                  }} />
-                </div>
-                <p style={{ fontSize: '0.875rem', color: '#3730A3' }}>
-                  {progress.current_step || 'Processing...'} ({progress.progress}%)
-                </p>
-              </div>
-            )}
+            {/* Loading Modal */}
+            <LoadingModal isVisible={isProcessing} currentStep={progress?.current_step} />
 
             <div
               style={{
@@ -372,6 +419,7 @@ const UploadPage: React.FC = () => {
               >
                 Back
               </button>
+
               <button
                 onClick={handleStartAnalysis}
                                  disabled={(!file && !filePath) || isProcessing}
