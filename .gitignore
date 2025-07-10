@@ -159,11 +159,21 @@ coverage/
 *.backup
 *~
 
-# Future ML model files (will be large)
+# ML model files (allow our trained models, but exclude other large files)
 *.model
 *.h5
-*.pkl
+# Block pkl files in most places, but allow our trained models
+venv/**/*.pkl
+**/site-packages/**/*.pkl
+**/lib/**/*.pkl
+**/lib64/**/*.pkl
+# Explicitly block old model directories
+geneknow_pipeline/ml_models/*.pkl
+# Allow our current trained models
+# !geneknow_pipeline/ml_models_no_leakage/*.pkl  # Not needed - we're not blocking these now
 models/
+# Allow specific data files but exclude large genomic data
+!geneknow_pipeline/data/*.db
 data/
 
 # Keep important empty directories with gitkeep
