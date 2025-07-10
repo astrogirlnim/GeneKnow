@@ -2,14 +2,33 @@ import type { ReactNode, FC } from 'react'
 import { Link } from 'react-router-dom'
 
 const GeneKnowLogo = () => (
-  <svg className="w-8 h-8" style={{ color: '#2563EB' }} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor" strokeWidth="1.5"/>
-    <g stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15.18 8.5C12.08 10.33 11.08 13.67 13.18 16.5"/>
-      <path d="M8.82 7.5C11.92 9.33 12.92 12.67 10.82 15.5"/>
-      <path d="M14.2 10.5H9.8"/>
-      <path d="M15 12.5H9"/>
-      <path d="M13.2 14.5H10.8"/>
+  <svg className="w-8 h-8" style={{ color: '#0066cc' }} viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dnaGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style={{stopColor:'#0066cc', stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:'#003d7a', stopOpacity:1}} />
+      </linearGradient>
+      <linearGradient id="dnaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style={{stopColor:'#00a8e6', stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:'#0066cc', stopOpacity:1}} />
+      </linearGradient>
+    </defs>
+    <g transform="translate(120, 120)">
+      <g>
+        <path d="M -25,-70 C -25,-50 25,-40 25,-20 C 25,0 -25,10 -25,30 C -25,50 25,60 25,80" 
+              fill="none" stroke="url(#dnaGradient1)" strokeWidth="5" strokeLinecap="round"/>
+        <path d="M 25,-70 C 25,-50 -25,-40 -25,-20 C -25,0 25,10 25,30 C 25,50 -25,60 -25,80" 
+              fill="none" stroke="url(#dnaGradient2)" strokeWidth="5" strokeLinecap="round"/>
+        <line x1="-25" y1="-60" x2="25" y2="-60" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+        <line x1="-15" y1="-45" x2="15" y2="-45" stroke="url(#dnaGradient2)" strokeWidth="3"/>
+        <line x1="-25" y1="-30" x2="25" y2="-30" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+        <line x1="-15" y1="-15" x2="15" y2="-15" stroke="url(#dnaGradient2)" strokeWidth="3"/>
+        <line x1="-25" y1="0" x2="25" y2="0" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+        <line x1="-15" y1="15" x2="15" y2="15" stroke="url(#dnaGradient2)" strokeWidth="3"/>
+        <line x1="-25" y1="30" x2="25" y2="30" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+        <line x1="-15" y1="45" x2="15" y2="45" stroke="url(#dnaGradient2)" strokeWidth="3"/>
+        <line x1="-25" y1="60" x2="25" y2="60" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+      </g>
     </g>
   </svg>
 )

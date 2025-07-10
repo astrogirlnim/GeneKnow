@@ -42,13 +42,11 @@ function initMobileMenu() {
 // Platform detection
 function initPlatformDetection() {
     const platform = detectPlatform();
-    const platformIcon = document.getElementById('platform-icon');
     const detectedOS = document.getElementById('detected-os');
     const recommendedOS = document.getElementById('recommended-os');
     
-    if (platformIcon && detectedOS && recommendedOS) {
+    if (detectedOS && recommendedOS) {
         const platformInfo = getPlatformInfo(platform);
-        platformIcon.textContent = platformInfo.icon;
         detectedOS.textContent = platformInfo.name;
         recommendedOS.textContent = platformInfo.name;
     }
@@ -70,10 +68,10 @@ function detectPlatform() {
 
 function getPlatformInfo(platform) {
     const platformMap = {
-        'windows': { name: 'Windows', icon: '🪟' },
-        'macos': { name: 'macOS', icon: '🍎' },
-        'linux': { name: 'Linux', icon: '🐧' },
-        'unknown': { name: 'Your OS', icon: '🖥️' }
+        'windows': { name: 'Windows' },
+        'macos': { name: 'macOS' },
+        'linux': { name: 'Linux' },
+        'unknown': { name: 'Your OS' }
     };
     
     return platformMap[platform] || platformMap['unknown'];
@@ -109,14 +107,14 @@ function initScrollEffects() {
     window.addEventListener('scroll', function() {
         const scrollTop = window.pageYOffset;
         
-        // Header background opacity
+        // Keep header consistently white
         if (header) {
+            header.style.background = '#FFFFFF';
+            header.style.backdropFilter = 'none';
             if (scrollTop > 50) {
-                header.style.background = 'rgba(255, 255, 255, 0.98)';
-                header.style.backdropFilter = 'blur(15px)';
+                header.style.boxShadow = '0 2px 4px -1px rgba(0, 0, 0, 0.06)';
             } else {
-                header.style.background = 'rgba(255, 255, 255, 0.95)';
-                header.style.backdropFilter = 'blur(10px)';
+                header.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.03)';
             }
         }
     });
@@ -203,23 +201,7 @@ function hideLoading(element) {
     }
 }
 
-// Theme detection and handling
-function handleThemeChange() {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    prefersDark.addEventListener('change', function(e) {
-        if (e.matches) {
-            document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-        }
-    });
-    
-    // Set initial theme
-    if (prefersDark.matches) {
-        document.body.classList.add('dark-theme');
-    }
-}
+// Light mode only - dark theme detection disabled
 
 // Analytics and tracking (placeholder)
 function trackEvent(event, category, action, label) {
