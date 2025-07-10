@@ -2,10 +2,10 @@ name: 🧬 PR Validation Pipeline
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
     paths:
       - 'desktop/**'
-      - 'langgraph/**'
+      - 'geneknow_pipeline/**'
       - '.github/workflows/**'
       - 'package.json'
       - 'README.md'
