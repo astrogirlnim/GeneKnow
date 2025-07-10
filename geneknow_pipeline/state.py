@@ -32,6 +32,14 @@ class GenomicState(TypedDict):
     cadd_enriched_variants: Optional[List[Dict[str, Any]]]  # Variants with CADD annotations
     cadd_stats: Optional[Dict[str, Any]]  # CADD scoring statistics
     
+    # ClinVar annotation results
+    clinvar_annotations: Dict[str, Dict[str, Any]]  # {variant_id: clinvar_data}
+    clinvar_stats: Optional[Dict[str, Any]]  # ClinVar annotation statistics
+    clinvar_pathogenic_variants: Optional[List[Dict[str, Any]]]  # Pathogenic variants
+    clinvar_likely_pathogenic_variants: Optional[List[Dict[str, Any]]]  # Likely pathogenic variants
+    clinvar_benign_variants: Optional[List[Dict[str, Any]]]  # Benign variants
+    clinvar_vus_variants: Optional[List[Dict[str, Any]]]  # Variants of uncertain significance
+    
     # PRS (Polygenic Risk Score) results
     prs_results: Dict[str, Dict[str, Any]]  # {cancer_type: prs_data}
     prs_summary: Dict[str, Any]  # Overall PRS summary

@@ -33,23 +33,34 @@ A weighted sum of small-effect SNPs associated with increased disease risk.
 
 ### 🔍 What it is:
 
-A curated public database of known variants annotated as “Pathogenic”, “Likely pathogenic”, “Benign”, etc.
+A curated public database of known variants annotated as "Pathogenic", "Likely pathogenic", "Benign", etc. In GeneKnow, this is implemented as a local SQLite database with cancer-focused annotations.
 
 ### 📦 How it works:
 
-* Each variant is matched to ClinVar entries during annotation (e.g. via VEP)
-* If a variant is listed as Pathogenic for a cancer type, it is flagged
+* Each variant is matched to ClinVar entries via direct database lookup
+* Local SQLite database contains clinical significance, review status, and condition information
+* Variants are assigned numerical risk scores based on clinical significance:
+  * Pathogenic: 1.0
+  * Likely pathogenic: 0.8
+  * Benign/Likely benign: 0.0
+  * Uncertain significance: 0.1
+  * Drug response: 0.1, Risk factor: 0.3
+* Cancer-related conditions receive 20% scoring bonus
+* Review status modifiers (practice guidelines get 10% bonus)
 
 ### 🧠 Why we use it:
 
-* Direct clinical interpretation
-* Overrides statistical guesswork with expert knowledge
-* Clinicians trust it implicitly
+* Direct clinical interpretation with expert-curated pathogenicity
+* Provides numerical risk scores for quantitative analysis
+* Cancer-specific focus with enhanced scoring for cancer-related conditions
+* Actionable clinical recommendations based on clinical significance
+* Confidence scores based on review status and submission quality
 
 ### ⚠️ Limitations:
 
-* Sparse coverage (only a small fraction of all variants)
-* Doesn’t assign a numerical risk score
+* Limited to variants in our curated database (focused on cancer genes)
+* Database requires periodic updates from ClinVar releases
+* Some rare variants may not be represented
 
 ---
 
