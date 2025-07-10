@@ -467,16 +467,18 @@ async fn start_api_server() -> Result<bool, String> {
         // Production mode: use bundled Python and resources
         log::info!("Running in production mode");
         
-        // Get the resource directory from the app bundle
+        // Get the bundled resources directory from the app bundle
         let resource_dir = std::env::current_exe()
             .map_err(|e| format!("Failed to get executable path: {}", e))?
             .parent()
             .ok_or("Failed to get executable directory")?
             .parent()
             .ok_or("Failed to get app directory")?
-            .join("Resources");
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
         
-        log::info!("Resource directory: {:?}", resource_dir);
+        log::info!("Bundled resources directory: {:?}", resource_dir);
         
         // Use the appropriate startup script for the platform
         #[cfg(target_os = "windows")]
@@ -636,6 +638,107 @@ async fn get_job_status(job_id: String) -> Result<serde_json::Value, String> {
 }
 
 #[command]
+async fn check_environment() -> Result<bool, String> {
+    // Check if bundled Python runtime exists
+    if cfg!(debug_assertions) {
+        // Development mode: check system Python
+        let output = Command::new("python3")
+            .arg("--version")
+            .output();
+        
+        match output {
+            Ok(output) => Ok(output.status.success()),
+            Err(_) => Ok(false),
+        }
+    } else {
+        // Production mode: check bundled Python
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
+        
+        #[cfg(target_os = "windows")]
+        let python_exe = resource_dir.join("python_runtime").join("python.exe");
+        #[cfg(not(target_os = "windows"))]
+        let python_exe = resource_dir.join("python_runtime").join("bin").join("python3");
+        
+        Ok(python_exe.exists())
+    }
+}
+
+#[command]
+async fn check_database_exists() -> Result<bool, String> {
+    if cfg!(debug_assertions) {
+        // Development mode: check in geneknow_pipeline directory
+        let mut db_path = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        
+        for _ in 0..5 {
+            db_path.pop();
+            if db_path.join("geneknow_pipeline").exists() {
+                break;
+            }
+        }
+        
+        let db_path = db_path.join("geneknow_pipeline").join("population_variants.db");
+        Ok(db_path.exists())
+    } else {
+        // Production mode: check in bundled resources
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
+        
+        let db_path = resource_dir.join("geneknow_pipeline").join("population_variants.db");
+        Ok(db_path.exists())
+    }
+}
+
+#[command]
+async fn initialize_database() -> Result<bool, String> {
+    // In our case, the database should already be created during bundling
+    // This is mainly for error recovery
+    log::info!("Database initialization requested");
+    
+    if check_database_exists().await? {
+        log::info!("Database already exists");
+        return Ok(true);
+    }
+    
+    // If database doesn't exist, this is likely an error in production
+    // In development, we could try to create it, but for now just return false
+    log::error!("Database not found - this should not happen in production builds");
+    Ok(false)
+}
+
+#[command]
+async fn test_pipeline_connectivity() -> Result<bool, String> {
+    // Test basic connectivity to the pipeline API
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get("http://localhost:5001/api/pipeline-info")
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await;
+    
+    match response {
+        Ok(resp) => Ok(resp.status().is_success()),
+        Err(_) => Ok(false),
+    }
+}
+
+#[command]
 async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
     let client = reqwest::Client::new();
     
@@ -713,6 +816,11 @@ pub fn run() {
         process_genomic_file,
         get_job_status,
         get_job_results,
+        // First-run setup commands
+        check_environment,
+        check_database_exists,
+        initialize_database,
+        test_pipeline_connectivity,
         // File processing helpers
         save_temp_file
     ])

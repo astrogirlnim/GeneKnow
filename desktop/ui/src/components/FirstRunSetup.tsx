@@ -41,7 +41,8 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
     }
   ]);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  // Track current step for debugging if needed
+  // const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -61,7 +62,6 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
   const runSetup = async () => {
     try {
       // Step 1: Check environment
-      setCurrentStep(0);
       updateStep('check-env', 'running');
       
       const envCheck = await invoke<boolean>('check_environment');
@@ -73,7 +73,6 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
       setProgress(25);
 
       // Step 2: Initialize database if needed
-      setCurrentStep(1);
       updateStep('init-db', 'running');
       
       const dbExists = await invoke<boolean>('check_database_exists');
@@ -93,7 +92,6 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
       setProgress(65);
 
       // Step 3: Start API server
-      setCurrentStep(2);
       updateStep('start-server', 'running');
       
       const serverStarted = await invoke<boolean>('start_api_server');
@@ -127,7 +125,6 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
       setProgress(90);
 
       // Step 4: Verify everything works
-      setCurrentStep(3);
       updateStep('verify', 'running');
       
       // Test a simple pipeline operation
@@ -198,7 +195,7 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
           </div>
 
           <div className="space-y-6 mb-8">
-            {steps.map((step, index) => (
+            {steps.map((step) => (
               <div key={step.id} className="flex items-start space-x-4">
                 <div className="flex-shrink-0 mt-1">
                   {getStepIcon(step.status)}

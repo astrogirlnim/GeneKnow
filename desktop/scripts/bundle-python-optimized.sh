@@ -21,7 +21,7 @@ echo "=============================================="
 echo "Platform: $OS_TYPE ($ARCH_TYPE)"
 echo "Python Version: $PYTHON_VERSION"
 echo "Bundle Directory: $BUNDLE_DIR"
-echo "Target Size: ~400MB (vs 1.9GB original)"
+echo "Target Size: ~300MB (vs 1.9GB original)"
 echo ""
 
 # Clean previous bundle
@@ -100,7 +100,7 @@ echo "🧪 Testing Python installation..."
 
 # Install lightweight dependencies
 echo "📦 Installing optimized dependencies..."
-echo "   Using requirements-lite.txt for ~75% size reduction"
+echo "   Using requirements-lite.txt for ~85% size reduction (TensorFlow removed)"
 
 # Check if lightweight requirements exist
 REQUIREMENTS_FILE="$PROJECT_ROOT/geneknow_pipeline/requirements-lite.txt"
@@ -223,8 +223,8 @@ cat > "$BUNDLE_DIR/manifest.json" << EOF
   "bundle_size": "$BUNDLE_SIZE",
   "database_size": "$DB_SIZE",
   "optimizations": [
-    "TensorFlow Lite instead of TensorFlow",
-    "Removed test files and documentation",
+    "TensorFlow completely removed (not used in current codebase)",
+    "Removed test files and documentation", 
     "Removed development tools",
     "Removed unused language packs",
     "Bytecode optimization enabled"
@@ -242,7 +242,7 @@ echo ""
 echo "✅ Optimized bundle created successfully!"
 echo "   Platform: $platform_key"
 echo "   Size: $BUNDLE_SIZE (vs 1.9GB original)"
-echo "   Reduction: ~75% smaller"
+echo "   Reduction: ~85% smaller (TensorFlow removed)"
 echo "   Location: $BUNDLE_DIR"
 
 echo ""
@@ -252,7 +252,7 @@ ls -la "$BUNDLE_DIR"
 echo ""
 echo "🎉 Ready for Tauri packaging!"
 echo "   Size reduction achieved by:"
-echo "   • TensorFlow → TensorFlow Lite (1.1GB → ~50MB)"
+echo "   • TensorFlow completely removed (1.1GB → 0MB)"
 echo "   • Removed test files and documentation"
 echo "   • Removed development tools"
 echo "   • Optimized Python bytecode"
