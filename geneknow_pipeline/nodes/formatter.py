@@ -130,11 +130,18 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "quality_control": state["file_metadata"].get("qc_stats", {}),
             "tcga_summary": tcga_summary,
             "cadd_summary": cadd_summary,
+            "metrics": state.get("metrics", {}),
+            "metrics_summary": state.get("metrics_summary", {}),
             "warnings": state["warnings"]
         }
         
         state["structured_json"] = structured_json
         state["completed_nodes"].append("formatter")
+        
+        # Log metrics status to help debug
+        metrics_available = "metrics" in state and state["metrics"]
+        metrics_summary_available = "metrics_summary" in state and state["metrics_summary"]
+        logger.info(f"Formatting complete - Metrics available: {metrics_available}, Summary available: {metrics_summary_available}")
         
         logger.info("Formatting complete")
         
