@@ -1,0 +1,15 @@
+Pathway Burden Model Test Report
+========================================
+Date: 2025-07-10 00:25:43
+Total Tests: 5
+Passed: 5
+Failed: 0
+Duration: 1.65 seconds
+Overall: PASS
+
+Detailed Results:
+  unit_tests: PASS
+  integration_tests: PASS
+  pipeline_test: PASS
+  import_test: PASS
+  syntax_check: PASS

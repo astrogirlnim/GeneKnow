@@ -69,8 +69,18 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         else:
             logger.info("✗ TCGA matches not available")
         
-        # Gene/Pathway burden (future)
-        logger.info("✗ Gene/Pathway burden not implemented yet")
+        # Gene/Pathway burden
+        if "pathway_burden_results" in state:
+            pathway_results = state.get("pathway_burden_results", {})
+            pathway_summary = state.get("pathway_burden_summary", {})
+            logger.info(f"✓ Pathway burden analysis available: {len(pathway_results)} pathways")
+            if pathway_summary:
+                logger.info(f"  Overall burden score: {pathway_summary.get('overall_burden_score', 0):.3f}")
+                high_burden = pathway_summary.get('high_burden_pathways', [])
+                if high_burden:
+                    logger.info(f"  High burden pathways: {', '.join(high_burden)}")
+        else:
+            logger.info("✗ Pathway burden analysis not available")
         logger.info("=" * 60)
         
         # Count variants with each type of annotation
@@ -79,6 +89,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         variants_with_pathogenic = sum(1 for v in filtered_variants if v.get("is_pathogenic"))
         variants_with_tcga = sum(1 for v in filtered_variants if v.get("tcga_cancer_relevance"))
         variants_with_clinvar = sum(1 for v in filtered_variants if v.get("clinvar_clinical_significance"))
+        variants_with_pathway_burden = sum(1 for v in filtered_variants if "pathway_damage_assessment" in v)
         
         logger.info(f"Variant annotation summary:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
@@ -86,6 +97,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  With population data: {variants_with_population}")
         logger.info(f"  With TCGA relevance: {variants_with_tcga}")
         logger.info(f"  With ClinVar annotations: {variants_with_clinvar}")
+        logger.info(f"  With pathway burden assessment: {variants_with_pathway_burden}")
         logger.info(f"  Pathogenic: {variants_with_pathogenic}")
         
         # For now, just pass through
@@ -98,7 +110,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "prs": "prs_results" in state,
                 "clinvar": "clinvar_stats" in state,
                 "tcga": "tcga_matches" in state,
-                "gene_burden": False
+                "pathway_burden": "pathway_burden_results" in state
             },
             "annotation_summary": {
                 "total_variants": len(filtered_variants),
@@ -106,6 +118,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "with_population": variants_with_population,
                 "with_tcga": variants_with_tcga,
                 "with_clinvar": variants_with_clinvar,
+                "with_pathway_burden": variants_with_pathway_burden,
                 "pathogenic": variants_with_pathogenic
             }
         }
