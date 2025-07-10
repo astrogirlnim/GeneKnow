@@ -488,13 +488,12 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
             console.log('📸 Preparing element for borderless capture...');
             
             // Store original styles to restore later - declare outside inner try block
-            let originalStyles = new Map();
-            let elementsWithBorders = [element, ...element.querySelectorAll('*')];
+            const originalStyles = new Map();
+            const elementsWithBorders = [element, ...element.querySelectorAll('*')];
             
             try {
               // Temporarily remove borders from all elements
-              elementsWithBorders.forEach((el, index) => {
-                const computedStyle = window.getComputedStyle(el);
+              elementsWithBorders.forEach((el) => {
                 originalStyles.set(el, {
                   border: el.style.border,
                   borderTop: el.style.borderTop,
