@@ -45,16 +45,8 @@ class CADDTestRunner:
         print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print()
         
-        # Test files to run
-        test_files = [
-            ("Unit Tests", "test_cadd_scoring.py"),
-            ("Minimal Tests", "test_cadd_minimal.py"),
-            ("Integration Tests", "test_cadd_integration.py"),
-            ("Comprehensive Tests", "test_cadd_comprehensive.py"),
-        ]
-        
-        for test_name, test_file in test_files:
-            self.run_test_file(test_name, test_file)
+        # Now we only need to run the comprehensive test file
+        self.run_test_file("Comprehensive CADD Tests", "test_cadd_comprehensive.py")
             
         # Run performance benchmarks
         self.run_performance_benchmarks()

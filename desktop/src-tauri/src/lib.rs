@@ -548,8 +548,9 @@ async fn start_api_server() -> Result<bool, String> {
     let port_file = working_dir.join(".api_server_port");
     
     // Add port file argument
-    let child = if cfg!(debug_assertions) {
+    let mut child = if cfg!(debug_assertions) {
         // Development mode: run Python directly
+        log::info!("Starting Python API server in development mode");
         Command::new(&startup_script)
             .arg("enhanced_api_server.py")
             .arg("--port-file")
@@ -591,6 +592,34 @@ async fn start_api_server() -> Result<bool, String> {
         
         child
     };
+    
+    // In development mode, spawn threads to stream output
+    if cfg!(debug_assertions) {
+        // Take ownership of stdout and stderr
+        if let Some(stdout) = child.stdout.take() {
+            thread::spawn(move || {
+                use std::io::{BufRead, BufReader};
+                let reader = BufReader::new(stdout);
+                for line in reader.lines() {
+                    if let Ok(line) = line {
+                        println!("[Python API] {}", line);
+                    }
+                }
+            });
+        }
+        
+        if let Some(stderr) = child.stderr.take() {
+            thread::spawn(move || {
+                use std::io::{BufRead, BufReader};
+                let reader = BufReader::new(stderr);
+                for line in reader.lines() {
+                    if let Ok(line) = line {
+                        eprintln!("[Python API ERROR] {}", line);
+                    }
+                }
+            });
+        }
+    }
     
     // Store the process handle
     {

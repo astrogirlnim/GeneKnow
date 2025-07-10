@@ -53,15 +53,47 @@ class NumpyEncoder(json.JSONEncoder):
             return None
         return super().default(obj)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with proper formatting and unbuffered output
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # Explicitly use StreamHandler for console output
+    ]
+)
 logger = logging.getLogger(__name__)
+
+# Force unbuffered output for Python (important when running as subprocess)
+import sys
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(line_buffering=True)
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(line_buffering=True)
+
+# Print startup message immediately (before any imports that might affect output)
+print("Starting GeneKnow Enhanced API Server...", flush=True)
 
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')  # Specify async mode for Gunicorn
+
+# Configure eventlet properly to avoid blocking issues
+try:
+    import eventlet
+    # Patch standard library for async operation, but preserve stdout/stderr
+    eventlet.monkey_patch(socket=True, select=True, thread=False)
+    print("Eventlet monkey patching completed", flush=True)
+except ImportError:
+    print("WARNING: eventlet not installed, falling back to threading mode", flush=True)
+    eventlet = None
+
+# Initialize SocketIO with appropriate async mode
+async_mode = 'eventlet' if eventlet else 'threading'
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode, logger=True, engineio_logger=True)
+print(f"SocketIO initialized with async_mode: {async_mode}", flush=True)
 
 # Configuration
 class Config:
@@ -245,7 +277,7 @@ def process_file_async(job_id: str):
                     'variant_count': result.get('variant_count', 0),
                     'risk_scores': result.get('risk_scores', {}),
                     'report_sections': result.get('report_sections', {}),
-                    'processing_time': result.get('processing_time_seconds', 0),
+                    'processing_time_seconds': result.get('processing_time_seconds', 0),
                     'cadd_stats': result.get('cadd_stats', {}),
                     'tcga_matches': result.get('tcga_matches', {}),
                     'tcga_cohort_sizes': result.get('tcga_cohort_sizes', {}),
@@ -660,12 +692,19 @@ if __name__ == '__main__':
             print(f"API_SERVER_PORT:{actual_port}")
     
     # Start the server (Flask development server - for Gunicorn, this block won't run)
+    print(f"Starting GeneKnow Pipeline API Server on port {actual_port}", flush=True)
     logger.info(f"Starting GeneKnow Pipeline API Server on port {actual_port}")
     debug = args.debug or os.environ.get('DEBUG', '').lower() == 'true'
+    
+    # Print configuration for debugging
+    print(f"Debug mode: {debug}", flush=True)
+    print(f"Async mode: {socketio.async_mode}", flush=True)
     
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag
     socketio.run(app, host='0.0.0.0', port=actual_port, debug=debug, allow_unsafe_werkzeug=True)
+    
+    print(f"Server stopped", flush=True)
 
 # Expose app for Gunicorn
 application = app  # Some WSGI servers look for 'application' 

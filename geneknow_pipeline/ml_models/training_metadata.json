@@ -1,0 +1,63 @@
+{
+  "n_samples": 5000,
+  "model_types": [
+    "gradient_boosting",
+    "random_forest",
+    "linear"
+  ],
+  "best_model": "gradient_boosting",
+  "best_score": 0.007177186218905932,
+  "results": {
+    "gradient_boosting": {
+      "train_mse": 0.005994482572951719,
+      "val_mse": 0.007177186218905932,
+      "cv_mse_mean": 0.007045284068825512,
+      "cv_mse_std": 0.0002737426502347591,
+      "feature_importance": {
+        "prs_score": 0.057882854140863936,
+        "cadd_score": 0.04215424041958172,
+        "tcga_enrichment": 0.07582481246675077,
+        "gene_burden_score": 0.056960664646447,
+        "clinvar_pathogenic": 0.587190609786191,
+        "clinvar_benign": 0.17983870751910297,
+        "clinvar_uncertain": 0.00013782829595507866,
+        "clinvar_not_found": 1.0282725107513264e-05
+      },
+      "n_samples": 5000,
+      "model_type": "gradient_boosting"
+    },
+    "random_forest": {
+      "train_mse": 0.007813829395458162,
+      "val_mse": 0.008464959328750745,
+      "cv_mse_mean": 0.008600562429602008,
+      "cv_mse_std": 0.0004993844181667204,
+      "feature_importance": {
+        "prs_score": 0.041920890608341456,
+        "cadd_score": 0.02850203598140398,
+        "tcga_enrichment": 0.07229531898539085,
+        "gene_burden_score": 0.03261083719833093,
+        "clinvar_pathogenic": 0.65002594221077,
+        "clinvar_benign": 0.1746256804957691,
+        "clinvar_uncertain": 0.0,
+        "clinvar_not_found": 1.9294519993630215e-05
+      },
+      "n_samples": 5000,
+      "model_type": "random_forest"
+    },
+    "linear": {
+      "train_mse": 0.008284637325638127,
+      "val_mse": 0.00830684448003501,
+      "cv_mse_mean": 0.008340068608149957,
+      "cv_mse_std": 0.0005049292043198155,
+      "feature_importance": null,
+      "n_samples": 5000,
+      "model_type": "linear"
+    }
+  },
+  "risk_distribution": {
+    "low": 3728,
+    "moderate": 930,
+    "high": 189,
+    "very_high": 153
+  }
+}

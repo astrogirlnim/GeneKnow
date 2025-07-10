@@ -22,6 +22,7 @@ try:
         feature_vector_builder,
         prs_calculator,
         pathway_burden,
+        ml_fusion_node,
         risk_model,
         formatter,
         report_writer
@@ -41,6 +42,7 @@ except ImportError:
         feature_vector_builder,
         prs_calculator,
         pathway_burden,
+        ml_fusion_node,
         risk_model,
         formatter,
         report_writer
@@ -99,7 +101,13 @@ def merge_static_model_results(state: dict) -> dict:
     Merge results from parallel static model execution: TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden.
     Ensures all five enrichment steps are complete before proceeding.
     """
+    # Check if we've already run this merge
+    if "merge_static_models" in state.get("completed_nodes", []):
+        logger.info("Merge static models already completed, skipping re-execution")
+        return state
+    
     logger.info("Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden")
+    logger.info(f"State keys available: {list(state.keys())}")
     
     # Check what results we have from parallel execution
     # Note: In LangGraph, parallel nodes may have already updated the state
@@ -109,6 +117,14 @@ def merge_static_model_results(state: dict) -> dict:
     prs_complete = bool(state.get("prs_results"))
     pathway_burden_complete = bool(state.get("pathway_burden_results"))
     
+    # Debug logging for pathway burden
+    logger.info(f"Checking pathway burden completion:")
+    logger.info(f"  pathway_burden_results exists: {'pathway_burden_results' in state}")
+    logger.info(f"  pathway_burden_results value: {bool(state.get('pathway_burden_results'))}")
+    logger.info(f"  pathway_enriched_variants exists: {'pathway_enriched_variants' in state}")
+    if "pathway_burden_results" in state:
+        logger.info(f"  pathway_burden_results keys: {list(state.get('pathway_burden_results', {}).keys())}")
+    
     # Also check if we got PRS results that haven't been merged yet
     if not prs_complete and state.get("prs_summary"):
         prs_complete = True
@@ -116,6 +132,14 @@ def merge_static_model_results(state: dict) -> dict:
     # Also check if we got pathway burden results that haven't been merged yet
     if not pathway_burden_complete and state.get("pathway_burden_summary"):
         pathway_burden_complete = True
+    
+    # Additional check for pathway burden using summary as indicator
+    if not pathway_burden_complete and "pathway_burden_summary" in state:
+        # Check if it has actual content (not just error state)
+        summary = state.get("pathway_burden_summary", {})
+        if "overall_burden_score" in summary and summary.get("pathways_analyzed", 0) > 0:
+            pathway_burden_complete = True
+            logger.info("Detected pathway burden completion via summary")
     
     if tcga_complete and cadd_complete and clinvar_complete and prs_complete and pathway_burden_complete:
         logger.info("All five parallel processes completed successfully")
@@ -130,16 +154,44 @@ def merge_static_model_results(state: dict) -> dict:
         # The TCGA mapping node produces tcga_matches but doesn't modify filtered_variants
         # The ClinVar annotator produces clinvar_annotations
         # The PRS calculator produces prs_results and prs_summary
-        cadd_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
+        # The pathway burden node also returns filtered_variants with pathway_damage_assessment added
+        
+        # Start with the most enriched version of variants
+        # Prefer CADD enriched variants if available, otherwise use filtered_variants
+        base_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
+        
+        # Create a mapping of variant_id to variant for easier lookup
+        variant_map = {}
+        for variant in base_variants:
+            variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
+            variant_map[variant_id] = variant.copy()  # Make a copy to avoid modifying originals
+        
+        # Debug: Log details about variant merging
+        logger.info(f"Base variants for merging: {len(base_variants)}")
+        logger.info(f"Variant map size: {len(variant_map)}")
+        
+        # If pathway burden returned modified variants, merge in the pathway_damage_assessment
+        if "pathway_enriched_variants" in state and pathway_burden_complete:
+            pathway_merged_count = 0
+            for variant in state["pathway_enriched_variants"]:
+                variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
+                if variant_id in variant_map and "pathway_damage_assessment" in variant:
+                    variant_map[variant_id]["pathway_damage_assessment"] = variant["pathway_damage_assessment"]
+                    pathway_merged_count += 1
+            logger.info(f"Merged pathway_damage_assessment for {pathway_merged_count} variants")
+        
+        # Check for pathway_damage_assessment presence after merge
+        variants_with_pathway_damage = sum(1 for v in variant_map.values() if "pathway_damage_assessment" in v)
+        logger.info(f"Total variants with pathway_damage_assessment: {variants_with_pathway_damage}")
+        
         tcga_matches = state.get("tcga_matches", {})
         clinvar_annotations = state.get("clinvar_annotations", {})
         
         # Add TCGA and ClinVar annotations to each variant
         merged_variants = []
-        for variant in cadd_variants:
-            # Create a copy to avoid modifying the original
-            enriched_variant = variant.copy()
-            variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
+        for variant_id, variant in variant_map.items():
+            # variant is already a copy from variant_map
+            enriched_variant = variant
             
             # Add TCGA cancer relevance data from matches
             tcga_cancer_relevance = 0.0
@@ -188,11 +240,7 @@ def merge_static_model_results(state: dict) -> dict:
                 enriched_variant["clinvar_condition"] = None
                 enriched_variant["clinvar_cancer_related"] = False
             
-            # Add pathway burden data to the variant
-            # The pathway burden node should have already added pathway_damage_assessment to variants
-            # We just need to ensure it's preserved during the merge
-            if "pathway_damage_assessment" in variant:
-                enriched_variant["pathway_damage_assessment"] = variant["pathway_damage_assessment"]
+            # pathway_damage_assessment is already included from the variant_map merge above
             
             merged_variants.append(enriched_variant)
         
@@ -223,33 +271,47 @@ def merge_static_model_results(state: dict) -> dict:
         logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, and ClinVar annotations")
         logger.info(f"PRS calculation completed for {len(state['prs_results'])} cancer types")
         
-        # Track completion of all five parallel nodes
-        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator", "pathway_burden"]
+        # Track completion of all five parallel nodes and the merge itself
+        completed = state.get("completed_nodes", [])
+        for node in ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator", "pathway_burden", "merge_static_models"]:
+            if node not in completed:
+                completed.append(node)
+        state["completed_nodes"] = completed
         
     else:
         logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, ClinVar: {clinvar_complete}, PRS: {prs_complete}, Pathway Burden: {pathway_burden_complete}")
-        if not tcga_complete:
+        
+        # Only add warnings if they haven't been added already
+        existing_warnings = [w if isinstance(w, str) else w.get("message", "") for w in state.get("warnings", [])]
+        
+        if not tcga_complete and "TCGA mapping did not complete successfully" not in existing_warnings:
             state["warnings"].append("TCGA mapping did not complete successfully")
-        if not cadd_complete:
+        if not cadd_complete and "CADD scoring did not complete successfully" not in existing_warnings:
             state["warnings"].append("CADD scoring did not complete successfully")
             # If CADD failed, use filtered_variants as-is
             if not state.get("cadd_enriched_variants"):
                 state["cadd_enriched_variants"] = state.get("filtered_variants", [])
-        if not clinvar_complete:
+        if not clinvar_complete and "ClinVar annotation did not complete successfully" not in existing_warnings:
             state["warnings"].append("ClinVar annotation did not complete successfully")
             # Add empty ClinVar results so pipeline can continue
-            state["clinvar_annotations"] = {}
-            state["clinvar_stats"] = {"total_variants": 0, "variants_annotated": 0}
-        if not prs_complete:
+            if not state.get("clinvar_annotations"):
+                state["clinvar_annotations"] = {}
+            if not state.get("clinvar_stats"):
+                state["clinvar_stats"] = {"total_variants": 0, "variants_annotated": 0}
+        if not prs_complete and "PRS calculation did not complete successfully" not in existing_warnings:
             state["warnings"].append("PRS calculation did not complete successfully")
             # Add empty PRS results so pipeline can continue
-            state["prs_results"] = {}
-            state["prs_summary"] = {"overall_confidence": "failed"}
-        if not pathway_burden_complete:
+            if not state.get("prs_results"):
+                state["prs_results"] = {}
+            if not state.get("prs_summary"):
+                state["prs_summary"] = {"overall_confidence": "failed"}
+        if not pathway_burden_complete and "Pathway burden analysis did not complete successfully" not in existing_warnings:
             state["warnings"].append("Pathway burden analysis did not complete successfully")
             # Add empty pathway burden results so pipeline can continue
-            state["pathway_burden_results"] = {}
-            state["pathway_burden_summary"] = {"overall_burden_score": 0.0, "error": "failed"}
+            if not state.get("pathway_burden_results"):
+                state["pathway_burden_results"] = {}
+            if not state.get("pathway_burden_summary"):
+                state["pathway_burden_summary"] = {"overall_burden_score": 0.0, "error": "failed"}
         
         # Track partial completion
         completed_nodes = state.get("completed_nodes", [])
@@ -263,6 +325,9 @@ def merge_static_model_results(state: dict) -> dict:
             completed_nodes.append("prs_calculator")
         if pathway_burden_complete and "pathway_burden" not in completed_nodes:
             completed_nodes.append("pathway_burden")
+        # Always mark merge as complete to prevent re-execution
+        if "merge_static_models" not in completed_nodes:
+            completed_nodes.append("merge_static_models")
         state["completed_nodes"] = completed_nodes
     
     return state
@@ -324,6 +389,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("merge_static_models", merge_static_model_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("prs_calculator", prs_calculator.process)
+    workflow.add_node("ml_fusion", ml_fusion_node.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -365,8 +431,9 @@ def create_genomic_pipeline() -> StateGraph:
     # Continue with feature vector building after merge
     workflow.add_edge("merge_static_models", "feature_vector_builder")
     
-    # Feature vector builder feeds directly into risk model
-    workflow.add_edge("feature_vector_builder", "risk_model")
+    # Feature vector builder -> ML fusion -> risk model
+    workflow.add_edge("feature_vector_builder", "ml_fusion")
+    workflow.add_edge("ml_fusion", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")
@@ -408,6 +475,9 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "clinvar_stats": None,  # Initialize ClinVar stats
         "prs_results": {},  # Initialize PRS results
         "prs_summary": {},  # Initialize PRS summary
+        "pathway_burden_results": {},  # Initialize pathway burden results
+        "pathway_burden_summary": {},  # Initialize pathway burden summary
+        "pathway_enriched_variants": None,  # Initialize pathway enriched variants
         "risk_scores": {},
         "structured_json": {},
         "report_markdown": "",

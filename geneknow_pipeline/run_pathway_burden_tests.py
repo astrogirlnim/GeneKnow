@@ -74,19 +74,14 @@ def check_prerequisites():
         print(f"❌ {pathway_burden_file} missing")
         checks.append(False)
     
-    # Check if test files exist
-    test_files = [
-        "test_pathway_burden.py",
-        "test_pathway_burden_integration.py"
-    ]
-    
-    for test_file in test_files:
-        if os.path.exists(test_file):
-            print(f"✅ {test_file} exists")
-            checks.append(True)
-        else:
-            print(f"❌ {test_file} missing")
-            checks.append(False)
+    # Check if test file exists
+    test_file = "test_pathway_burden.py"
+    if os.path.exists(test_file):
+        print(f"✅ {test_file} exists")
+        checks.append(True)
+    else:
+        print(f"❌ {test_file} missing")
+        checks.append(False)
     
     # Check if graph.py has pathway_burden
     try:
@@ -137,32 +132,24 @@ def run_all_tests():
     results = {}
     total_duration = 0
     
-    # Test 1: Unit Tests
+    # Run comprehensive test
     success, duration, stdout, stderr = run_command(
         "python test_pathway_burden.py",
-        "Unit Tests - Individual Functions"
+        "Comprehensive Pathway Burden Tests"
     )
-    results["unit_tests"] = success
+    results["pathway_burden_tests"] = success
     total_duration += duration
     
-    # Test 2: Integration Tests
-    success, duration, stdout, stderr = run_command(
-        "python test_pathway_burden_integration.py",
-        "Integration Tests - Full Pipeline"
-    )
-    results["integration_tests"] = success
-    total_duration += duration
-    
-    # Test 3: Quick Pipeline Test (if available)
-    if os.path.exists("test_pipeline.py"):
+    # Quick Pipeline Test (if available)
+    if os.path.exists("test_pipeline_comprehensive.py"):
         success, duration, stdout, stderr = run_command(
-            "python test_pipeline.py",
-            "Quick Pipeline Test - End-to-End"
+            "python test_pipeline_comprehensive.py",
+            "Comprehensive Pipeline Test"
         )
         results["pipeline_test"] = success
         total_duration += duration
     
-    # Test 4: Import Test
+    # Import Test
     success, duration, stdout, stderr = run_command(
         "python -c \"from nodes.pathway_burden import process, CANCER_PATHWAYS; print('Import successful'); print(f'Pathways: {len(CANCER_PATHWAYS)}')\"",
         "Import Test - Module Loading"
@@ -170,7 +157,7 @@ def run_all_tests():
     results["import_test"] = success
     total_duration += duration
     
-    # Test 5: Syntax Check
+    # Syntax Check
     success, duration, stdout, stderr = run_command(
         "python -m py_compile nodes/pathway_burden.py",
         "Syntax Check - Code Compilation"
