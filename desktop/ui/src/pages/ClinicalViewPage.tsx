@@ -2887,7 +2887,7 @@ const ClinicalViewPage: React.FC = () => {
                 color: '#111827',
                 marginBottom: '0.5rem'
               }}>
-                Clinical Genomics Dashboard
+                In-Depth Analysis
               </h1>
               <p style={{
                 color: '#4B5563',
