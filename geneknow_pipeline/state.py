@@ -26,6 +26,7 @@ class GenomicState(TypedDict):
     
     # TCGA matching results
     tcga_matches: Dict[str, Dict[str, Any]]  # {cancer_type: {variant_id: match_info}}
+    tcga_cohort_sizes: Dict[str, int]  # {cancer_type: sample_count}
     
     # CADD enrichment results
     cadd_enriched_variants: Optional[List[Dict[str, Any]]]  # Variants with CADD annotations

@@ -319,6 +319,7 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "filtered_variants": [],
         "variant_count": 0,
         "tcga_matches": {},
+        "tcga_cohort_sizes": {},  # Initialize TCGA cohort sizes
         "cadd_enriched_variants": None,
         "cadd_stats": None,
         "prs_results": {},  # Initialize PRS results
