@@ -184,7 +184,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - variant_count: total number of variants found
     """
     logger.info("Starting variant calling with DeepVariant")
-    state["current_node"] = "variant_calling"
+    # Note: Don't set current_node to avoid concurrent updates during parallel execution
     
     try:
         bam_path = state["aligned_bam_path"]
@@ -207,25 +207,29 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Parse VCF file
         variants = parse_vcf_file(vcf_path)
         
-        state["vcf_path"] = vcf_path
-        state["raw_variants"] = variants
-        state["variant_count"] = len(variants)
-        
         logger.info(f"Variant calling complete. Found {len(variants)} variants")
         
         # Log some variant details
         for v in variants[:3]:  # First 3 variants
             logger.debug(f"Variant: {v['variant_id']} in {v.get('gene', 'Unknown')} - {v.get('consequence', 'unknown')}")
         
-        state["completed_nodes"].append("variant_calling")
+        # Note: Don't append to completed_nodes to avoid concurrent updates
+        # The merge node will handle tracking completion
+        
+        # Return only the keys this node updates
+        return {
+            "vcf_path": vcf_path,
+            "raw_variants": variants,
+            "variant_count": len(variants)
+        }
         
     except Exception as e:
         logger.error(f"Variant calling failed: {str(e)}")
-        state["errors"].append({
-            "node": "variant_calling",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-    
-    return state 
+        return {
+            "errors": [{
+                "node": "variant_calling",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }],
+            "pipeline_status": "failed"
+        } 

@@ -249,10 +249,11 @@ def pipeline_info():
                 {'id': 'preprocess', 'name': 'Preprocessing', 'description': 'Aligns FASTQ or loads variants'},
                 {'id': 'variant_calling', 'name': 'Variant Calling', 'description': 'Identifies genetic variants'},
                 {'id': 'qc_filter', 'name': 'Quality Control', 'description': 'Filters low-quality variants'},
-                {'id': 'population_mapper', 'name': 'Population Mapping', 'description': 'Maps variants to population frequencies'},
+                {'id': 'population_mapper', 'name': 'Population Mapping', 'description': 'Maps variants to population frequencies and ClinVar'},
+                {'id': 'tcga_mapper', 'name': 'TCGA Frequency Analysis', 'description': 'Calculates tumor enrichment scores from TCGA database'},
                 {'id': 'cadd_scoring', 'name': 'CADD Scoring', 'description': 'Enriches variants with deleteriousness scores'},
                 {'id': 'feature_vector_builder', 'name': 'Feature Vector Builder', 'description': 'Combines static model outputs'},
-                {'id': 'risk_model', 'name': 'Risk Assessment', 'description': 'ML-based risk prediction'},
+                {'id': 'risk_model', 'name': 'Risk Assessment', 'description': 'ML-based risk prediction with multi-signal fusion'},
                 {'id': 'formatter', 'name': 'Result Formatting', 'description': 'Formats results for frontend'},
                 {'id': 'report_writer', 'name': 'Report Generation', 'description': 'Creates final report'}
             ],

@@ -16,6 +16,7 @@ try:
         variant_calling,
         qc_filter,
         population_mapper,
+        tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
         risk_model,
@@ -31,6 +32,7 @@ except ImportError:
         variant_calling,
         qc_filter,
         population_mapper,
+        tcga_mapper,
         cadd_scoring,
         feature_vector_builder,
         risk_model,
@@ -49,12 +51,17 @@ def merge_variants(state: dict) -> dict:
     Combines variants from both variant_calling and qc_filter paths.
     """
     logger.info("Merging results from parallel variant processing")
+    state["current_node"] = "merge_parallel"
+    
+    # Check what we got from the parallel nodes
+    has_raw_variants = bool(state.get("raw_variants"))
+    has_filtered_variants = bool(state.get("filtered_variants"))
     
     # Ensure we have filtered_variants for downstream nodes
-    if not state.get("filtered_variants"):
+    if not has_filtered_variants:
         # If QC filter didn't run (no pre-existing variants), 
         # filter the newly called variants
-        if state.get("raw_variants"):
+        if has_raw_variants:
             logger.info("Applying QC filters to variants")
             from nodes.qc_filter import apply_qc_filters
             state["filtered_variants"] = apply_qc_filters(state["raw_variants"])
@@ -63,9 +70,107 @@ def merge_variants(state: dict) -> dict:
             logger.warning("No variants found after merge")
             state["filtered_variants"] = []
             state["variant_count"] = 0
+    else:
+        # Update variant count if we have filtered variants
+        state["variant_count"] = len(state["filtered_variants"])
+    
+    # Track completion of both parallel nodes
+    completed_nodes = state.get("completed_nodes", [])
+    if has_raw_variants and "variant_calling" not in completed_nodes:
+        completed_nodes.append("variant_calling")
+    if has_filtered_variants and "qc_filter" not in completed_nodes:
+        completed_nodes.append("qc_filter")
+    state["completed_nodes"] = completed_nodes
     
     # Log merge results
     logger.info(f"Merge complete: {state['variant_count']} filtered variants ready for population frequency mapping")
+    
+    return state
+
+
+def merge_tcga_cadd_results(state: dict) -> dict:
+    """
+    Merge results from parallel TCGA mapping and CADD scoring.
+    Ensures both enrichment steps are complete before proceeding.
+    """
+    logger.info("Merging results from parallel TCGA mapping and CADD scoring")
+    state["current_node"] = "merge_tcga_cadd"
+    
+    # Verify both parallel processes completed successfully
+    tcga_complete = bool(state.get("tcga_matches"))
+    cadd_complete = bool(state.get("cadd_enriched_variants"))
+    
+    if tcga_complete and cadd_complete:
+        logger.info("Both TCGA mapping and CADD scoring completed successfully")
+        logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
+        logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
+        
+        # Merge the enriched variants from CADD scoring with TCGA data
+        # The CADD scoring node produces cadd_enriched_variants
+        # The TCGA mapping node produces tcga_matches but doesn't modify filtered_variants
+        cadd_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
+        tcga_matches = state.get("tcga_matches", {})
+        
+        # Add TCGA annotations to each variant
+        merged_variants = []
+        for variant in cadd_variants:
+            # Create a copy to avoid modifying the original
+            enriched_variant = variant.copy()
+            variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
+            
+            # Add TCGA cancer relevance data from matches
+            tcga_cancer_relevance = 0.0
+            tcga_best_match = None
+            
+            # Check all cancer types for this variant
+            for cancer_type, matches in tcga_matches.items():
+                if variant_id in matches:
+                    match_data = matches[variant_id]
+                    enrichment = match_data.get("enrichment_score", 1.0)
+                    
+                    # Calculate cancer relevance (normalized enrichment)
+                    relevance = min(enrichment / 10.0, 1.0)
+                    if relevance > tcga_cancer_relevance:
+                        tcga_cancer_relevance = relevance
+                        tcga_best_match = {
+                            "cancer_type": cancer_type,
+                            "frequency": match_data.get("tumor_frequency", 0.0),
+                            "enrichment": enrichment,
+                            "sample_count": match_data.get("sample_count", 0),
+                            "total_samples": match_data.get("total_samples", 1000)
+                        }
+            
+            # Add TCGA data to the variant
+            enriched_variant["tcga_cancer_relevance"] = tcga_cancer_relevance
+            enriched_variant["tcga_best_match"] = tcga_best_match
+            
+            merged_variants.append(enriched_variant)
+        
+        # Ensure filtered_variants is updated with the merged data
+        state["filtered_variants"] = merged_variants
+        
+        logger.info(f"Merged {len(merged_variants)} variants with both TCGA and CADD annotations")
+        
+        # Track completion of both parallel nodes
+        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring"]
+        
+    else:
+        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}")
+        if not tcga_complete:
+            state["warnings"].append("TCGA mapping did not complete successfully")
+        if not cadd_complete:
+            state["warnings"].append("CADD scoring did not complete successfully")
+            # If CADD failed, use filtered_variants as-is
+            if not state.get("cadd_enriched_variants"):
+                state["cadd_enriched_variants"] = state.get("filtered_variants", [])
+        
+        # Track partial completion
+        completed_nodes = state.get("completed_nodes", [])
+        if tcga_complete and "tcga_mapper" not in completed_nodes:
+            completed_nodes.append("tcga_mapper")
+        if cadd_complete and "cadd_scoring" not in completed_nodes:
+            completed_nodes.append("cadd_scoring")
+        state["completed_nodes"] = completed_nodes
     
     return state
 
@@ -101,7 +206,9 @@ def route_after_preprocess(state: dict) -> list:
 def create_genomic_pipeline() -> StateGraph:
     """
     Creates the main LangGraph pipeline for genomic analysis.
-    Now with parallel execution of variant calling and QC filtering.
+    Features parallel execution at two stages:
+    1. Variant calling and QC filtering run in parallel
+    2. TCGA mapping and CADD scoring run in parallel
     Supports FASTQ, BAM, VCF, and MAF input files.
     
     Returns:
@@ -117,7 +224,9 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("qc_filter", qc_filter.process)
     workflow.add_node("merge_parallel", merge_variants)
     workflow.add_node("population_mapper", population_mapper.process)
+    workflow.add_node("tcga_mapper", tcga_mapper.process)
     workflow.add_node("cadd_scoring", cadd_scoring.process)
+    workflow.add_node("merge_tcga_cadd", merge_tcga_cadd_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("formatter", formatter.process)
@@ -140,17 +249,20 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("variant_calling", "merge_parallel")
     workflow.add_edge("qc_filter", "merge_parallel")
     
-    # MAF files skip directly to population mapping (no merge needed)
-    # Continue with linear flow after merge
+    # Connect parallel paths and direct MAF path to population mapping
     workflow.add_edge("merge_parallel", "population_mapper")
     
-    # New flow with CADD scoring
+    # Parallel execution of TCGA mapping and CADD scoring
+    workflow.add_edge("population_mapper", "tcga_mapper")
     workflow.add_edge("population_mapper", "cadd_scoring")
-    workflow.add_edge("cadd_scoring", "feature_vector_builder")
     
-    # Always include risk model in the pipeline
-    # The flow is: cadd_scoring -> feature_vector_builder -> risk_model -> formatter
-    workflow.add_edge("feature_vector_builder", "risk_model") 
+    # Both parallel paths converge at merge_tcga_cadd
+    workflow.add_edge("tcga_mapper", "merge_tcga_cadd")
+    workflow.add_edge("cadd_scoring", "merge_tcga_cadd")
+    
+    # Continue with feature vector building after merge
+    workflow.add_edge("merge_tcga_cadd", "feature_vector_builder")
+    workflow.add_edge("feature_vector_builder", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")

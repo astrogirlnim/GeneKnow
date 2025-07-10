@@ -195,7 +195,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - cadd_stats: summary statistics
     """
     logger.info("Starting offline CADD scoring")
-    state["current_node"] = "cadd_scoring"
+    # Note: Don't set current_node to avoid concurrent updates during parallel execution
     
     try:
         filtered_variants = state["filtered_variants"]
@@ -287,11 +287,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             max_cancer_phred = max(cancer_gene_scores)
             logger.info(f"Cancer gene CADD scores: mean={mean_cancer_phred:.1f}, max={max_cancer_phred:.1f}")
         
-        # Update state
-        state["cadd_enriched_variants"] = enriched_variants
-        state["cadd_stats"] = stats
-        state["completed_nodes"].append("cadd_scoring")
-        
         # Log summary
         logger.info("=" * 60)
         logger.info("Offline CADD Scoring Summary:")
@@ -305,16 +300,24 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Scoring method: Offline algorithm (no internet required)")
         logger.info("=" * 60)
         
+        # Note: Don't append to completed_nodes to avoid concurrent updates
+        # The merge node will handle tracking completion
+        
+        # Return only the keys this node updates
+        return {
+            "cadd_enriched_variants": enriched_variants,
+            "cadd_stats": stats
+        }
+        
     except Exception as e:
         logger.error(f"CADD scoring failed: {str(e)}")
-        state["errors"].append({
-            "node": "cadd_scoring",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
         # Don't fail the pipeline, just pass through
-        state["cadd_enriched_variants"] = state["filtered_variants"]
-        state["cadd_stats"] = {"error": str(e)}
-        state["completed_nodes"].append("cadd_scoring")
-    
-    return state 
+        return {
+            "cadd_enriched_variants": state["filtered_variants"],
+            "cadd_stats": {"error": str(e)},
+            "errors": [{
+                "node": "cadd_scoring",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        } 
