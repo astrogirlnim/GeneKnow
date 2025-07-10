@@ -78,7 +78,7 @@ CANCER_PATHWAYS = {
 # Variant impact classifications for burden calculation
 DAMAGING_CONSEQUENCES = {
     "high_impact": [
-        "frameshift_variant", "stop_gained", "stop_lost", "start_lost", 
+        "frameshift_variant", "stop_gained", "stop_lost", "start_lost",
         "splice_acceptor_variant", "splice_donor_variant", "nonsense_mutation",
         "frameshift_deletion", "frameshift_insertion"
     ],
@@ -95,7 +95,7 @@ DAMAGING_CONSEQUENCES = {
 def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     """
     Determine if a variant is damaging based on multiple criteria.
-    
+
     Returns dict with:
     - is_damaging: boolean
     - damage_score: float (0-1)
@@ -103,7 +103,7 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     """
     damage_reasons = []
     damage_score = 0.0
-    
+
     # Check CADD score
     cadd_phred = variant.get("cadd_phred", 0)
     if cadd_phred > 25:
@@ -112,7 +112,7 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     elif cadd_phred > 15:
         damage_score += 0.2
         damage_reasons.append(f"Moderate CADD score ({cadd_phred:.1f})")
-    
+
     # Check ClinVar annotation
     clinical_sig = variant.get("clinical_significance", "").lower()
     if "pathogenic" in clinical_sig and "likely" not in clinical_sig:
@@ -121,12 +121,12 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     elif "likely_pathogenic" in clinical_sig:
         damage_score += 0.3
         damage_reasons.append("ClinVar likely pathogenic")
-    
+
     # Check consequence type
     consequence = variant.get("consequence", "").lower()
     impact = variant.get("impact", "").lower()
     variant_class = variant.get("variant_classification", "").lower()
-    
+
     for cons in DAMAGING_CONSEQUENCES["high_impact"]:
         if cons in consequence or cons in impact or cons in variant_class:
             damage_score += 0.4
@@ -138,11 +138,11 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
                 damage_score += 0.2
                 damage_reasons.append(f"Moderate impact consequence ({cons})")
                 break
-    
+
     # Check allele frequency (rare variants more likely damaging)
     af = variant.get("allele_frequency", 0.5)
     pop_freq = variant.get("population_frequency", af)
-    
+
     if pop_freq < 0.0001:  # Ultra-rare
         damage_score += 0.2
         damage_reasons.append(f"Ultra-rare variant (AF={pop_freq:.6f})")
@@ -152,73 +152,73 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     elif pop_freq > 0.01:  # Common variants less likely damaging
         damage_score *= 0.5
         damage_reasons.append(f"Common variant reduces damage score (AF={pop_freq:.3f})")
-    
+
     # Check if variant is in a cancer gene (from CADD scoring)
     gene = variant.get("gene", "")
     if any(gene in pathway_data["genes"] for pathway_data in CANCER_PATHWAYS.values()):
         damage_score += 0.1
         damage_reasons.append(f"Variant in cancer gene ({gene})")
-    
+
     # Normalize damage score to 0-1 range
     damage_score = min(damage_score, 1.0)
-    
+
     # Consider damaging if score > 0.3 or has strong evidence
     is_damaging = damage_score > 0.3 or any(reason.startswith("ClinVar pathogenic") for reason in damage_reasons)
-    
+
     return {
         "is_damaging": is_damaging,
         "damage_score": damage_score,
         "damage_reasons": damage_reasons
     }
 
-def calculate_pathway_burden(pathway_name: str, pathway_data: Dict[str, Any], 
+def calculate_pathway_burden(pathway_name: str, pathway_data: Dict[str, Any],
                            variants: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Calculate burden score for a specific pathway."""
-    
+
     pathway_genes = set(pathway_data["genes"])
     pathway_variants = []
     damaging_variants = []
     gene_variant_counts = defaultdict(int)
     gene_damaging_counts = defaultdict(int)
-    
+
     # Collect variants in this pathway
     for variant in variants:
         gene = variant.get("gene", "")
         if gene in pathway_genes:
             pathway_variants.append(variant)
             gene_variant_counts[gene] += 1
-            
+
             # Check if variant is damaging
             damage_assessment = is_damaging_variant(variant)
             variant["pathway_damage_assessment"] = damage_assessment
-            
+
             if damage_assessment["is_damaging"]:
                 damaging_variants.append(variant)
                 gene_damaging_counts[gene] += 1
-    
+
     # Calculate burden metrics
     total_variants = len(pathway_variants)
     total_damaging = len(damaging_variants)
     genes_with_variants = len(gene_variant_counts)
     genes_with_damaging = len(gene_damaging_counts)
     pathway_size = len(pathway_genes)
-    
+
     # Calculate raw burden score
     if total_variants > 0:
         raw_burden = total_damaging / total_variants
     else:
         raw_burden = 0.0
-    
+
     # Apply pathway-specific weighting
     pathway_weight = pathway_data.get("weight", 1.0)
     cancer_relevance = pathway_data.get("cancer_relevance", 0.8)
-    
+
     # Normalize by pathway size (larger pathways get adjusted scores)
     size_adjustment = min(pathway_size / 10.0, 1.0)  # Normalize to max 10 genes
-    
+
     # Calculate final burden score
     burden_score = raw_burden * pathway_weight * cancer_relevance * size_adjustment
-    
+
     # Determine risk level
     if burden_score > 0.6:
         risk_level = "high"
@@ -228,7 +228,7 @@ def calculate_pathway_burden(pathway_name: str, pathway_data: Dict[str, Any],
         risk_level = "low"
     else:
         risk_level = "minimal"
-    
+
     # Find top damaging variant
     top_variant = None
     max_damage_score = 0
@@ -244,10 +244,10 @@ def calculate_pathway_burden(pathway_name: str, pathway_data: Dict[str, Any],
                 "cadd_phred": variant.get("cadd_phred"),
                 "clinical_significance": variant.get("clinical_significance")
             }
-    
+
     # Multi-hit genes (genes with multiple damaging variants)
     multi_hit_genes = [gene for gene, count in gene_damaging_counts.items() if count > 1]
-    
+
     return {
         "pathway_name": pathway_name,
         "description": pathway_data["description"],
@@ -271,12 +271,12 @@ def calculate_pathway_burden(pathway_name: str, pathway_data: Dict[str, Any],
 
 def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     """Assess overall pathway burden across all pathways."""
-    
+
     high_burden_pathways = []
     moderate_burden_pathways = []
     total_damaging_variants = 0
     total_variants = 0
-    
+
     # Aggregate statistics
     for pathway_name, results in pathway_results.items():
         risk_level = results["risk_level"]
@@ -284,19 +284,19 @@ def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[st
             high_burden_pathways.append(pathway_name)
         elif risk_level == "moderate":
             moderate_burden_pathways.append(pathway_name)
-        
+
         total_damaging_variants += results["damaging_variants"]
         total_variants += results["total_variants"]
-    
+
     # Calculate overall burden score (weighted average)
     if total_variants > 0:
         overall_burden_score = sum(
-            results["burden_score"] * results["total_variants"] 
+            results["burden_score"] * results["total_variants"]
             for results in pathway_results.values()
         ) / total_variants
     else:
         overall_burden_score = 0.0
-    
+
     # Determine primary concern
     primary_concern = None
     max_burden_score = 0
@@ -304,15 +304,15 @@ def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[st
         if results["burden_score"] > max_burden_score:
             max_burden_score = results["burden_score"]
             primary_concern = pathway_name
-    
+
     # Identify pathway interactions (genes appearing in multiple pathways)
     gene_pathway_map = defaultdict(set)
     for pathway_name, results in pathway_results.items():
         for gene in results["contributing_genes"]:
             gene_pathway_map[gene].add(pathway_name)
-    
+
     multi_pathway_genes = {gene: list(pathways) for gene, pathways in gene_pathway_map.items() if len(pathways) > 1}
-    
+
     return {
         "overall_burden_score": round(overall_burden_score, 3),
         "high_burden_pathways": high_burden_pathways,
@@ -328,49 +328,49 @@ def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[st
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calculate pathway burden scores for all cancer-relevant pathways.
-    
+
     Updates state with:
     - pathway_burden_results: detailed analysis for each pathway
     - pathway_burden_summary: overall burden assessment
     """
     logger.info("Starting pathway burden analysis")
     # Note: Don't set current_node to avoid concurrent updates during parallel execution
-    
+
     try:
         filtered_variants = state["filtered_variants"]
-        
+
         logger.info(f"Analyzing pathway burden for {len(filtered_variants)} variants across {len(CANCER_PATHWAYS)} pathways")
-        
+
         # Calculate burden for each pathway
         pathway_results = {}
-        
+
         for pathway_name, pathway_data in CANCER_PATHWAYS.items():
             logger.info(f"Analyzing {pathway_name} pathway ({len(pathway_data['genes'])} genes)")
-            
+
             burden_result = calculate_pathway_burden(pathway_name, pathway_data, filtered_variants)
             pathway_results[pathway_name] = burden_result
-            
+
             # Log significant findings
             if burden_result["risk_level"] in ["high", "moderate"]:
                 logger.warning(f"🔴 {burden_result['risk_level'].upper()} burden in {pathway_name}: "
                              f"{burden_result['damaging_variants']}/{burden_result['total_variants']} variants "
                              f"(score: {burden_result['burden_score']:.3f})")
-                
+
                 if burden_result["multi_hit_genes"]:
                     logger.warning(f"  Multi-hit genes: {', '.join(burden_result['multi_hit_genes'])}")
-                
+
                 if burden_result["top_variant"]:
                     top = burden_result["top_variant"]
                     logger.warning(f"  Top variant: {top['variant_id']} in {top['gene']} "
                                  f"(damage score: {top['damage_score']:.2f})")
-            
+
             elif burden_result["total_variants"] > 0:
                 logger.info(f"✅ {pathway_name}: {burden_result['damaging_variants']}/{burden_result['total_variants']} variants "
                            f"(score: {burden_result['burden_score']:.3f})")
-        
+
         # Calculate overall burden assessment
         burden_summary = assess_overall_burden(pathway_results)
-        
+
         # Log comprehensive summary
         logger.info("=" * 60)
         logger.info("Pathway Burden Analysis Summary:")
@@ -380,21 +380,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Primary concern: {burden_summary['primary_concern'] or 'None'}")
         logger.info(f"  Total damaging variants: {burden_summary['total_damaging_variants']}")
         logger.info(f"  Pathway crosstalk detected: {burden_summary['pathway_crosstalk']}")
-        
+
         if burden_summary["multi_pathway_genes"]:
             logger.info(f"  Multi-pathway genes: {len(burden_summary['multi_pathway_genes'])}")
             for gene, pathways in burden_summary["multi_pathway_genes"].items():
                 logger.info(f"    {gene}: {', '.join(pathways)}")
-        
+
         logger.info("=" * 60)
-        
+
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion
-        
+
         # IMPORTANT: Return the modified filtered_variants with pathway_damage_assessment added
         # Since we modified variants in-place during calculate_pathway_burden, we need to
         # return them to ensure the modifications are preserved after parallel execution
-        # 
+        #
         # Also create a separate key for pathway-enriched variants to avoid conflicts
         # with other parallel nodes that might also be modifying filtered_variants
         return {
@@ -402,7 +402,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "pathway_burden_summary": burden_summary,
             "pathway_enriched_variants": filtered_variants  # Use a unique key to avoid conflicts
         }
-        
+
     except Exception as e:
         logger.error(f"Pathway burden analysis failed: {str(e)}")
         # Still return empty results so the merge node can detect completion
@@ -426,4 +426,4 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "error": str(e),
                 "timestamp": datetime.now()
             }]
-        } 
+        }

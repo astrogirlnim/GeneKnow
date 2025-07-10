@@ -41,7 +41,7 @@ except ImportError:
 
 __all__ = [
     "file_input",
-    "preprocess", 
+    "preprocess",
     "variant_calling",
     "qc_filter",
     "population_mapper",
@@ -55,4 +55,4 @@ __all__ = [
     "formatter",
     "report_writer",
     "maf_parser"
-] 
+]
