@@ -4,7 +4,8 @@
 $ErrorActionPreference = "Stop"
 
 # Configuration
-$PYTHON_VERSION = "3.11.9"
+$PYTHON_VERSION = "3.11.13"
+$RELEASE_DATE = "20250708"
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PROJECT_ROOT = Split-Path -Parent (Split-Path -Parent $SCRIPT_DIR)
 $DESKTOP_DIR = Join-Path $PROJECT_ROOT "desktop"
@@ -26,7 +27,7 @@ New-Item -ItemType Directory -Path $BUNDLE_DIR -Force | Out-Null
 
 # Download Python
 Write-Host "📥 Downloading Python for Windows..." -ForegroundColor Green
-$pythonUrl = "https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-$PYTHON_VERSION+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+$pythonUrl = "https://github.com/astral-sh/python-build-standalone/releases/download/$RELEASE_DATE/cpython-$PYTHON_VERSION%2B$RELEASE_DATE-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 $pythonArchive = Join-Path $BUNDLE_DIR "python-windows.tar.gz"
 
 Write-Host "   URL: $pythonUrl"

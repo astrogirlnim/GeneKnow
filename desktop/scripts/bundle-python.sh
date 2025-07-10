@@ -5,7 +5,8 @@
 set -e  # Exit on error
 
 # Configuration
-PYTHON_VERSION="3.11.9"
+PYTHON_VERSION="3.11.13"
+RELEASE_DATE="20250708"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DESKTOP_DIR="$PROJECT_ROOT/desktop"
@@ -38,16 +39,16 @@ download_python() {
     
     case $platform in
         "darwin-x86_64")
-            python_url="https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-${PYTHON_VERSION}+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz"
+            python_url="https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE_DATE}/cpython-${PYTHON_VERSION}%2B${RELEASE_DATE}-x86_64-apple-darwin-install_only_stripped.tar.gz"
             ;;
         "darwin-aarch64")
-            python_url="https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-${PYTHON_VERSION}+20241016-aarch64-apple-darwin-install_only_stripped.tar.gz"
+            python_url="https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE_DATE}/cpython-${PYTHON_VERSION}%2B${RELEASE_DATE}-aarch64-apple-darwin-install_only_stripped.tar.gz"
             ;;
         "linux-x86_64")
-            python_url="https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-${PYTHON_VERSION}+20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+            python_url="https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE_DATE}/cpython-${PYTHON_VERSION}%2B${RELEASE_DATE}-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
             ;;
         "windows-x86_64")
-            python_url="https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-${PYTHON_VERSION}+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+            python_url="https://github.com/astral-sh/python-build-standalone/releases/download/${RELEASE_DATE}/cpython-${PYTHON_VERSION}%2B${RELEASE_DATE}-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
             ;;
         *)
             echo "❌ Unsupported platform: $platform"
@@ -59,7 +60,10 @@ download_python() {
     echo "   URL: $python_url"
     
     cd "$BUNDLE_DIR"
-    curl -L -o "$python_archive" "$python_url"
+    curl -L --fail -o "$python_archive" "$python_url" || {
+        echo "❌ Failed to download Python. Trying direct download..."
+        exit 1
+    }
     
     echo "📦 Extracting Python..."
     tar -xzf "$python_archive"

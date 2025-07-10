@@ -306,7 +306,7 @@ Before releasing:
 ## 📚 Additional Resources
 
 - [Tauri Documentation](https://tauri.app/v1/guides/)
-- [Python Standalone Builds](https://github.com/indygreg/python-build-standalone)
+- [Python Standalone Builds](https://github.com/astral-sh/python-build-standalone)
 - [Code Signing Guide](https://tauri.app/v1/guides/distribution/sign)
 - [GitHub Actions Release](https://github.com/tauri-apps/tauri-action)
 
