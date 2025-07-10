@@ -52,6 +52,10 @@ class GenomicState(TypedDict):
     prs_results: Dict[str, Dict[str, Any]]  # {cancer_type: prs_data}
     prs_summary: Dict[str, Any]  # Overall PRS summary
 
+    # ML Fusion results
+    ml_ready_variants: Optional[List[Dict[str, Any]]]  # Variants prepared for ML fusion
+    ml_fusion_results: Optional[Dict[str, Any]]  # ML fusion model predictions
+
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}
     risk_genes: Dict[str, List[str]]  # {cancer_type: [affected_genes]}

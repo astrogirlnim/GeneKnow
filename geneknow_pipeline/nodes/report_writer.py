@@ -105,9 +105,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 }
             },
 
-            "tcga_summary": _format_tcga_summary(structured_data),
+            "tcga_summary": _format_tcga_summary(state),  # Pass state instead of structured_data
 
-            "cadd_summary": _format_cadd_summary(structured_data),
+            "cadd_summary": _format_cadd_summary(state),  # Pass state instead of structured_data
 
             "recommendations": _generate_recommendations(structured_data),
 
@@ -233,25 +233,41 @@ def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return table_data
 
 
-def _format_tcga_summary(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format TCGA comparison summary."""
-    tcga_summary = data.get("tcga_summary", {})
+def _format_tcga_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Format TCGA comparison summary from state."""
+    # Get TCGA data from state
+    tcga_summary = state.get("tcga_summary", {})
+    tcga_matches = state.get("tcga_matches", {})
+    tcga_cohort_sizes = state.get("tcga_cohort_sizes", {})
+    
+    # Count variants with TCGA matches
+    variants_with_matches = 0
+    if tcga_matches:
+        # Count unique variants across all cancer types
+        all_variant_ids = set()
+        for cancer_matches in tcga_matches.values():
+            if isinstance(cancer_matches, dict):
+                all_variant_ids.update(cancer_matches.keys())
+        variants_with_matches = len(all_variant_ids)
+    
+    total_variants = state.get("variant_count", 0)
+    match_rate = (variants_with_matches / total_variants * 100) if total_variants > 0 else 0
 
     return {
-        "cancer_types_analyzed": tcga_summary.get("cancer_types_analyzed", []),
-        "total_cohort_size": sum(tcga_summary.get("cohort_sizes", {}).values()),
-        "cohort_sizes": tcga_summary.get("cohort_sizes", {}),
-        "variants_with_matches": tcga_summary.get("variants_with_tcga_data", 0),
-        "match_rate_percent": (tcga_summary.get("variants_with_tcga_data", 0) /
-                              data['summary']['variants_passed_qc'] * 100) if data['summary']['variants_passed_qc'] > 0 else 0
+        "cancer_types_analyzed": list(tcga_matches.keys()) if tcga_matches else tcga_summary.get("cancer_types_analyzed", []),
+        "total_cohort_size": sum(tcga_cohort_sizes.values()) if tcga_cohort_sizes else sum(tcga_summary.get("cohort_sizes", {}).values()),
+        "cohort_sizes": tcga_cohort_sizes if tcga_cohort_sizes else tcga_summary.get("cohort_sizes", {}),
+        "variants_with_matches": variants_with_matches if tcga_matches else tcga_summary.get("variants_with_tcga_data", 0),
+        "match_rate_percent": match_rate
     }
 
 
-def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format CADD summary."""
-    cadd_summary = data.get("cadd_summary", {})
+def _format_cadd_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Format CADD summary from state's cadd_stats."""
+    # Get cadd_stats from state directly
+    cadd_stats = state.get("cadd_stats", {})
 
-    if not cadd_summary:
+    if not cadd_stats:
         return {
             "enabled": False,
             "variants_scored": 0,
@@ -264,11 +280,11 @@ def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "enabled": True,
-        "variants_scored": cadd_summary.get("variants_scored", 0),
-        "mean_phred_score": round(cadd_summary.get("mean_phred", 0), 2),
-        "max_phred_score": round(cadd_summary.get("max_phred", 0), 2),
-        "high_impact_variants": cadd_summary.get("high_impact_variants", 0),
-        "cancer_gene_variants": cadd_summary.get("cancer_gene_variants", 0),
+        "variants_scored": cadd_stats.get("variants_scored", 0),
+        "mean_phred_score": round(cadd_stats.get("mean_phred", 0), 2),
+        "max_phred_score": round(cadd_stats.get("max_phred", 0), 2),
+        "high_impact_variants": cadd_stats.get("high_impact_variants", 0),
+        "cancer_gene_variants": cadd_stats.get("cancer_gene_variants", 0),
         "description": "Combined Annotation Dependent Depletion (CADD) scores predict variant deleteriousness"
     }
 

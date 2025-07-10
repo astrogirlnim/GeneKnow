@@ -551,6 +551,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "pathway_burden_results": None,  # Use None to detect when node hasn't run
         "pathway_burden_summary": None,
         "pathway_enriched_variants": None,
+        "ml_ready_variants": None,  # Variants prepared for ML fusion
+        "ml_fusion_results": None,  # ML fusion model predictions
         "risk_scores": {},
         "risk_details": {},  # Initialize risk details for metrics
         "ml_risk_assessment": {},  # Initialize ML risk assessment for metrics
