@@ -541,7 +541,7 @@ const DashboardPage: React.FC = () => {
       // Sort cancer risks by score and filter out baseline risks
       const BASELINE_THRESHOLD = 5.0; // Only show risks above 5%
       const topCancerRisks = riskScores
-        .filter(([_cancer, score]) => score > BASELINE_THRESHOLD)
+        .filter(([, score]) => score > BASELINE_THRESHOLD)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10); // Show top 10 risks above threshold
       
