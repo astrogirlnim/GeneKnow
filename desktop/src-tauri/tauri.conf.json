@@ -31,8 +31,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "../bundled_resources/**/*"
-    ]
+    "resources": []
   }
 }

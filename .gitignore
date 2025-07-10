@@ -209,3 +209,6 @@ tf310
 # Any test MAF files
 test_*.maf*
 temp_*.maf*
+
+## port 
+geneknow_pipeline/.api_server_port
