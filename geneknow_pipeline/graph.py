@@ -18,6 +18,7 @@ try:
         population_mapper,
         tcga_mapper,
         cadd_scoring,
+        clinvar_annotator,
         feature_vector_builder,
         prs_calculator,
         risk_model,
@@ -35,6 +36,7 @@ except ImportError:
         population_mapper,
         tcga_mapper,
         cadd_scoring,
+        clinvar_annotator,
         feature_vector_builder,
         prs_calculator,
         risk_model,
@@ -90,37 +92,41 @@ def merge_variants(state: dict) -> dict:
     return state
 
 
-def merge_tcga_cadd_results(state: dict) -> dict:
+def merge_static_model_results(state: dict) -> dict:
     """
-    Merge results from parallel TCGA mapping, CADD scoring, and PRS calculation.
-    Ensures all three enrichment steps are complete before proceeding.
+    Merge results from parallel static model execution: TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation.
+    Ensures all four enrichment steps are complete before proceeding.
     """
-    logger.info("Merging results from parallel TCGA mapping, CADD scoring, and PRS calculation")
+    logger.info("Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation")
     
     # Check what results we have from parallel execution
     # Note: In LangGraph, parallel nodes may have already updated the state
     tcga_complete = bool(state.get("tcga_matches"))
     cadd_complete = bool(state.get("cadd_enriched_variants"))
+    clinvar_complete = bool(state.get("clinvar_annotations"))
     prs_complete = bool(state.get("prs_results"))
     
     # Also check if we got PRS results that haven't been merged yet
     if not prs_complete and state.get("prs_summary"):
         prs_complete = True
     
-    if tcga_complete and cadd_complete and prs_complete:
-        logger.info("All three parallel processes completed successfully")
+    if tcga_complete and cadd_complete and clinvar_complete and prs_complete:
+        logger.info("All four parallel processes completed successfully")
         logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
         logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
+        logger.info(f"ClinVar annotations: {len(state.get('clinvar_annotations', {}))}")
         logger.info(f"PRS results: {len(state.get('prs_results', {}))}")
         
-        # Merge the enriched variants from CADD scoring with TCGA data
+        # Merge the enriched variants from CADD scoring with TCGA and ClinVar data
         # The CADD scoring node produces cadd_enriched_variants
         # The TCGA mapping node produces tcga_matches but doesn't modify filtered_variants
+        # The ClinVar annotator produces clinvar_annotations
         # The PRS calculator produces prs_results and prs_summary
         cadd_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
         tcga_matches = state.get("tcga_matches", {})
+        clinvar_annotations = state.get("clinvar_annotations", {})
         
-        # Add TCGA annotations to each variant
+        # Add TCGA and ClinVar annotations to each variant
         merged_variants = []
         for variant in cadd_variants:
             # Create a copy to avoid modifying the original
@@ -153,19 +159,57 @@ def merge_tcga_cadd_results(state: dict) -> dict:
             enriched_variant["tcga_cancer_relevance"] = tcga_cancer_relevance
             enriched_variant["tcga_best_match"] = tcga_best_match
             
+            # Add ClinVar data to the variant
+            clinvar_data = clinvar_annotations.get(variant_id, {})
+            if clinvar_data.get("found_in_clinvar"):
+                enriched_variant["clinvar_clinical_significance"] = clinvar_data.get("clinical_significance")
+                enriched_variant["clinvar_risk_score"] = clinvar_data.get("clinical_risk_score", 0.0)
+                enriched_variant["clinvar_interpretation"] = clinvar_data.get("clinical_interpretation")
+                enriched_variant["clinvar_confidence"] = clinvar_data.get("confidence")
+                enriched_variant["clinvar_actionability"] = clinvar_data.get("actionability")
+                enriched_variant["clinvar_recommendation"] = clinvar_data.get("recommendation")
+                enriched_variant["clinvar_condition"] = clinvar_data.get("condition")
+                enriched_variant["clinvar_cancer_related"] = clinvar_data.get("cancer_related", False)
+            else:
+                enriched_variant["clinvar_clinical_significance"] = None
+                enriched_variant["clinvar_risk_score"] = 0.0
+                enriched_variant["clinvar_interpretation"] = "no_clinical_evidence"
+                enriched_variant["clinvar_confidence"] = "none"
+                enriched_variant["clinvar_actionability"] = "none"
+                enriched_variant["clinvar_recommendation"] = "No clinical evidence available"
+                enriched_variant["clinvar_condition"] = None
+                enriched_variant["clinvar_cancer_related"] = False
+            
             merged_variants.append(enriched_variant)
         
         # Ensure filtered_variants is updated with the merged data
         state["filtered_variants"] = merged_variants
         
-        logger.info(f"Merged {len(merged_variants)} variants with TCGA and CADD annotations")
+        # Update file_metadata with summary statistics from all parallel nodes
+        file_metadata = state.get("file_metadata", {})
+        
+        # Add TCGA summary
+        if "tcga_summary" in state:
+            file_metadata["tcga_summary"] = state["tcga_summary"]
+            
+        # Add ClinVar summary
+        if "clinvar_stats" in state:
+            file_metadata["clinvar_summary"] = state["clinvar_stats"]
+            
+        # Add CADD summary
+        if "cadd_stats" in state:
+            file_metadata["cadd_summary"] = state["cadd_stats"]
+        
+        state["file_metadata"] = file_metadata
+        
+        logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, and ClinVar annotations")
         logger.info(f"PRS calculation completed for {len(state['prs_results'])} cancer types")
         
-        # Track completion of all three parallel nodes
-        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "prs_calculator"]
+        # Track completion of all four parallel nodes
+        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator"]
         
     else:
-        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, PRS: {prs_complete}")
+        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, ClinVar: {clinvar_complete}, PRS: {prs_complete}")
         if not tcga_complete:
             state["warnings"].append("TCGA mapping did not complete successfully")
         if not cadd_complete:
@@ -173,6 +217,11 @@ def merge_tcga_cadd_results(state: dict) -> dict:
             # If CADD failed, use filtered_variants as-is
             if not state.get("cadd_enriched_variants"):
                 state["cadd_enriched_variants"] = state.get("filtered_variants", [])
+        if not clinvar_complete:
+            state["warnings"].append("ClinVar annotation did not complete successfully")
+            # Add empty ClinVar results so pipeline can continue
+            state["clinvar_annotations"] = {}
+            state["clinvar_stats"] = {"total_variants": 0, "variants_annotated": 0}
         if not prs_complete:
             state["warnings"].append("PRS calculation did not complete successfully")
             # Add empty PRS results so pipeline can continue
@@ -185,6 +234,8 @@ def merge_tcga_cadd_results(state: dict) -> dict:
             completed_nodes.append("tcga_mapper")
         if cadd_complete and "cadd_scoring" not in completed_nodes:
             completed_nodes.append("cadd_scoring")
+        if clinvar_complete and "clinvar_annotator" not in completed_nodes:
+            completed_nodes.append("clinvar_annotator")
         if prs_complete and "prs_calculator" not in completed_nodes:
             completed_nodes.append("prs_calculator")
         state["completed_nodes"] = completed_nodes
@@ -243,7 +294,8 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("population_mapper", population_mapper.process)
     workflow.add_node("tcga_mapper", tcga_mapper.process)
     workflow.add_node("cadd_scoring", cadd_scoring.process)
-    workflow.add_node("merge_tcga_cadd", merge_tcga_cadd_results)
+    workflow.add_node("clinvar_annotator", clinvar_annotator.process)
+    workflow.add_node("merge_static_models", merge_static_model_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("prs_calculator", prs_calculator.process)
     workflow.add_node("risk_model", risk_model.process)
@@ -270,18 +322,20 @@ def create_genomic_pipeline() -> StateGraph:
     # Connect parallel paths and direct MAF path to population mapping
     workflow.add_edge("merge_parallel", "population_mapper")
     
-    # Parallel execution of TCGA mapping and CADD scoring
+    # Parallel execution of TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation
     workflow.add_edge("population_mapper", "tcga_mapper")
     workflow.add_edge("population_mapper", "cadd_scoring")
-    workflow.add_edge("population_mapper", "prs_calculator") # Added PRS calculator to parallel path
+    workflow.add_edge("population_mapper", "clinvar_annotator")
+    workflow.add_edge("population_mapper", "prs_calculator")
     
-    # Both parallel paths converge at merge_tcga_cadd
-    workflow.add_edge("tcga_mapper", "merge_tcga_cadd")
-    workflow.add_edge("cadd_scoring", "merge_tcga_cadd")
-    workflow.add_edge("prs_calculator", "merge_tcga_cadd") # Added PRS calculator to merge
+    # All parallel paths converge at merge_static_models
+    workflow.add_edge("tcga_mapper", "merge_static_models")
+    workflow.add_edge("cadd_scoring", "merge_static_models")
+    workflow.add_edge("clinvar_annotator", "merge_static_models")
+    workflow.add_edge("prs_calculator", "merge_static_models")
     
     # Continue with feature vector building after merge
-    workflow.add_edge("merge_tcga_cadd", "feature_vector_builder")
+    workflow.add_edge("merge_static_models", "feature_vector_builder")
     
     # Feature vector builder feeds directly into risk model
     workflow.add_edge("feature_vector_builder", "risk_model")
@@ -322,6 +376,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "tcga_cohort_sizes": {},  # Initialize TCGA cohort sizes
         "cadd_enriched_variants": None,
         "cadd_stats": None,
+        "clinvar_annotations": {},  # Initialize ClinVar annotations
+        "clinvar_stats": None,  # Initialize ClinVar stats
         "prs_results": {},  # Initialize PRS results
         "prs_summary": {},  # Initialize PRS summary
         "risk_scores": {},

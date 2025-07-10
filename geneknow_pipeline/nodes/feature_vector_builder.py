@@ -45,11 +45,23 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         else:
             logger.info("✗ CADD scores not available")
         
-        # PRS scores (future)
-        logger.info("✗ PRS scores not implemented yet")
+        # PRS scores  
+        if "prs_results" in state:
+            logger.info(f"✓ PRS scores available: {len(state.get('prs_results', {}))} cancer types")
+            prs_summary = state.get('prs_summary', {})
+            if prs_summary:
+                logger.info(f"  Overall PRS confidence: {prs_summary.get('overall_confidence', 'unknown')}")
+        else:
+            logger.info("✗ PRS scores not available")
         
-        # ClinVar annotations (future)
-        logger.info("✗ ClinVar annotations not implemented yet")
+        # ClinVar annotations 
+        if "clinvar_stats" in state:
+            logger.info(f"✓ ClinVar annotations available: {state['clinvar_stats'].get('variants_annotated', 0)} variants")
+            logger.info(f"  Pathogenic variants: {state['clinvar_stats'].get('pathogenic_variants', 0)}")
+            logger.info(f"  Likely pathogenic variants: {state['clinvar_stats'].get('likely_pathogenic_variants', 0)}")
+            logger.info(f"  Cancer-related variants: {state['clinvar_stats'].get('cancer_related_variants', 0)}")
+        else:
+            logger.info("✗ ClinVar annotations not available")
         
         # TCGA frequency matches (existing, need to integrate)
         if "tcga_matches" in state:
@@ -66,12 +78,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         variants_with_population = sum(1 for v in filtered_variants if "population_frequency" in v)
         variants_with_pathogenic = sum(1 for v in filtered_variants if v.get("is_pathogenic"))
         variants_with_tcga = sum(1 for v in filtered_variants if v.get("tcga_cancer_relevance"))
+        variants_with_clinvar = sum(1 for v in filtered_variants if v.get("clinvar_clinical_significance"))
         
         logger.info(f"Variant annotation summary:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
         logger.info(f"  With CADD scores: {variants_with_cadd}")
         logger.info(f"  With population data: {variants_with_population}")
         logger.info(f"  With TCGA relevance: {variants_with_tcga}")
+        logger.info(f"  With ClinVar annotations: {variants_with_clinvar}")
         logger.info(f"  Pathogenic: {variants_with_pathogenic}")
         
         # For now, just pass through
@@ -81,8 +95,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "message": "Feature vector builder not yet implemented",
             "available_inputs": {
                 "cadd": "cadd_stats" in state,
-                "prs": False,
-                "clinvar": False,
+                "prs": "prs_results" in state,
+                "clinvar": "clinvar_stats" in state,
                 "tcga": "tcga_matches" in state,
                 "gene_burden": False
             },
@@ -91,6 +105,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "with_cadd": variants_with_cadd,
                 "with_population": variants_with_population,
                 "with_tcga": variants_with_tcga,
+                "with_clinvar": variants_with_clinvar,
                 "pathogenic": variants_with_pathogenic
             }
         }

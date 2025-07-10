@@ -232,9 +232,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 logger.info(f"🔬 TCGA match: {variant_id} - relevance: {cancer_assessment['cancer_relevance_score']:.2f}, "
                            f"matched in {cancer_assessment['cancer_types_matched']} cancer types")
         
-        # Update file metadata
-        file_metadata = state.get("file_metadata", {})
-        file_metadata["tcga_summary"] = {
+        # Create summary statistics (will be handled by merge function)
+        tcga_summary = {
             "variants_matched": total_variants_matched,
             "total_variants": len(filtered_variants),
             "match_rate": total_variants_matched / len(filtered_variants) if filtered_variants else 0,
@@ -258,7 +257,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "tcga_matches": tcga_matches,
             "tcga_cohort_sizes": tcga_cohort_sizes,
             "tcga_enriched_variants": enriched_variants,
-            "file_metadata": file_metadata
+            "tcga_summary": tcga_summary
         }
         
     except Exception as e:
