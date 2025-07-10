@@ -79,21 +79,7 @@ print("Starting GeneKnow Enhanced API Server...", flush=True)
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
-
-# Configure eventlet properly to avoid blocking issues
-try:
-    import eventlet
-    # Patch standard library for async operation, but preserve stdout/stderr
-    eventlet.monkey_patch(socket=True, select=True, thread=False)
-    print("Eventlet monkey patching completed", flush=True)
-except ImportError:
-    print("WARNING: eventlet not installed, falling back to threading mode", flush=True)
-    eventlet = None
-
-# Initialize SocketIO with appropriate async mode
-async_mode = 'eventlet' if eventlet else 'threading'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode, logger=True, engineio_logger=True)
-print(f"SocketIO initialized with async_mode: {async_mode}", flush=True)
+socketio = SocketIO(app, cors_allowed_origins="*")  # Let SocketIO choose the best available async mode
 
 # Configuration
 class Config:
@@ -381,7 +367,7 @@ def upload_file():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if file.filename == '':
+        if not file.filename or file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
         if not allowed_file(file.filename):
@@ -406,8 +392,9 @@ def upload_file():
         
         # Get preferences from form data or JSON
         preferences = {}
-        if request.form.get('preferences'):
-            preferences = json.loads(request.form.get('preferences'))
+        preferences_str = request.form.get('preferences')
+        if preferences_str:
+            preferences = json.loads(preferences_str)
         
         # Create job
         job_id = create_job(file_path, preferences)
@@ -591,13 +578,13 @@ def list_jobs():
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection."""
-    logger.info(f"Client connected: {request.sid}")
+    logger.info(f"Client connected")
     emit('connected', {'message': 'Connected to GeneKnow Pipeline'})
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle client disconnection."""
-    logger.info(f"Client disconnected: {request.sid}")
+    logger.info(f"Client disconnected")
 
 @socketio.on('subscribe_job')
 def handle_job_subscription(data):
@@ -605,7 +592,7 @@ def handle_job_subscription(data):
     job_id = data.get('job_id')
     if job_id and job_id in jobs:
         # Join room for this job
-        socketio.server.enter_room(request.sid, job_id)
+        join_room(job_id)
         emit('subscribed', {'job_id': job_id})
         
         # Send current status
@@ -625,7 +612,7 @@ def handle_job_unsubscription(data):
     """Unsubscribe from job updates."""
     job_id = data.get('job_id')
     if job_id:
-        socketio.server.leave_room(request.sid, job_id)
+        leave_room(job_id)
         emit('unsubscribed', {'job_id': job_id})
 
 # Cleanup temporary files on shutdown
@@ -698,7 +685,6 @@ if __name__ == '__main__':
     
     # Print configuration for debugging
     print(f"Debug mode: {debug}", flush=True)
-    print(f"Async mode: {socketio.async_mode}", flush=True)
     
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag

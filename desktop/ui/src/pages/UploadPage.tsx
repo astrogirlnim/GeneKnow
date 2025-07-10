@@ -12,6 +12,91 @@ const DocumentIcon = () => (
   </svg>
 );
 
+// Loading Spinner component
+const LoadingSpinner = () => (
+  <div style={{
+    width: '3rem',
+    height: '3rem',
+    border: '4px solid #E5E7EB',
+    borderTop: '4px solid #2563EB',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  }}>
+    <style>
+      {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+    </style>
+  </div>
+);
+
+// Loading Modal component
+const LoadingModal: React.FC<{ isVisible: boolean; currentStep?: string }> = ({ isVisible, currentStep }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        borderRadius: '0.75rem',
+        padding: '4rem 3rem',
+        maxWidth: '800px',
+        width: '90%',
+        minHeight: '500px',
+        textAlign: 'center',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          marginBottom: '2rem',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <LoadingSpinner />
+        </div>
+        <h3 style={{
+          fontSize: '1.25rem',
+          fontWeight: '600',
+          color: '#111827',
+          marginBottom: '1rem'
+        }}>
+          Analyzing Your Genomic Data
+        </h3>
+        <p style={{
+          fontSize: '0.875rem',
+          color: '#6B7280',
+          marginBottom: '0.5rem'
+        }}>
+          {currentStep || 'Processing your file...'}
+        </p>
+        <p style={{
+          fontSize: '0.75rem',
+          color: '#9CA3AF'
+        }}>
+          This may take a few moments. Please don't close the application.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Mock Test Case Card component
 interface MockTestCaseProps {
   riskLevel: string;
@@ -119,8 +204,14 @@ const UploadPage: React.FC = () => {
     setProgress(null);
 
     try {
+      console.log('=== Starting Analysis ===');
+      console.log('File:', file?.name);
+      console.log('File Path:', filePath);
+      
       // Ensure API server is running
+      console.log('Step 1: Ensuring API server is running...');
       await ensureApiRunning();
+      console.log('Step 1: API server is running');
 
       // For desktop app, we need a file path
       if (!filePath) {
@@ -130,7 +221,7 @@ const UploadPage: React.FC = () => {
       }
 
       // Process the file with progress tracking
-      console.log('Starting file processing for:', filePath);
+      console.log('Step 2: Starting file processing...');
       
       const result = await processAndWait(
         filePath,
@@ -149,9 +240,10 @@ const UploadPage: React.FC = () => {
         }
       );
 
-      console.log('Processing complete:', result);
+      console.log('Step 3: Processing complete!');
       console.log('Result type:', typeof result);
       console.log('Result keys:', result ? Object.keys(result) : 'no result');
+      console.log('Full result:', result);
       
       if (!result) {
         throw new Error('No results returned from processing');
@@ -166,15 +258,24 @@ const UploadPage: React.FC = () => {
       }
       
       // Navigate to dashboard with results
+      console.log('Step 4: Navigating to dashboard...');
       navigate('/dashboard', { 
         state: { 
           results: result,
           fileName: file?.name 
         } 
       });
+      console.log('Step 4: Navigation complete');
+      
     } catch (err) {
-      console.error('Processing error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to process file');
+      console.error('=== Processing Error ===');
+      console.error('Error:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error message:', err instanceof Error ? err.message : String(err));
+      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process file';
+      setError(`Processing failed: ${errorMessage}`);
       
       // Clean up the temporary file on error too
       if (filePath) {
@@ -194,6 +295,59 @@ const UploadPage: React.FC = () => {
     // Navigate to dashboard with the risk level as a URL parameter
     console.log('Selected mock test case risk level:', riskLevel);
     navigate(`/dashboard?risk=${riskLevel}`);
+  };
+
+  const handleTestNavigation = () => {
+    // Test navigation to dashboard with mock data
+    console.log('Testing navigation to dashboard...');
+    const mockResults = {
+      pipeline_status: 'completed',
+      variant_count: 42,
+      risk_scores: { overall_risk: 0.65 },
+      report_sections: {},
+      processing_time_seconds: 45,
+      variants: [
+        { gene: 'BRCA1', position: 'chr17:41234567', type: 'SNV', impact: 'HIGH' },
+        { gene: 'TP53', position: 'chr17:7578406', type: 'SNV', impact: 'MODERATE' }
+      ]
+    };
+    
+    navigate('/dashboard', { 
+      state: { 
+        results: mockResults,
+        fileName: 'test-file.vcf' 
+      } 
+    });
+  };
+
+  const handleTestLoadingFlow = () => {
+    // Test the complete loading → dashboard flow
+    console.log('Testing complete loading flow...');
+    setIsProcessing(true);
+    setProgress({ job_id: 'test', status: 'processing', progress: 50, current_step: 'Testing modal flow...' });
+    
+    // Simulate processing for 3 seconds, then navigate
+    setTimeout(() => {
+      const mockResults = {
+        pipeline_status: 'completed',
+        variant_count: 42,
+        risk_scores: { overall_risk: 0.65 },
+        report_sections: {},
+        processing_time_seconds: 3,
+        variants: [
+          { gene: 'BRCA1', position: 'chr17:41234567', type: 'SNV', impact: 'HIGH' },
+          { gene: 'TP53', position: 'chr17:7578406', type: 'SNV', impact: 'MODERATE' }
+        ]
+      };
+      
+      setIsProcessing(false);
+      navigate('/dashboard', { 
+        state: { 
+          results: mockResults,
+          fileName: file?.name || 'test-file.vcf' 
+        } 
+      });
+    }, 3000);
   };
 
   return (
@@ -244,40 +398,8 @@ const UploadPage: React.FC = () => {
               </div>
             )}
 
-            {/* Processing status */}
-            {isProcessing && progress && (
-              <div style={{
-                padding: '1.5rem',
-                marginBottom: '1.5rem',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #93C5FD',
-                borderRadius: '0.75rem',
-                maxWidth: '600px',
-                margin: '0 auto 1.5rem'
-              }}>
-                <h3 style={{ fontWeight: '600', color: '#1E40AF', marginBottom: '0.5rem' }}>
-                  Processing Your File
-                </h3>
-                <div style={{
-                  width: '100%',
-                  height: '8px',
-                  backgroundColor: '#DBEAFE',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  marginBottom: '0.5rem'
-                }}>
-                  <div style={{
-                    width: `${progress.progress}%`,
-                    height: '100%',
-                    backgroundColor: '#2563EB',
-                    transition: 'width 300ms ease'
-                  }} />
-                </div>
-                <p style={{ fontSize: '0.875rem', color: '#3730A3' }}>
-                  {progress.current_step || 'Processing...'} ({progress.progress}%)
-                </p>
-              </div>
-            )}
+            {/* Loading Modal */}
+            <LoadingModal isVisible={isProcessing} currentStep={progress?.current_step} />
 
             <div
               style={{
@@ -371,6 +493,58 @@ const UploadPage: React.FC = () => {
                 }}
               >
                 Back
+              </button>
+              <button
+                onClick={handleTestNavigation}
+                disabled={isProcessing}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  fontWeight: 'bold',
+                  color: '#FFFFFF',
+                  background: '#059669',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: isProcessing ? 'not-allowed' : 'pointer',
+                  transition: 'all 200ms ease',
+                  fontSize: '0.875rem',
+                  opacity: isProcessing ? 0.6 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!isProcessing) {
+                    e.currentTarget.style.background = '#047857';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#059669';
+                }}
+              >
+                Test Dashboard
+              </button>
+              <button
+                onClick={handleTestLoadingFlow}
+                disabled={isProcessing}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  fontWeight: 'bold',
+                  color: '#FFFFFF',
+                  background: '#7C3AED',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: isProcessing ? 'not-allowed' : 'pointer',
+                  transition: 'all 200ms ease',
+                  fontSize: '0.875rem',
+                  opacity: isProcessing ? 0.6 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!isProcessing) {
+                    e.currentTarget.style.background = '#6D28D9';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#7C3AED';
+                }}
+              >
+                Test Loading
               </button>
               <button
                 onClick={handleStartAnalysis}
