@@ -95,14 +95,16 @@ jobs:
             rust-target: x86_64-unknown-linux-gnu
             name: 'Linux x64'
             emoji: '🐧'
-          - os: windows-latest
-            rust-target: x86_64-pc-windows-msvc
-            name: 'Windows x64'
-            emoji: '🪟'
-          - os: macos-latest
-            rust-target: x86_64-apple-darwin
-            name: 'macOS x64'
-            emoji: '🍎'
+          # TEMPORARILY DISABLED - Expensive PR builds
+          # Re-enable when you have higher GitHub Actions quota
+          # - os: windows-latest
+          #   rust-target: x86_64-pc-windows-msvc
+          #   name: 'Windows x64'
+          #   emoji: '🪟'
+          # - os: macos-latest
+          #   rust-target: x86_64-apple-darwin
+          #   name: 'macOS x64'
+          #   emoji: '🍎'
 
     runs-on: ${{ matrix.platform.os }}
     steps:

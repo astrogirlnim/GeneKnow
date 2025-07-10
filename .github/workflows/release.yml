@@ -508,21 +508,23 @@ jobs:
             name: 'Linux x64'
             emoji: '🐧'
             build-key: 'linux'
-          - os: windows-latest
-            rust-target: x86_64-pc-windows-msvc
-            name: 'Windows x64'
-            emoji: '🪟'
-            build-key: 'windows'
-          - os: macos-latest
-            rust-target: x86_64-apple-darwin
-            name: 'macOS x64'
-            emoji: '🍎'
-            build-key: 'macos'
-          - os: macos-latest
-            rust-target: aarch64-apple-darwin
-            name: 'macOS ARM64'
-            emoji: '🍏'
-            build-key: 'macos-arm'
+          # TEMPORARILY DISABLED - Expensive builds (macOS = $0.08/min, Windows = $0.016/min)
+          # Re-enable these when you have higher GitHub Actions quota
+          # - os: windows-latest
+          #   rust-target: x86_64-pc-windows-msvc
+          #   name: 'Windows x64'
+          #   emoji: '🪟'
+          #   build-key: 'windows'
+          # - os: macos-latest
+          #   rust-target: x86_64-apple-darwin
+          #   name: 'macOS x64'
+          #   emoji: '🍎'
+          #   build-key: 'macos'
+          # - os: macos-latest
+          #   rust-target: aarch64-apple-darwin
+          #   name: 'macOS ARM64'
+          #   emoji: '🍏'
+          #   build-key: 'macos-arm'
     runs-on: ${{ matrix.os }}
     steps:
       - name: 🔍 Check if platform needs building
