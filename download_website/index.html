@@ -31,9 +31,13 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
       
-      /* Enhance logo colors to match theme */
+      /* Enhance logo colors and crop bottom text */
       .logo-enhanced {
-        filter: contrast(1.2) saturate(1.3);
+        filter: contrast(1.3) saturate(1.4) hue-rotate(-15deg);
+        object-fit: cover;
+        object-position: top;
+        height: 400px;
+        clip-path: inset(0 0 15% 0);
       }
       
       /* Ensure consistent blue theming */
