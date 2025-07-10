@@ -104,6 +104,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         filtered_variants = state["filtered_variants"]
         patient_data = state.get("patient_data", {})
         
+        # Get PRS results if available
+        prs_results = state.get("prs_results", {})
+        prs_summary = state.get("prs_summary", {})
+        
         # Load model configuration
         models_dir = "models"
         config_path = os.path.join(models_dir, "model_config.json")
@@ -280,6 +284,10 @@ def _simple_risk_calculation(state: Dict[str, Any],
     """Fallback simple risk calculation when ML models aren't available."""
     logger.warning("Using simple risk calculation (ML models not available)")
     
+    # Get PRS results to incorporate polygenic risk
+    prs_results = state.get("prs_results", {})
+    prs_summary = state.get("prs_summary", {})
+    
     # High-risk gene weights - now also considering variant impact
     gene_risks = {
         "BRCA1": {"breast": 60, "prostate": 20},
@@ -340,6 +348,53 @@ def _simple_risk_calculation(state: Dict[str, Any],
         "blood": 1.7,
         "bone": 1.9
     }
+    
+    # Map PRS cancer types to our risk score keys
+    prs_to_risk_mapping = {
+        "BRCA": "breast",
+        "OVCA": "breast",  # Ovarian cancer shares risk with breast
+        "PRAD": "prostate",
+        "LUAD": "lung",
+        "COAD": "colon",
+        "PANCA": "colon"  # Pancreatic shares some risk factors with colon
+    }
+    
+    # Incorporate PRS scores if available
+    if prs_results:
+        logger.info("Incorporating PRS scores into risk calculation")
+        for prs_cancer, prs_data in prs_results.items():
+            if prs_cancer in prs_to_risk_mapping:
+                risk_type = prs_to_risk_mapping[prs_cancer]
+                
+                # Get PRS percentile and confidence
+                percentile = prs_data.get("percentile", 50)
+                confidence = prs_data.get("confidence", "low")
+                risk_category = prs_data.get("risk_category", "low")
+                
+                # Calculate PRS contribution based on percentile
+                # High percentile = higher risk
+                if percentile >= 95:
+                    prs_contribution = 15.0  # High risk
+                elif percentile >= 80:
+                    prs_contribution = 8.0   # Moderate risk
+                elif percentile >= 60:
+                    prs_contribution = 3.0   # Slightly elevated
+                else:
+                    prs_contribution = 0.0   # Average or below
+                
+                # Adjust contribution based on confidence
+                if confidence == "low":
+                    prs_contribution *= 0.3  # Low confidence = reduced impact
+                elif confidence == "moderate":
+                    prs_contribution *= 0.7
+                # High confidence = full contribution
+                
+                # Apply PRS contribution
+                if prs_contribution > 0:
+                    risk_scores[risk_type] = min(risk_scores[risk_type] + prs_contribution, 95.0)
+                    logger.info(f"PRS for {prs_cancer} adds {prs_contribution:.1f}% to {risk_type} risk "
+                              f"(percentile: {percentile}, confidence: {confidence})")
+    
     risk_genes = {cancer: [] for cancer in risk_scores}
     pathogenic_genes = {cancer: [] for cancer in risk_scores}
     benign_genes = {cancer: [] for cancer in risk_scores}
@@ -428,6 +483,16 @@ def _simple_risk_calculation(state: Dict[str, Any],
     state["risk_genes"] = risk_genes
     state["pathogenic_risk_genes"] = pathogenic_genes
     state["benign_risk_genes"] = benign_genes
+    
+    # Add PRS integration metadata
+    if prs_summary:
+        state["risk_integration"] = {
+            "prs_high_risk_cancers": prs_summary.get("high_risk_cancers", []),
+            "prs_confidence": prs_summary.get("overall_confidence", "not_available"),
+            "risk_calculation_method": "integrated_prs_and_variants"
+        }
+        logger.info(f"Risk calculation integrated PRS data: {prs_summary.get('high_risk_cancers', [])}")
+    
     state["warnings"].append({
         "node": "risk_model",
         "warning": "Using simple risk calculation - ML models not available",

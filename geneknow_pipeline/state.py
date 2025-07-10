@@ -26,10 +26,15 @@ class GenomicState(TypedDict):
     
     # TCGA matching results
     tcga_matches: Dict[str, Dict[str, Any]]  # {cancer_type: {variant_id: match_info}}
+    tcga_cohort_sizes: Dict[str, int]  # {cancer_type: sample_count}
     
     # CADD enrichment results
     cadd_enriched_variants: Optional[List[Dict[str, Any]]]  # Variants with CADD annotations
     cadd_stats: Optional[Dict[str, Any]]  # CADD scoring statistics
+    
+    # PRS (Polygenic Risk Score) results
+    prs_results: Dict[str, Dict[str, Any]]  # {cancer_type: prs_data}
+    prs_summary: Dict[str, Any]  # Overall PRS summary
     
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}

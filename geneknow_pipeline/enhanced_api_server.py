@@ -207,6 +207,10 @@ def process_file_async(job_id: str):
                     'report_sections': result.get('report_sections', {}),
                     'processing_time': result.get('processing_time_seconds', 0),
                     'cadd_stats': result.get('cadd_stats', {}),
+                    'tcga_matches': result.get('tcga_matches', {}),
+                    'tcga_cohort_sizes': result.get('tcga_cohort_sizes', {}),
+                    'prs_results': result.get('prs_results', {}),
+                    'prs_summary': result.get('prs_summary', {}),
                     'structured_json': result.get('structured_json', {}),
                     'result_file': result_file
                 })
