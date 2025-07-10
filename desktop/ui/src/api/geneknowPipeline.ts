@@ -115,6 +115,69 @@ export interface PipelineResult {
       cancer_gene_variants: number;
       description: string;
     };
+    metrics?: {
+      timestamp: string;
+      pipeline_version: string;
+      confidence_metrics: {
+        mean_model_confidence: number;
+        risk_score_range: number;
+        ml_fusion_confidence: number;
+      };
+      variant_metrics: {
+        total_variants: number;
+        pathogenic_variants: number;
+        benign_variants: number;
+        uncertain_variants: number;
+        high_cadd_variants: number;
+        genes_affected: number;
+        mean_cadd_score: number;
+        max_cadd_score: number;
+      };
+      prediction_metrics: {
+        max_risk_score: number;
+        high_risk_cancer_count: number;
+        ml_risk_category: string;
+        aggregate_confidence: number;
+      };
+      prs_metrics: {
+        high_prs_cancer_count: number;
+        max_prs_percentile: number;
+        mean_prs_score: number;
+        overall_confidence: string;
+      };
+      pathway_metrics: {
+        high_burden_pathway_count: number;
+        mean_pathway_burden: number;
+        pathway_risk_level: string;
+      };
+      overall_assessment: {
+        high_risk_cancers: string[];
+        max_risk_score: number;
+        clinical_action_needed: boolean;
+        risk_category: string;
+      };
+      performance_indicators: {
+        variant_coverage: boolean;
+        model_confidence_adequate: boolean;
+        sufficient_evidence: boolean;
+      };
+      validation_metrics: {
+        ground_truth_available: boolean;
+        validation_ready: boolean;
+        auc_roc?: number;
+        sensitivity?: number;
+        specificity?: number;
+        f1_score?: number;
+        mcc?: number;
+      };
+    };
+    metrics_summary?: {
+      highest_risk_cancer: string;
+      highest_risk_score: number;
+      pathogenic_variant_count: number;
+      confidence_level: string;
+      validation_ready: boolean;
+    };
     [key: string]: unknown;
   };
   variants?: Array<{
