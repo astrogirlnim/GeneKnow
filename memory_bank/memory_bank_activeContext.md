@@ -1,22 +1,35 @@
 # 🎯 Active Context
 
 ## Current Focus
-**Offline CADD Implementation Complete - Ready for Desktop Application**
+**Complete Deployment Solution Implemented - Ready for Distribution**
 
-The CADD scoring has been successfully refactored to work completely offline, making it suitable for the desktop application. All external dependencies have been removed.
+The GenePredict application now has a complete packaging and deployment solution that bundles Python runtime, the pipeline server, and database into a single distributable application.
 
 ## Recently Completed
-- ✅ Replaced online CADD with offline scoring algorithm
-- ✅ Removed database lookups and remote queries
-- ✅ Implemented local CADD-like scoring based on variant impact
-- ✅ Added cancer gene multipliers (TP53, BRCA1, etc.)
-- ✅ Allele frequency penalties for rare variants
-- ✅ Quality adjustments based on read depth
-- ✅ Fixed risk score calculation in frontend
-- ✅ Cleaned up test report files and updated .gitignore
+- ✅ Created Python bundling scripts for all platforms (bundle-python.sh, bundle-python.ps1)
+- ✅ Updated Tauri configuration to include bundled resources
+- ✅ Modified Rust backend to detect production vs development mode
+- ✅ Implemented automatic server lifecycle management
+- ✅ Created first-run setup UI component with progress tracking
+- ✅ Updated GitHub Actions to bundle Python before building
+- ✅ Added comprehensive deployment documentation
+- ✅ Configured resource paths for production bundles
 
 ## Current Branch
-`disease-risk-model-cadd` (ready to merge)
+`deployment-refactor` (ready to merge)
+
+## Deployment Architecture
+1. **Single Download**: Users download one installer containing everything
+2. **Bundled Components**:
+   - Tauri desktop application
+   - Python 3.11.9 standalone runtime
+   - All Python dependencies pre-installed
+   - GeneKnow pipeline server code
+   - Pre-built database (or first-run initialization)
+3. **Automatic Management**:
+   - Server starts when app opens
+   - Server stops when app closes
+   - No manual configuration needed
 
 ## What's Working Now
 1. **Offline CADD Scoring**:
@@ -46,21 +59,37 @@ The CADD scoring has been successfully refactored to work completely offline, ma
 
 ## Testing Commands
 ```bash
-# Run API server
-cd geneknow_pipeline && source venv/bin/activate && python enhanced_api_server.py
+# Bundle Python runtime (development)
+cd desktop && ./scripts/bundle-python.sh
 
-# Test offline CADD
-cd geneknow_pipeline && source venv/bin/activate && python test_cadd_offline.py -v
+# Test bundled Python
+desktop/bundled_resources/python_runtime/bin/python3 --version
 
-# Test pipeline via API
-curl -X POST http://localhost:5001/api/process -H "Content-Type: application/json" -d '{"file_path": "test_data/test_sample.maf", "file_type": "maf"}'
+# Run in development mode
+cd desktop/ui && pnpm run tauri-dev
+
+# Build for production
+cd desktop && ./scripts/bundle-python.sh
+cd ui && pnpm run tauri-build
+
+# Test API server directly
+cd geneknow_pipeline && python enhanced_api_server.py
 ```
 
 ## Next Steps
-1. **Merge to main** - Offline CADD implementation is production-ready
-2. **Phase 3: PRS Model** - Polygenic Risk Score implementation
-3. **Phase 4: ClinVar Model** - Clinical variant annotations
-4. **Phase 5: Gene/Pathway Burden** - Aggregate scoring
-5. **Phase 6: Risk Fusion** - TensorFlow model to combine all scores
+1. **Test Production Build** - Run bundling script and verify full build process
+2. **Code Signing** - Set up certificates for trusted distribution
+3. **Download Website** - Update download website with installer links
+4. **User Documentation** - Create user guide for installation and usage
+5. **Auto-Update System** - Implement Tauri's updater for seamless updates
+6. **Analytics/Telemetry** - Add privacy-preserving usage analytics
 
-Last Updated: 2025-07-09 
+## Deployment Checklist
+- [ ] Test bundling on all platforms
+- [ ] Verify first-run experience
+- [ ] Test offline functionality
+- [ ] Check resource usage
+- [ ] Validate security settings
+- [ ] Create release notes
+
+Last Updated: 2025-01-11 
