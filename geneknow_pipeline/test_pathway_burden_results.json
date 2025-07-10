@@ -1,0 +1,373 @@
+{
+  "pathway_burden_results": {
+    "dna_repair": {
+      "pathway_name": "dna_repair",
+      "description": "DNA damage response and homologous recombination",
+      "total_variants": 3,
+      "damaging_variants": 3,
+      "burden_score": 1.08,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 13,
+      "genes_with_variants": 3,
+      "genes_with_damaging": 3,
+      "contributing_genes": [
+        "BRCA1",
+        "BRCA2",
+        "ATM"
+      ],
+      "damaging_genes": [
+        "BRCA1",
+        "BRCA2",
+        "ATM"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "17:43045677:G>A",
+        "gene": "BRCA1",
+        "consequence": "missense_variant",
+        "damage_score": 1.0,
+        "cadd_phred": 30,
+        "clinical_significance": "Pathogenic"
+      },
+      "gene_variant_counts": {
+        "BRCA1": 1,
+        "BRCA2": 1,
+        "ATM": 1
+      },
+      "gene_damaging_counts": {
+        "BRCA1": 1,
+        "BRCA2": 1,
+        "ATM": 1
+      },
+      "pathway_weight": 1.2,
+      "cancer_relevance": 0.9
+    },
+    "mismatch_repair": {
+      "pathway_name": "mismatch_repair",
+      "description": "DNA mismatch repair pathway",
+      "total_variants": 2,
+      "damaging_variants": 2,
+      "burden_score": 0.741,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 6,
+      "genes_with_variants": 2,
+      "genes_with_damaging": 2,
+      "contributing_genes": [
+        "MLH1",
+        "MSH2"
+      ],
+      "damaging_genes": [
+        "MLH1",
+        "MSH2"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "3:37034946:G>A",
+        "gene": "MLH1",
+        "consequence": "missense_variant",
+        "damage_score": 1.0,
+        "cadd_phred": 27,
+        "clinical_significance": "Pathogenic"
+      },
+      "gene_variant_counts": {
+        "MLH1": 1,
+        "MSH2": 1
+      },
+      "gene_damaging_counts": {
+        "MLH1": 1,
+        "MSH2": 1
+      },
+      "pathway_weight": 1.3,
+      "cancer_relevance": 0.95
+    },
+    "tumor_suppressors": {
+      "pathway_name": "tumor_suppressors",
+      "description": "Classical tumor suppressor genes",
+      "total_variants": 3,
+      "damaging_variants": 3,
+      "burden_score": 1.235,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 10,
+      "genes_with_variants": 3,
+      "genes_with_damaging": 3,
+      "contributing_genes": [
+        "TP53",
+        "RB1",
+        "CDKN2A"
+      ],
+      "damaging_genes": [
+        "TP53",
+        "RB1",
+        "CDKN2A"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "17:7673803:C>T",
+        "gene": "TP53",
+        "consequence": "missense_variant",
+        "damage_score": 1.0,
+        "cadd_phred": 28,
+        "clinical_significance": "Pathogenic"
+      },
+      "gene_variant_counts": {
+        "TP53": 1,
+        "RB1": 1,
+        "CDKN2A": 1
+      },
+      "gene_damaging_counts": {
+        "TP53": 1,
+        "RB1": 1,
+        "CDKN2A": 1
+      },
+      "pathway_weight": 1.3,
+      "cancer_relevance": 0.95
+    },
+    "oncogenes": {
+      "pathway_name": "oncogenes",
+      "description": "Activated oncogenes",
+      "total_variants": 2,
+      "damaging_variants": 2,
+      "burden_score": 0.935,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 12,
+      "genes_with_variants": 2,
+      "genes_with_damaging": 2,
+      "contributing_genes": [
+        "KRAS",
+        "EGFR"
+      ],
+      "damaging_genes": [
+        "KRAS",
+        "EGFR"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "12:25245350:C>T",
+        "gene": "KRAS",
+        "consequence": "missense_variant",
+        "damage_score": 0.7999999999999999,
+        "cadd_phred": 20,
+        "clinical_significance": "Likely_pathogenic"
+      },
+      "gene_variant_counts": {
+        "KRAS": 1,
+        "EGFR": 1
+      },
+      "gene_damaging_counts": {
+        "KRAS": 1,
+        "EGFR": 1
+      },
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.85
+    },
+    "cell_cycle": {
+      "pathway_name": "cell_cycle",
+      "description": "Cell cycle regulation",
+      "total_variants": 2,
+      "damaging_variants": 2,
+      "burden_score": 0.792,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 2,
+      "genes_with_damaging": 2,
+      "contributing_genes": [
+        "RB1",
+        "CDKN2A"
+      ],
+      "damaging_genes": [
+        "RB1",
+        "CDKN2A"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "9:21968225:C>T",
+        "gene": "CDKN2A",
+        "consequence": "missense_variant",
+        "damage_score": 1.0,
+        "cadd_phred": 23,
+        "clinical_significance": "Pathogenic"
+      },
+      "gene_variant_counts": {
+        "RB1": 1,
+        "CDKN2A": 1
+      },
+      "gene_damaging_counts": {
+        "RB1": 1,
+        "CDKN2A": 1
+      },
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.8
+    },
+    "chromatin_remodeling": {
+      "pathway_name": "chromatin_remodeling",
+      "description": "Chromatin modification and remodeling",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.75
+    },
+    "apoptosis": {
+      "pathway_name": "apoptosis",
+      "description": "Programmed cell death pathway",
+      "total_variants": 1,
+      "damaging_variants": 1,
+      "burden_score": 0.8,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 10,
+      "genes_with_variants": 1,
+      "genes_with_damaging": 1,
+      "contributing_genes": [
+        "TP53"
+      ],
+      "damaging_genes": [
+        "TP53"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "17:7673803:C>T",
+        "gene": "TP53",
+        "consequence": "missense_variant",
+        "damage_score": 1.0,
+        "cadd_phred": 28,
+        "clinical_significance": "Pathogenic"
+      },
+      "gene_variant_counts": {
+        "TP53": 1
+      },
+      "gene_damaging_counts": {
+        "TP53": 1
+      },
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.8
+    },
+    "wnt_signaling": {
+      "pathway_name": "wnt_signaling",
+      "description": "Wnt/beta-catenin signaling",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 0.9,
+      "cancer_relevance": 0.7
+    },
+    "pi3k_akt": {
+      "pathway_name": "pi3k_akt",
+      "description": "PI3K/AKT/mTOR signaling pathway",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.8
+    },
+    "ras_mapk": {
+      "pathway_name": "ras_mapk",
+      "description": "RAS/MAPK signaling pathway",
+      "total_variants": 1,
+      "damaging_variants": 1,
+      "burden_score": 0.842,
+      "raw_burden": 1.0,
+      "risk_level": "high",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 1,
+      "genes_with_damaging": 1,
+      "contributing_genes": [
+        "KRAS"
+      ],
+      "damaging_genes": [
+        "KRAS"
+      ],
+      "multi_hit_genes": [],
+      "top_variant": {
+        "variant_id": "12:25245350:C>T",
+        "gene": "KRAS",
+        "consequence": "missense_variant",
+        "damage_score": 0.7999999999999999,
+        "cadd_phred": 20,
+        "clinical_significance": "Likely_pathogenic"
+      },
+      "gene_variant_counts": {
+        "KRAS": 1
+      },
+      "gene_damaging_counts": {
+        "KRAS": 1
+      },
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.85
+    }
+  },
+  "pathway_burden_summary": {
+    "overall_burden_score": 0.966,
+    "high_burden_pathways": [
+      "dna_repair",
+      "mismatch_repair",
+      "tumor_suppressors",
+      "oncogenes",
+      "cell_cycle",
+      "apoptosis",
+      "ras_mapk"
+    ],
+    "moderate_burden_pathways": [],
+    "primary_concern": "tumor_suppressors",
+    "total_damaging_variants": 14,
+    "total_variants": 14,
+    "pathways_analyzed": 10,
+    "multi_pathway_genes": {
+      "TP53": [
+        "apoptosis",
+        "tumor_suppressors"
+      ],
+      "RB1": [
+        "cell_cycle",
+        "tumor_suppressors"
+      ],
+      "CDKN2A": [
+        "cell_cycle",
+        "tumor_suppressors"
+      ],
+      "KRAS": [
+        "ras_mapk",
+        "oncogenes"
+      ]
+    },
+    "pathway_crosstalk": true
+  }
+}

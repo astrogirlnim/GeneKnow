@@ -21,6 +21,7 @@ try:
         clinvar_annotator,
         feature_vector_builder,
         prs_calculator,
+        pathway_burden,
         risk_model,
         formatter,
         report_writer
@@ -39,6 +40,7 @@ except ImportError:
         clinvar_annotator,
         feature_vector_builder,
         prs_calculator,
+        pathway_burden,
         risk_model,
         formatter,
         report_writer
@@ -94,10 +96,10 @@ def merge_variants(state: dict) -> dict:
 
 def merge_static_model_results(state: dict) -> dict:
     """
-    Merge results from parallel static model execution: TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation.
-    Ensures all four enrichment steps are complete before proceeding.
+    Merge results from parallel static model execution: TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden.
+    Ensures all five enrichment steps are complete before proceeding.
     """
-    logger.info("Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation")
+    logger.info("Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden")
     
     # Check what results we have from parallel execution
     # Note: In LangGraph, parallel nodes may have already updated the state
@@ -105,17 +107,23 @@ def merge_static_model_results(state: dict) -> dict:
     cadd_complete = bool(state.get("cadd_enriched_variants"))
     clinvar_complete = bool(state.get("clinvar_annotations"))
     prs_complete = bool(state.get("prs_results"))
+    pathway_burden_complete = bool(state.get("pathway_burden_results"))
     
     # Also check if we got PRS results that haven't been merged yet
     if not prs_complete and state.get("prs_summary"):
         prs_complete = True
     
-    if tcga_complete and cadd_complete and clinvar_complete and prs_complete:
-        logger.info("All four parallel processes completed successfully")
+    # Also check if we got pathway burden results that haven't been merged yet
+    if not pathway_burden_complete and state.get("pathway_burden_summary"):
+        pathway_burden_complete = True
+    
+    if tcga_complete and cadd_complete and clinvar_complete and prs_complete and pathway_burden_complete:
+        logger.info("All five parallel processes completed successfully")
         logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
         logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
         logger.info(f"ClinVar annotations: {len(state.get('clinvar_annotations', {}))}")
         logger.info(f"PRS results: {len(state.get('prs_results', {}))}")
+        logger.info(f"Pathway burden results: {len(state.get('pathway_burden_results', {}))}")
         
         # Merge the enriched variants from CADD scoring with TCGA and ClinVar data
         # The CADD scoring node produces cadd_enriched_variants
@@ -180,6 +188,12 @@ def merge_static_model_results(state: dict) -> dict:
                 enriched_variant["clinvar_condition"] = None
                 enriched_variant["clinvar_cancer_related"] = False
             
+            # Add pathway burden data to the variant
+            # The pathway burden node should have already added pathway_damage_assessment to variants
+            # We just need to ensure it's preserved during the merge
+            if "pathway_damage_assessment" in variant:
+                enriched_variant["pathway_damage_assessment"] = variant["pathway_damage_assessment"]
+            
             merged_variants.append(enriched_variant)
         
         # Ensure filtered_variants is updated with the merged data
@@ -200,16 +214,20 @@ def merge_static_model_results(state: dict) -> dict:
         if "cadd_stats" in state:
             file_metadata["cadd_summary"] = state["cadd_stats"]
         
+        # Add pathway burden summary
+        if "pathway_burden_summary" in state:
+            file_metadata["pathway_burden_summary"] = state["pathway_burden_summary"]
+        
         state["file_metadata"] = file_metadata
         
         logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, and ClinVar annotations")
         logger.info(f"PRS calculation completed for {len(state['prs_results'])} cancer types")
         
-        # Track completion of all four parallel nodes
-        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator"]
+        # Track completion of all five parallel nodes
+        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator", "pathway_burden"]
         
     else:
-        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, ClinVar: {clinvar_complete}, PRS: {prs_complete}")
+        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, ClinVar: {clinvar_complete}, PRS: {prs_complete}, Pathway Burden: {pathway_burden_complete}")
         if not tcga_complete:
             state["warnings"].append("TCGA mapping did not complete successfully")
         if not cadd_complete:
@@ -227,6 +245,11 @@ def merge_static_model_results(state: dict) -> dict:
             # Add empty PRS results so pipeline can continue
             state["prs_results"] = {}
             state["prs_summary"] = {"overall_confidence": "failed"}
+        if not pathway_burden_complete:
+            state["warnings"].append("Pathway burden analysis did not complete successfully")
+            # Add empty pathway burden results so pipeline can continue
+            state["pathway_burden_results"] = {}
+            state["pathway_burden_summary"] = {"overall_burden_score": 0.0, "error": "failed"}
         
         # Track partial completion
         completed_nodes = state.get("completed_nodes", [])
@@ -238,6 +261,8 @@ def merge_static_model_results(state: dict) -> dict:
             completed_nodes.append("clinvar_annotator")
         if prs_complete and "prs_calculator" not in completed_nodes:
             completed_nodes.append("prs_calculator")
+        if pathway_burden_complete and "pathway_burden" not in completed_nodes:
+            completed_nodes.append("pathway_burden")
         state["completed_nodes"] = completed_nodes
     
     return state
@@ -295,6 +320,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("tcga_mapper", tcga_mapper.process)
     workflow.add_node("cadd_scoring", cadd_scoring.process)
     workflow.add_node("clinvar_annotator", clinvar_annotator.process)
+    workflow.add_node("pathway_burden", pathway_burden.process)
     workflow.add_node("merge_static_models", merge_static_model_results)
     workflow.add_node("feature_vector_builder", feature_vector_builder.process)
     workflow.add_node("prs_calculator", prs_calculator.process)
@@ -322,17 +348,19 @@ def create_genomic_pipeline() -> StateGraph:
     # Connect parallel paths and direct MAF path to population mapping
     workflow.add_edge("merge_parallel", "population_mapper")
     
-    # Parallel execution of TCGA mapping, CADD scoring, ClinVar annotation, and PRS calculation
+    # Parallel execution of TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden
     workflow.add_edge("population_mapper", "tcga_mapper")
     workflow.add_edge("population_mapper", "cadd_scoring")
     workflow.add_edge("population_mapper", "clinvar_annotator")
     workflow.add_edge("population_mapper", "prs_calculator")
+    workflow.add_edge("population_mapper", "pathway_burden")
     
     # All parallel paths converge at merge_static_models
     workflow.add_edge("tcga_mapper", "merge_static_models")
     workflow.add_edge("cadd_scoring", "merge_static_models")
     workflow.add_edge("clinvar_annotator", "merge_static_models")
     workflow.add_edge("prs_calculator", "merge_static_models")
+    workflow.add_edge("pathway_burden", "merge_static_models")
     
     # Continue with feature vector building after merge
     workflow.add_edge("merge_static_models", "feature_vector_builder")

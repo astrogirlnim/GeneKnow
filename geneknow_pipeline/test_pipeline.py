@@ -51,7 +51,10 @@ def test_pipeline():
     if result['warnings']:
         print(f"\n⚠️  Warnings ({len(result['warnings'])}):")
         for warning in result['warnings'][:3]:  # Show first 3
-            print(f"  - {warning['node']}: {warning['warning']}")
+            if isinstance(warning, dict):
+                print(f"  - {warning['node']}: {warning['warning']}")
+            else:
+                print(f"  - {warning}")
     
     # Show risk assessment
     if 'risk_scores' in result:

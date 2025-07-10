@@ -15,6 +15,7 @@ try:
     from . import cadd_scoring
     from . import feature_vector_builder
     from . import prs_calculator
+    from . import pathway_burden
     from . import risk_model
     from . import formatter
     from . import report_writer
@@ -30,6 +31,7 @@ except ImportError:
     import cadd_scoring
     import feature_vector_builder
     import prs_calculator
+    import pathway_burden
     import risk_model
     import formatter
     import report_writer
@@ -45,6 +47,7 @@ __all__ = [
     "cadd_scoring",
     "feature_vector_builder",
     "prs_calculator",
+    "pathway_burden",
     "risk_model",
     "formatter",
     "report_writer",
