@@ -126,7 +126,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     It parses the MAF and converts it to our standard variant format.
     """
     logger.info("Processing MAF file")
-    state["current_node"] = "maf_parser"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         file_path = state["file_path"]
@@ -134,37 +134,38 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Parse MAF file
         variants = parse_maf_file(file_path)
 
-        # Update state with parsed variants
-        state["variants"] = variants
-        state["variant_count"] = len(variants)
-
-        # MAF files are already filtered/processed, so we can use them as filtered_variants
-        state["filtered_variants"] = variants
-
-        # Add metadata
-        state["file_metadata"]["variant_source"] = "MAF"
-        state["file_metadata"]["total_variants"] = len(variants)
+        # Build metadata updates
+        file_metadata = state.get("file_metadata", {}).copy()
+        file_metadata["variant_source"] = "MAF"
+        file_metadata["total_variants"] = len(variants)
 
         # Calculate MAF-specific statistics
         if variants:
             df = pd.DataFrame(variants)
-            state["file_metadata"]["maf_info"] = {
+            file_metadata["maf_info"] = {
                 "unique_genes": df['gene'].nunique(),
                 "unique_samples": df['sample_id'].nunique() if 'sample_id' in df else 1,
                 "variant_classifications": dict(df['variant_classification'].value_counts().head(10)),
                 "top_mutated_genes": dict(df['gene'].value_counts().head(10))
             }
 
-        state["completed_nodes"].append("maf_parser")
         logger.info(f"MAF processing complete: {len(variants)} variants")
+
+        # Return only the keys this node updates
+        return {
+            "variants": variants,
+            "variant_count": len(variants),
+            "filtered_variants": variants,  # MAF files are already filtered/processed
+            "file_metadata": file_metadata
+        }
 
     except Exception as e:
         logger.error(f"MAF processing failed: {str(e)}")
-        state["errors"].append({
-            "node": "maf_parser",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-
-    return state
+        return {
+            "pipeline_status": "failed",
+            "errors": [{
+                "node": "maf_parser",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }

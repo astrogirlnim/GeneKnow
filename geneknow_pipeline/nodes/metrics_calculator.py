@@ -5,7 +5,7 @@ Implements metrics from the Cancer Risk Prediction Metrics document.
 """
 import logging
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, List
 from datetime import datetime
 from collections import defaultdict
 
@@ -272,6 +272,63 @@ def calculate_pathway_burden_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
     return pathway_metrics
 
 
+def aggregate_performance_indicators(metrics_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Aggregate performance indicators across multiple predictions.
+    
+    Args:
+        metrics_list: List of metrics dictionaries for individual predictions
+        
+    Returns:
+        Aggregated performance indicators
+    """
+    if not metrics_list:
+        return {
+            "mean_confidence": 0.0,
+            "mean_risk_score": 0.0,
+            "high_confidence_ratio": 0.0,
+            "variant_quality_score": 0.0
+        }
+    
+    # Extract values
+    confidences = []
+    risk_scores = []
+    high_conf_count = 0
+    
+    for metric in metrics_list:
+        if "confidence" in metric:
+            conf = metric["confidence"]
+            confidences.append(conf)
+            if conf > 0.7:
+                high_conf_count += 1
+                
+        if "prediction" in metric:
+            risk_scores.append(metric["prediction"])
+    
+    # Calculate aggregates
+    mean_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+    mean_risk_score = sum(risk_scores) / len(risk_scores) if risk_scores else 0.0
+    high_conf_ratio = high_conf_count / len(metrics_list) if metrics_list else 0.0
+    
+    # Calculate variant quality score based on available data
+    quality_components = []
+    for metric in metrics_list:
+        if "cadd_score" in metric and metric["cadd_score"] > 0:
+            quality_components.append(min(metric["cadd_score"] / 30, 1.0))
+        if "pathway_burden" in metric:
+            quality_components.append(metric["pathway_burden"])
+            
+    variant_quality = sum(quality_components) / len(quality_components) if quality_components else 0.5
+    
+    return {
+        "mean_confidence": round(mean_confidence, 3),
+        "mean_risk_score": round(mean_risk_score, 3),
+        "high_confidence_ratio": round(high_conf_ratio, 3),
+        "variant_quality_score": round(variant_quality, 3),
+        "total_predictions": len(metrics_list)
+    }
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calculate comprehensive metrics based on risk model outputs.
@@ -284,7 +341,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - Integration of PRS and pathway burden metrics
     """
     logger.info("Starting metrics calculation")
-    state["current_node"] = "metrics_calculator"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Get risk model outputs
@@ -317,53 +374,54 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # 4. Prepare validation metrics structure
         validation_structure = prepare_validation_metrics_structure(state)
-        metrics["validation_metrics"] = validation_structure
+        metrics["validation_structure"] = validation_structure
 
-        # 5. Calculate PRS metrics
-        prs_metrics = calculate_prs_metrics(state)
-        metrics["prs_metrics"] = prs_metrics
-
-        # 6. Calculate pathway burden metrics
-        pathway_metrics = calculate_pathway_burden_metrics(state)
-        metrics["pathway_metrics"] = pathway_metrics
-
-        # 7. Calculate overall risk assessment metrics
-        high_risk_cancers = [c for c, score in risk_scores.items() if score > 50]
-        metrics["overall_assessment"] = {
-            "high_risk_cancer_count": len(high_risk_cancers),
-            "high_risk_cancers": high_risk_cancers,
-            "max_risk_score": max(risk_scores.values()) if risk_scores else 0,
-            "risk_category": ml_assessment.get("risk_category", "unknown"),
-            "clinical_action_needed": len(high_risk_cancers) > 0 or
-                                    variant_metrics.get("pathogenic_variants", 0) > 5
+        # 5. Integrate PRS and pathway burden metrics
+        prs_metrics = state.get("prs_summary", {})
+        pathway_metrics = state.get("pathway_burden_summary", {})
+        
+        integration_metrics = {
+            "prs_confidence": prs_metrics.get("overall_confidence", "unknown"),
+            "prs_high_risk_cancers": prs_metrics.get("high_risk_cancers", []),
+            "pathway_burden_score": pathway_metrics.get("overall_burden_score", 0.0),
+            "high_burden_pathways": pathway_metrics.get("high_burden_pathways", [])
         }
+        metrics["integration_metrics"] = integration_metrics
 
-        # 8. Model performance indicators (without ground truth)
-        # These help assess if the model is performing reasonably
-        performance_indicators = {
-            "variant_coverage": variant_metrics.get("total_variants", 0) > 10,
-            "gene_coverage": variant_metrics.get("genes_affected", 0) > 5,
-            "model_confidence_adequate": confidence_metrics.get("mean_model_confidence", 0) > 0.7,
-            "prs_confidence_adequate": prs_metrics.get("prs_overall_confidence") in ["high", "moderate"],
-            "sufficient_evidence": variant_metrics.get("pathogenic_variants", 0) > 0 or
-                                 variant_metrics.get("high_cadd_variants", 0) > 3
-        }
+        # Aggregate performance indicators
+        # Combine all metrics into a list for aggregation
+        all_metrics = []
+        
+        # Add confidence metrics
+        for cancer_type, conf in confidence_metrics.get("model_confidences", {}).items():
+            all_metrics.append({"confidence": conf})
+            
+        # Add prediction metrics
+        for cancer_type, score in risk_scores.items():
+            all_metrics.append({
+                "prediction": score,
+                "confidence": risk_details.get(cancer_type, {}).get("model_confidence", 0.5)
+            })
+            
+        # Add variant quality metrics
+        for variant in state.get("ml_ready_variants", []):
+            if variant.get("cadd_score"):
+                all_metrics.append({
+                    "cadd_score": variant["cadd_score"],
+                    "pathway_burden": variant.get("gene_burden_score", 0.0)
+                })
+        
+        performance_indicators = aggregate_performance_indicators(all_metrics)
         metrics["performance_indicators"] = performance_indicators
 
-        # Log summary
         logger.info("Metrics calculation complete:")
-        logger.info(f"  Overall risk: {metrics['overall_assessment']['risk_category']}")
-        logger.info(f"  High-risk cancers: {', '.join(high_risk_cancers) or 'None'}")
+        logger.info(f"  Overall risk: {prediction_metrics.get('overall_risk_level', 'unknown')}")
+        logger.info(f"  High-risk cancers: {prediction_metrics.get('high_risk_cancers', [])}")
         logger.info(f"  Model confidence: {confidence_metrics.get('mean_model_confidence', 0):.3f}")
         logger.info(f"  Validation ready: {validation_structure['validation_ready']}")
 
-        # Update state
-        state["metrics"] = metrics
-        state["metrics_calculated"] = True
-        state["completed_nodes"].append("metrics_calculator")
-
-        # Add high-level summary for report
-        state["metrics_summary"] = {
+        # Create high-level summary for report
+        metrics_summary = {
             "key_findings": {
                 "highest_risk_cancer": max(risk_scores.items(), key=lambda x: x[1])[0] if risk_scores else None,
                 "highest_risk_score": max(risk_scores.values()) if risk_scores else 0,
@@ -374,17 +432,25 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "validation_status": validation_structure["validation_ready"]
         }
 
-    except Exception as e:
-        logger.error(f"Metrics calculation failed: {str(e)}")
-        state["errors"].append({
-            "node": "metrics_calculator",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        # Provide minimal metrics on failure
-        state["metrics"] = {
-            "error": "Metrics calculation failed",
-            "timestamp": datetime.now().isoformat()
+        # Return only the keys this node updates
+        return {
+            "metrics": metrics,
+            "metrics_calculated": True,
+            "metrics_summary": metrics_summary
         }
 
-    return state
+    except Exception as e:
+        logger.error(f"Metrics calculation failed: {str(e)}")
+        # Return error state updates
+        return {
+            "metrics": {
+                "error": "Metrics calculation failed",
+                "timestamp": datetime.now().isoformat()
+            },
+            "metrics_calculated": False,
+            "errors": [{
+                "node": "metrics_calculator",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }

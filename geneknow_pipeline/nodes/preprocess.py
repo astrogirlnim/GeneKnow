@@ -204,22 +204,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
                     variants.append(variant_data)
 
-            # Update state with variants
-            updated_fields = {
-                "raw_variants": variants,
-                "variant_count": len(variants)
-            }
-
-            # Update the actual state
-            state["raw_variants"] = variants
-            state["variant_count"] = len(variants)
-            state["completed_nodes"].append("preprocess")
-
             logger.info(f"Loaded {len(variants)} variants from VCF")
 
             # Return only the fields this node updates
             # This is important for LangGraph parallel execution
-            return updated_fields
+            return {
+                "raw_variants": variants,
+                "variant_count": len(variants)
+            }
 
         # For FASTQ files, run alignment
         if file_type == "fastq":

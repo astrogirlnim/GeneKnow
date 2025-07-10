@@ -232,12 +232,13 @@ class MLFusionNode:
         # Check if model is loaded
         if not self.is_loaded:
             logger.error("ML Fusion model not loaded. Cannot process.")
-            state['ml_fusion_results'] = {
-                'error': 'Model not loaded',
-                'aggregate_risk_score': 0.0,
-                'risk_category': 'unknown'
+            return {
+                'ml_fusion_results': {
+                    'error': 'Model not loaded',
+                    'aggregate_risk_score': 0.0,
+                    'risk_category': 'unknown'
+                }
             }
-            return state
 
         try:
             # Extract static model outputs from state
@@ -245,12 +246,13 @@ class MLFusionNode:
 
             if not static_inputs:
                 logger.warning("No static model inputs found. Skipping ML fusion.")
-                state['ml_fusion_results'] = {
-                    'error': 'No static model inputs',
-                    'aggregate_risk_score': 0.0,
-                    'risk_category': 'unknown'
+                return {
+                    'ml_fusion_results': {
+                        'error': 'No static model inputs',
+                        'aggregate_risk_score': 0.0,
+                        'risk_category': 'unknown'
+                    }
                 }
-                return state
 
             # Run fusion layer predictions
             fusion_outputs = []
@@ -265,8 +267,8 @@ class MLFusionNode:
             # Calculate aggregate risk
             aggregate_results = self._calculate_aggregate_risk(fusion_outputs)
 
-            # Add detailed results to state
-            state['ml_fusion_results'] = {
+            # Build fusion results
+            ml_fusion_results = {
                 'aggregate_risk_assessment': aggregate_results,
                 'individual_predictions': [output.to_dict() for output in fusion_outputs],
                 'static_model_inputs': [inputs.to_dict() for inputs in static_inputs],
@@ -281,14 +283,19 @@ class MLFusionNode:
             logger.info(f"  Risk category: {aggregate_results['risk_category']}")
             logger.info(f"  High-risk variants: {aggregate_results['high_risk_variants']}")
 
-        except Exception as e:
-            logger.error(f"Error in ML Fusion processing: {e}")
-            state['ml_fusion_results'] = {
-                'error': str(e),
-                'processing_successful': False
+            # Return only the keys this node updates
+            return {
+                'ml_fusion_results': ml_fusion_results
             }
 
-        return state
+        except Exception as e:
+            logger.error(f"Error in ML Fusion processing: {e}")
+            return {
+                'ml_fusion_results': {
+                    'error': str(e),
+                    'processing_successful': False
+                }
+            }
 
 # LangGraph node function
 def process(state: Dict[str, Any]) -> Dict[str, Any]:

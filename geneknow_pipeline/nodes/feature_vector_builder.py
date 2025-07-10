@@ -22,7 +22,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - Gene/Pathway burden
     """
     logger.info("Building comprehensive feature vectors from static models")
-    state["current_node"] = "feature_vector_builder"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Get merged variants with all annotations
@@ -129,27 +129,29 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info("=" * 60)
 
-        # Update state with ML-ready variants
-        state["ml_ready_variants"] = ml_ready_variants
-        state["feature_vector"] = {
-            "status": "complete",
-            "variant_count": len(ml_ready_variants),
-            "features_extracted": ["prs_score", "clinvar", "cadd_score", "tcga_enrichment", "gene_burden_score"],
-            "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False))
-        }
-
-        state["completed_nodes"].append("feature_vector_builder")
+        # Build result with ML-ready variants
         logger.info("Feature vector builder complete - data ready for ML fusion")
+
+        # Return only the keys this node updates
+        return {
+            "ml_ready_variants": ml_ready_variants,
+            "feature_vector": {
+                "status": "complete",
+                "variant_count": len(ml_ready_variants),
+                "features_extracted": ["prs_score", "clinvar", "cadd_score", "tcga_enrichment", "gene_burden_score"],
+                "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False))
+            }
+        }
 
     except Exception as e:
         logger.error(f"Feature vector builder failed: {str(e)}")
-        state["errors"].append({
-            "node": "feature_vector_builder",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        # Provide empty results so pipeline can continue
-        state["ml_ready_variants"] = []
-        state["feature_vector"] = {"status": "failed", "error": str(e)}
-
-    return state
+        # Return error state updates
+        return {
+            "ml_ready_variants": [],
+            "feature_vector": {"status": "failed", "error": str(e)},
+            "errors": [{
+                "node": "feature_vector_builder",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }

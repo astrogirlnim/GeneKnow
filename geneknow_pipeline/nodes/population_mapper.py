@@ -192,7 +192,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - rare_variants: list of variants rare in population (good candidates for pathogenicity)
     """
     logger.info("Starting population frequency mapping")
-    state["current_node"] = "population_mapper"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         filtered_variants = state["filtered_variants"]
@@ -236,11 +236,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 rare_variants.append(variant_id)
                 logger.info(f"🔬 Rare variant: {variant_id} (AF: {pop_data.get('population_frequency', 0):.5f}) - {clinical_assessment['rationale']}")
 
-        state["population_matches"] = population_matches
-        state["rare_variants"] = rare_variants
-        state["pathogenic_variants"] = pathogenic_variants
-        state["benign_variants"] = benign_variants
-
         # Log summary
         logger.info(f"Population mapping complete:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
@@ -248,14 +243,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Rare variants: {len(rare_variants)}")
         logger.info(f"  Pathogenic variants: {len(pathogenic_variants)}")
 
-        state["completed_nodes"].append("population_mapper")
+        # Return only the keys this node updates
+        return {
+            "population_matches": population_matches,
+            "rare_variants": rare_variants,
+            "pathogenic_variants": pathogenic_variants,
+            "benign_variants": benign_variants,
+            "filtered_variants": filtered_variants  # Return updated variants
+        }
 
     except Exception as e:
         logger.error(f"Population mapping failed: {str(e)}")
-        state["errors"].append({
-            "node": "population_mapper",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-
-    return state
+        return {
+            "errors": [{
+                "node": "population_mapper",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }

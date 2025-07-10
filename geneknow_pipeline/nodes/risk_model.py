@@ -98,7 +98,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - risk_genes: genes contributing to each risk
     """
     logger.info("Starting risk model prediction")
-    state["current_node"] = "risk_model"
+    # Note: Don't set current_node to avoid concurrent updates
 
     # Check if ML fusion results are available
     ml_fusion_results = state.get("ml_fusion_results", {})
@@ -257,32 +257,32 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                        f"(genes: {affected_genes}, pathogenic: {pathogenic_affected}, benign excluded: {benign_excluded})")
 
         # Add metadata about the prediction
-        state["risk_scores"] = risk_scores
-        state["risk_genes"] = risk_genes
-        state["risk_details"] = risk_details
-        state["model_version"] = config.get("version", "1.0.0")
+        risk_scores_result = risk_scores
+        risk_genes_result = risk_genes
+        risk_details_result = risk_details
+        model_version = config.get("version", "1.0.0")
 
         # Log high-risk findings
         high_risk_cancers = [c for c, r in risk_scores.items() if r > 50]
         if high_risk_cancers:
             logger.warning(f"High risk detected for: {high_risk_cancers}")
-            state["high_risk_alert"] = True
-            state["high_risk_cancers"] = high_risk_cancers
 
-        state["completed_nodes"].append("risk_model")
         logger.info(f"Risk prediction complete: {risk_scores}")
+
+        # Return only the keys this node updates
+        return {
+            "risk_scores": risk_scores_result,
+            "risk_genes": risk_genes_result,
+            "risk_details": risk_details_result,
+            "model_version": model_version,
+            "high_risk_alert": True if high_risk_cancers else False,
+            "high_risk_cancers": high_risk_cancers
+        }
 
     except Exception as e:
         logger.error(f"Risk model failed: {str(e)}")
-        state["errors"].append({
-            "node": "risk_model",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
         # Fallback to simple calculation
         return _simple_risk_calculation(state, filtered_variants)
-
-    return state
 
 
 def _ml_fusion_risk_calculation(state: Dict[str, Any],
@@ -368,20 +368,6 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
                 risk_genes[cancer_type] = high_risk_genes[:3]  # Top 3 genes
 
         # Add ML fusion metadata
-        state["risk_scores"] = risk_scores
-        state["risk_genes"] = risk_genes
-        state["ml_risk_assessment"] = {
-            "method": "ml_fusion",
-            "aggregate_risk_score": aggregate_risk_score,
-            "risk_category": risk_category,
-            "confidence": confidence,
-            "high_risk_variants": high_risk_variants,
-            "high_risk_genes": high_risk_genes,
-            "moderate_risk_genes": moderate_risk_genes,
-            "contributing_factors": contributing_factors
-        }
-
-        # Log summary
         logger.info(f"ML Fusion Risk Assessment:")
         logger.info(f"  Aggregate risk score: {aggregate_risk_score:.3f}")
         logger.info(f"  Risk category: {risk_category}")
@@ -392,10 +378,23 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
         for cancer_type, score in risk_scores.items():
             logger.info(f"  {cancer_type}: {score}% (genes: {risk_genes.get(cancer_type, [])})")
 
-        state["completed_nodes"].append("risk_model")
         logger.info("Risk model complete (ML fusion)")
 
-        return state
+        # Return only the keys this node updates
+        return {
+            "risk_scores": risk_scores,
+            "risk_genes": risk_genes,
+            "ml_risk_assessment": {
+                "method": "ml_fusion",
+                "aggregate_risk_score": aggregate_risk_score,
+                "risk_category": risk_category,
+                "confidence": confidence,
+                "high_risk_variants": high_risk_variants,
+                "high_risk_genes": high_risk_genes,
+                "moderate_risk_genes": moderate_risk_genes,
+                "contributing_factors": contributing_factors
+            }
+        }
 
     except Exception as e:
         logger.error(f"ML fusion risk calculation failed: {str(e)}")
@@ -604,24 +603,26 @@ def _simple_risk_calculation(state: Dict[str, Any],
         if risk_genes[cancer]:
             logger.info(f"{cancer}: {score:.1f}% (genes: {risk_genes[cancer]}, pathogenic: {pathogenic_genes[cancer]}, benign: {benign_genes[cancer]})")
 
-    state["risk_scores"] = risk_scores
-    state["risk_genes"] = risk_genes
-    state["pathogenic_risk_genes"] = pathogenic_genes
-    state["benign_risk_genes"] = benign_genes
+    # Build result dictionary
+    result = {
+        "risk_scores": risk_scores,
+        "risk_genes": risk_genes,
+        "pathogenic_risk_genes": pathogenic_genes,
+        "benign_risk_genes": benign_genes,
+        "warnings": [{
+            "node": "risk_model",
+            "warning": "Using simple risk calculation - ML models not available",
+            "timestamp": datetime.now()
+        }]
+    }
 
-    # Add PRS integration metadata
+    # Add PRS integration metadata if available
     if prs_summary:
-        state["risk_integration"] = {
+        result["risk_integration"] = {
             "prs_high_risk_cancers": prs_summary.get("high_risk_cancers", []),
             "prs_confidence": prs_summary.get("overall_confidence", "not_available"),
             "risk_calculation_method": "integrated_prs_and_variants"
         }
         logger.info(f"Risk calculation integrated PRS data: {prs_summary.get('high_risk_cancers', [])}")
 
-    state["warnings"].append({
-        "node": "risk_model",
-        "warning": "Using simple risk calculation - ML models not available",
-        "timestamp": datetime.now()
-    })
-
-    return state
+    return result

@@ -19,7 +19,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - pipeline_status: 'completed'
     """
     logger.info("Starting report generation")
-    state["current_node"] = "report_writer"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Check if structured_json exists, if not, create a basic one
@@ -130,30 +130,32 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Also generate markdown version for PDF export
         report_markdown = _generate_markdown_from_sections(report_sections)
 
-        # Update state
-        state["report_sections"] = report_sections
-        state["report_markdown"] = report_markdown
-        state["pipeline_status"] = "completed"
-        state["completed_nodes"].append("report_writer")
-
         # Debug logging
         logger.info(f"Report sections created with keys: {list(report_sections.keys())}")
         logger.info(f"Report sections header: {report_sections.get('header', {})}")
 
         logger.info("Report generation complete")
 
+        # Return only the keys this node updates
+        return {
+            "report_sections": report_sections,
+            "report_markdown": report_markdown,
+            "pipeline_status": "completed"
+        }
+
     except Exception as e:
         import traceback
         logger.error(f"Report generation failed: {str(e)}")
         logger.error(f"Full traceback: {traceback.format_exc()}")
-        state["errors"].append({
-            "node": "report_writer",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-
-    return state
+        # Return error state updates
+        return {
+            "pipeline_status": "failed",
+            "errors": [{
+                "node": "report_writer",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }
 
 
 def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:

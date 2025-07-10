@@ -101,65 +101,90 @@ def merge_variants(state: dict) -> dict:
 def merge_static_model_results(state: dict) -> dict:
     """
     Merge results from parallel static model execution: TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden.
-    Ensures all five enrichment steps are complete before proceeding.
+    This function is called multiple times by LangGraph (once per incoming edge).
     """
-    # Check if we've already run this merge
-    if "merge_static_models" in state.get("completed_nodes", []):
-        logger.info("Merge static models already completed, skipping re-execution")
-        return state
+    logger.info("Merge static models called")
     
-    # Use a simple counter to track how many times we've been called
-    merge_call_count = state.get("_merge_static_calls", 0) + 1
-    state["_merge_static_calls"] = merge_call_count
+    # Increment merge count
+    merge_count = state.get("parallel_merge_count", 0) + 1
+    logger.info(f"Merge static models call #{merge_count}")
     
-    logger.info(f"Merge static models call #{merge_call_count}")
-    logger.info("Merging results from parallel TCGA mapping, CADD scoring, ClinVar annotation, PRS calculation, and pathway burden")
-    logger.info(f"State keys available: {list(state.keys())}")
+    # Initialize parallel tracking if not present
+    if "parallel_nodes_status" not in state:
+        state["parallel_nodes_status"] = {
+            "tcga_mapper": False,
+            "cadd_scoring": False,
+            "clinvar_annotator": False,
+            "prs_calculator": False,
+            "pathway_burden": False
+        }
     
-    # Check what results we have from parallel execution
-    # Note: In LangGraph, parallel nodes may have already updated the state
-    tcga_complete = bool(state.get("tcga_matches")) or bool(state.get("tcga_summary"))
-    cadd_complete = bool(state.get("cadd_enriched_variants")) or bool(state.get("cadd_stats"))
-    clinvar_complete = bool(state.get("clinvar_annotations")) or bool(state.get("clinvar_stats"))
-    prs_complete = bool(state.get("prs_results")) or bool(state.get("prs_summary"))
+    # Get a copy of the status to ensure all 5 nodes are tracked
+    parallel_status = {
+        "tcga_mapper": state["parallel_nodes_status"].get("tcga_mapper", False),
+        "cadd_scoring": state["parallel_nodes_status"].get("cadd_scoring", False),
+        "clinvar_annotator": state["parallel_nodes_status"].get("clinvar_annotator", False),
+        "prs_calculator": state["parallel_nodes_status"].get("prs_calculator", False),
+        "pathway_burden": state["parallel_nodes_status"].get("pathway_burden", False)
+    }
     
-    # Enhanced pathway burden detection
-    pathway_burden_complete = (
-        bool(state.get("pathway_burden_results")) or 
-        bool(state.get("pathway_burden_summary")) or
-        bool(state.get("pathway_enriched_variants"))
-    )
-    
-    # Debug logging for all completions
-    logger.info(f"Completion status:")
-    logger.info(f"  TCGA: {tcga_complete}")
-    logger.info(f"  CADD: {cadd_complete}")
-    logger.info(f"  ClinVar: {clinvar_complete}")
-    logger.info(f"  PRS: {prs_complete}")
-    logger.info(f"  Pathway Burden: {pathway_burden_complete}")
-    
-    # Count how many nodes have completed
-    completed_count = sum([tcga_complete, cadd_complete, clinvar_complete, prs_complete, pathway_burden_complete])
+    # Update completion status based on data presence
+    if state.get("tcga_matches") is not None:
+        parallel_status["tcga_mapper"] = True
+    if state.get("cadd_stats") is not None:
+        parallel_status["cadd_scoring"] = True
+    if state.get("clinvar_annotations") is not None:
+        parallel_status["clinvar_annotator"] = True
+    if state.get("prs_results") is not None:
+        parallel_status["prs_calculator"] = True
+    # Fix: Check for pathway_burden_results instead of pathway_burden_summary
+    if state.get("pathway_burden_results") is not None:
+        parallel_status["pathway_burden"] = True
+        
+    # Count completed nodes
+    completed_count = sum(1 for v in parallel_status.values() if v)
+    logger.info(f"Parallel node completion status: {parallel_status}")
     logger.info(f"Completed nodes: {completed_count}/5")
     
-    # Wait for all 5 nodes to complete before doing the final merge
+    # Check if all nodes are complete
     if completed_count < 5:
-        logger.info(f"Waiting for all parallel nodes to complete ({completed_count}/5 done)")
-        # Don't mark as complete yet - wait for all nodes
-        return state
+        missing_nodes = [node for node, completed in parallel_status.items() if not completed]
+        logger.info(f"Waiting for nodes to complete: {missing_nodes}")
+        # Return updated state with merge count and status, but preserve all existing data
+        return {
+            "parallel_nodes_status": parallel_status,
+            "parallel_merge_count": merge_count
+        }
     
-    # All nodes are complete - proceed with merge
-    logger.info("All five parallel processes completed successfully")
+    # All nodes complete - proceed with merge
+    logger.info("All 5 parallel nodes completed - performing merge")
+    
+    # Check if we've already done the merge
+    if "merge_static_models" in state.get("completed_nodes", []):
+        logger.info("Merge already completed, skipping")
+        return {"parallel_merge_count": merge_count}
+    
+    # All nodes are complete - perform the merge
+    logger.info("All five parallel processes completed successfully - performing merge")
+    
+    # Log what we received
     logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
     logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
     logger.info(f"ClinVar annotations: {len(state.get('clinvar_annotations', {}))}")
     logger.info(f"PRS results: {len(state.get('prs_results', {}))}")
     logger.info(f"Pathway burden results: {len(state.get('pathway_burden_results', {}))}")
     
-    # Merge the enriched variants from CADD scoring with TCGA and ClinVar data
     # Start with the most enriched version of variants
-    # Prefer CADD enriched variants if available, otherwise use filtered_variants
-    base_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
+    # Priority: pathway_enriched_variants > cadd_enriched_variants > filtered_variants
+    if state.get("pathway_enriched_variants"):
+        base_variants = state["pathway_enriched_variants"]
+        logger.info("Using pathway enriched variants as base")
+    elif state.get("cadd_enriched_variants"):
+        base_variants = state["cadd_enriched_variants"]
+        logger.info("Using CADD enriched variants as base")
+    else:
+        base_variants = state.get("filtered_variants", [])
+        logger.info("Using filtered variants as base")
     
     # Create a mapping of variant_id to variant for easier lookup
     variant_map = {}
@@ -167,12 +192,11 @@ def merge_static_model_results(state: dict) -> dict:
         variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
         variant_map[variant_id] = variant.copy()  # Make a copy to avoid modifying originals
     
-    # Debug: Log details about variant merging
     logger.info(f"Base variants for merging: {len(base_variants)}")
     logger.info(f"Variant map size: {len(variant_map)}")
     
     # If pathway burden returned modified variants, merge in the pathway_damage_assessment
-    if "pathway_enriched_variants" in state and pathway_burden_complete:
+    if "pathway_enriched_variants" in state and parallel_status["pathway_burden"]:
         pathway_merged_count = 0
         for variant in state["pathway_enriched_variants"]:
             variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
@@ -245,9 +269,6 @@ def merge_static_model_results(state: dict) -> dict:
         
         merged_variants.append(enriched_variant)
     
-    # Ensure filtered_variants is updated with the merged data
-    state["filtered_variants"] = merged_variants
-    
     # Update file_metadata with summary statistics from all parallel nodes
     file_metadata = state.get("file_metadata", {})
     
@@ -267,8 +288,6 @@ def merge_static_model_results(state: dict) -> dict:
     if "pathway_burden_summary" in state:
         file_metadata["pathway_burden_summary"] = state["pathway_burden_summary"]
     
-    state["file_metadata"] = file_metadata
-    
     logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, ClinVar, and pathway annotations")
     logger.info(f"PRS calculation completed for {len(state.get('prs_results', {}))} cancer types")
     
@@ -277,11 +296,17 @@ def merge_static_model_results(state: dict) -> dict:
     for node in ["tcga_mapper", "cadd_scoring", "clinvar_annotator", "prs_calculator", "pathway_burden", "merge_static_models"]:
         if node not in completed:
             completed.append(node)
-    state["completed_nodes"] = completed
     
     logger.info("Merge static models completed successfully")
     
-    return state
+    # Return all the merge results
+    return {
+        "filtered_variants": merged_variants,
+        "file_metadata": file_metadata,
+        "completed_nodes": completed,
+        "parallel_merge_count": merge_count,
+        "parallel_nodes_status": parallel_status
+    }
 
 
 def route_after_preprocess(state: dict) -> list:
@@ -443,6 +468,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "pipeline_status": "in_progress",
         "current_node": None,
         "completed_nodes": [],
+        "parallel_nodes_status": {},  # Initialize parallel tracking
+        "parallel_merge_count": 0,  # Initialize merge counter
         "errors": [],
         "warnings": [],
         "preferences": user_preferences,

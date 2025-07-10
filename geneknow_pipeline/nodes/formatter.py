@@ -17,7 +17,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - structured_json: formatted data ready for frontend/report
     """
     logger.info("Starting result formatting")
-    state["current_node"] = "formatter"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Extract high-risk findings if risk scores are available
@@ -135,9 +135,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "warnings": state["warnings"]
         }
 
-        state["structured_json"] = structured_json
-        state["completed_nodes"].append("formatter")
-
         # Log metrics status to help debug
         metrics_available = "metrics" in state and state["metrics"]
         metrics_summary_available = "metrics_summary" in state and state["metrics_summary"]
@@ -145,13 +142,19 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info("Formatting complete")
 
+        # Return only the keys this node updates
+        return {
+            "structured_json": structured_json
+        }
+
     except Exception as e:
         logger.error(f"Formatting failed: {str(e)}")
-        state["errors"].append({
-            "node": "formatter",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-
-    return state
+        # Return error state updates
+        return {
+            "pipeline_status": "failed",
+            "errors": [{
+                "node": "formatter",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }
