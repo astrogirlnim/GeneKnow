@@ -520,6 +520,7 @@ jobs:
     steps:
       - name: 🔍 Check if platform needs building
         id: should-build
+        shell: bash
         run: |
           BUILD_ALL="${{ needs.detect-changes.outputs.build-all }}"
           BUILD_LINUX="${{ needs.detect-changes.outputs.build-linux }}"
