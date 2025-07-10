@@ -172,17 +172,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_EXE="$SCRIPT_DIR/python_runtime/bin/python3"
 
 # Set environment variables for optimization
-export PYTHONPATH="$SCRIPT_DIR/geneknow_pipeline:$PYTHONPATH"
+export PYTHONPATH="$SCRIPT_DIR:$SCRIPT_DIR/geneknow_pipeline:$PYTHONPATH"
 export TF_CPP_MIN_LOG_LEVEL=2  # Reduce TensorFlow logging
 export PYTHONOPTIMIZE=1        # Enable Python optimizations
 export PYTHONDONTWRITEBYTECODE=1  # Don't create .pyc files
 
-# Change to pipeline directory
-cd "$SCRIPT_DIR/geneknow_pipeline"
+# Change to the bundled resources directory (parent of geneknow_pipeline)
+cd "$SCRIPT_DIR"
 
-# Start the API server
+# Start the API server using module syntax
 echo "🚀 Starting GeneKnow API Server (Optimized)..."
-exec "$PYTHON_EXE" enhanced_api_server.py "$@"
+exec "$PYTHON_EXE" -m geneknow_pipeline.enhanced_api_server "$@"
 EOF
 
 chmod +x "$BUNDLE_DIR/start_api_server.sh"
