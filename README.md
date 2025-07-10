@@ -93,6 +93,7 @@ cd desktop/ui
 pnpm install
 ```
 
+
 ### 3. Test the Implementation
 ```bash
 # Navigate to desktop directory
