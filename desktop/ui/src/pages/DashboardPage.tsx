@@ -144,19 +144,6 @@ const HazardScoreCard = ({ value, tooltipContent }: { value: string; tooltipCont
   );
 };
 
-// Dynamic font sizing for text that needs to fit
-const getDynamicFontSize = (text: string, maxWidth: number = 200) => {
-  const baseSize = 30; // Base font size in pixels
-  const minSize = 12; // Minimum readable size
-  const charWidth = 0.6; // Approximate character width ratio
-  
-  const textWidth = text.length * baseSize * charWidth;
-  if (textWidth <= maxWidth) return baseSize;
-  
-  const scaledSize = Math.floor(maxWidth / (text.length * charWidth));
-  return Math.max(scaledSize, minSize);
-};
-
 // Metric Card
 const MetricCard = ({ title, value, unit, tooltipContent }: { 
   title: string; 
@@ -554,7 +541,7 @@ const DashboardPage: React.FC = () => {
       // Sort cancer risks by score and filter out baseline risks
       const BASELINE_THRESHOLD = 5.0; // Only show risks above 5%
       const topCancerRisks = riskScores
-        .filter(([_, score]) => score > BASELINE_THRESHOLD)
+        .filter(([_cancer, score]) => score > BASELINE_THRESHOLD)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10); // Show top 10 risks above threshold
       
@@ -1020,7 +1007,7 @@ const DashboardPage: React.FC = () => {
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: '1rem'
                   }}>
-                    {displayData.topCancerRisks.map(([cancer, score]: [string, number], index: number) => {
+                    {displayData.topCancerRisks.map(([cancer, score]: [string, number]) => {
                       const getRiskColor = (risk: number) => {
                         if (risk >= 30) return '#DC2626'; // Red for high risk
                         if (risk >= 15) return '#F59E0B'; // Amber for medium risk
