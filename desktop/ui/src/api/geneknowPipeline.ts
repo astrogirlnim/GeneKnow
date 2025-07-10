@@ -4,10 +4,8 @@
  */
 
 import { io, Socket } from 'socket.io-client';
-
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5001';
+import { apiConfig, ensureApiConfig } from './apiConfig';
+import React from 'react';
 
 // Types and Interfaces
 
@@ -139,14 +137,24 @@ export interface WebSocketError {
 export class GeneKnowPipelineClient {
   private socket: Socket | null = null;
   private progressCallbacks: Map<string, (progress: JobProgress) => void> = new Map();
-  private baseUrl: string;
+  private baseUrl: string = '';
+  private initialized: boolean = false;
 
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
+  constructor() {
+    // URL will be set dynamically
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initialized) {
+      await ensureApiConfig();
+      this.baseUrl = apiConfig.getBaseUrl();
+      this.initialized = true;
+    }
   }
 
   // Health Check
   async checkHealth(): Promise<HealthStatus> {
+    await this.ensureInitialized();
     const response = await fetch(`${this.baseUrl}/api/health`);
     if (!response.ok) throw new Error('Health check failed');
     return response.json();
@@ -154,6 +162,7 @@ export class GeneKnowPipelineClient {
 
   // Pipeline Information
   async getPipelineInfo(): Promise<PipelineInfo> {
+    await this.ensureInitialized();
     const response = await fetch(`${this.baseUrl}/api/pipeline-info`);
     if (!response.ok) throw new Error('Failed to get pipeline info');
     return response.json();
@@ -175,6 +184,7 @@ export class GeneKnowPipelineClient {
     status: string;
     message: string;
   }> {
+    await this.ensureInitialized();
     const formData = new FormData();
     formData.append('file', file);
     if (preferences) {
@@ -275,10 +285,13 @@ export class GeneKnowPipelineClient {
   }
 
   // WebSocket Connection Management
-  connectWebSocket(): void {
+  async connectWebSocket(): Promise<void> {
     if (this.socket?.connected) return;
 
-    this.socket = io(WS_URL, {
+    await this.ensureInitialized();
+    const wsUrl = apiConfig.getWsUrl();
+
+    this.socket = io(wsUrl, {
       transports: ['websocket', 'polling'],
     });
 
@@ -391,9 +404,12 @@ export function useGeneKnowPipeline() {
   const client = geneKnowClient;
 
   // Connect WebSocket on mount
-  if (typeof window !== 'undefined') {
-    client.connectWebSocket();
-  }
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      client.connectWebSocket().catch(console.error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // client is a stable singleton, so we don't need it in deps
 
   return {
     client,

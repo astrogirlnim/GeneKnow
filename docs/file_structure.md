@@ -47,6 +47,22 @@ LiteratureGapper/
 │   │   └── downloads/         # Downloaded data storage
 │   ├── genomic_processing/    # Genomic data processing scripts
 │   └── utils/                 # Shared utilities
+├── scripts/                   # Project utility scripts
+│   ├── bump-version.sh        # Version management
+│   ├── check-artifact-sizes.sh # CI/CD utilities
+│   ├── cleanup-artifacts.sh   # Cleanup utilities
+│   ├── emergency-cleanup.sh   # Emergency cleanup
+│   ├── install-git-hooks.sh   # Git hooks setup
+│   └── quick-cleanup.sh       # Quick cleanup
+├── desktop/scripts/           # Desktop-specific scripts
+│   ├── bundle-python.sh       # Python runtime bundling (Unix)
+│   └── bundle-python.ps1      # Python runtime bundling (Windows)
+├── geneknow_pipeline/         # LangGraph genomic pipeline server
+│   ├── nodes/                 # Pipeline processing nodes
+│   ├── enhanced_api_server.py # Flask + SocketIO server
+│   ├── graph.py               # LangGraph pipeline definition
+│   ├── requirements.txt       # Python dependencies
+│   └── population_variants.db # SQLite database (generated)
 ├── .gitignore                 # Git ignore patterns
 ├── README.md                  # Main project documentation
 └── PRD_V2.md                  # Product Requirements Document
@@ -83,6 +99,21 @@ LiteratureGapper/
 - **Purpose**: Python scripts for genomic data processing and download
 - **Contents**: TCGA download scripts, genomic processing utilities
 - **Status**: Phase 2 Development (New)
+
+### `/geneknow_pipeline/` - LangGraph Pipeline Server
+- **Purpose**: Local Flask + SocketIO server for genomic analysis pipeline
+- **Contents**: LangGraph nodes, API server, population variants database
+- **Status**: Phase 2 Development (Complete)
+
+### `/scripts/` - Utility Scripts
+- **Purpose**: Build, deployment, and maintenance scripts
+- **Contents**: Version management, CI/CD utilities, cleanup scripts
+- **Status**: Actively maintained
+
+### `/desktop/scripts/` - Desktop Build Scripts
+- **Purpose**: Scripts for building and packaging the desktop application
+- **Contents**: Python runtime bundling scripts for all platforms
+- **Status**: Phase 3 Development (Deployment)
 
 ## File Naming Conventions
 

@@ -1,10 +1,19 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::process::Command;
-use serde::{Deserialize, Serialize};
-use tauri::command;
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(
+  all(not(debug_assertions), target_os = "windows"),
+  windows_subsystem = "windows"
+)]
 
-// Import modules
+// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use tauri::{command, Emitter};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::process::Command;
+use std::fs;
+use std::thread;
+use std::time::Duration;
+use std::path::PathBuf;
+
 pub mod utils;
 pub mod plugin;
 pub mod python_script_plugin;
@@ -19,8 +28,9 @@ use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
 
-// Global API server process handle
+// Global API server process handle and port
 static API_SERVER_PROCESS: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
+static API_SERVER_PORT: Lazy<Mutex<Option<u16>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FastqToVcfOptions {
@@ -405,16 +415,57 @@ async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<Stri
     Ok(file_path.to_string_lossy().to_string())
 }
 
+#[command]
+async fn delete_temp_file(file_path: String) -> Result<(), String> {
+    use std::fs;
+    use std::path::Path;
+    
+    let path = Path::new(&file_path);
+    
+    // Security check: only delete files in temp directories
+    let temp_markers = ["geneknow_temp", "tmp", "temp", "T/"];
+    let path_str = file_path.to_lowercase();
+    
+    if !temp_markers.iter().any(|marker| path_str.contains(marker)) {
+        return Err("Can only delete files in temporary directories".to_string());
+    }
+    
+    if path.exists() {
+        fs::remove_file(path).map_err(|e| e.to_string())?;
+        log::info!("Deleted temporary file: {}", file_path);
+    }
+    
+    Ok(())
+}
+
 // ========================================
 // GeneKnow Pipeline API Server Management
 // ========================================
 
 #[command]
+async fn get_api_port() -> Result<u16, String> {
+    let port_guard = API_SERVER_PORT.lock().unwrap();
+    match *port_guard {
+        Some(port) => Ok(port),
+        None => Err("API server not started".to_string()),
+    }
+}
+
+#[command]
 async fn check_api_health() -> Result<bool, String> {
+    // Get the current port
+    let port = {
+        let port_guard = API_SERVER_PORT.lock().unwrap();
+        match *port_guard {
+            Some(port) => port,
+            None => return Ok(false), // Server not started
+        }
+    };
+    
     let client = reqwest::Client::new();
     
     let response = client
-        .get("http://localhost:5001/api/health")
+        .get(format!("http://localhost:{}/api/health", port))
         .timeout(std::time::Duration::from_secs(2))
         .send()
         .await;
@@ -432,67 +483,185 @@ async fn start_api_server() -> Result<bool, String> {
         return Ok(true);
     }
 
-    // Get the path to the Python script relative to the workspace root
-    // The Tauri app is in desktop/src-tauri, so we need to go up 2 levels
-    let mut api_script = std::env::current_exe()
-        .map_err(|e| format!("Failed to get executable path: {}", e))?;
-    
-    // Go up to find the workspace root
-    // In dev: target/debug/app -> ../../.. = workspace root  
-    // In prod: Contents/MacOS/app -> ../../../.. = workspace root (approximate)
-    for _ in 0..5 {
-        api_script.pop();
-        if api_script.join("geneknow_pipeline/enhanced_api_server.py").exists() {
-            break;
+    // Determine if we're running in production (bundled) or development mode
+    let (startup_script, working_dir) = if cfg!(debug_assertions) {
+        // Development mode: use local Python and script
+        log::info!("Running in development mode");
+        
+        // Get the path to the Python script relative to the workspace root
+        let mut api_script = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        
+        // Go up to find the workspace root
+        for _ in 0..5 {
+            api_script.pop();
+            if api_script.join("geneknow_pipeline/enhanced_api_server.py").exists() {
+                break;
+            }
         }
-    }
-    
-    let api_script = api_script.join("geneknow_pipeline/enhanced_api_server.py");
-    
-    // Verify the script exists
-    if !api_script.exists() {
-        return Err(format!("API server script not found at: {:?}", api_script));
-    }
-    
-    log::info!("API server script path: {:?}", api_script);
-
-    // Find the venv Python executable
-    let mut venv_python = api_script.parent()
-        .ok_or("Failed to get parent directory")?
-        .join("venv");
-    
-    #[cfg(target_os = "windows")]
-    let python_exe = venv_python.join("Scripts").join("python.exe");
-    #[cfg(not(target_os = "windows"))]
-    let python_exe = venv_python.join("bin").join("python");
-    
-    // Check if venv exists, otherwise fall back to system Python
-    let python_cmd = if python_exe.exists() {
-        log::info!("Using venv Python at: {:?}", python_exe);
-        python_exe
-    } else {
-        log::warn!("Venv not found, falling back to system Python");
+        
+        let api_script = api_script.join("geneknow_pipeline/enhanced_api_server.py");
+        
+        // Verify the script exists
+        if !api_script.exists() {
+            return Err(format!("API server script not found at: {:?}", api_script));
+        }
+        
+        // In development, use system Python
         #[cfg(target_os = "windows")]
-        let sys_python = PathBuf::from("python");
+        let python_cmd = PathBuf::from("python");
         #[cfg(not(target_os = "windows"))]
-        let sys_python = PathBuf::from("python3");
-        sys_python
+        let python_cmd = PathBuf::from("python3");
+        
+        (python_cmd, api_script.parent().unwrap().to_path_buf())
+    } else {
+        // Production mode: use bundled Python and resources
+        log::info!("Running in production mode");
+        
+        // Get the bundled resources directory from the app bundle
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
+        
+        log::info!("Bundled resources directory: {:?}", resource_dir);
+        
+        // Use the appropriate startup script for the platform
+        #[cfg(target_os = "windows")]
+        let startup_script = resource_dir.join("start_api_server.bat");
+        #[cfg(not(target_os = "windows"))]
+        let startup_script = resource_dir.join("start_api_server.sh");
+        
+        if !startup_script.exists() {
+            return Err(format!("Startup script not found at: {:?}", startup_script));
+        }
+        
+        (startup_script.clone(), resource_dir)
     };
 
-    // Start the API server
-    let mut cmd = Command::new(python_cmd);
-    let child = cmd
-        .arg(api_script)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to start API server: {}", e))?;
-
-    // Store the process handle and drop the guard immediately
+    // Create port file path
+    let port_file = working_dir.join(".api_server_port");
+    
+    // Add port file argument
+    let child = if cfg!(debug_assertions) {
+        // Development mode: run Python directly
+        Command::new(&startup_script)
+            .arg("enhanced_api_server.py")
+            .arg("--port-file")
+            .arg(&port_file)
+            .current_dir(&working_dir)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to start API server: {}", e))?
+    } else {
+        // Production mode: run the startup script
+        log::info!("Starting server with script: {:?}", startup_script);
+        log::info!("Working directory: {:?}", working_dir);
+        
+        // Make sure the script is executable
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&startup_script)
+                .map_err(|e| format!("Failed to get script metadata: {}", e))?
+                .permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&startup_script, perms)
+                .map_err(|e| format!("Failed to set script permissions: {}", e))?;
+        }
+        
+        let mut cmd = Command::new(&startup_script);
+        cmd.current_dir(&working_dir)
+           .stdout(Stdio::piped())
+           .stderr(Stdio::piped());
+        
+        // Set environment variables to help Python find its modules
+        cmd.env("PYTHONPATH", format!("{}:{}/geneknow_pipeline", 
+                                     working_dir.display(), 
+                                     working_dir.display()));
+        
+        let child = cmd.spawn()
+            .map_err(|e| format!("Failed to start API server: {} (script: {:?})", e, startup_script))?;
+        
+        child
+    };
+    
+    // Store the process handle
     {
         let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
         *process_guard = Some(child);
-    } // Guard is dropped here
+    }
+    
+    // Wait for port file to be created with better error handling
+    let start_time = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(20); // Increased timeout
+    let mut captured_port: Option<u16> = None;
+    let mut last_error: Option<String> = None;
+    
+    while start_time.elapsed() < timeout {
+        // Check if process is still running
+        {
+            let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
+            if let Some(ref mut child) = *process_guard {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // Process exited, collect error output
+                        let mut stderr = String::new();
+                        if let Some(ref mut stderr_handle) = child.stderr {
+                            use std::io::Read;
+                            let _ = stderr_handle.read_to_string(&mut stderr);
+                        }
+                        
+                        last_error = Some(format!("API server process exited with status: {:?}. Error: {}", 
+                                                 status, stderr));
+                        log::error!("Server startup failed: {}", last_error.as_ref().unwrap());
+                        break;
+                    }
+                    Ok(None) => {
+                        // Still running, continue
+                    }
+                    Err(e) => {
+                        last_error = Some(format!("Failed to check process status: {}", e));
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if port_file.exists() {
+            if let Ok(contents) = fs::read_to_string(&port_file) {
+                if let Ok(port) = contents.trim().parse::<u16>() {
+                    captured_port = Some(port);
+                    log::info!("Captured API server port from file: {}", port);
+                    break;
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    // Store the port
+    if let Some(port) = captured_port {
+        let mut port_guard = API_SERVER_PORT.lock().unwrap();
+        *port_guard = Some(port);
+    } else {
+        // Clean up the process if we failed to get the port
+        stop_api_server().await?;
+        
+        let error_msg = if let Some(err) = last_error {
+            format!("Failed to capture API server port: {}", err)
+        } else {
+            "Failed to capture API server port: timeout".to_string()
+        };
+        
+        return Err(error_msg);
+    }
 
     // Wait for server to start (with timeout)
     let start_time = std::time::Instant::now();
@@ -520,6 +689,10 @@ async fn stop_api_server() -> Result<(), String> {
         log::info!("GeneKnow API server stopped");
     }
     
+    // Clear the port
+    let mut port_guard = API_SERVER_PORT.lock().unwrap();
+    *port_guard = None;
+    
     Ok(())
 }
 
@@ -528,10 +701,22 @@ async fn get_api_server_status() -> Result<serde_json::Value, String> {
     let is_healthy = check_api_health().await.unwrap_or(false);
     
     if is_healthy {
+        // Get the current port
+        let port = {
+            let port_guard = API_SERVER_PORT.lock().unwrap();
+            match *port_guard {
+                Some(port) => port,
+                None => return Ok(serde_json::json!({
+                    "status": "stopped",
+                    "service": "GeneKnow Pipeline API"
+                })),
+            }
+        };
+        
         // Get detailed health info
         let client = reqwest::Client::new();
         let response = client
-            .get("http://localhost:5001/api/health")
+            .get(format!("http://localhost:{}/api/health", port))
             .send()
             .await
             .map_err(|e| e.to_string())?;
@@ -561,6 +746,9 @@ async fn process_genomic_file(
         start_api_server().await?;
     }
 
+    // Get the current port
+    let port = get_api_port().await?;
+
     let client = reqwest::Client::new();
     
     let request_body = serde_json::json!({
@@ -569,7 +757,7 @@ async fn process_genomic_file(
     });
     
     let response = client
-        .post("http://localhost:5001/api/process")
+        .post(format!("http://localhost:{}/api/process", port))
         .json(&request_body)
         .send()
         .await
@@ -594,10 +782,13 @@ async fn process_genomic_file(
 
 #[command]
 async fn get_job_status(job_id: String) -> Result<serde_json::Value, String> {
+    // Get the current port
+    let port = get_api_port().await?;
+    
     let client = reqwest::Client::new();
     
     let response = client
-        .get(format!("http://localhost:5001/api/status/{}", job_id))
+        .get(format!("http://localhost:{}/api/status/{}", port, job_id))
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
@@ -613,11 +804,121 @@ async fn get_job_status(job_id: String) -> Result<serde_json::Value, String> {
 }
 
 #[command]
-async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
+async fn check_environment() -> Result<bool, String> {
+    // Check if bundled Python runtime exists
+    if cfg!(debug_assertions) {
+        // Development mode: check system Python
+        let output = Command::new("python3")
+            .arg("--version")
+            .output();
+        
+        match output {
+            Ok(output) => Ok(output.status.success()),
+            Err(_) => Ok(false),
+        }
+    } else {
+        // Production mode: check bundled Python
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
+        
+        #[cfg(target_os = "windows")]
+        let python_exe = resource_dir.join("python_runtime").join("python.exe");
+        #[cfg(not(target_os = "windows"))]
+        let python_exe = resource_dir.join("python_runtime").join("bin").join("python3");
+        
+        Ok(python_exe.exists())
+    }
+}
+
+#[command]
+async fn check_database_exists() -> Result<bool, String> {
+    if cfg!(debug_assertions) {
+        // Development mode: check in geneknow_pipeline directory
+        let mut db_path = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        
+        for _ in 0..5 {
+            db_path.pop();
+            if db_path.join("geneknow_pipeline").exists() {
+                break;
+            }
+        }
+        
+        let db_path = db_path.join("geneknow_pipeline").join("population_variants.db");
+        Ok(db_path.exists())
+    } else {
+        // Production mode: check in bundled resources
+        let resource_dir = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?
+            .parent()
+            .ok_or("Failed to get executable directory")?
+            .parent()
+            .ok_or("Failed to get app directory")?
+            .join("Resources")
+            .join("_up_")
+            .join("bundled_resources");
+        
+        let db_path = resource_dir.join("geneknow_pipeline").join("population_variants.db");
+        Ok(db_path.exists())
+    }
+}
+
+#[command]
+async fn initialize_database() -> Result<bool, String> {
+    // In our case, the database should already be created during bundling
+    // This is mainly for error recovery
+    log::info!("Database initialization requested");
+    
+    if check_database_exists().await? {
+        log::info!("Database already exists");
+        return Ok(true);
+    }
+    
+    // If database doesn't exist, this is likely an error in production
+    // In development, we could try to create it, but for now just return false
+    log::error!("Database not found - this should not happen in production builds");
+    Ok(false)
+}
+
+#[command]
+async fn test_pipeline_connectivity() -> Result<bool, String> {
+    // Get the current port
+    let port = match get_api_port().await {
+        Ok(port) => port,
+        Err(_) => return Ok(false), // Server not started
+    };
+    
+    // Test basic connectivity to the pipeline API
     let client = reqwest::Client::new();
     
     let response = client
-        .get(format!("http://localhost:5001/api/results/{}", job_id))
+        .get(format!("http://localhost:{}/api/pipeline-info", port))
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await;
+    
+    match response {
+        Ok(resp) => Ok(resp.status().is_success()),
+        Err(_) => Ok(false),
+    }
+}
+
+#[command]
+async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
+    // Get the current port
+    let port = get_api_port().await?;
+    
+    let client = reqwest::Client::new();
+    
+    let response = client
+        .get(format!("http://localhost:{}/api/results/{}", port, job_id))
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
@@ -636,13 +937,22 @@ async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
 pub fn run() {
   tauri::Builder::default()
     .setup(|app| {
-      if cfg!(debug_assertions) {
-        app.handle().plugin(
-          tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-        )?;
-      }
+      // Enable logging for both debug and release builds
+      app.handle().plugin(
+        tauri_plugin_log::Builder::default()
+          .level(log::LevelFilter::Info)
+          .targets([
+            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+            tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir { 
+              file_name: Some("GenePredict.log".to_string()) 
+            }),
+          ])
+          .build(),
+      )?;
+      
+      log::info!("=== GenePredict Starting ===");
+      log::info!("Build mode: {}", if cfg!(debug_assertions) { "DEBUG" } else { "RELEASE" });
+      log::info!("Executable path: {:?}", std::env::current_exe());
       
       // Initialize plugin registry
       log::info!("Initializing plugin registry during app setup...");
@@ -657,11 +967,70 @@ pub fn run() {
       // Auto-start the GeneKnow API server in production
       #[cfg(not(debug_assertions))]
       {
-        log::info!("Starting GeneKnow API server...");
-        tauri::async_runtime::spawn(async {
+        log::info!("Production mode detected - scheduling API server startup");
+        let app_handle = app.handle().clone();
+        
+        // Start the server after a short delay to ensure app is fully initialized
+        tauri::async_runtime::spawn(async move {
+            // Wait a bit for the app to fully initialize
+            log::info!("Waiting 1 second before starting API server...");
+            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            
+            log::info!("Now attempting to start GeneKnow API server...");
+            let mut attempts = 0;
+            const MAX_ATTEMPTS: u32 = 3;
+            
+            while attempts < MAX_ATTEMPTS {
+                log::info!("API server start attempt {} of {}", attempts + 1, MAX_ATTEMPTS);
+                match start_api_server().await {
+                    Ok(_) => {
+                        log::info!("✅ GeneKnow API server started successfully on attempt {}", attempts + 1);
+                        
+                        // Notify the frontend that the server is ready
+                        if let Err(e) = app_handle.emit("api-server-ready", true) {
+                            log::warn!("Failed to emit server ready event: {}", e);
+                        }
+                        break;
+                    }
+                    Err(e) => {
+                        attempts += 1;
+                        log::error!("❌ Failed to start API server (attempt {}/{}): {}", attempts, MAX_ATTEMPTS, e);
+                        
+                        if attempts < MAX_ATTEMPTS {
+                            log::info!("Retrying in 2 seconds...");
+                            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                        } else {
+                            log::error!("Failed to start API server after {} attempts", MAX_ATTEMPTS);
+                            // Notify the frontend about the failure
+                            if let Err(emit_err) = app_handle.emit("api-server-error", e.clone()) {
+                                log::warn!("Failed to emit server error event: {}", emit_err);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            log::info!("API server startup sequence completed");
+        });
+      }
+      
+      // Also start the server in development mode for easier testing
+      #[cfg(debug_assertions)]
+      {
+        log::info!("Development mode: API server will be started on demand");
+        // Optionally auto-start in dev mode too
+        let app_handle = app.handle().clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+            log::info!("Attempting to start API server in development mode...");
             match start_api_server().await {
-                Ok(_) => log::info!("GeneKnow API server started automatically"),
-                Err(e) => log::error!("Failed to start API server: {}", e),
+                Ok(_) => {
+                    log::info!("✅ API server started in development mode");
+                    let _ = app_handle.emit("api-server-ready", true);
+                }
+                Err(e) => {
+                    log::error!("❌ Failed to start API server in dev mode: {}", e);
+                }
             }
         });
       }
@@ -687,11 +1056,18 @@ pub fn run() {
         start_api_server,
         stop_api_server,
         get_api_server_status,
+        get_api_port,
         process_genomic_file,
         get_job_status,
         get_job_results,
+        // First-run setup commands
+        check_environment,
+        check_database_exists,
+        initialize_database,
+        test_pipeline_connectivity,
         // File processing helpers
-        save_temp_file
+        save_temp_file,
+        delete_temp_file
     ])
     .on_window_event(|_window, event| {
         // Stop API server when app closes

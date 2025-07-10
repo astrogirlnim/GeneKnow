@@ -5,12 +5,14 @@ on:
     branches: [ main ]
     paths:
       - 'desktop/**'
+      - 'geneknow_pipeline/**'  # Add this to trigger on Python pipeline changes
       - 'langgraph/**'
       - '.github/workflows/release.yml'
       - 'package.json'
       - 'README.md'
       - '*.py'
       - 'requirements.txt'
+      - 'requirements-lite.txt'  # Add this for optimized requirements
       - 'docs/**'
   workflow_dispatch:
     inputs:
@@ -516,6 +518,11 @@ jobs:
             name: 'macOS x64'
             emoji: '🍎'
             build-key: 'macos'
+          - os: macos-latest
+            rust-target: aarch64-apple-darwin
+            name: 'macOS ARM64'
+            emoji: '🍏'
+            build-key: 'macos-arm'
     runs-on: ${{ matrix.os }}
     steps:
       - name: 🔍 Check if platform needs building
@@ -653,6 +660,20 @@ jobs:
           echo "🔨 Building frontend for release..."
           pnpm build
           echo "✅ Frontend build completed"
+
+      - name: 🐍 Bundle Python runtime and dependencies
+        working-directory: desktop
+        shell: bash
+        run: |
+          echo "🐍 Bundling Python runtime for ${{ matrix.name }}..."
+          
+          # Make script executable
+          chmod +x scripts/bundle-python-optimized.sh
+          
+          # Run the optimized bundling script (no TensorFlow, 364MB instead of 1.9GB)
+          ./scripts/bundle-python-optimized.sh
+          
+          echo "✅ Python runtime bundled successfully"
 
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri

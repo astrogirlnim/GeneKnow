@@ -6,9 +6,39 @@ import HowItWorksPage from './pages/HowItWorksPage'
 import UploadPage from './pages/UploadPage'
 import DashboardPage from './pages/DashboardPage'
 import ClinicalViewPage from './pages/ClinicalViewPage'
+import { apiConfig } from './api/apiConfig';
+import { listen } from '@tauri-apps/api/event';
+import { useEffect } from 'react';
 
 // --- Main App Component ---
 export default function App() {
+  useEffect(() => {
+    // Initialize API configuration
+    apiConfig.initialize().catch(console.error);
+
+    // Listen for server status events
+    const setupListeners = async () => {
+      const unlistenReady = await listen('api-server-ready', () => {
+        console.log('API server is ready');
+        // Re-initialize API config to get the port
+        apiConfig.reset();
+        apiConfig.initialize().catch(console.error);
+      });
+
+      const unlistenError = await listen<string>('api-server-error', (event) => {
+        console.error('API server error:', event.payload);
+      });
+
+      // Cleanup listeners on unmount
+      return () => {
+        unlistenReady();
+        unlistenError();
+      };
+    };
+
+    setupListeners();
+  }, []);
+
   return (
     <Router>
       <Routes>

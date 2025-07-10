@@ -3,28 +3,36 @@ Enhanced API server for GeneKnow LangGraph pipeline.
 Designed for seamless integration with Tauri desktop app.
 Supports file processing, progress tracking, and real-time updates.
 """
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit
-import os
+# Import standard library modules first
 import tempfile
-import shutil
 import uuid
-import threading
-import time
-from datetime import datetime
-from typing import Dict, Any, Optional
-import logging
+import subprocess
+import shutil
+import argparse
+import socket
 import json
 from pathlib import Path
+
+# Import third-party modules
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.utils import secure_filename
+from datetime import datetime
+import threading
+import os
+import time
+import logging
+from typing import Dict, Any, Optional, List
+
+# Optional numpy import
 try:
     import numpy as np
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
-# Import the pipeline
+# Import local modules
 from graph import run_pipeline
 
 # Custom JSON encoder to handle numpy types and datetime
@@ -53,7 +61,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')  # Specify async mode for Gunicorn
 
 # Configuration
 class Config:
@@ -147,20 +155,52 @@ def create_job(file_path: str, preferences: dict) -> str:
         }
     return job_id
 
-def update_job(job_id: str, updates: dict):
-    """Update job status and emit progress via WebSocket."""
+def update_job(job_id: str, updates: Dict[str, Any]):
+    """Update job information."""
     with job_lock:
         if job_id in jobs:
             # Convert any numpy types before updating
             updates = convert_numpy_types(updates)
             jobs[job_id].update(updates)
-            # Emit progress update via WebSocket
+            # Track last activity
+            jobs[job_id]['last_activity'] = datetime.now().isoformat()
+            # Emit update via WebSocket
             socketio.emit('job_progress', {
                 'job_id': job_id,
                 'status': jobs[job_id]['status'],
                 'progress': jobs[job_id]['progress'],
                 'current_step': jobs[job_id]['current_step']
             }, room=job_id)
+
+def cleanup_job_files(job_id: str):
+    """Clean up temporary files associated with a job."""
+    with job_lock:
+        job = jobs.get(job_id)
+        if not job:
+            return
+        
+        # Clean up the uploaded file if it exists in temp directory
+        file_path = job.get('file_path')
+        if file_path and os.path.exists(file_path):
+            # Only delete if it's in a temp directory
+            temp_markers = ['/tmp/', '/var/folders/', Config.UPLOAD_FOLDER, 'geneknow_temp']
+            if any(marker in file_path for marker in temp_markers):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Cleaned up temporary file: {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to clean up file {file_path}: {e}")
+        
+        # Clean up result files
+        result = job.get('result', {})
+        if isinstance(result, dict):
+            result_file = result.get('result_file')
+            if result_file and os.path.exists(result_file):
+                try:
+                    os.remove(result_file)
+                    logger.info(f"Cleaned up result file: {result_file}")
+                except Exception as e:
+                    logger.error(f"Failed to clean up result file {result_file}: {e}")
 
 def process_file_async(job_id: str):
     """Process file in background thread."""
@@ -215,6 +255,7 @@ def process_file_async(job_id: str):
                     'result_file': result_file
                 })
             })
+            cleanup_job_files(job_id) # Clean up files after successful completion
         else:
             raise Exception(result.get('errors', ['Unknown error'])[0])
             
@@ -225,6 +266,7 @@ def process_file_async(job_id: str):
             'completed_at': datetime.now().isoformat(),
             'error': str(e)
         })
+        cleanup_job_files(job_id) # Clean up files on failure
 
 # API Routes
 
@@ -568,14 +610,62 @@ def cleanup_temp_files():
 
 atexit.register(cleanup_temp_files)
 
+def find_available_port(start_port=5000, max_attempts=100):
+    """Find an available port starting from start_port"""
+    import socket
+    
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            # Try to bind to the port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+                s.close()
+                return port
+        except OSError:
+            # Port is in use, try the next one
+            continue
+    
+    raise RuntimeError(f"No available ports found in range {start_port}-{start_port + max_attempts}")
+
 # Main entry point
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='GeneKnow Pipeline API Server')
+    parser.add_argument('--port', type=int, help='Port to run the server on')
+    parser.add_argument('--port-file', type=str, help='File to write the actual port to')
+    parser.add_argument('--debug', action='store_true', help='Run in debug mode')
     
-    logger.info(f"Starting Enhanced GeneKnow API Server on port {port}")
-    logger.info(f"Upload folder: {Config.UPLOAD_FOLDER}")
-    logger.info(f"Results folder: {Config.RESULTS_FOLDER}")
-    logger.info(f"WebSocket support enabled")
+    args = parser.parse_args()
     
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug) 
+    # Find available port
+    port = args.port if args.port else find_available_port()
+    actual_port = port
+    
+    # Write port to file if requested
+    if args.port_file:
+        # Try to bind first to ensure port is actually available
+        try:
+            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            test_socket.bind(('', port))
+            test_socket.close()
+            
+            with open(args.port_file, 'w') as f:
+                f.write(str(port))
+            print(f"API_SERVER_PORT:{port}")  # For process monitoring
+        except OSError:
+            logger.error(f"Port {port} is not available")
+            actual_port = find_available_port()
+            with open(args.port_file, 'w') as f:
+                f.write(str(actual_port))
+            print(f"API_SERVER_PORT:{actual_port}")
+    
+    # Start the server (Flask development server - for Gunicorn, this block won't run)
+    logger.info(f"Starting GeneKnow Pipeline API Server on port {actual_port}")
+    debug = args.debug or os.environ.get('DEBUG', '').lower() == 'true'
+    
+    # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
+    # Gunicorn doesn't need this flag
+    socketio.run(app, host='0.0.0.0', port=actual_port, debug=debug, allow_unsafe_werkzeug=True)
+
+# Expose app for Gunicorn
+application = app  # Some WSGI servers look for 'application' 
