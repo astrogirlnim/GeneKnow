@@ -250,7 +250,7 @@ jobs:
     steps:
       - name: 📋 Generate PR summary
         run: |
-          echo "# 🧬 GenePredict PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 🧬 GeneKnow PR Validation Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -289,4 +289,4 @@ jobs:
           echo "- 📦 Bundle Python runtime and dependencies (364MB optimized)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
+          echo "🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 

@@ -187,7 +187,7 @@ export const FirstRunSetup: React.FC<FirstRunSetupProps> = ({ onComplete }) => {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to GenePredict
+              Welcome to GeneKnow
             </h1>
             <p className="text-gray-600">
               Setting up your genomic analysis environment for the first time
