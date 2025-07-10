@@ -54,15 +54,43 @@ class MLFusionNode:
     def _load_model(self):
         """Load the trained fusion model."""
         try:
+            # Try primary model path first
             if os.path.exists(self.model_path):
+                logger.info(f"✅ Found ML Fusion model at: {self.model_path}")
                 self.fusion_layer.load_model(self.model_path)
                 self.is_loaded = True
-                logger.info(f"ML Fusion model loaded from {self.model_path}")
+                logger.info(f"✅ ML Fusion model loaded successfully from {self.model_path}")
             else:
-                logger.warning(f"ML Fusion model not found at {self.model_path}")
-                logger.warning("Use train_fusion_layer.py to train the model first")
+                # Try alternative paths
+                alternative_paths = [
+                    str(Path(__file__).parent.parent / 'ml_models' / 'fusion_gradient_boosting.pkl'),
+                    str(Path(__file__).parent.parent / 'ml_models' / 'fusion_random_forest.pkl'),
+                    str(Path(__file__).parent.parent / 'ml_models_no_leakage' / 'best_model.pkl')
+                ]
+                
+                logger.warning(f"⚠️ ML Fusion model not found at primary path: {self.model_path}")
+                
+                for alt_path in alternative_paths:
+                    if os.path.exists(alt_path):
+                        logger.info(f"✅ Found alternative model at: {alt_path}")
+                        self.model_path = alt_path
+                        self.fusion_layer.load_model(alt_path)
+                        self.is_loaded = True
+                        logger.info(f"✅ ML Fusion model loaded successfully from alternative: {alt_path}")
+                        break
+                
+                if not self.is_loaded:
+                    logger.error("❌ No ML Fusion models found in any location!")
+                    logger.error("Searched paths:")
+                    logger.error(f"  - Primary: {self.model_path}")
+                    for alt_path in alternative_paths:
+                        logger.error(f"  - Alternative: {alt_path}")
+                    logger.error("Use train_fusion_layer.py to train the model first")
         except Exception as e:
-            logger.error(f"Error loading fusion model: {e}")
+            logger.error(f"❌ Error loading fusion model: {e}")
+            logger.error(f"Model path was: {self.model_path}")
+            import traceback
+            logger.error(traceback.format_exc())
             self.is_loaded = False
 
     def _extract_static_model_outputs(self, state: Dict[str, Any]) -> List[StaticModelInputs]:

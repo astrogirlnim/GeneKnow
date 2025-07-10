@@ -103,186 +103,38 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     # Check if ML fusion results are available
     ml_fusion_results = state.get("ml_fusion_results", {})
     if ml_fusion_results.get("processing_successful"):
-        logger.info("Using ML fusion results for risk calculation")
+        logger.info("✅ Using ML fusion results for risk calculation")
         return _ml_fusion_risk_calculation(state, ml_fusion_results)
-
+    
+    # If ML fusion failed or isn't available, log why and fall back
+    if "ml_fusion_results" in state:
+        error = ml_fusion_results.get("error", "Unknown error")
+        logger.warning(f"⚠️ ML fusion failed: {error}")
+    else:
+        logger.warning("⚠️ ML fusion results not found in pipeline state")
+    
+    logger.warning("📊 Falling back to simple risk calculation")
+    
     try:
-        filtered_variants = state["filtered_variants"]
-        patient_data = state.get("patient_data", {})
-
-        # Get PRS results if available
-        prs_results = state.get("prs_results", {})
-        prs_summary = state.get("prs_summary", {})
-
-        # Load model configuration
-        models_dir = "models"
-        config_path = os.path.join(models_dir, "model_config.json")
-
-        if not os.path.exists(config_path):
-            # If models don't exist, fallback to simple risk calculation
-            logger.warning("ML models not found, using simple risk calculation")
-            return _simple_risk_calculation(state, filtered_variants)
-
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-
-        cancer_genes = config["cancer_genes"]
-        feature_order = config["feature_order"]
-
-        # Extract variant genes - now with proper clinical significance
-        variant_genes = set()
-        pathogenic_genes = set()
-        benign_genes = set()
-        gene_to_variants = defaultdict(list)
-
-        for variant in filtered_variants:
-            gene = variant.get("gene")
-            if gene:
-                variant_genes.add(gene)
-                gene_to_variants[gene].append(variant)
-
-                # Check clinical significance
-                clinical_sig = variant.get("clinical_significance", "Unknown").lower()
-                risk_weight = variant.get("risk_weight", 0.2)
-
-                if variant.get("is_pathogenic", 0) or "pathogenic" in clinical_sig:
-                    pathogenic_genes.add(gene)
-                elif "benign" in clinical_sig or risk_weight < 0.15:
-                    benign_genes.add(gene)
-
-        logger.info(f"Found variants in {len(variant_genes)} genes: {len(pathogenic_genes)} pathogenic, {len(benign_genes)} benign")
-
-        # Calculate risk scores for each cancer type
-        risk_scores = {}
-        risk_genes = {}
-        risk_details = {}
-
-        for cancer_type, genes in cancer_genes.items():
-            logger.info(f"Calculating {cancer_type} cancer risk...")
-
-            # Load model and scaler
-            model_path = os.path.join(models_dir, f"{cancer_type}_model.pkl")
-            scaler_path = os.path.join(models_dir, f"{cancer_type}_scaler.pkl")
-
-            if not os.path.exists(model_path) or not os.path.exists(scaler_path):
-                logger.warning(f"Model files for {cancer_type} not found")
-                continue
-
-            with open(model_path, 'rb') as f:
-                model = pickle.load(f)
-            with open(scaler_path, 'rb') as f:
-                scaler = pickle.load(f)
-
-            # Check if model expects enhanced features
-            expected_features = len(genes) * 6 + 2  # 6 features per gene + age + sex
-            legacy_features = len(genes) + 2  # 1 feature per gene + age + sex
-
-            # Extract features based on what the model expects
-            # Only count pathogenic/uncertain variants, exclude benign
-            risk_contributing_genes = variant_genes - benign_genes
-
-            if hasattr(model, 'n_features_in_') and model.n_features_in_ == expected_features:
-                # Use enhanced features (filtered for non-benign variants)
-                risk_variants = [v for v in filtered_variants if v.get("gene") not in benign_genes]
-                features = extract_enhanced_features(risk_variants, genes)
-            else:
-                # Use legacy binary features (exclude benign genes)
-                features = []
-                for gene in genes:
-                    if gene in risk_contributing_genes:
-                        features.append(1)
-                    else:
-                        features.append(0)
-
-            affected_genes = [g for g in genes if g in risk_contributing_genes]
-            pathogenic_affected = [g for g in affected_genes if g in pathogenic_genes]
-            benign_excluded = [g for g in genes if g in benign_genes]
-
-            # Age feature (normalized 0-1)
-            age = patient_data.get("age", 45)
-            age_normalized = min(max(age, 20), 80) / 100
-            features.append(age_normalized)
-
-            # Sex feature (0=M, 1=F)
-            sex = patient_data.get("sex", "F")
-            sex_binary = 1 if sex.upper() == "F" else 0
-            features.append(sex_binary)
-
-            # Make prediction
-            features_array = np.array([features])
-
-            # Handle feature mismatch
-            if features_array.shape[1] != scaler.n_features_in_:
-                logger.warning(f"Feature mismatch for {cancer_type}: got {features_array.shape[1]}, expected {scaler.n_features_in_}")
-                # Fallback to simple calculation for this cancer type
-                base_risk = 5.0
-                gene_risk = len(pathogenic_affected) * 15 + len(affected_genes) * 5
-                risk_scores[cancer_type] = min(base_risk + gene_risk, 95.0)
-                risk_genes[cancer_type] = affected_genes
-                continue
-
-            features_scaled = scaler.transform(features_array)
-
-            # Get probability of high risk
-            risk_probability = model.predict_proba(features_scaled)[0, 1]
-
-            # Apply dampening for high variant counts
-            if len(filtered_variants) > 100:
-                # Reduce confidence when variant count is very high
-                dampening_factor = 100 / len(filtered_variants)
-                risk_probability = risk_probability * (0.5 + 0.5 * dampening_factor)
-
-            # Boost risk if pathogenic variants found
-            if pathogenic_affected:
-                risk_probability = min(risk_probability * 1.5, 0.95)
-
-            risk_percentage = risk_probability * 100
-
-            risk_scores[cancer_type] = round(risk_percentage, 1)
-            risk_genes[cancer_type] = affected_genes
-
-            # Store detailed risk factors
-            risk_details[cancer_type] = {
-                "affected_genes": affected_genes,
-                "pathogenic_genes": pathogenic_affected,
-                "gene_count": len(affected_genes),
-                "pathogenic_count": len(pathogenic_affected),
-                "total_genes": len(genes),
-                "patient_age": age,
-                "patient_sex": sex,
-                "model_confidence": round(max(risk_probability, 1-risk_probability), 3)
+        filtered_variants = state.get("filtered_variants", [])
+        if not filtered_variants:
+            logger.error("No filtered variants found in state")
+            return {
+                "risk_scores": {},
+                "risk_genes": {},
+                "error": "No variants to analyze"
             }
-
-            logger.info(f"{cancer_type} risk: {risk_percentage:.1f}% "
-                       f"(genes: {affected_genes}, pathogenic: {pathogenic_affected}, benign excluded: {benign_excluded})")
-
-        # Add metadata about the prediction
-        risk_scores_result = risk_scores
-        risk_genes_result = risk_genes
-        risk_details_result = risk_details
-        model_version = config.get("version", "1.0.0")
-
-        # Log high-risk findings
-        high_risk_cancers = [c for c, r in risk_scores.items() if r > 50]
-        if high_risk_cancers:
-            logger.warning(f"High risk detected for: {high_risk_cancers}")
-
-        logger.info(f"Risk prediction complete: {risk_scores}")
-
-        # Return only the keys this node updates
-        return {
-            "risk_scores": risk_scores_result,
-            "risk_genes": risk_genes_result,
-            "risk_details": risk_details_result,
-            "model_version": model_version,
-            "high_risk_alert": True if high_risk_cancers else False,
-            "high_risk_cancers": high_risk_cancers
-        }
+        
+        return _simple_risk_calculation(state, filtered_variants)
 
     except Exception as e:
         logger.error(f"Risk model failed: {str(e)}")
-        # Fallback to simple calculation
-        return _simple_risk_calculation(state, filtered_variants)
+        # Return empty results on complete failure
+        return {
+            "risk_scores": {},
+            "risk_genes": {},
+            "error": str(e)
+        }
 
 
 def _ml_fusion_risk_calculation(state: Dict[str, Any],
@@ -406,7 +258,8 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
 def _simple_risk_calculation(state: Dict[str, Any],
                            filtered_variants: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Fallback simple risk calculation when ML models aren't available."""
-    logger.warning("Using simple risk calculation (ML models not available)")
+    logger.warning("⚠️ Using simple risk calculation (ML fusion not available)")
+    logger.info("This should only happen if ML fusion node failed or was skipped")
 
     # Get PRS results to incorporate polygenic risk
     prs_results = state.get("prs_results", {})

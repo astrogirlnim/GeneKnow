@@ -13,9 +13,11 @@ try:
     from . import population_mapper
     from . import tcga_mapper
     from . import cadd_scoring
+    from . import clinvar_annotator
     from . import feature_vector_builder
     from . import prs_calculator
     from . import pathway_burden
+    from . import ml_fusion_node
     from . import risk_model
     from . import metrics_calculator
     from . import formatter
@@ -30,9 +32,11 @@ except ImportError:
     import population_mapper
     import tcga_mapper
     import cadd_scoring
+    import clinvar_annotator
     import feature_vector_builder
     import prs_calculator
     import pathway_burden
+    import ml_fusion_node
     import risk_model
     import metrics_calculator
     import formatter
@@ -47,9 +51,11 @@ __all__ = [
     "population_mapper",
     "tcga_mapper",
     "cadd_scoring",
+    "clinvar_annotator",
     "feature_vector_builder",
     "prs_calculator",
     "pathway_burden",
+    "ml_fusion_node",
     "risk_model",
     "metrics_calculator",
     "formatter",
