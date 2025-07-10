@@ -144,6 +144,8 @@ cadd_test_report_*.json
 temp/
 tmp/
 *_temp*
+geneknow_temp/
+**/geneknow_temp/
 
 # Cache directories
 .cache/
@@ -199,3 +201,11 @@ geneknow_pipeline/data/
 tf310
 *.gz
 *.tsv
+*.maf
+
+# UUID-named test files
+*-*-*-*-*.wxs.aliquot_ensemble_masked.maf.gz
+*-*-*-*-*.maf.gz
+# Any test MAF files
+test_*.maf*
+temp_*.maf*
