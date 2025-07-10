@@ -190,26 +190,30 @@ EOF
 
 chmod +x "$BUNDLE_DIR/start_api_server.sh"
 
-# Create Windows version
+# Create Windows batch wrapper
+echo "🚀 Creating Windows startup wrapper..."
 cat > "$BUNDLE_DIR/start_api_server.bat" << 'EOF'
 @echo off
-REM Optimized startup script for GeneKnow API server (Windows)
+setlocal
 
 set SCRIPT_DIR=%~dp0
 set PYTHON_EXE=%SCRIPT_DIR%python_runtime\python.exe
 
 REM Set environment variables for optimization
-set PYTHONPATH=%SCRIPT_DIR%geneknow_pipeline;%PYTHONPATH%
+set PYTHONPATH=%SCRIPT_DIR%;%SCRIPT_DIR%geneknow_pipeline;%PYTHONPATH%
 set TF_CPP_MIN_LOG_LEVEL=2
 set PYTHONOPTIMIZE=1
 set PYTHONDONTWRITEBYTECODE=1
 
-REM Change to pipeline directory
-cd /d "%SCRIPT_DIR%geneknow_pipeline"
+REM Change to the bundled resources directory
+cd /d "%SCRIPT_DIR%"
 
-REM Start the API server
-echo 🚀 Starting GeneKnow API Server (Optimized)...
-"%PYTHON_EXE%" enhanced_api_server.py %*
+REM Create port file path
+set PORT_FILE=%SCRIPT_DIR%.api_server_port
+
+REM Start the API server using module syntax with port file
+echo Starting GeneKnow API Server (Optimized)...
+"%PYTHON_EXE%" -m geneknow_pipeline.enhanced_api_server --port-file "%PORT_FILE%" %*
 EOF
 
 echo "📋 Creating bundle manifest..."
