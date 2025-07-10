@@ -92,24 +92,31 @@ def merge_variants(state: dict) -> dict:
 
 def merge_tcga_cadd_results(state: dict) -> dict:
     """
-    Merge results from parallel TCGA mapping and CADD scoring.
-    Ensures both enrichment steps are complete before proceeding.
+    Merge results from parallel TCGA mapping, CADD scoring, and PRS calculation.
+    Ensures all three enrichment steps are complete before proceeding.
     """
-    logger.info("Merging results from parallel TCGA mapping and CADD scoring")
-    state["current_node"] = "merge_tcga_cadd"
+    logger.info("Merging results from parallel TCGA mapping, CADD scoring, and PRS calculation")
     
-    # Verify both parallel processes completed successfully
+    # Check what results we have from parallel execution
+    # Note: In LangGraph, parallel nodes may have already updated the state
     tcga_complete = bool(state.get("tcga_matches"))
     cadd_complete = bool(state.get("cadd_enriched_variants"))
+    prs_complete = bool(state.get("prs_results"))
     
-    if tcga_complete and cadd_complete:
-        logger.info("Both TCGA mapping and CADD scoring completed successfully")
+    # Also check if we got PRS results that haven't been merged yet
+    if not prs_complete and state.get("prs_summary"):
+        prs_complete = True
+    
+    if tcga_complete and cadd_complete and prs_complete:
+        logger.info("All three parallel processes completed successfully")
         logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
         logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
+        logger.info(f"PRS results: {len(state.get('prs_results', {}))}")
         
         # Merge the enriched variants from CADD scoring with TCGA data
         # The CADD scoring node produces cadd_enriched_variants
         # The TCGA mapping node produces tcga_matches but doesn't modify filtered_variants
+        # The PRS calculator produces prs_results and prs_summary
         cadd_variants = state.get("cadd_enriched_variants", state.get("filtered_variants", []))
         tcga_matches = state.get("tcga_matches", {})
         
@@ -151,13 +158,14 @@ def merge_tcga_cadd_results(state: dict) -> dict:
         # Ensure filtered_variants is updated with the merged data
         state["filtered_variants"] = merged_variants
         
-        logger.info(f"Merged {len(merged_variants)} variants with both TCGA and CADD annotations")
+        logger.info(f"Merged {len(merged_variants)} variants with TCGA and CADD annotations")
+        logger.info(f"PRS calculation completed for {len(state['prs_results'])} cancer types")
         
-        # Track completion of both parallel nodes
-        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring"]
+        # Track completion of all three parallel nodes
+        state["completed_nodes"] = state.get("completed_nodes", []) + ["tcga_mapper", "cadd_scoring", "prs_calculator"]
         
     else:
-        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}")
+        logger.warning(f"Incomplete parallel processing - TCGA: {tcga_complete}, CADD: {cadd_complete}, PRS: {prs_complete}")
         if not tcga_complete:
             state["warnings"].append("TCGA mapping did not complete successfully")
         if not cadd_complete:
@@ -165,6 +173,11 @@ def merge_tcga_cadd_results(state: dict) -> dict:
             # If CADD failed, use filtered_variants as-is
             if not state.get("cadd_enriched_variants"):
                 state["cadd_enriched_variants"] = state.get("filtered_variants", [])
+        if not prs_complete:
+            state["warnings"].append("PRS calculation did not complete successfully")
+            # Add empty PRS results so pipeline can continue
+            state["prs_results"] = {}
+            state["prs_summary"] = {"overall_confidence": "failed"}
         
         # Track partial completion
         completed_nodes = state.get("completed_nodes", [])
@@ -172,6 +185,8 @@ def merge_tcga_cadd_results(state: dict) -> dict:
             completed_nodes.append("tcga_mapper")
         if cadd_complete and "cadd_scoring" not in completed_nodes:
             completed_nodes.append("cadd_scoring")
+        if prs_complete and "prs_calculator" not in completed_nodes:
+            completed_nodes.append("prs_calculator")
         state["completed_nodes"] = completed_nodes
     
     return state
@@ -210,7 +225,7 @@ def create_genomic_pipeline() -> StateGraph:
     Creates the main LangGraph pipeline for genomic analysis.
     Features parallel execution at two stages:
     1. Variant calling and QC filtering run in parallel
-    2. TCGA mapping and CADD scoring run in parallel
+    2. TCGA mapping, CADD scoring, and PRS calculation run in parallel
     Supports FASTQ, BAM, VCF, and MAF input files.
     
     Returns:
@@ -258,19 +273,18 @@ def create_genomic_pipeline() -> StateGraph:
     # Parallel execution of TCGA mapping and CADD scoring
     workflow.add_edge("population_mapper", "tcga_mapper")
     workflow.add_edge("population_mapper", "cadd_scoring")
+    workflow.add_edge("population_mapper", "prs_calculator") # Added PRS calculator to parallel path
     
     # Both parallel paths converge at merge_tcga_cadd
     workflow.add_edge("tcga_mapper", "merge_tcga_cadd")
     workflow.add_edge("cadd_scoring", "merge_tcga_cadd")
+    workflow.add_edge("prs_calculator", "merge_tcga_cadd") # Added PRS calculator to merge
     
     # Continue with feature vector building after merge
     workflow.add_edge("merge_tcga_cadd", "feature_vector_builder")
     
-    # Add PRS calculation after feature vector building
-    workflow.add_edge("feature_vector_builder", "prs_calculator")
-    
-    # PRS calculator feeds into risk model
-    workflow.add_edge("prs_calculator", "risk_model")
+    # Feature vector builder feeds directly into risk model
+    workflow.add_edge("feature_vector_builder", "risk_model")
     workflow.add_edge("risk_model", "formatter")
     
     workflow.add_edge("formatter", "report_writer")
@@ -307,6 +321,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "tcga_matches": {},
         "cadd_enriched_variants": None,
         "cadd_stats": None,
+        "prs_results": {},  # Initialize PRS results
+        "prs_summary": {},  # Initialize PRS summary
         "risk_scores": {},
         "structured_json": {},
         "report_markdown": "",

@@ -305,7 +305,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     - prs_summary: overall PRS assessment
     """
     logger.info("Starting PRS calculation")
-    state["current_node"] = "prs_calculator"
+    # Note: Don't set current_node to avoid concurrent updates during parallel execution
     
     try:
         # Ensure PRS database exists
@@ -367,10 +367,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 f"PRS may be less accurate for {patient_population} population"
             )
         
-        # Update state
-        state["prs_results"] = prs_results
-        state["prs_summary"] = prs_summary
-        
         # Log overall summary
         logger.info(f"PRS calculation complete:")
         logger.info(f"  High-risk cancers: {', '.join(high_risk_cancers) or 'None'}")
@@ -381,21 +377,27 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             for limitation in prs_summary["limitations"]:
                 logger.warning(f"    - {limitation}")
         
-        state["completed_nodes"].append("prs_calculator")
+        # Note: completed_nodes is updated by the merge function for parallel nodes
+        
+        # Return only the keys this node updates
+        return {
+            "prs_results": prs_results,
+            "prs_summary": prs_summary
+        }
         
     except Exception as e:
         logger.error(f"PRS calculation failed: {str(e)}")
-        state["errors"].append({
-            "node": "prs_calculator",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
         
-        # Add empty results so pipeline can continue
-        state["prs_results"] = {}
-        state["prs_summary"] = {
-            "error": str(e),
-            "overall_confidence": "failed"
-        }
-    
-    return state 
+        # Return error state updates
+        return {
+            "prs_results": {},
+            "prs_summary": {
+                "error": str(e),
+                "overall_confidence": "failed"
+            },
+            "errors": [{
+                "node": "prs_calculator",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        } 
