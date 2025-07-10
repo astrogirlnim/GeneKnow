@@ -1,0 +1,336 @@
+{
+  "file_path": "test_minimal.vcf",
+  "file_type": "vcf",
+  "file_metadata": {
+    "format": "VCF",
+    "file_size_mb": 0.0001468658447265625,
+    "qc_stats": {
+      "total_variants": 2,
+      "passed_qc": 0,
+      "failed_qc": 2,
+      "filter_rate_percent": 100.0,
+      "thresholds": {
+        "qual": 30.0,
+        "depth": 10,
+        "allele_freq": 0.01
+      }
+    }
+  },
+  "raw_variants": [
+    {
+      "chrom": "17",
+      "pos": 43044295,
+      "ref": "G",
+      "alt": "A",
+      "qual": 100,
+      "filter": [],
+      "info": {
+        "GENE": [
+          "BRCA1"
+        ]
+      },
+      "variant_id": "17:43044295:G>A"
+    },
+    {
+      "chrom": "13",
+      "pos": 32914437,
+      "ref": "G",
+      "alt": "A",
+      "qual": 100,
+      "filter": [],
+      "info": {
+        "GENE": [
+          "BRCA2"
+        ]
+      },
+      "variant_id": "13:32914437:G>A"
+    }
+  ],
+  "filtered_variants": [],
+  "variant_count": 0,
+  "tcga_matches": {
+    "breast": {},
+    "colon": {},
+    "lung": {},
+    "prostate": {},
+    "blood": {}
+  },
+  "tcga_cohort_sizes": {
+    "breast": 1084,
+    "colon": 461,
+    "lung": 585,
+    "prostate": 498,
+    "blood": 200
+  },
+  "tcga_summary": {
+    "variants_matched": 0,
+    "total_variants": 0,
+    "match_rate": 0,
+    "cancer_types_analyzed": [
+      "breast",
+      "colon",
+      "lung",
+      "prostate",
+      "blood"
+    ],
+    "cohort_sizes": {
+      "breast": 1084,
+      "colon": 461,
+      "lung": 585,
+      "prostate": 498,
+      "blood": 200
+    },
+    "highly_enriched_variants": 0
+  },
+  "cadd_enriched_variants": [],
+  "cadd_stats": {
+    "job_id": "cadd_offline_20250710_155624",
+    "total_variants": 0,
+    "variants_scored": 0,
+    "variants_in_cancer_genes": 0,
+    "mean_phred": 0.0,
+    "max_phred": 0.0,
+    "variants_gt20": 0,
+    "scoring_method": "offline_algorithm"
+  },
+  "clinvar_annotations": {},
+  "clinvar_stats": {
+    "total_variants": 0,
+    "variants_annotated": 0,
+    "annotation_rate": 0,
+    "pathogenic_variants": 0,
+    "likely_pathogenic_variants": 0,
+    "benign_variants": 0,
+    "vus_variants": 0,
+    "drug_response_variants": 0,
+    "risk_factor_variants": 0,
+    "high_risk_variants": 0,
+    "cancer_related_variants": 0
+  },
+  "clinvar_pathogenic_variants": [],
+  "clinvar_likely_pathogenic_variants": [],
+  "clinvar_benign_variants": [],
+  "clinvar_vus_variants": [],
+  "prs_results": {
+    "BRCA": {
+      "cancer_type": "BRCA",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 2,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    },
+    "OVCA": {
+      "cancer_type": "OVCA",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 2,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    },
+    "PRAD": {
+      "cancer_type": "PRAD",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 2,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    },
+    "LUAD": {
+      "cancer_type": "LUAD",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 0,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    },
+    "COAD": {
+      "cancer_type": "COAD",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 0,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    },
+    "PANCA": {
+      "cancer_type": "PANCA",
+      "raw_score": 0.0,
+      "adjusted_score": 0.0,
+      "coverage": 0.0,
+      "matched_snps": 0,
+      "total_snps": 0,
+      "confidence": "low",
+      "percentile": 50,
+      "risk_category": "low",
+      "population": "EUR",
+      "contributing_snps": []
+    }
+  },
+  "prs_summary": {
+    "high_risk_cancers": [],
+    "primary_concern": null,
+    "overall_confidence": "low",
+    "limitations": [
+      "Low SNP coverage for BRCA PRS (0.0%)",
+      "Low SNP coverage for OVCA PRS (0.0%)",
+      "Low SNP coverage for PRAD PRS (0.0%)",
+      "Low SNP coverage for LUAD PRS (0.0%)",
+      "Low SNP coverage for COAD PRS (0.0%)",
+      "Low SNP coverage for PANCA PRS (0.0%)"
+    ]
+  },
+  "risk_scores": {
+    "breast": 3.0,
+    "colon": 1.7,
+    "lung": 2.4,
+    "prostate": 2.9,
+    "blood": 1.7,
+    "bone": 1.9
+  },
+  "risk_genes": {
+    "breast": [],
+    "colon": [],
+    "lung": [],
+    "prostate": [],
+    "blood": [],
+    "bone": []
+  },
+  "structured_json": {
+    "report_metadata": {
+      "pipeline_version": "1.0.0",
+      "processing_time_seconds": 0.006222,
+      "generated_at": "2025-07-10T15:56:24.155608",
+      "language": "en"
+    },
+    "patient_data": {
+      "file_type": "vcf",
+      "file_metadata": {
+        "format": "VCF",
+        "file_size_mb": 0.0001468658447265625,
+        "qc_stats": {
+          "total_variants": 2,
+          "passed_qc": 0,
+          "failed_qc": 2,
+          "filter_rate_percent": 100.0,
+          "thresholds": {
+            "qual": 30.0,
+            "depth": 10,
+            "allele_freq": 0.01
+          }
+        }
+      }
+    },
+    "summary": {
+      "total_variants_found": 0,
+      "variants_passed_qc": 0,
+      "high_risk_findings": 0
+    },
+    "risk_assessment": {
+      "scores": {
+        "breast": 3.0,
+        "colon": 1.7,
+        "lung": 2.4,
+        "prostate": 2.9,
+        "blood": 1.7,
+        "bone": 1.9
+      },
+      "high_risk_findings": [],
+      "risk_genes": {
+        "breast": [],
+        "colon": [],
+        "lung": [],
+        "prostate": [],
+        "blood": [],
+        "bone": []
+      }
+    },
+    "variant_details": [],
+    "quality_control": {
+      "total_variants": 2,
+      "passed_qc": 0,
+      "failed_qc": 2,
+      "filter_rate_percent": 100.0,
+      "thresholds": {
+        "qual": 30.0,
+        "depth": 10,
+        "allele_freq": 0.01
+      }
+    },
+    "tcga_summary": {
+      "cancer_types_analyzed": [
+        "breast",
+        "colon",
+        "lung",
+        "prostate",
+        "blood"
+      ],
+      "cohort_sizes": {
+        "breast": 1084,
+        "colon": 461,
+        "lung": 585,
+        "prostate": 498,
+        "blood": 200
+      },
+      "variants_with_tcga_data": 0
+    },
+    "cadd_summary": {
+      "variants_scored": 0,
+      "mean_phred": 0.0,
+      "max_phred": 0.0,
+      "high_impact_variants": 0,
+      "cancer_gene_variants": 0
+    },
+    "warnings": [
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      "CADD scoring did not complete successfully",
+      "ClinVar annotation did not complete successfully",
+      "Pathway burden analysis did not complete successfully",
+      {
+        "node": "risk_model",
+        "warning": "Using simple risk calculation - ML models not available",
+        "timestamp": 
