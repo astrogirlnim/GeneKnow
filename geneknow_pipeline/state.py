@@ -69,10 +69,6 @@ class GenomicState(TypedDict):
     completed_nodes: List[str]  # Remove operator.add to prevent duplicates
     current_node: str
     
-    # Parallel execution tracking
-    parallel_nodes_status: Dict[str, bool]  # Track which parallel nodes have completed
-    parallel_merge_count: int  # Track how many times merge has been called
-    
     # User preferences (from UI)
     language: str  # 'en', 'hi', 'es'
     include_technical_details: bool
