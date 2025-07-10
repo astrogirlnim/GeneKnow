@@ -183,3 +183,5 @@ geneknow_pipeline/population_variants.db
 geneknow_pipeline/data/cadd_scores.db
 geneknow_pipeline/data/
 tf310
+*.gz
+*.tsv

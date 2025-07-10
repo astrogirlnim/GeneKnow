@@ -58,7 +58,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Configuration
 class Config:
     MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
-    ALLOWED_EXTENSIONS = {'.fastq', '.fq', '.fastq.gz', '.fq.gz', '.bam', '.vcf', '.vcf.gz', '.maf', '.maf.gz'}
+    ALLOWED_EXTENSIONS = {'.fastq', '.fq', '.fastq.gz', '.fq.gz', '.bam', '.vcf', '.vcf.gz', '.maf', '.maf.gz', '.tsv', '.tsv.gz', '.txt', '.tab', '.csv'}
     UPLOAD_FOLDER = tempfile.mkdtemp(prefix='geneknow_uploads_')
     RESULTS_FOLDER = tempfile.mkdtemp(prefix='geneknow_results_')
     SESSION_TIMEOUT = 3600  # 1 hour
@@ -86,6 +86,8 @@ def get_file_type(filename: str) -> str:
         return 'vcf'
     elif filename_lower.endswith(('.maf', '.maf.gz')):
         return 'maf'
+    elif filename_lower.endswith(('.tsv', '.tsv.gz', '.txt', '.tab', '.csv')):
+        return 'tsv'
     return 'unknown'
 
 def convert_numpy_types(obj):
@@ -289,7 +291,13 @@ def supported_formats():
             {
                 'extension': '.maf',
                 'description': 'Mutation Annotation Format',
-                'compressed': [],
+                'compressed': ['.maf.gz'],
+                'paired_end_support': False
+            },
+            {
+                'extension': '.tsv',
+                'description': 'Tab-separated values (gene expression, variant annotations)',
+                'compressed': ['.tsv.gz'],
                 'paired_end_support': False
             }
         ]

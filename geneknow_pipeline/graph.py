@@ -185,6 +185,11 @@ def route_after_preprocess(state: dict) -> list:
         logger.info("MAF file detected with pre-processed variants, skipping to population mapping")
         return ["population_mapper"]
     
+    # Check if this is a TSV file that already has processed variants
+    if state.get("file_type") == "tsv" and state.get("raw_variants"):
+        logger.info("TSV file detected with processed variants, running QC filter")
+        return ["qc_filter"]
+    
     nodes_to_run = []
     
     # Always run variant calling if we have a BAM file
@@ -209,7 +214,7 @@ def create_genomic_pipeline() -> StateGraph:
     Features parallel execution at two stages:
     1. Variant calling and QC filtering run in parallel
     2. TCGA mapping and CADD scoring run in parallel
-    Supports FASTQ, BAM, VCF, and MAF input files.
+    Supports FASTQ, BAM, VCF, MAF, and TSV input files.
     
     Returns:
         StateGraph configured with all nodes and edges
