@@ -2,6 +2,20 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 
+// Type definitions for external libraries
+declare global {
+  interface Window {
+    jsPDF?: any;
+    jspdf?: {
+      jsPDF: any;
+    };
+    html2canvas?: (element: HTMLElement, options?: any) => Promise<HTMLCanvasElement>;
+  }
+}
+
+// Global jsPDF declaration for direct access
+declare const jsPDF: any;
+
 // Enhanced genomic data structure with transformations and mutations
 const mockGenomicData = {
   "summary": {
@@ -488,12 +502,12 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
             console.log('📸 Preparing element for borderless capture...');
             
             // Store original styles to restore later - declare outside inner try block
-            const originalStyles = new Map();
-            const elementsWithBorders = [element, ...element.querySelectorAll('*')];
+            const originalStyles = new Map<HTMLElement, any>();
+            const elementsWithBorders = [element as HTMLElement, ...Array.from(element.querySelectorAll('*')).map(el => el as HTMLElement)];
             
             try {
               // Temporarily remove borders from all elements
-              elementsWithBorders.forEach((el) => {
+              elementsWithBorders.forEach((el: HTMLElement) => {
                 originalStyles.set(el, {
                   border: el.style.border,
                   borderTop: el.style.borderTop,
@@ -531,7 +545,7 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
               
               // Restore original styles
               console.log('🔄 Restoring original element styles...');
-              elementsWithBorders.forEach((el) => {
+              elementsWithBorders.forEach((el: HTMLElement) => {
                 const styles = originalStyles.get(el);
                 if (styles) {
                   el.style.border = styles.border;
@@ -592,7 +606,7 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
             } catch (innerCaptureError) {
               // Restore original styles on inner error
               console.log('🔄 Restoring original styles after inner capture error...');
-              elementsWithBorders.forEach((el) => {
+              elementsWithBorders.forEach((el: HTMLElement) => {
                 const styles = originalStyles.get(el);
                 if (styles) {
                   el.style.border = styles.border;
@@ -818,9 +832,9 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
         // Reset PDF generating state
         setIsPDFGenerating(false);
         
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Error in PDF generation:', error);
-        console.error('❌ Error details:', error.message, error.stack);
+        console.error('❌ Error details:', (error as Error).message, (error as Error).stack);
         showError('Error generating PDF content');
         
         // Reset PDF generating state on error
@@ -828,7 +842,7 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
       }
     }
     
-    function showError(message) {
+    function showError(message: string) {
       console.log('❌ Showing error:', message);
       
       // Reset PDF generating state
@@ -872,9 +886,9 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
       }, 4000);
     }
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Critical error in downloadPDF function:', error);
-    console.error('❌ Critical error details:', error.message, error.stack);
+    console.error('❌ Critical error details:', (error as Error).message, (error as Error).stack);
     
     // Reset PDF generating state
     setIsPDFGenerating(false);
