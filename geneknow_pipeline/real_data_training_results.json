@@ -1,0 +1,36 @@
+{
+  "best_model_type": "gradient_boosting",
+  "training_date": "2025-07-10T10:10:21.611267",
+  "data_stats": {
+    "total_variants": 200000,
+    "train_size": 120000,
+    "val_size": 40000,
+    "test_size": 40000
+  },
+  "all_models": {
+    "gradient_boosting": {
+      "val_mse": 7.130581590070922e-06,
+      "val_r2": 0.9998809962617453,
+      "val_accuracy": 1.0,
+      "val_auc": 1.0
+    },
+    "random_forest": {
+      "val_mse": 0.00024959086301608525,
+      "val_r2": 0.9958345269094884,
+      "val_accuracy": 1.0,
+      "val_auc": 1.0
+    },
+    "linear": {
+      "val_mse": 0.000617337641640451,
+      "val_r2": 0.9896971255159789,
+      "val_accuracy": 0.9972,
+      "val_auc": 0.9999997669815437
+    }
+  },
+  "final_test_results": {
+    "mse": 7.14861839893054e-06,
+    "r2": 0.9998813633962914,
+    "accuracy": 1.0,
+    "auc": 1.0
+  }
+}

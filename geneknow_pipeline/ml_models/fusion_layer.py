@@ -177,10 +177,14 @@ class FusionLayer:
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
         
-        # Split data
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_scaled, targets, test_size=validation_split, random_state=42
-        )
+        # Split data only if validation_split > 0
+        if validation_split > 0:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_scaled, targets, test_size=validation_split, random_state=42
+            )
+        else:
+            # Use all data for training when validation_split is 0
+            X_train, X_val, y_train, y_val = X_scaled, X_scaled, targets, targets
         
         # Train model
         self.model.fit(X_train, y_train)
