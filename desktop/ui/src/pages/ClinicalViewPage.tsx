@@ -5,16 +5,16 @@ import Layout from '../components/Layout';
 // Type definitions for external libraries
 declare global {
   interface Window {
-    jsPDF?: any;
+    jsPDF?: unknown;
     jspdf?: {
-      jsPDF: any;
+      jsPDF: unknown;
     };
-    html2canvas?: (element: HTMLElement, options?: any) => Promise<HTMLCanvasElement>;
+    html2canvas?: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
   }
 }
 
 // Global jsPDF declaration for direct access
-declare const jsPDF: any;
+declare const jsPDF: unknown;
 
 // Enhanced genomic data structure with transformations and mutations
 const mockGenomicData = {
@@ -502,7 +502,15 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
             console.log('📸 Preparing element for borderless capture...');
             
             // Store original styles to restore later - declare outside inner try block
-            const originalStyles = new Map<HTMLElement, any>();
+            const originalStyles = new Map<HTMLElement, {
+              border: string;
+              borderTop: string;
+              borderRight: string;
+              borderBottom: string;
+              borderLeft: string;
+              borderRadius: string;
+              boxShadow: string;
+            }>();
             const elementsWithBorders = [element as HTMLElement, ...Array.from(element.querySelectorAll('*')).map(el => el as HTMLElement)];
             
             try {
