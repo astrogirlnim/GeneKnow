@@ -167,6 +167,15 @@ jobs:
           pnpm build
           echo "✅ Frontend build completed"
 
+      - name: 📁 Create bundled_resources directory for PR builds
+        working-directory: desktop
+        shell: bash
+        run: |
+          echo "📁 Creating empty bundled_resources directory for PR build..."
+          mkdir -p bundled_resources
+          echo "This directory is populated during release builds" > bundled_resources/README.txt
+          echo "✅ Created bundled_resources directory"
+
       - name: 🔨 Build Tauri (Debug)
         working-directory: desktop/src-tauri
         env:
@@ -275,6 +284,7 @@ jobs:
           echo "- 🔖 Create a new version tag" >> $GITHUB_STEP_SUMMARY
           echo "- 🔨 Build production releases for all platforms" >> $GITHUB_STEP_SUMMARY
           echo "- 🚀 Create GitHub release with installers" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Bundle Python runtime and dependencies (364MB optimized)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
