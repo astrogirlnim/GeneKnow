@@ -3,18 +3,39 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 // Type definitions for external libraries
+interface JsPDFConstructor {
+  new (orientation?: string, unit?: string, format?: string): JsPDFInstance;
+}
+
+interface JsPDFInstance {
+  internal: {
+    pageSize: {
+      getWidth(): number;
+      getHeight(): number;
+    };
+  };
+  setFontSize(size: number): void;
+  setFont(fontName?: string, fontStyle?: string): void;
+  text(text: string, x: number, y: number, options?: { align?: string }): void;
+  text(text: string[], x: number, y: number): void;
+  splitTextToSize(text: string, maxWidth: number): string[];
+  addImage(imageData: string, format: string, x: number, y: number, width: number, height: number): void;
+  addPage(): void;
+  save(filename: string): void;
+}
+
 declare global {
   interface Window {
-    jsPDF?: unknown;
+    jsPDF?: JsPDFConstructor | { jsPDF: JsPDFConstructor };
     jspdf?: {
-      jsPDF: unknown;
+      jsPDF: JsPDFConstructor;
     };
     html2canvas?: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
   }
+  
+  // Global jsPDF might be available
+  const jsPDF: JsPDFConstructor | undefined;
 }
-
-// Global jsPDF declaration for direct access
-declare const jsPDF: unknown;
 
 // Enhanced genomic data structure with transformations and mutations
 const mockGenomicData = {
@@ -392,36 +413,33 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
       try {
         console.log('🔍 Destructuring jsPDF from window.jsPDF...');
         
-        // Try different ways jsPDF might be exposed
-        let jsPDFClass;
-        if (window.jsPDF && window.jsPDF.jsPDF) {
+        // Try different ways jsPDF might be exposed with proper type checking
+        let jsPDFClass: JsPDFConstructor | undefined;
+        
+        if (window.jsPDF && typeof window.jsPDF === 'object' && 'jsPDF' in window.jsPDF) {
           console.log('✅ Found jsPDF at window.jsPDF.jsPDF');
-          jsPDFClass = window.jsPDF.jsPDF;
+          jsPDFClass = (window.jsPDF as { jsPDF: JsPDFConstructor }).jsPDF;
         } else if (window.jspdf && window.jspdf.jsPDF) {
           console.log('✅ Found jsPDF at window.jspdf.jsPDF');
           jsPDFClass = window.jspdf.jsPDF;
-        } else if (window.jsPDF) {
+        } else if (window.jsPDF && typeof window.jsPDF === 'function') {
           console.log('✅ Found jsPDF at window.jsPDF');
-          jsPDFClass = window.jsPDF;
+          jsPDFClass = window.jsPDF as JsPDFConstructor;
         } else if (window.jspdf) {
           console.log('✅ Found jsPDF at window.jspdf');
-          jsPDFClass = window.jspdf;
+          jsPDFClass = window.jspdf.jsPDF;
         } else if (typeof jsPDF !== 'undefined') {
           console.log('✅ Found jsPDF as global variable');
           jsPDFClass = jsPDF;
-        } else {
+        }
+        
+        if (!jsPDFClass) {
           throw new Error('jsPDF not found in any expected location');
         }
         
         console.log('✅ jsPDF class located:', !!jsPDFClass);
         console.log('🔍 jsPDF class type:', typeof jsPDFClass);
         console.log('🔍 jsPDF class constructor:', typeof jsPDFClass === 'function');
-        
-        // If jsPDFClass is not a constructor, look for the actual constructor
-        if (typeof jsPDFClass !== 'function' && jsPDFClass.jsPDF) {
-          console.log('🔧 jsPDFClass is an object, using jsPDFClass.jsPDF as constructor');
-          jsPDFClass = jsPDFClass.jsPDF;
-        }
         
         // Create new PDF document
         console.log('📄 Creating new PDF document...');
@@ -538,8 +556,12 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
               
               console.log('📸 Capturing element without borders...');
               
-              // Use html2canvas to capture the element
-              const canvas = await window.html2canvas(element, {
+              // Use html2canvas to capture the element with proper null checking
+              if (!window.html2canvas) {
+                throw new Error('html2canvas is not available');
+              }
+              
+              const canvas = await window.html2canvas(element as HTMLElement, {
                 backgroundColor: '#ffffff',
                 scale: 1.5,
                 useCORS: true,
