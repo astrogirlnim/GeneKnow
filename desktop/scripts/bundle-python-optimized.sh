@@ -100,16 +100,18 @@ echo "🧪 Testing Python installation..."
 
 # Install lightweight dependencies
 echo "📦 Installing optimized dependencies..."
-echo "   Using requirements-lite.txt for ~85% size reduction (TensorFlow removed)"
-
-# Check if lightweight requirements exist
-REQUIREMENTS_FILE="$PROJECT_ROOT/geneknow_pipeline/requirements-lite.txt"
-if [ ! -f "$REQUIREMENTS_FILE" ]; then
-    echo "⚠️  requirements-lite.txt not found, falling back to full requirements"
-    REQUIREMENTS_FILE="$PROJECT_ROOT/geneknow_pipeline/requirements.txt"
+if [[ "$platform_key" == "windows-x86_64" ]]; then
+    echo "   Using requirements-lite-windows.txt for Windows (pysam excluded)"
+    REQUIREMENTS_FILE="$PROJECT_ROOT/geneknow_pipeline/requirements-lite-windows.txt"
+else
+    echo "   Using requirements-lite.txt for ~85% size reduction (TensorFlow removed)"
+    REQUIREMENTS_FILE="$PROJECT_ROOT/geneknow_pipeline/requirements-lite.txt"
 fi
 
-"$PYTHON_EXE" -m pip install --no-cache-dir -r "$REQUIREMENTS_FILE"
+"$PYTHON_EXE" -m pip install --no-cache-dir -r "$REQUIREMENTS_FILE" || {
+    echo "❌ Failed to install Python dependencies"
+    exit 1
+}
 
 echo "🧹 Cleaning up Python installation..."
 # Remove unnecessary files to reduce size
