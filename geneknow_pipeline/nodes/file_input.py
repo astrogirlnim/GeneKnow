@@ -260,87 +260,7 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
     return metadata
 
 
-def validate_tsv(file_path: str) -> Dict[str, Any]:
-    """
-    Validate TSV file and extract metadata.
-    
-    Args:
-        file_path: Path to TSV file
-        
-    Returns:
-        Dictionary with file metadata
-    """
-    metadata = {
-        "format": "TSV",
-        "compression": "gzip" if file_path.endswith('.gz') else "none",
-        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
-    }
-    
-    try:
-        # Open file with appropriate handler
-        if file_path.endswith('.gz'):
-            f = gzip.open(file_path, 'rt')
-        else:
-            f = open(file_path, 'r')
-        
-        with f:
-            # Skip comment lines to find header
-            header_line = None
-            line_count = 0
-            for line in f:
-                line_count += 1
-                if not line.startswith('#'):
-                    header_line = line.strip()
-                    break
-                if line_count > 100:  # Safety check
-                    break
-            
-            if not header_line:
-                raise ValueError("No header found in TSV file")
-            
-            # Parse header columns
-            columns = header_line.split('\t')
-            metadata["column_count"] = len(columns)
-            metadata["columns"] = columns
-            
-            # Detect TSV data type based on column names
-            column_names_lower = [col.lower() for col in columns]
-            
-            # Check for different TSV types
-            if any(col in column_names_lower for col in ['gene', 'gene_name', 'gene_id', 'symbol']):
-                if any(col in column_names_lower for col in ['count', 'counts', 'expression', 'fpkm', 'tpm']):
-                    metadata["tsv_type"] = "gene_expression"
-                elif any(col in column_names_lower for col in ['chromosome', 'chr', 'position', 'pos']):
-                    metadata["tsv_type"] = "variant_annotation"
-                else:
-                    metadata["tsv_type"] = "gene_annotation"
-            elif any(col in column_names_lower for col in ['chromosome', 'chr', 'position', 'pos']):
-                metadata["tsv_type"] = "genomic_coordinates"
-            else:
-                metadata["tsv_type"] = "generic"
-            
-            # Count data rows
-            data_rows = 0
-            for line in f:
-                if not line.startswith('#') and line.strip():
-                    data_rows += 1
-            
-            metadata["data_rows"] = data_rows
-            
-            # Check if this might be a variant file
-            if metadata["tsv_type"] in ["variant_annotation", "genomic_coordinates"]:
-                required_variant_columns = ['chromosome', 'position', 'reference', 'alternate']
-                if any(col in column_names_lower for col in required_variant_columns):
-                    metadata["likely_variant_file"] = True
-                else:
-                    metadata["likely_variant_file"] = False
-            else:
-                metadata["likely_variant_file"] = False
-        
-    except Exception as e:
-        raise ValueError(f"Failed to validate TSV file: {str(e)}")
-    
-    return metadata
+
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -376,8 +296,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             file_type = 'vcf'
         elif file_lower.endswith(('.maf', '.maf.gz')):
             file_type = 'maf'
-        elif file_lower.endswith(('.tsv', '.tsv.gz', '.txt', '.tab', '.csv')):
-            file_type = 'tsv'
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
@@ -394,8 +312,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
         elif file_type == 'maf':
             metadata = validate_maf(file_path)
-        elif file_type == 'tsv':
-            metadata = validate_tsv(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
         
