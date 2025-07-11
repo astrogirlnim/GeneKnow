@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
@@ -737,7 +737,7 @@ const DashboardPage: React.FC = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = React.useState<'dashboard' | 'reports'>('dashboard');
   const [markdownContent, setMarkdownContent] = React.useState<string>('');
-  const [loadingMarkdown, setLoadingMarkdown] = React.useState<boolean>(false);
+  const [loadingMarkdown] = React.useState<boolean>(false);
   
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
@@ -842,26 +842,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Function to fetch markdown content from file path
-  const fetchMarkdownContent = async (filePath: string) => {
-    setLoadingMarkdown(true);
-    try {
-      console.log('Loading report from:', filePath);
-      
-      // Use Tauri invoke API to read the file content
-      const content = await invoke<string>('read_text_file', { path: filePath });
-      
-      setMarkdownContent(content);
-      console.log('Successfully loaded report content from file');
-    } catch (error) {
-      console.error('Error fetching markdown content:', error);
-      
-      // If file reading fails, throw error to trigger fallback
-      throw new Error(`Failed to read report file: ${error}`);
-    } finally {
-      setLoadingMarkdown(false);
-    }
-  };
+
 
   // Generate markdown content from pipeline results
   const generateMarkdownFromResults = React.useCallback((results: PipelineResult): string => {
@@ -1015,6 +996,8 @@ Consider genetic counseling if:
       }
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
+
+
 
   return (
     <Layout>
@@ -1370,108 +1353,7 @@ Consider genetic counseling if:
                   Clinical Reports
                 </h3>
                 
-                {pipelineResults && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {pipelineResults.enhanced_report_content?.markdown && (
-                      <>
-                        <button
-                          onClick={() => {
-                            // Download the in-memory markdown content
-                            const content = pipelineResults.enhanced_report_content?.markdown;
-                            if (content) {
-                              const blob = new Blob([content], { type: 'text/markdown' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(url);
-                            }
-                          }}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#2563EB',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'background 200ms ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#1D4ED8'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
-                        >
-                          Download Markdown
-                        </button>
-                        {pipelineResults.enhanced_report_content?.html && (
-                          <button
-                            onClick={() => {
-                              // Download the in-memory HTML content
-                              const content = pipelineResults.enhanced_report_content?.html;
-                              if (content) {
-                                const blob = new Blob([content], { type: 'text/html' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.html`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                              }
-                            }}
-                            style={{
-                              padding: '0.5rem 1rem',
-                              background: '#DC2626',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.875rem',
-                              cursor: 'pointer',
-                              transition: 'background 200ms ease'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#B91C1C'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = '#DC2626'}
-                          >
-                            Download HTML
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {!pipelineResults.enhanced_report_content?.markdown && markdownContent && (
-                      <button
-                        onClick={() => {
-                          // Create and download the generated markdown
-                          const blob = new Blob([markdownContent], { type: 'text/markdown' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                        }}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: '#059669',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          fontSize: '0.875rem',
-                          cursor: 'pointer',
-                          transition: 'background 200ms ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
-                      >
-                        Download Report
-                      </button>
-                    )}
-                  </div>
-                )}
+
               </div>
 
               {pipelineResults ? (
