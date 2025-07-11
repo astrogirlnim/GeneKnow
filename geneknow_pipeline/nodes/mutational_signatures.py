@@ -198,10 +198,10 @@ def process(state: Dict) -> Dict:
                     s['contribution'] = round(s['contribution'] / total, 3)
         
         # Update state
-        state['mutation_signatures'] = signatures
+        state['mutational_signatures'] = signatures
         
         # Add summary statistics
-        state['mutation_signature_summary'] = {
+        state['mutational_signatures_summary'] = {
             'total_signatures': len(signatures),
             'dominant_signature': signatures[0] if signatures else None,
             'pattern_weights': pattern_weights
@@ -223,6 +223,6 @@ def process(state: Dict) -> Dict:
             "timestamp": datetime.now().isoformat()
         }]
         # Set empty results on error
-        state['mutation_signatures'] = []
+        state['mutational_signatures'] = []
     
     return state 

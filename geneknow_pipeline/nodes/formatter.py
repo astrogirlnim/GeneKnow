@@ -167,7 +167,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "warnings": state["warnings"],
             
             # Add all new analysis results
-            "mutation_signatures": state.get("mutation_signatures", []),
+            "mutation_signatures": state.get("mutational_signatures", []),
             "structural_variants": state.get("structural_variants", []),
             "copy_number_variants": state.get("copy_number_variants", []),
             "pathway_analysis": state.get("pathway_analysis"),
