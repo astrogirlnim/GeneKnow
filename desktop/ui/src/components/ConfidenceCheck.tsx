@@ -1,30 +1,6 @@
 import React, { useState } from 'react';
 import type { SHAPValidation, SHAPContributor } from '../api/geneknowPipeline';
 
-// Custom InformationCircleIcon component
-const InformationCircleIcon: React.FC<{
-  style?: React.CSSProperties;
-  onMouseEnter?: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
-  onMouseLeave?: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
-}> = ({ style, onMouseEnter, onMouseLeave }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    style={style}
-    onMouseEnter={onMouseEnter}
-    onMouseLeave={onMouseLeave}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-    />
-  </svg>
-);
-
 interface ConfidenceCheckProps {
   validation: SHAPValidation | null;
   onNavigateToDetail?: () => void;
@@ -254,15 +230,26 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
           >
-            <InformationCircleIcon 
+            <div
               style={{
                 width: '1rem',
                 height: '1rem',
-                color: config.textColor,
+                backgroundColor: '#E5E7EB',
+                borderRadius: '50%',
+                border: '1px solid #D1D5DB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.625rem',
+                fontWeight: '600',
+                color: '#6B7280',
+                cursor: 'help',
                 opacity: 0.7,
-                cursor: 'help'
+                transition: 'all 200ms ease'
               }}
-            />
+            >
+              i
+            </div>
             {renderTooltip()}
           </div>
         </div>
@@ -318,33 +305,39 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         </div>
         
         <div 
-          style={{ position: 'relative' }}
+          style={{ position: 'relative', zIndex: 10, overflow: 'visible' }}
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
-          <InformationCircleIcon 
+          <div
             style={{
-              width: '1.25rem',
-              height: '1.25rem',
-              color: '#6B7280',
-              cursor: 'help',
+              width: '1rem',
+              height: '1rem',
               backgroundColor: '#E5E7EB',
               borderRadius: '50%',
-              padding: '0.125rem',
               border: '1px solid #D1D5DB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.625rem',
+              fontWeight: '600',
+              color: '#6B7280',
+              cursor: 'help',
               transition: 'all 200ms ease'
             }}
-                         onMouseEnter={(e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-               e.currentTarget.style.backgroundColor = '#D1D5DB';
-               e.currentTarget.style.color = '#374151';
-               e.currentTarget.style.borderColor = '#9CA3AF';
-             }}
-             onMouseLeave={(e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-               e.currentTarget.style.backgroundColor = '#E5E7EB';
-               e.currentTarget.style.color = '#6B7280';
-               e.currentTarget.style.borderColor = '#D1D5DB';
-             }}
-          />
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#D1D5DB';
+              e.currentTarget.style.color = '#374151';
+              e.currentTarget.style.borderColor = '#9CA3AF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#E5E7EB';
+              e.currentTarget.style.color = '#6B7280';
+              e.currentTarget.style.borderColor = '#D1D5DB';
+            }}
+          >
+            i
+          </div>
           {renderTooltip()}
         </div>
       </div>
