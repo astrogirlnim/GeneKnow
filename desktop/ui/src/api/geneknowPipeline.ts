@@ -131,6 +131,16 @@ export interface PipelineResult {
   risk_scores: Record<string, number>;
   report_sections: Record<string, ReportSection>;
   processing_time_seconds: number;
+  enhanced_report_paths?: Record<string, string>;
+  report_generator_info?: {
+    report_id: string;
+    backend_used: string;
+    model_used?: string;
+    llm_enhanced: boolean;
+    generation_time: string;
+    high_risk_findings_count: number;
+    error?: string;
+  };
   cadd_stats?: {
     variants_scored: number;
     mean_phred: number;

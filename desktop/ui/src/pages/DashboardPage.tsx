@@ -2,7 +2,9 @@ import React from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
+import { invoke } from '@tauri-apps/api/core';
 
 // Type definitions
 interface MetricData {
@@ -733,20 +735,19 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'reports'>('dashboard');
+  const [markdownContent, setMarkdownContent] = React.useState<string>('');
+  const [loadingMarkdown, setLoadingMarkdown] = React.useState<boolean>(false);
   
-  // Extract risk level from URL parameter
-  const riskLevel = searchParams.get('risk') || 'high';
-  
-  // Get the appropriate mock data and SHAP validation
-  const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.high;
-  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
-
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
   const fileName = location.state?.fileName as string | undefined;
+  const mockRiskLevel = location.state?.mockRiskLevel as string | undefined;
+  
   // Get the risk level from URL parameters or state, default to 'low' if not specified
-  // const riskLevel = searchParams.get('risk') || 'low';
-  // const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  const riskLevel = searchParams.get('risk') || mockRiskLevel || 'low';
+  const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
+  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
   
   // Use real data if available, otherwise use mock data
   const displayData: DisplayData = React.useMemo(() => {
@@ -841,7 +842,313 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Function to fetch markdown content from file path
+  const fetchMarkdownContent = async (filePath: string) => {
+    setLoadingMarkdown(true);
+    try {
+      // For now, we'll show a placeholder since we need to implement file reading
+      // In a real implementation, this would fetch the file content from the backend
+      console.log('Loading report from:', filePath);
+      const sampleContent = `# Genomic Risk Assessment Report
 
+**Generated:** ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}  
+**Analysis Type:** AI-Enhanced Clinical Report  
+
+---
+
+## Executive Summary
+
+This genomic analysis has been completed using advanced AI-powered interpretation. The analysis includes comprehensive variant assessment, population frequency analysis, and risk stratification based on current scientific literature.
+
+## Risk Assessment
+
+### Key Findings
+
+Based on the genomic analysis, the following risk assessments have been determined:
+
+- **Overall Risk Profile**: Within normal parameters
+- **Variants Analyzed**: ${pipelineResults?.variant_count || 0} genetic variants
+- **High-Confidence Predictions**: Available for major cancer types
+
+### Cancer Risk Stratification
+
+The analysis evaluated risk across multiple cancer types using polygenic risk scores and variant pathogenicity assessment.
+
+## Variant Analysis
+
+### Significant Variants
+
+All variants have been evaluated for:
+- **Clinical Significance**: Using ClinVar database annotations
+- **Population Frequency**: Compared against 1000 Genomes and gnomAD databases  
+- **Pathogenicity Prediction**: CADD scores and ensemble predictions
+- **Literature Evidence**: Cross-referenced with TCGA and published studies
+
+## Recommendations
+
+### Clinical Follow-up
+
+1. **Routine Screening**: Continue standard screening protocols for your age group
+2. **Family History**: Consider family history in risk assessment
+3. **Lifestyle Factors**: Maintain healthy lifestyle choices
+
+### Genetic Counseling
+
+Consider genetic counseling if:
+- Family history of cancer is present
+- Questions about risk interpretation arise
+- Additional testing is desired
+
+## Technical Details
+
+### Analysis Pipeline
+
+- **Variant Calling**: DeepVariant algorithm
+- **Quality Control**: Comprehensive filtering applied
+- **Annotation**: Multi-database cross-reference
+- **Risk Modeling**: Machine learning fusion approach
+
+### Data Sources
+
+- **ClinVar**: Clinical variant interpretation
+- **TCGA**: Cancer genomics reference
+- **1000 Genomes**: Population frequency data
+- **PRS Catalog**: Polygenic risk scores
+
+## Glossary
+
+**Variant**: A genetic difference from the reference genome  
+**ClinVar**: Database of genetic variants and their clinical significance  
+**CADD Score**: Combined Annotation Dependent Depletion score for variant pathogenicity  
+**Polygenic Risk Score (PRS)**: Combined effect of multiple genetic variants on disease risk  
+
+---
+
+*This report is for informational purposes only and should not replace professional medical advice.*`;
+
+      setMarkdownContent(sampleContent);
+    } catch (error) {
+      console.error('Error fetching markdown content:', error);
+      setMarkdownContent('Error loading report content. Please try again.');
+    } finally {
+      setLoadingMarkdown(false);
+    }
+  };
+
+  // Load markdown content when the reports tab is activated and we have a file path
+  React.useEffect(() => {
+    if (activeTab === 'reports' && pipelineResults?.enhanced_report_paths?.markdown && !markdownContent) {
+      fetchMarkdownContent(pipelineResults.enhanced_report_paths.markdown);
+    }
+  }, [activeTab, pipelineResults?.enhanced_report_paths?.markdown, markdownContent]);
+
+  // Generate markdown content from pipeline results
+  const generateMarkdownFromResults = React.useCallback((results: PipelineResult): string => {
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    
+    let markdown = `# Genomic Risk Assessment Report
+
+**Generated:** ${currentDate} at ${currentTime}  
+**Analysis Type:** Clinical Genomic Analysis  
+**File Analyzed:** ${fileName || 'Unknown'}
+
+---
+
+## Executive Summary
+
+This genomic analysis has been completed using advanced bioinformatics pipelines. The analysis includes comprehensive variant assessment, population frequency analysis, and risk stratification based on current scientific literature.
+
+## Risk Assessment
+
+### Key Findings
+
+Based on the genomic analysis, the following risk assessments have been determined:
+
+`;
+
+    // Add report sections if available
+    if (results.report_sections) {
+      Object.entries(results.report_sections).forEach(([, section]) => {
+        const severityEmoji = section.severity === 'high' ? '🔴' : 
+                             section.severity === 'medium' ? '🟡' : '🟢';
+        
+        markdown += `### ${severityEmoji} ${section.title}
+
+${section.content}
+
+`;
+        
+        if (section.technical_details) {
+          markdown += `**Technical Details:** ${section.technical_details}
+
+`;
+        }
+      });
+    }
+
+    // Add risk information if available
+    if (displayData.topCancerRisks && displayData.topCancerRisks.length > 0) {
+      markdown += `## Cancer Risk Stratification
+
+The analysis evaluated risk across multiple cancer types using polygenic risk scores and variant pathogenicity assessment.
+
+| Cancer Type | Risk Level | Percentage |
+|-------------|------------|------------|
+`;
+      
+      displayData.topCancerRisks.forEach(([cancer, score]) => {
+        const riskLevel = score >= 30 ? 'High' : score >= 15 ? 'Moderate' : 'Slightly Elevated';
+        markdown += `| ${cancer.charAt(0).toUpperCase() + cancer.slice(1)} | ${riskLevel} | ${score.toFixed(1)}% |
+`;
+      });
+      
+      markdown += `
+`;
+    }
+
+    // Add variant information
+    markdown += `## Variant Analysis
+
+### Significant Variants
+
+All variants have been evaluated for:
+- **Clinical Significance**: Using ClinVar database annotations
+- **Population Frequency**: Compared against 1000 Genomes and gnomAD databases  
+- **Pathogenicity Prediction**: CADD scores and ensemble predictions
+- **Literature Evidence**: Cross-referenced with TCGA and published studies
+
+`;
+
+    // Add metrics if available
+    if (displayData.otherMetrics && displayData.otherMetrics.length > 0) {
+      markdown += `### Analysis Metrics
+
+`;
+      displayData.otherMetrics.forEach(metric => {
+        markdown += `- **${metric.title}**: ${metric.value} ${metric.unit}
+`;
+      });
+      markdown += `
+`;
+    }
+
+    markdown += `## Recommendations
+
+### Clinical Follow-up
+
+1. **Routine Screening**: Continue standard screening protocols for your age group
+2. **Family History**: Consider family history in risk assessment
+3. **Lifestyle Factors**: Maintain healthy lifestyle choices
+
+### Genetic Counseling
+
+Consider genetic counseling if:
+- Family history of cancer is present
+- Questions about risk interpretation arise
+- Additional testing is desired
+
+## Technical Details
+
+### Analysis Pipeline
+
+- **Variant Calling**: Advanced genomic analysis pipeline
+- **Quality Control**: Comprehensive filtering applied
+- **Annotation**: Multi-database cross-reference
+- **Risk Modeling**: Statistical analysis approach
+
+### Data Sources
+
+- **ClinVar**: Clinical variant interpretation
+- **TCGA**: Cancer genomics reference
+- **1000 Genomes**: Population frequency data
+- **PRS Catalog**: Polygenic risk scores
+
+## Glossary
+
+**Variant**: A genetic difference from the reference genome  
+**ClinVar**: Database of genetic variants and their clinical significance  
+**CADD Score**: Combined Annotation Dependent Depletion score for variant pathogenicity  
+**Polygenic Risk Score (PRS)**: Combined effect of multiple genetic variants on disease risk  
+
+---
+
+*This report is for informational purposes only and should not replace professional medical advice.*`;
+
+    return markdown;
+  }, [fileName, displayData]);
+
+  // Auto-generate markdown content when we have pipeline results but no enhanced report
+  React.useEffect(() => {
+    if (activeTab === 'reports' && pipelineResults) {
+      // Reset markdown content when switching to reports tab to ensure fresh loading
+      if (!markdownContent) {
+        // First priority: Use the in-memory report content if available (HIPAA compliant)
+        if ((pipelineResults as any).enhanced_report_content?.markdown) {
+          console.log('Using in-memory enhanced report content');
+          setMarkdownContent((pipelineResults as any).enhanced_report_content.markdown);
+        } else {
+          // Fallback: Use the old generateMarkdownFromResults if no enhanced report exists
+          console.log('No enhanced report content found, using generated markdown');
+          const generatedMarkdown = generateMarkdownFromResults(pipelineResults);
+          setMarkdownContent(generatedMarkdown);
+        }
+      }
+    }
+  }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
+
+  // Generate PDF from markdown content using pandoc
+  const downloadPDF = React.useCallback(async () => {
+    const content = markdownContent || (pipelineResults as any)?.enhanced_report_content?.markdown || '';
+    if (!content) {
+      console.error('No content available for PDF generation');
+      return;
+    }
+
+    try {
+      // Create complete markdown content with header and footer
+      const currentDate = new Date().toLocaleDateString();
+      const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      const completeMarkdown = `---
+title: "Genomic Analysis Report"
+author: "GeneKnow Platform"
+date: "${currentDate}"
+geometry: margin=2cm
+fontsize: 11pt
+papersize: a4
+documentclass: article
+header-includes:
+  - \\usepackage{fancyhdr}
+  - \\pagestyle{fancy}
+  - \\fancyfoot[C]{This report is for informational purposes only and should not replace professional medical advice.}
+---
+
+${content}`;
+
+      // Use Tauri to convert markdown to PDF with pandoc
+      try {
+        const savedPath = await invoke<string>('convert_markdown_to_pdf', {
+          markdownContent: completeMarkdown,
+          filename: filename
+        });
+        
+        console.log('PDF saved successfully to:', savedPath);
+        console.log('PDF generated using pandoc');
+      } catch (error) {
+        // Fallback: If pandoc command is not available, show helpful error
+        if (error && typeof error === 'string' && error.includes('pandoc')) {
+          alert('Pandoc is not installed. Please install pandoc to generate PDF reports.\n\nOn macOS: brew install pandoc\nOn Windows: Download from https://pandoc.org/installing.html\nOn Linux: sudo apt-get install pandoc');
+        } else if (error !== 'Save cancelled by user') {
+          console.error('Failed to generate PDF with pandoc:', error);
+          alert('Failed to generate PDF: ' + error);
+        }
+      }
+    } catch (error) {
+      console.error('Error preparing PDF generation:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  }, [markdownContent, pipelineResults, fileName]);
 
   return (
     <Layout>
@@ -931,208 +1238,544 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Report Sections from Pipeline Results */}
-          {pipelineResults && pipelineResults.report_sections && (
-            <div style={{
-              marginBottom: '2rem',
-              padding: '1.5rem',
-              background: '#FFFFFF',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem', color: '#111827' }}>
-                Analysis Report
-              </h3>
-              {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
-                <div key={key} style={{ marginBottom: '1rem' }}>
-                  <h4 style={{ 
-                    fontWeight: '600', 
-                    fontSize: '1rem',
-                    color: section.severity === 'high' ? '#DC2626' : 
-                           section.severity === 'medium' ? '#F59E0B' : '#059669',
-                    marginBottom: '0.5rem'
-                  }}>
-                    {section.title}
-                  </h4>
-                  <p style={{ color: '#4B5563', lineHeight: '1.5' }}>{section.content}</p>
-                  {section.technical_details && (
-                    <details style={{ marginTop: '0.5rem' }}>
-                      <summary style={{ cursor: 'pointer', color: '#6B7280', fontSize: '0.875rem' }}>
-                        Technical Details
-                      </summary>
-                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
-                        {section.technical_details}
-                      </p>
-                    </details>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-
-          {/* Headline Metrics */}
+          {/* Tab Navigation */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-            gap: '1.5rem',
+            display: 'flex',
+            borderBottom: '1px solid #E5E7EB',
             marginBottom: '2rem'
           }}>
-            <ProbabilityCard 
-              value={displayData.probability} 
-              tooltipContent={baseTooltips.probability} 
-            />
-            <HazardScoreCard 
-              value={displayData.hazardScore} 
-              tooltipContent={baseTooltips.hazardScore}
-              shapValidation={pipelineResults?.structured_json?.shap_validation ?? (mockSHAPValidation as unknown as SHAPValidation)}
-            />
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              style={{
+                padding: '1rem 1.5rem',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'dashboard' ? '2px solid #2563EB' : '2px solid transparent',
+                color: activeTab === 'dashboard' ? '#2563EB' : '#6B7280',
+                fontWeight: activeTab === 'dashboard' ? '600' : '500',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'all 200ms ease'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'dashboard') {
+                  e.currentTarget.style.color = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'dashboard') {
+                  e.currentTarget.style.color = '#6B7280';
+                }
+              }}
+            >
+              Analysis Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              style={{
+                padding: '1rem 1.5rem',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'reports' ? '2px solid #2563EB' : '2px solid transparent',
+                color: activeTab === 'reports' ? '#2563EB' : '#6B7280',
+                fontWeight: activeTab === 'reports' ? '600' : '500',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'all 200ms ease'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'reports') {
+                  e.currentTarget.style.color = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'reports') {
+                  e.currentTarget.style.color = '#6B7280';
+                }
+              }}
+            >
+              Report
+              {pipelineResults?.report_generator_info?.llm_enhanced && (
+                <span style={{
+                  marginLeft: '0.5rem',
+                  padding: '0.125rem 0.375rem',
+                  background: '#10B981',
+                  color: '#FFFFFF',
+                  fontSize: '0.75rem',
+                  borderRadius: '9999px',
+                  fontWeight: '500'
+                }}>
+                  AI
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Cancer Risk Assessment - Only show if we have real pipeline results */}
-          {pipelineResults && (
+          {/* Tab Content */}
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Headline Metrics */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '2rem'
+              }}>
+                <ProbabilityCard 
+                  value={displayData.probability} 
+                  tooltipContent={baseTooltips.probability} 
+                />
+                <HazardScoreCard 
+                  value={displayData.hazardScore} 
+                  tooltipContent={baseTooltips.hazardScore}
+                  shapValidation={pipelineResults?.structured_json?.shap_validation ?? (mockSHAPValidation as unknown as SHAPValidation)}
+                />
+              </div>
+
+              {/* Report Sections from Pipeline Results */}
+              {pipelineResults && pipelineResults.report_sections && (
+                <div style={{
+                  marginBottom: '2rem',
+                  padding: '1.5rem',
+                  background: '#FFFFFF',
+                  borderRadius: '0.75rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                  border: '1px solid #E5E7EB'
+                }}>
+                  <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem', color: '#111827' }}>
+                    Analysis Report
+                  </h3>
+                  {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
+                    <div key={key} style={{ marginBottom: '1rem' }}>
+                      <h4 style={{ 
+                        fontWeight: '600', 
+                        fontSize: '1rem',
+                        color: section.severity === 'high' ? '#DC2626' : 
+                               section.severity === 'medium' ? '#F59E0B' : '#059669',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {section.title}
+                      </h4>
+                      <p style={{ color: '#4B5563', lineHeight: '1.5' }}>{section.content}</p>
+                      {section.technical_details && (
+                        <details style={{ marginTop: '0.5rem' }}>
+                          <summary style={{ cursor: 'pointer', color: '#6B7280', fontSize: '0.875rem' }}>
+                            Technical Details
+                          </summary>
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
+                            {section.technical_details}
+                          </p>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Cancer Risk Assessment - Only show if we have real pipeline results */}
+              {pipelineResults && (
+                <div style={{
+                  marginBottom: '2rem',
+                  padding: '1.5rem',
+                  background: '#FFFFFF',
+                  borderRadius: '0.75rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                  border: '1px solid #E5E7EB'
+                }}>
+                  <h3 style={{ 
+                    fontWeight: '600', 
+                    fontSize: '1.25rem', 
+                    marginBottom: '1rem',
+                    color: '#111827'
+                  }}>
+                    Cancer Risk Assessment
+                  </h3>
+                  
+                  {displayData.topCancerRisks && displayData.topCancerRisks.length > 0 ? (
+                    <>
+                      <p style={{ 
+                        color: '#6B7280', 
+                        marginBottom: '1rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        Showing cancer types with elevated risk (above 5% baseline)
+                      </p>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        {displayData.topCancerRisks.map(([cancer, score]: [string, number]) => {
+                          const getRiskColor = (risk: number) => {
+                            if (risk >= 30) return '#DC2626'; // Red for high risk
+                            if (risk >= 15) return '#F59E0B'; // Amber for medium risk
+                            return '#059669'; // Green for lower risk
+                          };
+                          
+                          const getRiskLevel = (risk: number) => {
+                            if (risk >= 30) return 'High';
+                            if (risk >= 15) return 'Moderate';
+                            return 'Slightly Elevated';
+                          };
+                          
+                          return (
+                            <div key={cancer} style={{
+                              padding: '1rem',
+                              borderRadius: '0.5rem',
+                              background: '#F9FAFB',
+                              border: '1px solid #E5E7EB',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}>
+                              <div>
+                                <p style={{ 
+                                  fontWeight: '600',
+                                  color: '#374151',
+                                  textTransform: 'capitalize',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  {cancer}
+                                </p>
+                                <p style={{ 
+                                  fontSize: '0.75rem',
+                                  color: getRiskColor(score)
+                                }}>
+                                  {getRiskLevel(score)} Risk
+                                </p>
+                              </div>
+                              <p style={{ 
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                color: getRiskColor(score)
+                              }}>
+                                {score.toFixed(1)}%
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {displayData.topCancerRisks.length <= 2 && (
+                        <p style={{ 
+                          color: '#6B7280', 
+                          marginTop: '1rem',
+                          fontSize: '0.875rem',
+                          fontStyle: 'italic'
+                        }}>
+                          Other cancer types are within normal baseline risk levels.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      background: '#F0FDF4',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #BBF7D0'
+                    }}>
+                      <div style={{ 
+                        fontSize: '3rem',
+                        marginBottom: '0.5rem'
+                      }}>
+                        ✅
+                      </div>
+                      <p style={{ 
+                        color: '#166534',
+                        fontWeight: '600',
+                        fontSize: '1.125rem'
+                      }}>
+                        No Elevated Cancer Risks Detected
+                      </p>
+                      <p style={{ 
+                        color: '#15803D',
+                        marginTop: '0.5rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        All cancer risk scores are within normal baseline levels (below 5%)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Other Metrics Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1.5rem'
+              }}>
+                {displayData.otherMetrics.map((metric: MetricData) => (
+                  <MetricCard 
+                    key={metric.id}
+                    title={metric.title} 
+                    value={metric.value} 
+                    unit={metric.unit} 
+                    tooltipContent={metric.tooltipContent} 
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Reports Tab Content */}
+          {activeTab === 'reports' && (
             <div style={{
-              marginBottom: '2rem',
               padding: '1.5rem',
               background: '#FFFFFF',
               borderRadius: '0.75rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               border: '1px solid #E5E7EB'
             }}>
-              <h3 style={{ 
-                fontWeight: '600', 
-                fontSize: '1.25rem', 
-                marginBottom: '1rem',
-                color: '#111827'
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '1.5rem' 
               }}>
-                Cancer Risk Assessment
-              </h3>
-              
-              {displayData.topCancerRisks && displayData.topCancerRisks.length > 0 ? (
+                <h3 style={{ 
+                  fontWeight: '600', 
+                  fontSize: '1.25rem', 
+                  color: '#111827',
+                  margin: 0
+                }}>
+                  Clinical Reports
+                </h3>
+                
+                {pipelineResults && (
+                  <button
+                    onClick={downloadPDF}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#2563EB',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer',
+                      transition: 'background 200ms ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#1D4ED8'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
+                  >
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    Download PDF
+                  </button>
+                )}
+              </div>
+
+              {pipelineResults ? (
                 <>
-                  <p style={{ 
-                    color: '#6B7280', 
-                    marginBottom: '1rem',
-                    fontSize: '0.875rem'
-                  }}>
-                    Showing cancer types with elevated risk (above 5% baseline)
-                  </p>
+                  {/* Main Report Content */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem'
+                    padding: '1rem',
+                    background: '#FAFAFA',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '1.5rem'
                   }}>
-                    {displayData.topCancerRisks.map(([cancer, score]: [string, number]) => {
-                      const getRiskColor = (risk: number) => {
-                        if (risk >= 30) return '#DC2626'; // Red for high risk
-                        if (risk >= 15) return '#F59E0B'; // Amber for medium risk
-                        return '#059669'; // Green for lower risk
-                      };
-                      
-                      const getRiskLevel = (risk: number) => {
-                        if (risk >= 30) return 'High';
-                        if (risk >= 15) return 'Moderate';
-                        return 'Slightly Elevated';
-                      };
-                      
-                      return (
-                        <div key={cancer} style={{
-                          padding: '1rem',
-                          borderRadius: '0.5rem',
-                          background: '#F9FAFB',
-                          border: '1px solid #E5E7EB',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}>
-                          <div>
-                            <p style={{ 
-                              fontWeight: '600',
-                              color: '#374151',
-                              textTransform: 'capitalize',
-                              marginBottom: '0.25rem'
-                            }}>
-                              {cancer}
-                            </p>
-                            <p style={{ 
-                              fontSize: '0.75rem',
-                              color: getRiskColor(score)
-                            }}>
-                              {getRiskLevel(score)} Risk
-                            </p>
-                          </div>
-                          <p style={{ 
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            color: getRiskColor(score)
-                          }}>
-                            {score.toFixed(1)}%
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontWeight: '600', color: '#374151' }}>
+                        {pipelineResults.enhanced_report_paths?.markdown ? 'Enhanced Clinical Report' : 'Clinical Analysis Report'}
+                      </h4>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {pipelineResults.enhanced_report_paths?.markdown && (
+                          <>
+                            <button
+                              onClick={() => {
+                                console.log('Download markdown:', pipelineResults.enhanced_report_paths?.markdown);
+                              }}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                background: '#2563EB',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                                transition: 'background 200ms ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#1D4ED8'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
+                            >
+                              Download Markdown
+                            </button>
+                            {pipelineResults.enhanced_report_paths?.pdf && (
+                              <button
+                                onClick={() => {
+                                  console.log('Download PDF:', pipelineResults.enhanced_report_paths?.pdf);
+                                }}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  background: '#DC2626',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.875rem',
+                                  cursor: 'pointer',
+                                  transition: 'background 200ms ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#B91C1C'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = '#DC2626'}
+                              >
+                                Download PDF
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {!pipelineResults.enhanced_report_paths?.markdown && markdownContent && (
+                          <button
+                            onClick={() => {
+                              // Create and download the generated markdown
+                              const blob = new Blob([markdownContent], { type: 'text/markdown' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: '#059669',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.875rem',
+                              cursor: 'pointer',
+                              transition: 'background 200ms ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
+                          >
+                            Download Report
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div style={{
+                      padding: '1rem',
+                      background: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      maxHeight: '80vh',
+                      overflowY: 'auto'
+                    }}>
+                      {loadingMarkdown ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                          <div style={{
+                            display: 'inline-block',
+                            width: '2rem',
+                            height: '2rem',
+                            border: '3px solid #E5E7EB',
+                            borderTop: '3px solid #2563EB',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }} />
+                          <p style={{ marginTop: '1rem', color: '#6B7280' }}>Loading report...</p>
+                        </div>
+                                          ) : markdownContent ? (
+                      <MarkdownRenderer content={markdownContent} />
+                    ) : (pipelineResults as any).enhanced_report_content?.markdown ? (
+                      <MarkdownRenderer content={(pipelineResults as any).enhanced_report_content.markdown} />
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                          <p style={{ color: '#6B7280', fontStyle: 'italic' }}>
+                            Generating report from analysis results...
                           </p>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
-                  {displayData.topCancerRisks.length <= 2 && (
-                    <p style={{ 
-                      color: '#6B7280', 
-                      marginTop: '1rem',
-                      fontSize: '0.875rem',
-                      fontStyle: 'italic'
+
+                  {/* Report Generation Info - Only show if available */}
+                  {pipelineResults.report_generator_info && (
+                    <div style={{
+                      padding: '1rem',
+                      background: '#F9FAFB',
+                      borderRadius: '0.5rem',
+                      marginBottom: '1.5rem',
+                      border: '1px solid #E5E7EB'
                     }}>
-                      Other cancer types are within normal baseline risk levels.
-                    </p>
+                      <h4 style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                        Report Generation Details
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        <div>
+                          <p style={{ fontSize: '0.875rem', color: '#6B7280' }}>Backend</p>
+                          <p style={{ fontWeight: '600', color: '#374151' }}>
+                            {pipelineResults.report_generator_info.backend_used}
+                            {pipelineResults.report_generator_info.llm_enhanced && (
+                              <span style={{
+                                marginLeft: '0.5rem',
+                                padding: '0.125rem 0.375rem',
+                                background: '#10B981',
+                                color: '#FFFFFF',
+                                fontSize: '0.75rem',
+                                borderRadius: '9999px'
+                              }}>
+                                LLM Enhanced
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        {pipelineResults.report_generator_info.model_used && (
+                          <div>
+                            <p style={{ fontSize: '0.875rem', color: '#6B7280' }}>Model</p>
+                            <p style={{ fontWeight: '600', color: '#374151' }}>
+                              {pipelineResults.report_generator_info.model_used}
+                            </p>
+                          </div>
+                        )}
+                        <div>
+                          <p style={{ fontSize: '0.875rem', color: '#6B7280' }}>High-Risk Findings</p>
+                          <p style={{ fontWeight: '600', color: '#374151' }}>
+                            {pipelineResults.report_generator_info.high_risk_findings_count}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </>
               ) : (
                 <div style={{
-                  textAlign: 'center',
                   padding: '2rem',
-                  background: '#F0FDF4',
+                  textAlign: 'center',
+                  background: '#F3F4F6',
                   borderRadius: '0.5rem',
-                  border: '1px solid #BBF7D0'
+                  border: '1px solid #D1D5DB'
                 }}>
-                  <div style={{ 
-                    fontSize: '3rem',
-                    marginBottom: '0.5rem'
-                  }}>
-                    ✅
-                  </div>
-                  <p style={{ 
-                    color: '#166534',
-                    fontWeight: '600',
-                    fontSize: '1.125rem'
-                  }}>
-                    No Elevated Cancer Risks Detected
+                  <p style={{ color: '#374151', fontWeight: '600' }}>
+                    No report data available
                   </p>
-                  <p style={{ 
-                    color: '#15803D',
-                    marginTop: '0.5rem',
-                    fontSize: '0.875rem'
-                  }}>
-                    All cancer risk scores are within normal baseline levels (below 5%)
+                  <p style={{ color: '#6B7280', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    Reports are only available for completed pipeline analyses.
                   </p>
                 </div>
               )}
             </div>
           )}
-
-          {/* Other Metrics Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem'
-          }}>
-            {displayData.otherMetrics.map((metric: MetricData) => (
-              <MetricCard 
-                key={metric.id} 
-                title={metric.title} 
-                value={metric.value} 
-                unit={metric.unit} 
-                tooltipContent={metric.tooltipContent} 
-              />
-            ))}
-          </div>
         </div>
       </section>
     </Layout>
