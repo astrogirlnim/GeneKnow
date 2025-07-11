@@ -4,6 +4,8 @@ import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { invoke } from '@tauri-apps/api/core';
 
 // Type definitions
@@ -861,6 +863,136 @@ Consider genetic counseling if:
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
 
+  // Generate PDF from markdown content
+  const downloadPDF = React.useCallback(async () => {
+    const content = markdownContent || pipelineResults?.enhanced_report_content?.markdown || '';
+    if (!content) {
+      console.error('No content available for PDF generation');
+      return;
+    }
+
+    try {
+      // Create a temporary container to render the markdown
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '210mm'; // A4 width
+      tempContainer.style.padding = '20mm';
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.fontFamily = 'Arial, sans-serif';
+      document.body.appendChild(tempContainer);
+
+      // Create the content structure
+      const headerDiv = document.createElement('div');
+      headerDiv.innerHTML = `
+        <h1 style="text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: bold; color: #111827;">
+          Genomic Analysis Report
+        </h1>
+        <p style="text-align: center; margin-bottom: 30px; font-size: 14px; color: #6B7280;">
+          Generated: ${new Date().toLocaleDateString()}
+        </p>
+      `;
+      tempContainer.appendChild(headerDiv);
+
+      // Create a container for the markdown content
+      const contentDiv = document.createElement('div');
+      tempContainer.appendChild(contentDiv);
+
+      // Use ReactDOM to render the MarkdownRenderer
+      const { createRoot } = await import('react-dom/client');
+      const root = createRoot(contentDiv);
+      
+      // Render the markdown content with all styling
+      await new Promise<void>((resolve) => {
+        root.render(<MarkdownRenderer content={content} />);
+        // Give React time to render
+        setTimeout(resolve, 500);
+      });
+
+      // Add footer
+      const footerDiv = document.createElement('div');
+      footerDiv.innerHTML = `
+        <p style="margin-top: 40px; text-align: center; font-size: 12px; font-style: italic; color: #6B7280;">
+          This report is for informational purposes only and should not replace professional medical advice.
+        </p>
+      `;
+      tempContainer.appendChild(footerDiv);
+
+      // Use html2canvas to capture the rendered content
+      const canvas = await html2canvas(tempContainer, {
+        useCORS: true,
+        logging: false,
+        background: '#ffffff'
+      });
+
+      // Create PDF with proper dimensions
+      const imgWidth = 190; // A4 width minus margins (210mm - 20mm margins)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 277; // A4 height minus margins (297mm - 20mm margins)
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+      let heightLeft = imgHeight;
+
+      // Add the first page
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95), // Use JPEG for smaller file size
+        'JPEG',
+        10, // left margin
+        10, // top margin
+        imgWidth,
+        imgHeight
+      );
+      heightLeft -= pageHeight;
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          10, // left margin
+          position + 10, // position plus top margin
+          imgWidth,
+          imgHeight
+        );
+        heightLeft -= pageHeight;
+      }
+
+      // Clean up
+      root.unmount();
+      document.body.removeChild(tempContainer);
+
+      // Save the PDF using Tauri's file dialog
+      const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Get the PDF as array buffer
+      const pdfArrayBuffer = pdf.output('arraybuffer');
+      
+      // Convert to Uint8Array for Tauri
+      const pdfBytes = new Uint8Array(pdfArrayBuffer);
+      
+      // Use Tauri's save dialog
+      try {
+        const savedPath = await invoke<string>('save_file_dialog', {
+          filename: filename,
+          fileContent: Array.from(pdfBytes) // Convert to regular array for serialization
+        });
+        
+        console.log('PDF saved successfully to:', savedPath);
+        console.log('PDF generated with full markdown styling preserved');
+      } catch (error) {
+        if (error !== 'Save cancelled by user') {
+          console.error('Failed to save PDF:', error);
+          alert('Failed to save PDF: ' + error);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  }, [markdownContent, pipelineResults, fileName]);
   return (
     <Layout>
       <section style={{ 
@@ -1323,37 +1455,73 @@ Consider genetic counseling if:
                             Download HTML
                           </button>
                         )}
+                        <button
+                          onClick={downloadPDF}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#7C3AED',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'background 200ms ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#6D28D9'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#7C3AED'}
+                        >
+                          Download PDF
+                        </button>
                       </>
                     )}
                     {!pipelineResults.enhanced_report_content?.markdown && markdownContent && (
-                      <button
-                        onClick={() => {
-                          // Create and download the generated markdown
-                          const blob = new Blob([markdownContent], { type: 'text/markdown' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                        }}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: '#059669',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          fontSize: '0.875rem',
-                          cursor: 'pointer',
-                          transition: 'background 200ms ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
-                      >
-                        Download Report
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            // Create and download the generated markdown
+                            const blob = new Blob([markdownContent], { type: 'text/markdown' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#059669',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'background 200ms ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
+                        >
+                          Download Report
+                        </button>
+                        <button
+                          onClick={downloadPDF}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#7C3AED',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'background 200ms ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#6D28D9'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#7C3AED'}
+                        >
+                          Download PDF
+                        </button>
+                      </>
                     )}
                   </div>
                 )}
