@@ -1,270 +1,355 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeneKnow - Download</title>
-    <meta name="description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
-    <meta name="keywords" content="genomics, privacy, risk assessment, genetic analysis, TCGA, biomarkers">
-    <meta name="author" content="GenePredict Team">
-    
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="GeneKnow - Decode Disease">
-    <meta property="og:description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://github.com/astrogirlnim/GeneKnow">
-    
-    <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="GeneKnow - Decode Disease">
-    <meta name="twitter:description" content="Decode disease through genomic analysis. Analyze your genetic data securely on your own device.">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="assets/favicon.png">
-    
-    <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    
-    <!-- Custom styles for any additional styling -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download GeneKnow - Secure Genomic Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      }
-      
-      /* Enhance logo colors */
-      .logo-enhanced {
-        filter: contrast(1.2) saturate(1.3);
-      }
-      
-      /* Custom teal colors to match DNA helix */
-      .text-teal-custom { color: #0e7490 !important; }
-      .bg-teal-custom { background-color: #0e7490 !important; }
-      .border-teal-custom { border-color: #0e7490 !important; }
-      .hover\:bg-teal-custom:hover { background-color: #155e75 !important; }
-      .hover\:text-teal-custom:hover { color: #0e7490 !important; }
-      .bg-teal-light { background-color: #cffafe !important; }
-      .text-teal-dark { color: #164e63 !important; }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-gradient {
+            background: #f9fafb;
+            background: linear-gradient(135deg, #f9fafb 0%, #f0f4ff 100%);
+        }
     </style>
-  </head>
-  <body class="bg-white text-gray-900 font-sans">
+</head>
+<body class="bg-white text-gray-800">
+
     <!-- Header -->
-    <header class="flex items-center justify-between p-6 shadow-sm">
-      <h1 class="text-2xl font-bold text-teal-custom">GeneKnow</h1>
-      <nav class="space-x-6 text-gray-700 font-medium">
-        <a href="#features" class="hover:text-teal-custom transition">Features</a>
-        <a href="#download" class="hover:text-teal-custom transition">Download</a>
-        <a href="#about" class="hover:text-teal-custom transition">About</a>
-        <a href="https://github.com/astrogirlnim/GeneKnow" target="_blank" class="hover:text-teal-custom transition">GitHub</a>
-      </nav>
+    <header class="bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <!-- GeneKnow Logo -->
+                    <img src="assets/images/logo.svg" alt="GeneKnow DNA Logo" class="w-7 h-7">
+                    <h1 class="text-2xl font-bold text-gray-900">GeneKnow</h1>
+                </div>
+                <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
+                    <a href="#about" class="text-gray-600 hover:text-blue-600 transition-colors">About</a>
+                    <a href="https://github.com/astrogirlnim/GeneKnow" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">GitHub</a>
+                </nav>
+            </div>
+        </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="max-w-6xl mx-auto px-6 py-20 flex flex-col md:flex-row items-center justify-between">
-      <!-- Left Content -->
-      <div class="md:w-1/2 mb-12 md:mb-0">
-        <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-          Decode Disease <br />
-          <span class="text-teal-custom">Through Genomic Analysis</span>
-        </h2>
-        <p class="text-lg text-gray-600 mb-6">
-          Analyze your genetic data securely on your own device. No cloud uploads, no data sharing. Decode disease patterns using advanced ML models trained on TCGA data.
-        </p>
-        <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
-          <a href="#download" class="px-6 py-3 bg-teal-custom text-white font-semibold rounded-lg hover:bg-teal-custom transition">Download Now</a>
-          <a href="#about" class="px-6 py-3 border border-teal-custom text-teal-custom font-semibold rounded-lg hover:bg-teal-light transition">Learn More</a>
-        </div>
-        <div class="flex flex-wrap gap-2 text-sm text-gray-700">
-          <span class="px-3 py-1 bg-gray-100 rounded-full">Privacy-First</span>
-          <span class="px-3 py-1 bg-gray-100 rounded-full">TCGA Data</span>
-          <span class="px-3 py-1 bg-gray-100 rounded-full">Fast Processing</span>
-        </div>
-      </div>
+    <main class="pt-20">
+        <section class="hero-gradient">
+            <div class="max-w-7xl mx-auto px-6 py-24 md:py-32">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="text-center md:text-left">
+                        <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight">
+                            Decode Disease
+                            <span class="block text-blue-600">Through Genomic Analysis.</span>
+                        </h2>
+                        <p class="mt-6 text-lg text-gray-600 max-w-xl mx-auto md:mx-0">
+                            Analyze your genetic data securely on your own device. No cloud uploads, no data sharing. Decode disease patterns using advanced ML models trained on TCGA data.
+                        </p>
+                        <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                            <a href="#download" class="w-full sm:w-auto bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 text-center">
+                                Download Now
+                            </a>
+                            <a href="#about" class="w-full sm:w-auto bg-white text-gray-700 font-semibold px-8 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition-all text-center">
+                                Learn More
+                            </a>
+                        </div>
+                        <div class="mt-6 flex items-center justify-center md:justify-start space-x-4">
+                            <span class="text-xs font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">Privacy-First</span>
+                            <span class="text-xs font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">TCGA Data</span>
+                            <span class="text-xs font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">Fast Processing</span>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="bg-white p-2 rounded-xl shadow-2xl transform rotate-3">
+                            <div class="aspect-video bg-gray-100 rounded-lg p-4 border border-gray-200">
+                                <img src="https://assets-global.website-files.com/6571cd80213754c2540055b6/657233355e1d409b8b15082e_image_0305f5.jpeg" 
+                                     class="rounded-md shadow-lg w-full h-full object-cover"
+                                     alt="GeneKnow application dashboard preview"
+                                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/EBF4FF/3B82F6?text=App+Preview';" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-      <!-- Right Logo -->
-      <div class="md:w-1/2 flex justify-center">
-        <img src="assets/images/no_background_vertical_logo_720.png" alt="GeneKnow DNA Double Helix Logo with Tagline" class="w-[450px] md:w-[600px] max-w-full logo-enhanced" />
-      </div>
-    </section>
+        <!-- Features Section -->
+        <section id="features" class="bg-gray-50 py-20">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Choose GeneKnow?</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                        Built with privacy and accuracy in mind, GeneKnow offers cutting-edge genomic analysis to decode disease without compromising your data security.
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Privacy-First</h3>
+                        <p class="text-gray-600">
+                            Your genetic data never leaves your device. All processing happens locally, ensuring complete privacy and security.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">TCGA-Trained Models</h3>
+                        <p class="text-gray-600">
+                            Advanced machine learning models trained on comprehensive TCGA datasets for accurate risk assessment.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Fast Processing</h3>
+                        <p class="text-gray-600">
+                            Optimized algorithms deliver results in minutes, not hours. Get insights quickly without waiting.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Comprehensive Reports</h3>
+                        <p class="text-gray-600">
+                            Detailed reports with visualizations, risk scores, and actionable insights for healthcare decisions.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10V9a2 2 0 012-2h2a2 2 0 012 2v1M9 10H7a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2h-2"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Easy to Use</h3>
+                        <p class="text-gray-600">
+                            Intuitive interface designed for both researchers and healthcare professionals. No technical expertise required.
+                        </p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Cross-Platform</h3>
+                        <p class="text-gray-600">
+                            Available on Windows, macOS, and Linux. Same powerful features across all your devices.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <!-- Features Section -->
-    <section id="features" class="bg-gray-50 py-20">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Choose GeneKnow?</h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-            Built with privacy and accuracy in mind, GeneKnow offers cutting-edge genomic analysis to decode disease without compromising your data security.
-          </p>
-        </div>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Privacy-First</h3>
-            <p class="text-gray-600">
-              Your genetic data never leaves your device. All processing happens locally, ensuring complete privacy and security.
-            </p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">TCGA-Trained Models</h3>
-            <p class="text-gray-600">
-              Advanced machine learning models trained on comprehensive TCGA datasets for accurate risk assessment.
-            </p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Fast Processing</h3>
-            <p class="text-gray-600">
-              Optimized algorithms deliver results in minutes, not hours. Get insights quickly without waiting.
-            </p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Comprehensive Reports</h3>
-            <p class="text-gray-600">
-              Detailed reports with visualizations, risk scores, and actionable insights for healthcare decisions.
-            </p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Easy to Use</h3>
-            <p class="text-gray-600">
-              Intuitive interface designed for both researchers and healthcare professionals. No technical expertise required.
-            </p>
-          </div>
-          <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Cross-Platform</h3>
-            <p class="text-gray-600">
-              Available on Windows, macOS, and Linux. Same powerful features across all your devices.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
+        <!-- About Section with Release Notes -->
+        <section id="about" class="bg-white py-20">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">About GeneKnow</h2>
+                    <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                        GeneKnow is a privacy-first genomic analysis platform that empowers individuals and healthcare professionals to decode disease through genetic data.
+                    </p>
+                </div>
+                
+                <!-- Release Notes -->
+                <div class="bg-gray-50 rounded-2xl p-8 md:p-12 max-w-4xl mx-auto">
+                    <div class="flex items-center mb-8">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-gray-900">🧬 GenePredict Release 0.1.4</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">📋 What's New</h4>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    Automated release build for desktop application
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    Cross-platform builds (macOS, Windows, Linux)
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    Privacy-first genomic risk assessment platform
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">🔄 Changes Since Last Release</h4>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    🔖 Bump version to 0.1.3
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    🔧 Fix Windows PowerShell mv command issue in release pipeline
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">🔨 Technical Details</h4>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white p-4 rounded-lg">
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Version:</span>
+                                            <span class="font-medium text-gray-900">0.1.4</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Version Type:</span>
+                                            <span class="font-medium text-gray-900">patch</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Previous Version:</span>
+                                            <span class="font-medium text-gray-900">0.1.3</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg">
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Tauri:</span>
+                                            <span class="font-medium text-gray-900">2.6.2</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">React:</span>
+                                            <span class="font-medium text-gray-900">19.1.0</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">TypeScript:</span>
+                                            <span class="font-medium text-gray-900">5.8.3</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">📦 Download</h4>
+                            <p class="text-gray-600 mb-4">Choose the appropriate installer for your platform below.</p>
+                            <a href="https://github.com/astrogirlnim/GeneKnow/compare/v0.1.3...v0.1.4" 
+                               target="_blank" 
+                               class="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                                Full Changelog
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7h10v10M17 7l-10 10"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <!-- Download Section -->
-    <section id="download" class="py-20">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold text-gray-900 mb-4">Download GeneKnow</h2>
-          <p class="text-lg text-gray-600">
-            Get the latest version of GeneKnow for your operating system
-          </p>
-        </div>
+        <!-- OS Download Section -->
+        <section id="download" class="bg-gray-50 py-20">
+            <div class="max-w-4xl mx-auto px-6 text-center">
+                 <h3 class="text-3xl font-bold text-gray-900">Download for Your OS</h3>
+                 <p class="mt-4 text-lg text-gray-600">GeneKnow is available for all major desktop platforms.</p>
+                 
+                 <!-- Version Info -->
+                 <div class="mt-8 mb-8">
+                     <div class="inline-flex items-center gap-4 bg-white px-6 py-3 rounded-lg shadow-sm border border-gray-200">
+                         <div class="text-sm text-gray-600">
+                             <span class="font-semibold">Latest Version:</span>
+                             <span class="text-blue-600 font-medium">v0.1.4</span>
+                         </div>
+                         <div class="text-sm text-gray-600">
+                             <span>Released 2 days ago</span>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="mt-8 grid sm:grid-cols-3 gap-6">
+                     <!-- Windows -->
+                     <div class="bg-gray-50 p-6 rounded-lg hover:bg-gray-100 hover:shadow-lg transition-all group">
+                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Windows_10_Logo.svg/1024px-Windows_10_Logo.svg.png" alt="Windows Logo" class="h-12 mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/48x48/cccccc/ffffff?text=Win';">
+                         <p class="mt-4 font-semibold text-gray-800">Download for Windows</p>
+                         <div class="mt-3 space-y-2">
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict_0.1.4_x64-setup.exe" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 Setup.exe (2.41 MB)
+                             </a>
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict_0.1.4_x64_en-US.msi" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 MSI Installer (3.63 MB)
+                             </a>
+                         </div>
+                     </div>
+                     <!-- macOS -->
+                     <div class="bg-gray-50 p-6 rounded-lg hover:bg-gray-100 hover:shadow-lg transition-all group">
+                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" alt="Apple Logo" class="h-12 mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/48x48/cccccc/ffffff?text=Mac';">
+                         <p class="mt-4 font-semibold text-gray-800">Download for macOS</p>
+                         <div class="mt-3">
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict_0.1.4_x64.dmg" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 DMG File (4.83 MB)
+                             </a>
+                         </div>
+                     </div>
+                     <!-- Linux -->
+                     <div class="bg-gray-50 p-6 rounded-lg hover:bg-gray-100 hover:shadow-lg transition-all group">
+                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Tux.svg/1200px-Tux.svg.png" alt="Linux Logo" class="h-12 mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/48x48/cccccc/ffffff?text=Lin';">
+                         <p class="mt-4 font-semibold text-gray-800">Download for Linux</p>
+                         <div class="mt-3 space-y-2">
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict_0.1.4_amd64.deb" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 DEB Package (3.94 MB)
+                             </a>
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict_0.1.4_amd64.AppImage" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 AppImage (137 MB)
+                             </a>
+                             <a href="https://github.com/astrogirlnim/GeneKnow/releases/download/v0.1.4/GenePredict-0.1.4-1.x86_64.rpm" 
+                                class="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                📦 RPM Package (3.94 MB)
+                             </a>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+        </section>
         
-        <!-- Version Info -->
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center gap-4 bg-gray-100 px-6 py-3 rounded-lg">
-            <div class="text-sm text-gray-600">
-              <span class="font-semibold">Latest Version:</span>
-              <span id="version-number">Loading...</span>
-            </div>
-            <div class="text-sm text-gray-600">
-              <span id="release-date">Loading...</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Platform Detection -->
-        <div class="text-center mb-12">
-          <div class="mb-4">
-            <span class="text-gray-600">
-              Detected: <span id="detected-os" class="font-semibold">Detecting...</span>
-            </span>
-          </div>
-          <button class="px-8 py-3 bg-teal-custom text-white font-semibold rounded-lg hover:bg-teal-custom transition text-lg" id="recommended-download">
-            <span class="btn-text">Download for <span id="recommended-os">Your OS</span></span>
-          </button>
-        </div>
-
-        <!-- Download Options -->
-        <div class="grid md:grid-cols-3 gap-6">
-          <!-- Windows -->
-          <div class="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4">Windows</h3>
-            <div id="windows-downloads">
-              <div class="text-gray-500">Loading downloads...</div>
-            </div>
-          </div>
-
-          <!-- macOS -->
-          <div class="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4">macOS</h3>
-            <div id="macos-downloads">
-              <div class="text-gray-500">Loading downloads...</div>
-            </div>
-          </div>
-
-          <!-- Linux -->
-          <div class="bg-white p-6 rounded-lg shadow-sm border">
-            <h3 class="text-xl font-semibold text-gray-900 mb-4">Linux</h3>
-            <div id="linux-downloads">
-              <div class="text-gray-500">Loading downloads...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Release Notes -->
-        <div class="mt-12 bg-gray-50 p-6 rounded-lg">
-          <h3 class="text-xl font-semibold text-gray-900 mb-4">Release Notes</h3>
-          <div id="release-content">
-            <div class="text-gray-500">Loading release notes...</div>
-          </div>
-          <a href="#" class="inline-block mt-4 text-teal-custom hover:text-teal-custom font-medium" id="view-all-releases" target="_blank">
-            View All Releases on GitHub →
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="bg-gray-50 py-20">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">About GeneKnow</h2>
-            <p class="text-lg text-gray-600 mb-6">
-              GeneKnow is a privacy-first genomic analysis platform that empowers individuals 
-              and healthcare professionals to decode disease through genetic data. Built 
-              with cutting-edge machine learning models trained on TCGA datasets, our platform ensures 
-              your genetic information remains secure while delivering reliable disease insights.
-            </p>
-            <div class="flex flex-wrap gap-2 mb-6">
-              <span class="px-3 py-1 bg-teal-light text-teal-dark rounded-full text-sm font-medium">Advanced ML Models</span>
-              <span class="px-3 py-1 bg-teal-light text-teal-dark rounded-full text-sm font-medium">Accurate Risk Scores</span>
-              <span class="px-3 py-1 bg-teal-light text-teal-dark rounded-full text-sm font-medium">Complete Privacy</span>
-            </div>
-          </div>
-          <div class="grid grid-cols-3 gap-6 text-center">
-            <div class="bg-white p-6 rounded-lg shadow-sm">
-              <div class="text-2xl font-bold text-teal-custom mb-2">10,000+</div>
-              <div class="text-gray-600">TCGA Samples</div>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-sm">
-              <div class="text-2xl font-bold text-teal-custom mb-2">99.9%</div>
-              <div class="text-gray-600">Privacy Protection</div>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-sm">
-              <div class="text-2xl font-bold text-teal-custom mb-2">3</div>
-              <div class="text-gray-600">Platforms Supported</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    </main>
 
     <!-- Footer -->
-    <footer class="text-center text-gray-500 text-sm py-6 border-t">
-      <div class="max-w-6xl mx-auto px-6">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-          <div class="mb-4 md:mb-0">
-            <p>&copy; 2025 GeneKnow. Open source project.</p>
-          </div>
-          <div class="flex space-x-6">
-            <a href="privacy.html" class="hover:text-teal-custom transition">Privacy Policy</a>
-            <a href="terms.html" class="hover:text-teal-custom transition">Terms of Service</a>
-            <a href="https://github.com/astrogirlnim/GeneKnow" target="_blank" class="hover:text-teal-custom transition">GitHub</a>
-          </div>
+    <footer class="bg-gray-800 text-white">
+        <div class="max-w-7xl mx-auto px-6 py-8 text-center">
+            <p>&copy; 2025 GeneKnow. All rights reserved.</p>
+            <p class="text-sm text-gray-400 mt-2">Disclaimer: This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
         </div>
-      </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/releases.js"></script>
-  </body>
+</body>
 </html> 

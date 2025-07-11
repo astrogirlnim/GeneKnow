@@ -12,6 +12,7 @@ on:
       - '*.py'
       - 'requirements.txt'
       - 'docs/**'
+      - 'download_website/**'
 
 env:
   NODE_VERSION: '20'
