@@ -4,8 +4,6 @@ import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { invoke } from '@tauri-apps/api/core';
 
 // Type definitions
@@ -863,7 +861,7 @@ Consider genetic counseling if:
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
 
-  // Generate PDF from markdown content
+  // Generate PDF from markdown content using pandoc
   const downloadPDF = React.useCallback(async () => {
     const content = markdownContent || pipelineResults?.enhanced_report_content?.markdown || '';
     if (!content) {
@@ -872,124 +870,46 @@ Consider genetic counseling if:
     }
 
     try {
-      // Create a temporary container to render the markdown
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.width = '210mm'; // A4 width
-      tempContainer.style.padding = '20mm';
-      tempContainer.style.backgroundColor = 'white';
-      tempContainer.style.fontFamily = 'Arial, sans-serif';
-      document.body.appendChild(tempContainer);
-
-      // Create the content structure
-      const headerDiv = document.createElement('div');
-      headerDiv.innerHTML = `
-        <h1 style="text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: bold; color: #111827;">
-          Genomic Analysis Report
-        </h1>
-        <p style="text-align: center; margin-bottom: 30px; font-size: 14px; color: #6B7280;">
-          Generated: ${new Date().toLocaleDateString()}
-        </p>
-      `;
-      tempContainer.appendChild(headerDiv);
-
-      // Create a container for the markdown content
-      const contentDiv = document.createElement('div');
-      tempContainer.appendChild(contentDiv);
-
-      // Use ReactDOM to render the MarkdownRenderer
-      const { createRoot } = await import('react-dom/client');
-      const root = createRoot(contentDiv);
-      
-      // Render the markdown content with all styling
-      await new Promise<void>((resolve) => {
-        root.render(<MarkdownRenderer content={content} />);
-        // Give React time to render
-        setTimeout(resolve, 500);
-      });
-
-      // Add footer
-      const footerDiv = document.createElement('div');
-      footerDiv.innerHTML = `
-        <p style="margin-top: 40px; text-align: center; font-size: 12px; font-style: italic; color: #6B7280;">
-          This report is for informational purposes only and should not replace professional medical advice.
-        </p>
-      `;
-      tempContainer.appendChild(footerDiv);
-
-      // Use html2canvas to capture the rendered content
-      const canvas = await html2canvas(tempContainer, {
-        useCORS: true,
-        logging: false,
-        background: '#ffffff'
-      });
-
-      // Create PDF with proper dimensions
-      const imgWidth = 190; // A4 width minus margins (210mm - 20mm margins)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pageHeight = 277; // A4 height minus margins (297mm - 20mm margins)
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let position = 0;
-      let heightLeft = imgHeight;
-
-      // Add the first page
-      pdf.addImage(
-        canvas.toDataURL('image/jpeg', 0.95), // Use JPEG for smaller file size
-        'JPEG',
-        10, // left margin
-        10, // top margin
-        imgWidth,
-        imgHeight
-      );
-      heightLeft -= pageHeight;
-
-      // Add additional pages if content is longer than one page
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL('image/jpeg', 0.95),
-          'JPEG',
-          10, // left margin
-          position + 10, // position plus top margin
-          imgWidth,
-          imgHeight
-        );
-        heightLeft -= pageHeight;
-      }
-
-      // Clean up
-      root.unmount();
-      document.body.removeChild(tempContainer);
-
-      // Save the PDF using Tauri's file dialog
+      // Create complete markdown content with header and footer
+      const currentDate = new Date().toLocaleDateString();
       const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
       
-      // Get the PDF as array buffer
-      const pdfArrayBuffer = pdf.output('arraybuffer');
-      
-      // Convert to Uint8Array for Tauri
-      const pdfBytes = new Uint8Array(pdfArrayBuffer);
-      
-      // Use Tauri's save dialog
+      const completeMarkdown = `---
+title: "Genomic Analysis Report"
+author: "GeneKnow Platform"
+date: "${currentDate}"
+geometry: margin=2cm
+fontsize: 11pt
+papersize: a4
+documentclass: article
+header-includes:
+  - \\usepackage{fancyhdr}
+  - \\pagestyle{fancy}
+  - \\fancyfoot[C]{This report is for informational purposes only and should not replace professional medical advice.}
+---
+
+${content}`;
+
+      // Use Tauri to convert markdown to PDF with pandoc
       try {
-        const savedPath = await invoke<string>('save_file_dialog', {
-          filename: filename,
-          fileContent: Array.from(pdfBytes) // Convert to regular array for serialization
+        const savedPath = await invoke<string>('convert_markdown_to_pdf', {
+          markdownContent: completeMarkdown,
+          filename: filename
         });
         
         console.log('PDF saved successfully to:', savedPath);
-        console.log('PDF generated with full markdown styling preserved');
+        console.log('PDF generated using pandoc');
       } catch (error) {
-        if (error !== 'Save cancelled by user') {
-          console.error('Failed to save PDF:', error);
-          alert('Failed to save PDF: ' + error);
+        // Fallback: If pandoc command is not available, show helpful error
+        if (error && typeof error === 'string' && error.includes('pandoc')) {
+          alert('Pandoc is not installed. Please install pandoc to generate PDF reports.\n\nOn macOS: brew install pandoc\nOn Windows: Download from https://pandoc.org/installing.html\nOn Linux: sudo apt-get install pandoc');
+        } else if (error !== 'Save cancelled by user') {
+          console.error('Failed to generate PDF with pandoc:', error);
+          alert('Failed to generate PDF: ' + error);
         }
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error preparing PDF generation:', error);
       alert('Failed to generate PDF. Please try again.');
     }
   }, [markdownContent, pipelineResults, fileName]);

@@ -1282,6 +1282,7 @@ pub fn run() {
         save_temp_file,
         delete_temp_file,
         read_text_file,
+        save_file_dialog,
         // PDF generation
         convert_markdown_to_pdf
     ])
