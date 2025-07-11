@@ -131,7 +131,7 @@ export interface PipelineResult {
   risk_scores: Record<string, number>;
   report_sections: Record<string, ReportSection>;
   processing_time_seconds: number;
-  enhanced_report_paths?: Record<string, string>;
+  enhanced_report_content?: Record<string, string>; // In-memory report content (markdown, html, txt)
   report_generator_info?: {
     report_id: string;
     backend_used: string;
@@ -139,6 +139,8 @@ export interface PipelineResult {
     llm_enhanced: boolean;
     generation_time: string;
     high_risk_findings_count: number;
+    available_formats?: string[];
+    content_length?: number;
     error?: string;
   };
   cadd_stats?: {

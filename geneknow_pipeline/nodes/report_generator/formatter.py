@@ -86,43 +86,39 @@ class ReportFormatter:
             report_id: Unique identifier for the report
             
         Returns:
-            Dictionary with paths to generated files
+            Dictionary with report content (not file paths for HIPAA compliance)
         """
         if report_id is None:
             report_id = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # Generate markdown content
+        # Generate markdown content in-memory
         if llm_content:
             markdown_content = self._format_llm_report(data, llm_content, report_id)
         else:
             markdown_content = self._format_template_report(data, report_id)
         
-        # Save markdown file
-        markdown_path = os.path.join(self.output_dir, f"{report_id}.md")
-        with open(markdown_path, 'w', encoding='utf-8') as f:
-            f.write(markdown_content)
+        logger.info(f"Generated markdown report in-memory (ID: {report_id})")
         
-        logger.info(f"Generated markdown report: {markdown_path}")
+        # Return content directly instead of file paths for HIPAA compliance
+        result_content = {"markdown": markdown_content}
         
-        result_paths = {"markdown": markdown_path}
-        
-        # Generate additional formats if requested
+        # Generate additional formats if requested (also in-memory)
         if "html" in self.config.output_formats:
-            html_path = self._convert_to_html(markdown_content, report_id)
-            if html_path:
-                result_paths["html"] = html_path
+            html_content = self._convert_to_html_content(markdown_content, report_id)
+            if html_content:
+                result_content["html"] = html_content
         
         if "pdf" in self.config.output_formats:
-            pdf_path = self._convert_to_pdf(markdown_content, report_id)
-            if pdf_path:
-                result_paths["pdf"] = pdf_path
+            # Note: PDF generation would need to be implemented in-memory
+            # For now, we'll skip PDF to maintain HIPAA compliance
+            logger.info("PDF generation skipped for HIPAA compliance")
         
         if "txt" in self.config.output_formats:
-            txt_path = self._convert_to_txt(markdown_content, report_id)
-            if txt_path:
-                result_paths["txt"] = txt_path
+            txt_content = self._convert_to_txt_content(markdown_content, report_id)
+            if txt_content:
+                result_content["txt"] = txt_content
         
-        return result_paths
+        return result_content
     
     def _format_llm_report(self, data: Dict[str, Any], llm_content: str, report_id: str) -> str:
         """Format report using LLM-generated content."""
@@ -399,7 +395,7 @@ For questions about this report or genetic counseling resources, please consult 
         
         return footer
     
-    def _convert_to_html(self, markdown_content: str, report_id: str) -> Optional[str]:
+    def _convert_to_html_content(self, markdown_content: str, report_id: str) -> Optional[str]:
         """Convert markdown to HTML (placeholder implementation)."""
         try:
             # Basic markdown to HTML conversion
@@ -422,12 +418,7 @@ For questions about this report or genetic counseling resources, please consult 
 </body>
 </html>"""
             
-            html_path = os.path.join(self.output_dir, f"{report_id}.html")
-            with open(html_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            
-            logger.info(f"Generated HTML report: {html_path}")
-            return html_path
+            return html_content
             
         except Exception as e:
             logger.error(f"Failed to convert to HTML: {e}")
@@ -439,19 +430,14 @@ For questions about this report or genetic counseling resources, please consult 
         logger.info("PDF conversion not implemented in this version")
         return None
     
-    def _convert_to_txt(self, markdown_content: str, report_id: str) -> Optional[str]:
+    def _convert_to_txt_content(self, markdown_content: str, report_id: str) -> Optional[str]:
         """Convert markdown to plain text."""
         try:
             # Simple markdown stripping
             txt_content = re.sub(r'[#*`_\[\]()]', '', markdown_content)
             txt_content = re.sub(r'\n\n+', '\n\n', txt_content)
             
-            txt_path = os.path.join(self.output_dir, f"{report_id}.txt")
-            with open(txt_path, 'w', encoding='utf-8') as f:
-                f.write(txt_content)
-            
-            logger.info(f"Generated text report: {txt_path}")
-            return txt_path
+            return txt_content
             
         except Exception as e:
             logger.error(f"Failed to convert to text: {e}")

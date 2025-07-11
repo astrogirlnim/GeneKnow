@@ -53,7 +53,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         model_interface = ModelInterface(config)
         prompt_builder = PromptBuilder(config.style)
         
-        # Set up output directory
+        # Set up output directory (not used for file storage, just for config)
         output_dir = os.path.join(os.getcwd(), "reports")
         formatter = ReportFormatter(config, output_dir)
         
@@ -95,26 +95,27 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     "total_length": 0
                 })
         
-        # Format and save report
-        report_paths = formatter.format_report(
+        # Format report content (in-memory, no file storage for HIPAA compliance)
+        report_content = formatter.format_report(
             data=filtered_data,
             llm_content=llm_content,
             report_id=report_id
         )
         
-        logger.info(f"Report generation complete. Files: {list(report_paths.keys())}")
+        logger.info(f"Report generation complete. Formats: {list(report_content.keys())}")
         
-        # Update report info with paths
-        report_info["report_paths"] = report_paths
+        # Update report info with content metadata
+        report_info["available_formats"] = list(report_content.keys())
+        report_info["content_length"] = len(report_content.get("markdown", ""))
         
         # Create report_sections for dashboard compatibility
         dashboard_report_sections = _create_dashboard_report_sections(filtered_data, report_info)
         
-        # Return updated state
+        # Return updated state with in-memory content
         return {
             "report_sections": dashboard_report_sections,  # For dashboard display
-            "report_generator_info": report_info,  # New report generator info
-            "enhanced_report_paths": report_paths,  # Paths to generated files
+            "report_generator_info": report_info,  # Report generator metadata
+            "enhanced_report_content": report_content,  # In-memory report content
             "pipeline_status": "completed"
         }
         
@@ -137,7 +138,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "generation_time": datetime.now().isoformat(),
                 "llm_enhanced": False
             },
-            "enhanced_report_paths": {},
+            "enhanced_report_content": {},
             "pipeline_status": "completed"  # Don't fail the entire pipeline
         }
 
@@ -527,14 +528,14 @@ def generate_report_standalone(json_file_path: str,
         llm_content = _generate_llm_content(filtered_data, model_interface, prompt_builder)
     
     # Format and save
-    report_paths = formatter.format_report(
+    report_content = formatter.format_report(
         data=filtered_data,
         llm_content=llm_content,
         report_id=report_id
     )
     
-    logger.info(f"Standalone report generated: {report_paths}")
-    return report_paths
+    logger.info(f"Standalone report generated: {report_content}")
+    return report_content
 
 
 # Example usage for testing
@@ -546,10 +547,10 @@ if __name__ == "__main__":
         output_dir = sys.argv[2] if len(sys.argv) > 2 else None
         
         try:
-            paths = generate_report_standalone(json_file, output_dir=output_dir)
+            content = generate_report_standalone(json_file, output_dir=output_dir)
             print(f"Report generated successfully:")
-            for format_type, path in paths.items():
-                print(f"  {format_type}: {path}")
+            print(f"  Content length: {len(content)}")
+            print(f"  Formats available: {list(content.keys())}")
         except Exception as e:
             print(f"Error generating report: {e}")
     else:

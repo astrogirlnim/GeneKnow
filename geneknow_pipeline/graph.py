@@ -575,7 +575,7 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "structured_json": {},
         "report_markdown": "",
         "report_sections": {},  # Add this line
-        "enhanced_report_paths": {},  # For report generator
+        "enhanced_report_content": {},  # For in-memory report content (HIPAA compliant)
         "report_generator_info": {},  # For report generator
         "pipeline_status": "in_progress",
         "current_node": None,
