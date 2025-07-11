@@ -2664,7 +2664,7 @@ const ClinicalViewPage: React.FC = () => {
                               lineHeight: '1.4',
                               border: '1px solid #374151'
                             }}>
-                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference{'>'}alternate (e.g., 17:41223094:A{'>'}G). This uniquely identifies the DNA change.</p>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference→alternate (e.g., 17:41223094:A→G). This uniquely identifies the DNA change.</p>
                               <div style={{
                                 position: 'absolute',
                                 left: '50%',
@@ -2709,7 +2709,38 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SmartTooltip content="Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications." isVisible={hoveredTooltip === 'header-type'} triggerRef={null} />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-type' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-type' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2742,7 +2773,38 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SmartTooltip content="Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact." isVisible={hoveredTooltip === 'header-transformation'} triggerRef={null} />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-transformation' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-transformation' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2775,7 +2837,38 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SmartTooltip content="Variant call quality score (0-100). Green (>90) = high confidence, Yellow (70-90) = moderate confidence, Red (<70) = low confidence. Score of 100 indicates variants that passed all quality filters." isVisible={hoveredTooltip === 'header-quality'} triggerRef={null} />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-quality' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-quality' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Variant call quality score (0-100). Green ({'>'}90) = high confidence, Yellow (70-90) = moderate confidence, Red ({'<'}70) = low confidence. Score of 100 indicates variants that passed all quality filters.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2808,7 +2901,38 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SmartTooltip content="Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact." isVisible={hoveredTooltip === 'header-significance'} triggerRef={null} />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-significance' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-significance' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2841,7 +2965,38 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SmartTooltip content="Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function." isVisible={hoveredTooltip === 'header-impact'} triggerRef={null} />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-impact' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-impact' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
                           </div>
                         </div>
                       </th>
