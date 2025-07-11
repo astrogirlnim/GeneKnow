@@ -2581,9 +2581,8 @@ const ClinicalViewPage: React.FC = () => {
                             />
                             <div style={{
                               position: 'absolute',
-                              left: '50%',
+                              left: '0',
                               top: 'calc(100% + 0.5rem)',
-                              transform: 'translateX(-50%)',
                               width: '18rem',
                               padding: '0.75rem',
                               background: '#1F2937',
@@ -2602,9 +2601,8 @@ const ClinicalViewPage: React.FC = () => {
                               <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment.</p>
                               <div style={{
                                 position: 'absolute',
-                                left: '50%',
+                                left: '0.75rem',
                                 bottom: '100%',
-                                transform: 'translateX(-50%)',
                                 width: '0',
                                 height: '0',
                                 borderLeft: '0.5rem solid transparent',
@@ -2646,9 +2644,8 @@ const ClinicalViewPage: React.FC = () => {
                             />
                             <div style={{
                               position: 'absolute',
-                              left: '50%',
+                              left: '0',
                               top: 'calc(100% + 0.5rem)',
-                              transform: 'translateX(-50%)',
                               width: '18rem',
                               padding: '0.75rem',
                               background: '#1F2937',
@@ -2667,9 +2664,8 @@ const ClinicalViewPage: React.FC = () => {
                               <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference→alternate (e.g., 17:41223094:A→G). This uniquely identifies the DNA change.</p>
                               <div style={{
                                 position: 'absolute',
-                                left: '50%',
+                                left: '0.75rem',
                                 bottom: '100%',
-                                transform: 'translateX(-50%)',
                                 width: '0',
                                 height: '0',
                                 borderLeft: '0.5rem solid transparent',
