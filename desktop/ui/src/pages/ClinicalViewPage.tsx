@@ -1200,12 +1200,55 @@ const ClinicalViewPage: React.FC = () => {
           console.warn(`⚠️ Missing protein change for variant ${variant.gene}`);
         }
         
+        // Calculate more detailed quality score
+        const qualityMetrics = variant.quality_metrics || {} as any;
+        const baseQuality = qualityMetrics.quality || 85;
+        const depth = qualityMetrics.depth || 0;
+        const alleleFreq = qualityMetrics.allele_freq || 0;
+        
+        // Adjust quality score based on multiple factors
+        let adjustedQuality = baseQuality;
+        
+        // Penalize low depth
+        if (depth < 10) {
+          adjustedQuality = Math.max(adjustedQuality - 20, 0);
+        } else if (depth < 20) {
+          adjustedQuality = Math.max(adjustedQuality - 10, 0);
+        }
+        
+        // Penalize extreme allele frequencies
+        if (alleleFreq < 0.1 || alleleFreq > 0.9) {
+          adjustedQuality = Math.max(adjustedQuality - 15, 0);
+        }
+        
+        // Boost quality for high-confidence clinical significance
+        if (variant.clinical_significance === 'pathogenic') {
+          adjustedQuality = Math.min(adjustedQuality + 5, 100);
+        } else if (variant.clinical_significance === 'likely_pathogenic') {
+          adjustedQuality = Math.min(adjustedQuality + 3, 100);
+        }
+        
+        // Add quality details for tooltip
+        const qualityDetails = {
+          base_quality: baseQuality,
+          depth: depth,
+          allele_frequency: alleleFreq,
+          adjusted_quality: Math.round(adjustedQuality),
+          quality_factors: [] as string[]
+        };
+        
+        if (depth < 10) qualityDetails.quality_factors.push('Low read depth');
+        if (alleleFreq < 0.1) qualityDetails.quality_factors.push('Low allele frequency');
+        if (alleleFreq > 0.9) qualityDetails.quality_factors.push('High allele frequency');
+        if (variant.clinical_significance === 'pathogenic') qualityDetails.quality_factors.push('Pathogenic variant');
+
         return {
           gene: variant.gene || 'Unknown',
           variant_id: variant.variant || variant.variant_id || `Unknown_${index}`,
           consequence: variant.consequence || 'unknown',
           mutation_type: variant.mutation_type || 'snv', // Default to SNV if not specified
-          quality_score: variant.quality_metrics?.quality || 85,
+          quality_score: Math.round(adjustedQuality),
+          quality_details: qualityDetails,
           clinical_significance: variant.clinical_significance || 'uncertain_significance',
           tcga_best_match: variant.tcga_matches ? 
             Object.entries(variant.tcga_matches)[0]?.[1] || { cancer_type: 'unknown', frequency: 0 } :
@@ -2398,7 +2441,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '10%' // Fixed percentage width
                       }}>
-                        Gene
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Gene
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-gene')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment."
+                              isVisible={hoveredTooltip === 'header-gene'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2409,7 +2477,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '15%' // Fixed percentage width
                       }}>
-                        Variant
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Variant
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-variant')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Genomic coordinates and nucleotide change. Format: position:reference>alternate (e.g., 17:41223094:A>G). This uniquely identifies the DNA change."
+                              isVisible={hoveredTooltip === 'header-variant'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2420,7 +2513,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '8%' // Fixed percentage width
                       }}>
-                        Type
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Type
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-type')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications."
+                              isVisible={hoveredTooltip === 'header-type'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2431,7 +2549,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '18%' // Fixed percentage width
                       }}>
-                        Transformation
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Transformation
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-transformation')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact."
+                              isVisible={hoveredTooltip === 'header-transformation'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2442,7 +2585,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '10%' // Fixed percentage width
                       }}>
-                        Quality
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Quality
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-quality')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Variant call quality score (0-100). Green (>90) = high confidence, Yellow (70-90) = moderate confidence, Red (<70) = low confidence. Score of 100 indicates variants that passed all quality filters."
+                              isVisible={hoveredTooltip === 'header-quality'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2453,7 +2621,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '15%' // Fixed percentage width
                       }}>
-                        Significance
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Significance
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-significance')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact."
+                              isVisible={hoveredTooltip === 'header-significance'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -2464,7 +2657,32 @@ const ClinicalViewPage: React.FC = () => {
                         fontSize: '0.875rem',
                         width: '24%' // Fixed percentage width
                       }}>
-                        Impact
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Impact
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-impact')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <SectionTooltip 
+                              content="Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function."
+                              isVisible={hoveredTooltip === 'header-impact'} 
+                            />
+                          </div>
+                        </div>
                       </th>
                     </tr>
                   </thead>

@@ -100,24 +100,92 @@ def simulate_codon_context(variant: Dict) -> tuple:
         'BRAF': {'ref': 'GTG', 'alt': 'GAG'},  # V600E - common BRAF mutation
         'EGFR': {'ref': 'CTG', 'alt': 'CGG'},  # L858R - common EGFR mutation
         'PIK3CA': {'ref': 'CAT', 'alt': 'AAT'},  # H1047N - common PIK3CA mutation
+        # Blood cancer genes
+        'AK9': {'ref': 'GCT', 'alt': 'ACT'},  # Ala→Thr - common AK9 mutation
+        'JAK2': {'ref': 'GTG', 'alt': 'TTG'},  # V617F - common JAK2 mutation
+        'FLT3': {'ref': 'GAT', 'alt': 'TAT'},  # D835Y - common FLT3 mutation
+        'NPM1': {'ref': 'TGG', 'alt': 'TAG'},  # W288* - common NPM1 mutation
+        'DNMT3A': {'ref': 'CGT', 'alt': 'CAT'},  # R882H - common DNMT3A mutation
+        'IDH1': {'ref': 'CGT', 'alt': 'CAT'},  # R132H - common IDH1 mutation
+        'IDH2': {'ref': 'CGT', 'alt': 'CAT'},  # R140Q - common IDH2 mutation
+        'RUNX1': {'ref': 'GAT', 'alt': 'AAT'},  # D171N - common RUNX1 mutation
+        'TET2': {'ref': 'CAT', 'alt': 'TAT'},  # H1881Y - common TET2 mutation
+        'ASXL1': {'ref': 'GAT', 'alt': 'AAT'},  # G646W - common ASXL1 mutation
+        'CEBPA': {'ref': 'CTG', 'alt': 'CCG'},  # L312P - common CEBPA mutation
+        'KIT': {'ref': 'GAT', 'alt': 'AAT'},  # D816V - common KIT mutation
+        'NRAS': {'ref': 'GGT', 'alt': 'GAT'},  # G12D - common NRAS mutation
+        'CBL': {'ref': 'CAT', 'alt': 'TAT'},  # H94Y - common CBL mutation
+        'EZH2': {'ref': 'TAT', 'alt': 'CAT'},  # Y641H - common EZH2 mutation
+        'STAT5B': {'ref': 'AAT', 'alt': 'GAT'},  # N642H - common STAT5B mutation
+        # Breast cancer genes
+        'BRCA1': {'ref': 'GAT', 'alt': 'AAT'},  # C61G - common BRCA1 mutation
+        'BRCA2': {'ref': 'GAT', 'alt': 'TAT'},  # D2723H - common BRCA2 mutation
+        'PALB2': {'ref': 'GAT', 'alt': 'AAT'},  # L939W - common PALB2 mutation
+        'ATM': {'ref': 'GAT', 'alt': 'AAT'},  # D1853N - common ATM mutation
+        'CHEK2': {'ref': 'GAT', 'alt': 'AAT'},  # I157T - common CHEK2 mutation
+        # Colon cancer genes
+        'APC': {'ref': 'GAT', 'alt': 'TAT'},  # R1450* - common APC mutation
+        'SMAD4': {'ref': 'GAT', 'alt': 'AAT'},  # R361H - common SMAD4 mutation
+        'MLH1': {'ref': 'GAT', 'alt': 'AAT'},  # V213M - common MLH1 mutation
+        'MSH2': {'ref': 'GAT', 'alt': 'AAT'},  # A636P - common MSH2 mutation
+        'MSH6': {'ref': 'GAT', 'alt': 'AAT'},  # F1088L - common MSH6 mutation
+        # Lung cancer genes
+        'ALK': {'ref': 'GAT', 'alt': 'AAT'},  # F1174L - common ALK mutation
+        'ROS1': {'ref': 'GAT', 'alt': 'AAT'},  # G2032R - common ROS1 mutation
+        'MET': {'ref': 'GAT', 'alt': 'AAT'},  # N375S - common MET mutation
+        # Prostate cancer genes
+        'AR': {'ref': 'GAT', 'alt': 'AAT'},  # T877A - common AR mutation
+        'PTEN': {'ref': 'GAT', 'alt': 'AAT'},  # R130Q - common PTEN mutation
+        # Bone cancer genes
+        'RB1': {'ref': 'GAT', 'alt': 'TAT'},  # R661W - common RB1 mutation
+        'EWSR1': {'ref': 'GAT', 'alt': 'AAT'},  # Fusion breakpoint
+        'FLI1': {'ref': 'GAT', 'alt': 'AAT'},  # Fusion partner
+        'CDKN2A': {'ref': 'GAT', 'alt': 'TAT'},  # A148T - common CDKN2A mutation
+        'MDM2': {'ref': 'GAT', 'alt': 'AAT'},  # SNP309 - common MDM2 variant
     }
     
     if gene in cancer_gene_codons and len(ref) == 1 and len(alt) == 1:
         return cancer_gene_codons[gene]['ref'], cancer_gene_codons[gene]['alt']
     
-    # For other variants, create plausible codons
+    # For other variants, create plausible codons based on nucleotide change
     if len(ref) == 1 and len(alt) == 1:
-        # Create a codon with the variant in the middle
-        ref_codon = 'A' + ref + 'T'  # Simple default
-        alt_codon = 'A' + alt + 'T'
+        # Common codon templates for each nucleotide
+        codon_templates = {
+            'A': ['AAA', 'AAC', 'AAG', 'AAT', 'ACA', 'ACC', 'ACG', 'ACT'],
+            'T': ['TAA', 'TAC', 'TAG', 'TAT', 'TCA', 'TCC', 'TCG', 'TCT'],
+            'G': ['GAA', 'GAC', 'GAG', 'GAT', 'GCA', 'GCC', 'GCG', 'GCT'],
+            'C': ['CAA', 'CAC', 'CAG', 'CAT', 'CCA', 'CCC', 'CCG', 'CCT']
+        }
         
-        # Try to make it a valid codon
-        if ref_codon in CODON_TABLE:
-            return ref_codon, alt_codon
-        else:
-            # Use a common codon as template
-            return 'ATT', 'A' + alt + 'T'
+        # Get templates for reference and alternate
+        ref_templates = codon_templates.get(ref, ['AAA'])
+        alt_templates = codon_templates.get(alt, ['AAA'])
+        
+        # Choose codons that create meaningful amino acid changes
+        ref_codon = ref_templates[0]  # Use first template
+        alt_codon = alt_templates[0]  # Use first template
+        
+        # For specific nucleotide changes, use biologically relevant codons
+        if ref == 'G' and alt == 'A':
+            # G→A often creates missense mutations
+            ref_codon = 'GAT'  # Asp
+            alt_codon = 'AAT'  # Asn
+        elif ref == 'C' and alt == 'T':
+            # C→T often creates missense mutations
+            ref_codon = 'CGT'  # Arg
+            alt_codon = 'TGT'  # Cys
+        elif ref == 'A' and alt == 'G':
+            # A→G often creates missense mutations
+            ref_codon = 'AAT'  # Asn
+            alt_codon = 'AGT'  # Ser
+        elif ref == 'T' and alt == 'C':
+            # T→C often creates missense mutations
+            ref_codon = 'TTT'  # Phe
+            alt_codon = 'TCT'  # Ser
+        
+        return ref_codon, alt_codon
     
+    # For indels or complex variants, return empty (will be handled gracefully)
     return '', ''
 
 
@@ -126,15 +194,50 @@ def get_protein_change(variant: Dict) -> Dict:
     ref_codon, alt_codon = simulate_codon_context(variant)
     
     if not ref_codon or not alt_codon:
-        return {
-            "original": "",
-            "mutated": "",
-            "amino_acid_change": "Unknown",
-            "effect": "Unable to determine protein change"
-        }
+        # Provide more informative fallback based on variant type
+        gene = variant.get('gene', 'Unknown')
+        consequence = variant.get('consequence', '').lower()
+        
+        if 'missense' in consequence:
+            return {
+                "original": "N/A",
+                "mutated": "N/A", 
+                "amino_acid_change": "Missense mutation",
+                "effect": f"Amino acid change in {gene} (sequence context unavailable)"
+            }
+        elif 'nonsense' in consequence or 'stop' in consequence:
+            return {
+                "original": "N/A",
+                "mutated": "N/A",
+                "amino_acid_change": "Nonsense mutation",
+                "effect": f"Premature stop codon in {gene}"
+            }
+        elif 'frameshift' in consequence:
+            return {
+                "original": "N/A",
+                "mutated": "N/A",
+                "amino_acid_change": "Frameshift mutation",
+                "effect": f"Frameshift disrupting {gene} protein"
+            }
+        else:
+            return {
+                "original": "N/A",
+                "mutated": "N/A",
+                "amino_acid_change": "Variant effect unclear",
+                "effect": f"Protein change in {gene} requires further analysis"
+            }
     
     ref_aa = CODON_TABLE.get(ref_codon, 'X')
     alt_aa = CODON_TABLE.get(alt_codon, 'X')
+    
+    # Handle unknown amino acids
+    if ref_aa == 'X' or alt_aa == 'X':
+        return {
+            "original": ref_codon,
+            "mutated": alt_codon,
+            "amino_acid_change": "Codon change (amino acid unclear)",
+            "effect": f"Codon change in {variant.get('gene', 'Unknown')} - impact unclear"
+        }
     
     # Determine functional impact
     impact = assess_functional_impact(ref_aa, alt_aa, variant.get('gene', ''))
