@@ -24,7 +24,14 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
     switch (status) {
       case 'FLAG_FOR_REVIEW':
         return {
-          icon: '⚠️',
+          icon: (
+            <div style={{
+              width: '0.5rem',
+              height: '0.5rem',
+              borderRadius: '50%',
+              background: '#F59E0B'
+            }}></div>
+          ),
           title: 'Confidence Check: Review Required',
           bgColor: '#FFFBEB',
           borderColor: '#FDE68A',
@@ -35,7 +42,14 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         };
       case 'PASS':
         return {
-          icon: '✅',
+          icon: (
+            <div style={{
+              width: '0.5rem',
+              height: '0.5rem',
+              borderRadius: '50%',
+              background: '#22C55E'
+            }}></div>
+          ),
           title: 'Confidence Check: Passed',
           bgColor: '#F0FDF4',
           borderColor: '#BBF7D0',
@@ -46,7 +60,14 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         };
       case 'ERROR':
         return {
-          icon: '❌',
+          icon: (
+            <div style={{
+              width: '0.5rem',
+              height: '0.5rem',
+              borderRadius: '50%',
+              background: '#EF4444'
+            }}></div>
+          ),
           title: 'Confidence Check: Error',
           bgColor: '#FEF2F2',
           borderColor: '#FECACA',
@@ -57,7 +78,14 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         };
       case 'SKIPPED':
         return {
-          icon: '➖',
+          icon: (
+            <div style={{
+              width: '0.5rem',
+              height: '0.5rem',
+              borderRadius: '50%',
+              background: '#6B7280'
+            }}></div>
+          ),
           title: 'Confidence Check: Not Applicable',
           bgColor: '#F9FAFB',
           borderColor: '#E5E7EB',
@@ -68,7 +96,14 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         };
       default:
         return {
-          icon: '❓',
+          icon: (
+            <div style={{
+              width: '0.5rem',
+              height: '0.5rem',
+              borderRadius: '50%',
+              background: '#6B7280'
+            }}></div>
+          ),
           title: 'Confidence Check: Unknown',
           bgColor: '#F9FAFB',
           borderColor: '#E5E7EB',
@@ -199,7 +234,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
     return (
       <div 
         style={{
-          cursor: onNavigateToDetail ? 'pointer' : 'default',
+          cursor: 'default',
           padding: '0.75rem',
           marginTop: '0.75rem',
           background: config.bgColor,
@@ -209,17 +244,6 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
           color: config.textColor,
           transition: 'all 200ms ease',
           position: 'relative'
-        }}
-        onClick={handleNavigateToDetail}
-        onMouseEnter={(e) => {
-          if (onNavigateToDetail) {
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (onNavigateToDetail) {
-            e.currentTarget.style.boxShadow = 'none';
-          }
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -254,11 +278,9 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
           </div>
         </div>
         
-        {validation.status === 'FLAG_FOR_REVIEW' && (
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-            See In-Depth Analysis for details.
-          </div>
-        )}
+        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+          See In-Depth Analysis for details.
+        </div>
       </div>
     );
   }
