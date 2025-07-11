@@ -1,132 +1,136 @@
 """
-State schema for GeneKnow LangGraph pipeline.
-Defines the data structure passed between nodes.
+State definitions for the genomic pipeline.
+This module defines the TypedDict schema for the pipeline state.
 """
 
-from typing import TypedDict, List, Dict, Optional, Any, Annotated
+from typing import TypedDict, Optional, List, Dict, Any
+from typing_extensions import Annotated
+from langgraph.graph import add_messages
 from datetime import datetime
-import operator
+
+# Define a reducer for completed_nodes that merges lists
+def merge_completed_nodes(existing: List[str], new: List[str]) -> List[str]:
+    """Merge completed nodes lists, removing duplicates while preserving order."""
+    # Convert to set to remove duplicates, then back to list
+    combined = existing + new
+    # Preserve order while removing duplicates
+    seen = set()
+    result = []
+    for node in combined:
+        if node not in seen:
+            seen.add(node)
+            result.append(node)
+    return result
 
 
-class GenomicState(TypedDict):
-    """Main state object passed through the LangGraph pipeline."""
-
-    # Input data
-    file_path: str  # Read-only input field
-    file_type: str  # 'fastq' or 'bam'
-    file_metadata: Dict[str, Any]  # size, read count, etc.
-
-    # Processing intermediates
-    aligned_bam_path: Optional[str]  # Path to aligned BAM (if FASTQ input)
-    vcf_path: Optional[str]  # Path to DeepVariant output
-
+class GenomicState(TypedDict, total=False):
+    """
+    State schema for the genomic analysis pipeline.
+    All fields are optional (total=False) to support partial updates.
+    """
+    # File information
+    file_path: str
+    file_type: Optional[str]
+    file_metadata: Dict[str, Any]
+    aligned_bam_path: Optional[str]
+    
     # Variant data
-    raw_variants: List[Dict[str, Any]]  # Unfiltered variants from VCF
-    filtered_variants: List[Dict[str, Any]]  # Post-QC variants
+    raw_variants: List[Dict[str, Any]]
+    filtered_variants: List[Dict[str, Any]]
     variant_count: int
-
-    # TCGA matching results
-    tcga_matches: Dict[str, Dict[str, Any]]  # {cancer_type: {variant_id: match_info}}
-    tcga_cohort_sizes: Dict[str, int]  # {cancer_type: sample_count}
-    tcga_summary: Optional[Dict[str, Any]]  # Summary statistics from TCGA mapping
-
-    # CADD enrichment results
-    cadd_enriched_variants: Optional[
-        List[Dict[str, Any]]
-    ]  # Variants with CADD annotations
-    cadd_stats: Optional[Dict[str, Any]]  # CADD scoring statistics
-
-    # ClinVar annotation results
-    clinvar_annotations: Dict[str, Dict[str, Any]]  # {variant_id: clinvar_data}
-    clinvar_stats: Optional[Dict[str, Any]]  # ClinVar annotation statistics
-    clinvar_pathogenic_variants: Optional[List[Dict[str, Any]]]  # Pathogenic variants
-    clinvar_likely_pathogenic_variants: Optional[
-        List[Dict[str, Any]]
-    ]  # Likely pathogenic variants
-    clinvar_benign_variants: Optional[List[Dict[str, Any]]]  # Benign variants
-    clinvar_vus_variants: Optional[
-        List[Dict[str, Any]]
-    ]  # Variants of uncertain significance
-
-    # PRS (Polygenic Risk Score) results
-    prs_results: Dict[str, Dict[str, Any]]  # {cancer_type: prs_data}
-    prs_summary: Dict[str, Any]  # Overall PRS summary
-
-    # ML Fusion results
-    ml_ready_variants: Optional[List[Dict[str, Any]]]  # Variants prepared for ML fusion
-    ml_fusion_results: Optional[Dict[str, Any]]  # ML fusion model predictions
-    ml_fusion_model_instance: Optional[Any]  # ML fusion model for SHAP
-    ml_fusion_feature_matrix: Optional[Any]  # Feature matrix for SHAP
-
-    # SHAP validation results
-    shap_validation_status: Optional[str]  # "PASS", "FLAG_FOR_REVIEW", "ERROR", "SKIPPED"
-    shap_validation_reasons: Optional[List[str]]  # Reasons for flagging
-    shap_top_contributors: Optional[List[Dict[str, Any]]]  # Top 3 features with names & contributions
-    shap_feature_importance: Optional[Dict[str, float]]  # Full SHAP values for detailed analysis
-    shap_validation_details: Optional[Dict[str, Any]]  # Detailed validation info
-
-    # NEW: Mutation classification results
-    classified_variants: Optional[List[Dict[str, Any]]]  # Variants with mutation types
-    mutation_type_distribution: Optional[Dict[str, int]]  # Count by mutation type
     
-    # NEW: Mutational signatures results
-    mutational_signatures: Optional[Dict[str, Dict[str, Any]]]  # Signature contributions
-    mutational_signatures_summary: Optional[Dict[str, Any]]  # Summary of signatures
+    # Analysis results from parallel nodes
+    tcga_matches: Optional[Dict[str, Dict[str, Any]]]
+    tcga_cohort_sizes: Dict[str, int]
+    tcga_summary: Optional[Dict[str, Any]]
     
-    # NEW: Variant transformation results
-    variant_details: Optional[List[Dict[str, Any]]]  # Variants with protein changes
-    variant_transformation_summary: Optional[Dict[str, Any]]  # Transformation statistics
+    cadd_enriched_variants: Optional[List[Dict[str, Any]]]
+    cadd_stats: Optional[Dict[str, Any]]
     
-    # NEW: Structural variant results
-    structural_variants: Optional[List[Dict[str, Any]]]  # Detected structural variants
-    structural_variant_summary: Optional[Dict[str, Any]]  # SV summary statistics
+    clinvar_annotations: Optional[Dict[str, Dict[str, Any]]]
+    clinvar_stats: Optional[Dict[str, Any]]
     
-    # NEW: CNV results
-    copy_number_variants: Optional[List[Dict[str, Any]]]  # Detected CNVs
-    cnv_summary: Optional[Dict[str, Any]]  # CNV summary statistics
+    prs_results: Optional[Dict[str, Dict[str, Any]]]
+    prs_summary: Optional[Dict[str, Any]]
     
-    # NEW: Pathway analysis results
-    pathway_analysis: Optional[Dict[str, Any]]  # Pathway disruption analysis
+    pathway_burden_results: Optional[Dict[str, Any]]
+    pathway_burden_summary: Optional[Dict[str, Any]]
+    pathway_enriched_variants: Optional[List[Dict[str, Any]]]
     
-    # NEW: Gene interaction network results
-    gene_interactions: Optional[List[Dict[str, Any]]]  # Gene-gene interactions
-    gene_network_analysis: Optional[Dict[str, Any]]  # Network analysis results
+    # ML fusion fields
+    ml_ready_variants: Optional[List[Dict[str, Any]]]
+    ml_fusion_results: Optional[Dict[str, Any]]
+    ml_fusion_model_instance: Optional[Any]
+    ml_fusion_feature_matrix: Optional[Any]
     
-    # NEW: Survival analysis results
-    survival_analysis: Optional[Dict[str, Any]]  # Survival curves and prognostic factors
+    # SHAP validation fields
+    shap_validation_status: Optional[str]
+    shap_validation_reasons: Optional[List[str]]
+    shap_top_contributors: Optional[List[Dict[str, Any]]]
+    shap_feature_importance: Optional[Dict[str, Any]]
+    shap_validation_details: Optional[Dict[str, Any]]
     
-    # NEW: Clinical recommendations
-    clinical_recommendations: Optional[Dict[str, Any]]  # Comprehensive clinical recommendations
-
+    # New fields for clinical view nodes
+    classified_variants: Optional[List[Dict[str, Any]]]
+    mutation_type_distribution: Optional[Dict[str, int]]
+    
+    mutational_signatures: Optional[Dict[str, Any]]
+    mutational_signatures_summary: Optional[Dict[str, Any]]
+    
+    variant_details: Optional[List[Dict[str, Any]]]
+    variant_transformation_summary: Optional[Dict[str, Any]]
+    
+    structural_variants: Optional[List[Dict[str, Any]]]
+    structural_variant_summary: Optional[Dict[str, Any]]
+    
+    copy_number_variants: Optional[List[Dict[str, Any]]]
+    cnv_summary: Optional[Dict[str, Any]]
+    
+    genomic_alterations: Optional[Dict[str, Any]]
+    
+    pathway_analysis: Optional[Dict[str, Any]]
+    
+    gene_interactions: Optional[Dict[str, Any]]
+    gene_network_analysis: Optional[Dict[str, Any]]
+    
+    survival_analysis: Optional[Dict[str, Any]]
+    
+    clinical_recommendations: Optional[Dict[str, Any]]
+    
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}
     risk_genes: Dict[str, List[str]]  # {cancer_type: [affected_genes]}
-
-    # Report generation
+    risk_details: Dict[str, Any]
+    ml_risk_assessment: Dict[str, Any]
+    
+    # Metrics and reporting
+    metrics: Dict[str, Any]
+    metrics_calculated: bool
+    metrics_summary: Dict[str, Any]
     structured_json: Dict[str, Any]  # Formatted data for frontend
     report_markdown: Optional[str]  # LLM-generated report
     report_sections: Dict[str, Any]  # Structured report sections for frontend
     report_pdf_path: Optional[str]  # Final PDF location
     enhanced_report_content: Dict[str, str]  # In-memory report content (markdown, html, txt)
     report_generator_info: Dict[str, Any]  # Report generator metadata and info
-
+    
+    # Pipeline control
+    pipeline_status: str
+    current_node: Optional[str]
+    completed_nodes: Annotated[List[str], merge_completed_nodes]  # Use Annotated for concurrent updates
+    errors: List[Dict[str, Any]]
+    warnings: List[Dict[str, Any]]
+    
+    # User preferences
+    preferences: Optional[Dict[str, Any]]
+    patient_data: Dict[str, Any]
+    include_technical_details: bool
+    language: str
+    
     # Pipeline metadata
     pipeline_start_time: datetime
     pipeline_end_time: Optional[datetime]
     processing_time_seconds: Optional[float]
-
-    # Error tracking
-    errors: Annotated[
-        List[Dict[str, Any]], operator.add
-    ]  # {node: str, error: str, timestamp: datetime}
-    warnings: Annotated[List[Dict[str, Any]], operator.add]  # Non-fatal issues
-    pipeline_status: str  # 'running', 'completed', 'failed', 'partial'
-
-    # Node completion tracking
-    completed_nodes: List[str]  # Remove operator.add to prevent duplicates
-    current_node: str
-
-    # User preferences (from UI)
-    language: str  # 'en', 'hi', 'es'
-    include_technical_details: bool
-    risk_threshold_percentage: float  # For highlighting high-risk findings
+    
+    # Internal control for merge logic
+    _merge_call_count: Optional[int]
