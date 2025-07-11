@@ -109,6 +109,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             "cadd_summary": _format_cadd_summary(state),  # Pass state instead of structured_data
 
+            "shap_validation": _format_shap_validation(structured_data),
+
             "recommendations": _generate_recommendations(structured_data),
 
             "technical_details": _format_technical_details(state) if include_technical else None,
@@ -289,6 +291,71 @@ def _format_cadd_summary(state: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Format SHAP validation results for display."""
+    shap_data = data.get("shap_validation")
+    
+    if not shap_data:
+        return {
+            "enabled": False,
+            "status": "NOT_PERFORMED",
+            "message": "Model interpretability analysis not performed"
+        }
+    
+    status = shap_data.get("status", "SKIPPED")
+    
+    # Format top contributors in user-friendly way
+    top_contributors = []
+    for contrib in shap_data.get("top_contributors", []):
+        top_contributors.append({
+            "feature": contrib.get("display_name", contrib.get("feature", "Unknown")),
+            "contribution": contrib.get("abs_contribution", 0),
+            "direction": contrib.get("direction", "unknown"),
+            "description": f"{contrib.get('display_name', contrib.get('feature'))} {contrib.get('direction', 'affects')} risk"
+        })
+    
+    # Create appropriate message based on status
+    if status == "PASS":
+        message = "The model's prediction is strongly supported by the genomic evidence."
+        title = "PASS"
+        icon = "✅"
+        alert_level = "success"
+    elif status == "FLAG_FOR_REVIEW":
+        reasons = shap_data.get("reasons", [])
+        if reasons:
+            # Create a more structured message
+            message = reasons[0] if len(reasons) == 1 else "Multiple concerns detected: " + "; ".join(reasons)
+            title = "Review Needed"
+        else:
+            message = "The model's reasoning requires manual verification."
+            title = "Review Needed"
+        icon = "⚠️"
+        alert_level = "warning"
+    elif status == "ERROR":
+        message = "Model validation encountered an error. Results should be interpreted with caution."
+        title = "Error"
+        icon = "❌"
+        alert_level = "error"
+    else:  # SKIPPED
+        message = "Model validation was not performed."
+        title = "Not Checked"
+        icon = "ℹ️"
+        alert_level = "info"
+    
+    return {
+        "enabled": True,
+        "status": status,
+        "title": title,
+        "icon": icon,
+        "alert_level": alert_level,
+        "message": message,
+        "top_contributors": top_contributors,
+        "reasons": shap_data.get("reasons", []),
+        "clinical_question": "Does this align with your clinical assessment?",
+        "explanation_needed": status == "FLAG_FOR_REVIEW"  # Flag for UI to show detailed explanation
+    }
+
+
 def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Generate actionable recommendations based on findings."""
     recommendations = []
@@ -460,6 +527,22 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
             cadd_text = f"{variant['cadd_score']:.1f} ({variant['cadd_interpretation']})"
 
         md += f"| {variant['gene']} | {variant['variant_id'][:20]}... | {variant['consequence']} | {tcga_text} | {variant['clinical_significance']} | {cadd_text} |\n"
+
+    # Add SHAP validation section
+    if 'shap_validation' in sections and sections['shap_validation'] and sections['shap_validation'].get('enabled'):
+        shap = sections['shap_validation']
+        md += f"\n## Model Validation\n\n"
+        md += f"{shap['icon']} **Logic Check: {shap['status']}**\n\n"
+        md += f"{shap['message']}\n\n"
+        
+        if shap['top_contributors']:
+            md += "**Top Contributing Factors:**\n"
+            for i, contrib in enumerate(shap['top_contributors'][:3], 1):
+                md += f"{i}. {contrib['description']}\n"
+            md += "\n"
+        
+        if shap.get('clinical_question'):
+            md += f"*{shap['clinical_question']}*\n\n"
 
     # Add recommendations
     if sections['recommendations']:

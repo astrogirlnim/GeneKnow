@@ -55,6 +55,15 @@ class GenomicState(TypedDict):
     # ML Fusion results
     ml_ready_variants: Optional[List[Dict[str, Any]]]  # Variants prepared for ML fusion
     ml_fusion_results: Optional[Dict[str, Any]]  # ML fusion model predictions
+    ml_fusion_model_instance: Optional[Any]  # ML fusion model for SHAP
+    ml_fusion_feature_matrix: Optional[Any]  # Feature matrix for SHAP
+
+    # SHAP validation results
+    shap_validation_status: Optional[str]  # "PASS", "FLAG_FOR_REVIEW", "ERROR", "SKIPPED"
+    shap_validation_reasons: Optional[List[str]]  # Reasons for flagging
+    shap_top_contributors: Optional[List[Dict[str, Any]]]  # Top 3 features with names & contributions
+    shap_feature_importance: Optional[Dict[str, float]]  # Full SHAP values for detailed analysis
+    shap_validation_details: Optional[Dict[str, Any]]  # Detailed validation info
 
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}

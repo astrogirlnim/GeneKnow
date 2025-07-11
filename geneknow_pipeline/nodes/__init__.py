@@ -19,6 +19,7 @@ try:
     from . import pathway_burden
     from . import ml_fusion_node
     from . import risk_model
+    from . import shap_validator
     from . import metrics_calculator
     from . import formatter
     from . import report_writer
@@ -38,6 +39,7 @@ except ImportError:
     import pathway_burden
     import ml_fusion_node
     import risk_model
+    import shap_validator
     import metrics_calculator
     import formatter
     import report_writer
@@ -57,6 +59,7 @@ __all__ = [
     "pathway_burden",
     "ml_fusion_node",
     "risk_model",
+    "shap_validator",
     "metrics_calculator",
     "formatter",
     "report_writer",

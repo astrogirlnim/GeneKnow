@@ -294,6 +294,11 @@ class MLFusionNode:
                     }
                 }
 
+            # Encode features for the model (needed for SHAP)
+            import numpy as np
+            X_encoded = self.fusion_layer._encode_features(static_inputs)
+            X_scaled = self.fusion_layer.scaler.transform(X_encoded)
+
             # Run fusion layer predictions
             fusion_outputs = []
             for static_input in static_inputs:
@@ -325,7 +330,9 @@ class MLFusionNode:
 
             # Return only the keys this node updates
             return {
-                'ml_fusion_results': ml_fusion_results
+                'ml_fusion_results': ml_fusion_results,
+                'ml_fusion_model_instance': self.fusion_layer,  # Expose for SHAP
+                'ml_fusion_feature_matrix': X_scaled  # Preprocessed features for SHAP
             }
 
         except Exception as e:
