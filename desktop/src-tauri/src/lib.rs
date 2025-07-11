@@ -427,12 +427,18 @@ async fn delete_temp_file(file_path: String) -> Result<(), String> {
         return Err("Can only delete files in temporary directories".to_string());
     }
     
-    if path.exists() {
-        fs::remove_file(path).map_err(|e| e.to_string())?;
-        log::info!("Deleted temporary file: {}", file_path);
+    match fs::remove_file(&file_path) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to delete file {}: {}", file_path, e))
     }
-    
-    Ok(())
+}
+
+#[command]
+async fn read_text_file(path: String) -> Result<String, String> {
+    match fs::read_to_string(&path) {
+        Ok(content) => Ok(content),
+        Err(e) => Err(format!("Failed to read file {}: {}", path, e))
+    }
 }
 
 // ========================================
@@ -1107,7 +1113,8 @@ pub fn run() {
         test_pipeline_connectivity,
         // File processing helpers
         save_temp_file,
-        delete_temp_file
+        delete_temp_file,
+        read_text_file
     ])
     .on_window_event(|_window, event| {
         // Stop API server when app closes

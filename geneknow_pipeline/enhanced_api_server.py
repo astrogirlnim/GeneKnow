@@ -280,6 +280,8 @@ def process_file_async(job_id: str):
                     'ml_risk_assessment': result.get('ml_risk_assessment', {}),
                     'completed_nodes': result.get('completed_nodes', []),
                     'warnings': result.get('warnings', []),
+                    'enhanced_report_paths': result.get('enhanced_report_paths', {}),
+                    'report_generator_info': result.get('report_generator_info', {}),
                     'result_file': result_file
                 })
             })
