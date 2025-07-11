@@ -1662,14 +1662,42 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Mutational Signature Analysis
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Mutational Signature Analysis
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('mutational-signatures')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Mutational signatures reveal the underlying biological processes that caused DNA damage. Each signature represents a specific pattern of mutations caused by factors like aging, smoking, UV exposure, DNA repair defects, or chemotherapy. The percentage shows each signature's contribution to the overall mutational profile."
+                      isVisible={hoveredTooltip === 'mutational-signatures'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="mutational-signatures"
                   title="Mutational Signature Analysis"
