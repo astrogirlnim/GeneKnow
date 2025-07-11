@@ -105,6 +105,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         else:
             cadd_summary = None
 
+        # Include SHAP validation results if available
+        shap_validation = None
+        if state.get("shap_validation_status"):
+            shap_validation = {
+                "status": state.get("shap_validation_status", "SKIPPED"),
+                "reasons": state.get("shap_validation_reasons", []),
+                "top_contributors": state.get("shap_top_contributors", []),
+                "feature_importance": state.get("shap_feature_importance", {}),
+                "details": state.get("shap_validation_details", {})
+            }
+
         structured_json = {
             "report_metadata": {
                 "pipeline_version": "1.0.0",
@@ -130,6 +141,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "quality_control": state["file_metadata"].get("qc_stats", {}),
             "tcga_summary": tcga_summary,
             "cadd_summary": cadd_summary,
+            "shap_validation": shap_validation,
             "metrics": state.get("metrics", {}),
             "metrics_summary": state.get("metrics_summary", {}),
             "warnings": state["warnings"]

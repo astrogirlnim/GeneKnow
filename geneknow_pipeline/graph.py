@@ -24,6 +24,7 @@ try:
         pathway_burden,
         ml_fusion_node,
         risk_model,
+        shap_validator,
         metrics_calculator,
         formatter,
         report_writer,
@@ -45,6 +46,7 @@ except ImportError:
         pathway_burden,
         ml_fusion_node,
         risk_model,
+        shap_validator,
         metrics_calculator,
         formatter,
         report_writer,
@@ -462,6 +464,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("prs_calculator", prs_calculator.process)
     workflow.add_node("ml_fusion", ml_fusion_node.process)
     workflow.add_node("risk_model", risk_model.process)
+    workflow.add_node("shap_validator", shap_validator.process)
     workflow.add_node("metrics_calculator", metrics_calculator.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_writer", report_writer.process)
@@ -503,10 +506,11 @@ def create_genomic_pipeline() -> StateGraph:
     # Continue with feature vector building after merge
     workflow.add_edge("merge_static_models", "feature_vector_builder")
 
-    # Feature vector builder -> ML fusion -> risk model -> metrics calculator
+    # Feature vector builder -> ML fusion -> risk model -> SHAP validator -> metrics calculator
     workflow.add_edge("feature_vector_builder", "ml_fusion")
     workflow.add_edge("ml_fusion", "risk_model")
-    workflow.add_edge("risk_model", "metrics_calculator")
+    workflow.add_edge("risk_model", "shap_validator")
+    workflow.add_edge("shap_validator", "metrics_calculator")
     workflow.add_edge("metrics_calculator", "formatter")
 
     workflow.add_edge("formatter", "report_writer")
@@ -553,6 +557,13 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "pathway_enriched_variants": None,
         "ml_ready_variants": None,  # Variants prepared for ML fusion
         "ml_fusion_results": None,  # ML fusion model predictions
+        "ml_fusion_model_instance": None,  # ML fusion model for SHAP
+        "ml_fusion_feature_matrix": None,  # Feature matrix for SHAP
+        "shap_validation_status": None,  # SHAP validation status
+        "shap_validation_reasons": None,  # Reasons for flagging
+        "shap_top_contributors": None,  # Top contributing features
+        "shap_feature_importance": None,  # Full SHAP values
+        "shap_validation_details": None,  # Detailed validation info
         "risk_scores": {},
         "risk_details": {},  # Initialize risk details for metrics
         "ml_risk_assessment": {},  # Initialize ML risk assessment for metrics
