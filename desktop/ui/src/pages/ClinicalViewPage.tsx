@@ -2829,35 +2829,7 @@ const ClinicalViewPage: React.FC = () => {
         );
       
       default:
-        return (
-          <div style={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '3rem 2rem',
-            textAlign: 'center',
-            minHeight: '400px'
-          }}>
-            <h3 style={{ 
-              marginBottom: '1rem',
-              color: '#111827',
-              fontSize: '1.25rem',
-              fontWeight: '600'
-            }}>
-              Analysis Complete
-            </h3>
-            <p style={{ 
-              textAlign: 'center',
-              maxWidth: '400px',
-              lineHeight: '1.6',
-              marginBottom: '2rem',
-              color: '#4B5563'
-            }}>
-              All genomic analysis modules have been completed and are ready for clinical review.
-            </p>
-          </div>
-        );
+        return null;
     }
   };
 
@@ -2927,16 +2899,6 @@ const ClinicalViewPage: React.FC = () => {
               >
                 Back to Dashboard
               </button>
-              <div style={{
-                background: '#2563EB',
-                color: '#FFFFFF',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}>
-                Analysis Complete
-              </div>
             </div>
           </div>
 
