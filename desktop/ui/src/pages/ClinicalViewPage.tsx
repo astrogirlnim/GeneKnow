@@ -1068,47 +1068,90 @@ const ClinicalViewPage: React.FC = () => {
   // Function to convert pipeline results to the format expected by the clinical view
   const getGenomicData = () => {
     if (pipelineResults) {
-      // Convert real pipeline results to the format expected by the clinical view
+      console.log('🔍 Using real pipeline results:', pipelineResults);
+      
+      // Extract risk scores and findings
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const riskFindings = riskScores.map(([cancer_type, risk_percentage]) => ({
         cancer_type,
-        risk_percentage: risk_percentage as number,
-        risk_level: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
-        affected_genes: pipelineResults.variants?.map(v => v.gene) || [],
-        recommendation: (risk_percentage as number) > 50 
+        risk_percentage,
+        risk_level: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        affected_genes: pipelineResults.risk_genes?.[cancer_type] || [],
+        recommendation: risk_percentage > 50 
           ? `Enhanced ${cancer_type} cancer screening recommended`
-          : (risk_percentage as number) > 20
+          : risk_percentage > 20
           ? `Moderate ${cancer_type} cancer screening recommended`
           : 'Standard screening guidelines apply',
-        mutation_burden: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
-        pathway_disruption: (risk_percentage as number) > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
+        mutation_burden: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        pathway_disruption: [] // Backend doesn't provide this yet
       }));
 
-      const variantTable = pipelineResults.variants?.map((variant, index) => ({
-        gene: variant.gene,
-        variant_id: `${variant.position}:${variant.type}`,
-        consequence: variant.impact,
-        mutation_type: variant.type,
-        quality_score: 85 + index * 5, // Estimated quality score
-        clinical_significance: variant.impact === 'HIGH' ? 'pathogenic' : 'benign',
-        tcga_best_match: { cancer_type: riskScores[0]?.[0] || 'breast', frequency: 6.3 },
-        protein_change: `p.${variant.gene}Variant`,
-        functional_impact: variant.impact === 'HIGH' ? 'Loss of function' : 'Uncertain',
-        transformation: {
-          original: 'ATT',
-          mutated: 'GTT',
-          amino_acid_change: 'Unknown',
-          effect: variant.impact === 'HIGH' ? 'Structural disruption' : 'Uncertain significance'
+      // Extract variant details from structured_json if available
+      const structuredJson = pipelineResults.structured_json || {};
+      const variantDetails = Array.isArray(structuredJson.variant_details) ? structuredJson.variant_details : [];
+      
+      // Transform variants to expected format
+      const variantTable = variantDetails.map((variant, index) => {
+        // Log missing data
+        if (!variant.transformation) {
+          console.warn(`⚠️ Missing transformation data for variant ${variant.gene}`);
         }
-      })) || [];
+        if (!variant.protein_change) {
+          console.warn(`⚠️ Missing protein change for variant ${variant.gene}`);
+        }
+        
+        return {
+          gene: variant.gene || 'Unknown',
+          variant_id: variant.variant || variant.variant_id || `Unknown_${index}`,
+          consequence: variant.consequence || 'unknown',
+          mutation_type: variant.mutation_type || 'snv', // Default to SNV if not specified
+          quality_score: variant.quality_metrics?.quality || 85,
+          clinical_significance: variant.clinical_significance || 'uncertain_significance',
+          tcga_best_match: variant.tcga_matches ? 
+            Object.entries(variant.tcga_matches)[0]?.[1] || { cancer_type: 'unknown', frequency: 0 } :
+            { cancer_type: 'unknown', frequency: 0 },
+          protein_change: variant.protein_change || variant.hgvs_p || `p.Unknown${index}`,
+          functional_impact: variant.functional_impact || 'Unknown',
+          // Use real transformation data if available, otherwise provide placeholder
+          transformation: variant.transformation || {
+            original: 'N/A',
+            mutated: 'N/A',
+            amino_acid_change: 'Unknown',
+            effect: 'Effect not determined'
+          }
+        };
+      });
 
+      // Log what backend data we're missing
+      console.log('📊 Backend data analysis:');
+      console.log('✅ Available:', {
+        riskScores: !!pipelineResults.risk_scores,
+        variantCount: !!pipelineResults.variant_count,
+        processingTime: !!pipelineResults.processing_time_seconds,
+        variantDetails: variantDetails.length > 0,
+        tcgaData: !!pipelineResults.tcga_matches,
+        caddStats: !!pipelineResults.cadd_stats
+      });
+      
+      console.log('❌ Missing:', {
+        mutationTypes: !structuredJson.summary?.mutation_types,
+        mutationSignatures: !structuredJson.mutation_signatures,
+        structuralVariants: !structuredJson.structural_variants,
+        copyNumberVariants: !structuredJson.copy_number_variants,
+        pathwayAnalysis: !structuredJson.pathway_analysis,
+        survivalAnalysis: !structuredJson.survival_analysis,
+        familyAnalysis: !structuredJson.family_analysis
+      });
+
+      // Build the genomic data object using real data where available
       return {
         summary: {
-          total_variants_found: pipelineResults.variant_count || 0,
-          variants_passed_qc: Math.floor((pipelineResults.variant_count || 0) * 0.9),
-          high_risk_findings_count: riskFindings.filter(r => r.risk_level === 'high').length,
+          total_variants_found: pipelineResults.variant_count || structuredJson.summary?.total_variants_found || 0,
+          variants_passed_qc: structuredJson.summary?.variants_passed_qc || Math.floor((pipelineResults.variant_count || 0) * 0.9),
+          high_risk_findings_count: structuredJson.summary?.high_risk_findings || riskFindings.filter(r => r.risk_level === 'high').length,
           processing_time_seconds: pipelineResults.processing_time_seconds || 0,
-          mutation_types: {
+          // Use real mutation types if available, otherwise estimate
+          mutation_types: structuredJson.summary?.mutation_types || {
             snv: Math.floor((pipelineResults.variant_count || 0) * 0.5),
             indel: Math.floor((pipelineResults.variant_count || 0) * 0.3),
             cnv: Math.floor((pipelineResults.variant_count || 0) * 0.15),
@@ -1117,22 +1160,17 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: riskFindings,
         variant_table: variantTable,
-        structural_variants: [] as StructuralVariant[],
-        copy_number_variants: [] as CopyNumberVariant[],
-        mutation_signatures: [
+        // Use real data if available, otherwise empty arrays (not mock data)
+        structural_variants: structuredJson.structural_variants || [],
+        copy_number_variants: structuredJson.copy_number_variants || [],
+        // Use real mutation signatures if available, otherwise show message
+        mutation_signatures: structuredJson.mutation_signatures || [
           {
-            signature: "SBS1",
-            name: "Spontaneous deamination",
-            contribution: 0.35,
-            description: "C>T transitions at CpG sites",
-            etiology: "Aging-related mutations"
-          },
-          {
-            signature: "SBS3",
-            name: "BRCA1/BRCA2 deficiency",
-            contribution: 0.28,
-            description: "Homologous recombination deficiency",
-            etiology: "Inherited DNA repair defects"
+            signature: "Analysis Pending",
+            name: "Mutation signature analysis not yet available",
+            contribution: 0,
+            description: "This feature requires additional backend implementation",
+            etiology: "Coming soon"
           }
         ]
       };
@@ -1153,8 +1191,8 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: [],
         variant_table: [],
-        structural_variants: [] as StructuralVariant[],
-        copy_number_variants: [] as CopyNumberVariant[],
+        structural_variants: [],
+        copy_number_variants: [],
         mutation_signatures: []
       };
     }
@@ -1591,7 +1629,7 @@ const ClinicalViewPage: React.FC = () => {
               Variant Heatmap Analysis
             </h2>
             
-                        {/* Gene-Cancer Type Heatmap */}
+            {/* Gene-Cancer Type Heatmap */}
             <div id="gene-cancer-matrix" style={{
               background: '#FFFFFF',
               padding: '2rem',
@@ -1618,100 +1656,160 @@ const ClinicalViewPage: React.FC = () => {
                 />
               </div>
               
-              <svg width="100%" height="400" viewBox="0 0 800 400">
-                {/* Background */}
-                <rect width="800" height="400" fill="#F9FAFB"/>
+              {/* Build gene-cancer associations from real data */}
+              {(() => {
+                // Extract unique genes from variant table
+                const uniqueGenes = [...new Set(genomicData.variant_table.map(v => v.gene))].slice(0, 5); // Limit to 5 for display
+                const cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'];
                 
-                {/* Heatmap grid */}
-                {['BRCA1', 'TP53', 'APC', 'MLH1', 'MSH2'].map((gene, geneIndex) => {
-                  return ['breast', 'lung', 'colon', 'prostate', 'blood'].map((cancer, cancerIndex) => {
-                    const x = 150 + cancerIndex * 80;
-                    const y = 80 + geneIndex * 50;
-                    
-                    // Calculate intensity based on gene-cancer association
-                    let intensity = 0;
-                    if (gene === 'BRCA1' && cancer === 'breast') intensity = 1.0;
-                    if (gene === 'TP53' && ['breast', 'lung', 'colon', 'prostate'].includes(cancer)) intensity = 0.8;
-                    if (gene === 'APC' && cancer === 'colon') intensity = 0.9;
-                    if (gene === 'MLH1' && cancer === 'colon') intensity = 0.7;
-                    if (gene === 'MSH2' && cancer === 'colon') intensity = 0.6;
-                    
-                    const color = intensity > 0.8 ? '#EF4444' : 
-                                 intensity > 0.6 ? '#F59E0B' : 
-                                 intensity > 0.3 ? '#3B82F6' : '#E5E7EB';
-                    
-                    return (
-                      <g key={`${gene}-${cancer}`}>
-                        <rect 
-                          x={x} 
-                          y={y} 
-                          width="70" 
-                          height="40" 
-                          fill={color}
-                          stroke="#FFFFFF"
-                          strokeWidth="2"
-                          opacity="0.8"
-                        />
-                        {intensity > 0 && (
-                          <text 
-                            x={x + 35} 
-                            y={y + 25} 
-                            fill="#FFFFFF" 
-                            fontSize="12" 
-                            textAnchor="middle"
-                            fontWeight="600"
-                          >
-                            {(intensity * 100).toFixed(0)}%
-                          </text>
-                        )}
-                      </g>
-                    );
+                // Build association matrix from risk genes data
+                const geneAssociations: Record<string, Record<string, number>> = {};
+                
+                // Initialize with zeros
+                uniqueGenes.forEach(gene => {
+                  geneAssociations[gene] = {};
+                  cancerTypes.forEach(cancer => {
+                    geneAssociations[gene][cancer] = 0;
                   });
-                })}
+                });
                 
-                {/* Gene labels */}
-                {['BRCA1', 'TP53', 'APC', 'MLH1', 'MSH2'].map((gene, index) => (
-                  <text 
-                    key={gene}
-                    x="140" 
-                    y={105 + index * 50} 
-                    fill="#111827" 
-                    fontSize="14" 
-                    textAnchor="end"
-                    fontWeight="600"
-                  >
-                    {gene}
-                  </text>
-                ))}
+                // Populate with real associations from risk_findings
+                if (pipelineResults) {
+                  genomicData.risk_findings.forEach(finding => {
+                    finding.affected_genes.forEach(gene => {
+                      if (geneAssociations[gene]) {
+                        geneAssociations[gene][finding.cancer_type] = finding.risk_percentage;
+                      }
+                    });
+                  });
+                  
+                  // Also check TCGA matches for additional associations
+                  if (pipelineResults.tcga_matches) {
+                    Object.entries(pipelineResults.tcga_matches).forEach(([cancer, matches]) => {
+                      Object.entries(matches as Record<string, any>).forEach(([variantId, matchInfo]) => {
+                        // Extract gene from variant ID if possible
+                        const gene = genomicData.variant_table.find(v => v.variant_id === variantId)?.gene;
+                        if (gene && geneAssociations[gene]) {
+                          const frequency = (matchInfo as any).frequency || 0;
+                          geneAssociations[gene][cancer] = Math.max(
+                            geneAssociations[gene][cancer] || 0,
+                            frequency * 100
+                          );
+                        }
+                      });
+                    });
+                  }
+                }
                 
-                {/* Cancer type labels */}
-                {['Breast', 'Lung', 'Colon', 'Prostate', 'Blood'].map((cancer, index) => (
-                  <text 
-                    key={cancer}
-                    x={185 + index * 80} 
-                    y="70" 
-                    fill="#111827" 
-                    fontSize="14" 
-                    textAnchor="middle"
-                    fontWeight="600"
-                  >
-                    {cancer}
-                  </text>
-                ))}
+                // If no genes found, show message
+                if (uniqueGenes.length === 0) {
+                  return (
+                    <div style={{ 
+                      padding: '2rem', 
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      No variant data available for gene-cancer association matrix
+                    </div>
+                  );
+                }
                 
-                {/* Legend */}
-                <g transform="translate(580, 300)">
-                  <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Risk Level</text>
-                  <rect x="0" y="10" width="15" height="15" fill="#EF4444"/>
-                  <text x="20" y="22" fill="#4B5563" fontSize="11">High (≥80%)</text>
-                  <rect x="0" y="30" width="15" height="15" fill="#F59E0B"/>
-                  <text x="20" y="42" fill="#4B5563" fontSize="11">Medium (60-80%)</text>
-                  <rect x="0" y="50" width="15" height="15" fill="#3B82F6"/>
-                  <text x="20" y="62" fill="#4B5563" fontSize="11">Low (30-60%)</text>
-                  <rect x="0" y="70" width="15" height="15" fill="#E5E7EB"/>
-                  <text x="20" y="82" fill="#4B5563" fontSize="11">No Association</text>
-                </g>
-              </svg>
+                return (
+                  <svg width="100%" height="400" viewBox="0 0 800 400">
+                    {/* Background */}
+                    <rect width="800" height="400" fill="#F9FAFB"/>
+                    
+                    {/* Heatmap grid */}
+                    {uniqueGenes.map((gene, geneIndex) => {
+                      return cancerTypes.map((cancer, cancerIndex) => {
+                        const x = 150 + cancerIndex * 80;
+                        const y = 80 + geneIndex * 50;
+                        
+                        // Get intensity from real data
+                        const intensity = (geneAssociations[gene]?.[cancer] || 0) / 100;
+                        
+                        const color = intensity > 0.8 ? '#EF4444' : 
+                                     intensity > 0.6 ? '#F59E0B' : 
+                                     intensity > 0.3 ? '#3B82F6' : 
+                                     intensity > 0 ? '#93C5FD' : '#E5E7EB';
+                        
+                        return (
+                          <g key={`${gene}-${cancer}`}>
+                            <rect 
+                              x={x} 
+                              y={y} 
+                              width="70" 
+                              height="40" 
+                              fill={color}
+                              stroke="#FFFFFF"
+                              strokeWidth="2"
+                              opacity="0.8"
+                            />
+                            {intensity > 0 && (
+                              <text 
+                                x={x + 35} 
+                                y={y + 25} 
+                                fill="#FFFFFF" 
+                                fontSize="12" 
+                                textAnchor="middle"
+                                fontWeight="600"
+                              >
+                                {(intensity * 100).toFixed(0)}%
+                              </text>
+                            )}
+                          </g>
+                        );
+                      });
+                    })}
+                    
+                    {/* Gene labels */}
+                    {uniqueGenes.map((gene, index) => (
+                      <text 
+                        key={gene}
+                        x="140" 
+                        y={105 + index * 50} 
+                        fill="#111827" 
+                        fontSize="14" 
+                        textAnchor="end"
+                        fontWeight="600"
+                      >
+                        {gene}
+                      </text>
+                    ))}
+                    
+                    {/* Cancer type labels */}
+                    {cancerTypes.map((cancer, index) => (
+                      <text 
+                        key={cancer}
+                        x={185 + index * 80} 
+                        y="70" 
+                        fill="#111827" 
+                        fontSize="14" 
+                        textAnchor="middle"
+                        fontWeight="600"
+                      >
+                        {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
+                      </text>
+                    ))}
+                    
+                    {/* Legend */}
+                    <g transform="translate(580, 300)">
+                      <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Risk Level</text>
+                      <rect x="0" y="10" width="15" height="15" fill="#EF4444"/>
+                      <text x="20" y="22" fill="#4B5563" fontSize="11">High (≥80%)</text>
+                      <rect x="0" y="30" width="15" height="15" fill="#F59E0B"/>
+                      <text x="20" y="42" fill="#4B5563" fontSize="11">Medium (60-80%)</text>
+                      <rect x="0" y="50" width="15" height="15" fill="#3B82F6"/>
+                      <text x="20" y="62" fill="#4B5563" fontSize="11">Low (30-60%)</text>
+                      <rect x="0" y="70" width="15" height="15" fill="#93C5FD"/>
+                      <text x="20" y="82" fill="#4B5563" fontSize="11">Very Low (1-30%)</text>
+                      <rect x="0" y="90" width="15" height="15" fill="#E5E7EB"/>
+                      <text x="20" y="102" fill="#4B5563" fontSize="11">No Association</text>
+                    </g>
+                  </svg>
+                );
+              })()}
             </div>
             
             {/* Variant Table */}
@@ -1818,7 +1916,7 @@ const ClinicalViewPage: React.FC = () => {
                             <strong>{variant.functional_impact}</strong>
                           </div>
                           <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                            {variant.transformation.effect}
+                            {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
                           </div>
                         </td>
                       </tr>
@@ -1876,7 +1974,7 @@ const ClinicalViewPage: React.FC = () => {
                           {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                          {variant.transformation.effect}
+                          {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
                         </div>
                       </div>
                       <div style={{
@@ -1977,278 +2075,265 @@ const ClinicalViewPage: React.FC = () => {
               Pathway Analysis
             </h2>
             
-            {/* Pathway Enrichment */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-              fontWeight: '600',
-              marginBottom: '1rem'
-            }}>
-                Affected Biological Pathways
-              </h3>
+            {/* Check if pathway analysis data is available */}
+            {(() => {
+              const pathwayData = pipelineResults?.structured_json?.pathway_analysis;
               
-                            {/* Pathway Disruption Analysis */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                {[
-                  { 
-                    name: 'DNA Repair', 
-                    pathway_id: 'DNA_REPAIR',
-                    genes: ['BRCA1', 'TP53'], 
-                    significance: 95, 
-                    color: '#EF4444',
-                    mutations: [
-                      { gene: 'BRCA1', type: 'frameshift', effect: 'Complete loss of homologous recombination' },
-                      { gene: 'TP53', type: 'missense', effect: 'Impaired DNA damage response' }
-                    ]
-                  },
-                  { 
-                    name: 'Cell Cycle Control', 
-                    pathway_id: 'CELL_CYCLE',
-                    genes: ['TP53'], 
-                    significance: 87, 
-                    color: '#F59E0B',
-                    mutations: [
-                      { gene: 'TP53', type: 'missense', effect: 'Loss of G1/S checkpoint control' }
-                    ]
-                  },
-                  { 
-                    name: 'Apoptosis', 
-                    pathway_id: 'APOPTOSIS',
-                    genes: ['TP53'], 
-                    significance: 82, 
-                    color: '#F59E0B',
-                    mutations: [
-                      { gene: 'TP53', type: 'missense', effect: 'Reduced pro-apoptotic signaling' }
-                    ]
-                  },
-                  { 
-                    name: 'Wnt Signaling', 
-                    pathway_id: 'WNT_SIGNALING',
-                    genes: ['APC'], 
-                    significance: 78, 
-                    color: '#3B82F6',
-                    mutations: [
-                      { gene: 'APC', type: 'nonsense', effect: 'Constitutive β-catenin activation' }
-                    ]
-                  },
-                  { 
-                    name: 'Tumor Suppression', 
-                    pathway_id: 'TUMOR_SUPPRESSION',
-                    genes: ['BRCA1', 'TP53', 'APC'], 
-                    significance: 92, 
-                    color: '#EF4444',
-                    mutations: [
-                      { gene: 'BRCA1', type: 'frameshift', effect: 'Loss of tumor suppressor function' },
-                      { gene: 'TP53', type: 'missense', effect: 'Guardian of genome compromised' },
-                      { gene: 'APC', type: 'nonsense', effect: 'Gatekeeper function lost' }
-                    ]
-                  }
-                ].map((pathway, index) => (
-                  <div key={index} style={{
+              if (!pathwayData) {
+                // No pathway data available - show informative message
+                return (
+                  <div style={{
                     background: '#FFFFFF',
-                    padding: '1.5rem',
-                    border: `2px solid ${pathway.color}`,
+                    padding: '3rem',
                     borderRadius: '0.75rem',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    textAlign: 'center'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h4 style={{ 
-                        color: '#111827',
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
-                        margin: 0
-                      }}>
-                        {pathway.name} Pathway
-                      </h4>
-                      <div style={{
-                        background: pathway.color,
-                        color: '#FFFFFF',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '1rem',
-                        fontWeight: 'bold'
-                      }}>
-                        {pathway.significance}% Disrupted
-                      </div>
-                    </div>
-                    
-                    <div style={{
-                      background: '#E5E7EB',
-                      borderRadius: '0.25rem',
-                      height: '0.75rem',
-                      position: 'relative',
-                      overflow: 'hidden',
+                    <div style={{ 
+                      color: '#6B7280',
+                      fontSize: '1.125rem',
                       marginBottom: '1rem'
                     }}>
-                      <div style={{
-                        background: pathway.color,
-                        height: '100%',
-                        width: `${pathway.significance}%`,
-                        transition: 'width 0.3s ease'
-                      }}/>
+                      <svg 
+                        style={{ width: '3rem', height: '3rem', marginBottom: '1rem' }}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={1.5} 
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                        />
+                      </svg>
                     </div>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Pathway Analysis Coming Soon
+                    </h3>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '600px',
+                      margin: '0 auto'
+                    }}>
+                      Biological pathway disruption analysis will be available in a future update. 
+                      This feature will analyze how genetic variants affect key cellular pathways 
+                      including DNA repair, cell cycle control, and apoptosis.
+                    </p>
+                  </div>
+                );
+              }
+              
+              // If pathway data exists, use it
+              return (
+                <>
+                  {/* Pathway Enrichment */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '2rem'
+                  }}>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '1rem'
+                    }}>
+                      Affected Biological Pathways
+                    </h3>
                     
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {pathway.mutations.map((mutation, mutIndex) => (
-                        <div key={mutIndex} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0.75rem',
-                          background: '#F9FAFB',
-                          borderRadius: '0.5rem',
-                          border: '1px solid #E5E7EB'
+                    {/* Pathway Disruption Analysis */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                      {pathwayData.disrupted_pathways.map((pathway, index) => (
+                        <div key={index} style={{
+                          background: '#FFFFFF',
+                          padding: '1.5rem',
+                          border: `2px solid ${pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6'}`,
+                          borderRadius: '0.75rem',
+                          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
                         }}>
-                          <div style={{
-                            background: mutation.type === 'frameshift' ? '#EF4444' : 
-                                       mutation.type === 'missense' ? '#F59E0B' : '#3B82F6',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            marginRight: '0.75rem'
-                          }}>
-                            {mutation.type}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1.125rem',
+                              fontWeight: '600',
+                              margin: 0
+                            }}>
+                              {pathway.name} Pathway
+                            </h4>
+                            <div style={{
+                              background: pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6',
+                              color: '#FFFFFF',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '1rem',
+                              fontWeight: 'bold'
+                            }}>
+                              {pathway.significance}% Disrupted
+                            </div>
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>
-                              {mutation.gene}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                              {mutation.effect}
-                            </div>
+                          
+                          <div style={{
+                            background: '#E5E7EB',
+                            borderRadius: '0.25rem',
+                            height: '0.75rem',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            marginBottom: '1rem'
+                          }}>
+                            <div style={{
+                              background: pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6',
+                              height: '100%',
+                              width: `${pathway.significance}%`,
+                              transition: 'width 0.3s ease'
+                            }}/>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {pathway.mutations.map((mutation, mutIndex) => (
+                              <div key={mutIndex} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0.75rem',
+                                background: '#F9FAFB',
+                                borderRadius: '0.5rem',
+                                border: '1px solid #E5E7EB'
+                              }}>
+                                <div style={{
+                                  background: mutation.type === 'frameshift' ? '#EF4444' : 
+                                             mutation.type === 'missense' ? '#F59E0B' : '#3B82F6',
+                                  color: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  marginRight: '0.75rem'
+                                }}>
+                                  {mutation.type}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>
+                                    {mutation.gene}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                    {mutation.effect}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Cancer Risk by Pathway */}
-              <div style={{
-                background: '#FFFFFF',
-                padding: '2rem',
-                borderRadius: '0.75rem',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                border: '1px solid #E5E7EB',
-                marginBottom: '2rem'
-              }}>
-                <h4 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  marginBottom: '1rem'
-                }}>
-                  Cancer Risk by Pathway Disruption
-                </h4>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                  {genomicData.risk_findings.filter(r => r.pathway_disruption.length > 0).map((risk, index) => (
-                    <div key={index} style={{
-                      padding: '1rem',
-                      border: `2px solid ${getRiskColor(risk.risk_level)}`,
-                      borderRadius: '0.5rem',
-                      background: `${getRiskColor(risk.risk_level)}10`
+                    
+                    {/* Cancer Risk by Pathway */}
+                    <div style={{
+                      background: '#FFFFFF',
+                      padding: '2rem',
+                      borderRadius: '0.75rem',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #E5E7EB',
+                      marginBottom: '2rem'
                     }}>
-                      <h5 style={{ 
+                      <h4 style={{ 
                         color: '#111827',
-                        fontSize: '1rem',
+                        fontSize: '1.125rem',
                         fontWeight: '600',
-                        marginBottom: '0.5rem',
-                        textTransform: 'capitalize'
+                        marginBottom: '1rem'
                       }}>
-                        {risk.cancer_type} Cancer
-                      </h5>
-                      <div style={{ 
-                        fontSize: '1.5rem',
-                        fontWeight: 'bold',
-                        color: getRiskColor(risk.risk_level),
-                        marginBottom: '0.5rem'
-                      }}>
-                        {risk.risk_percentage}%
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        {risk.pathway_disruption.map((pathway, pathIndex) => (
-                          <div key={pathIndex} style={{
-                            background: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '500',
-                            color: '#4B5563'
-                          }}>
-                            {pathway.replace('_', ' ')}
-                          </div>
-                        ))}
+                        Cancer Risk by Pathway Disruption
+                      </h4>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
+                          const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
+                          if (!riskFinding) return null;
+                          
+                          return (
+                            <div key={cancer} style={{
+                              padding: '1rem',
+                              border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
+                              borderRadius: '0.5rem',
+                              background: `${getRiskColor(riskFinding.risk_level)}10`
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                textTransform: 'capitalize'
+                              }}>
+                                {cancer} Cancer
+                              </h5>
+                              <div style={{ 
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                color: getRiskColor(riskFinding.risk_level),
+                                marginBottom: '0.5rem'
+                              }}>
+                                {riskFinding.risk_percentage}%
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                {pathways.map((pathway, pathIndex) => (
+                                  <div key={pathIndex} style={{
+                                    background: '#FFFFFF',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '0.25rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    color: '#4B5563'
+                                  }}>
+                                    {pathway.replace('_', ' ')}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Pathway Network */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                marginBottom: '1rem'
-              }}>
-                Gene Interaction Network
-              </h3>
-              
-              <svg width="100%" height="300" viewBox="0 0 600 300">
-                {/* Background */}
-                <rect width="600" height="300" fill="#F9FAFB"/>
-                
-                {/* Network connections */}
-                <line x1="150" y1="150" x2="300" y2="100" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="150" y1="150" x2="300" y2="200" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="300" y1="100" x2="450" y2="150" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="300" y1="200" x2="450" y2="150" stroke="#94A3B8" strokeWidth="2"/>
-                
-                {/* Gene nodes */}
-                <g>
-                  <circle cx="150" cy="150" r="30" fill="#EF4444" opacity="0.8"/>
-                  <text x="150" y="155" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">BRCA1</text>
-                </g>
-                <g>
-                  <circle cx="300" cy="100" r="30" fill="#EF4444" opacity="0.8"/>
-                  <text x="300" y="105" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">TP53</text>
-                </g>
-                <g>
-                  <circle cx="300" cy="200" r="30" fill="#F59E0B" opacity="0.8"/>
-                  <text x="300" y="205" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">APC</text>
-                </g>
-                <g>
-                  <circle cx="450" cy="150" r="25" fill="#3B82F6" opacity="0.8"/>
-                  <text x="450" y="155" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">MLH1</text>
-                </g>
-                
-                {/* Labels */}
-                <text x="50" y="155" fill="#111827" fontSize="12" fontWeight="600">DNA Repair</text>
-                <text x="350" y="50" fill="#111827" fontSize="12" fontWeight="600">Cell Cycle</text>
-                <text x="350" y="250" fill="#111827" fontSize="12" fontWeight="600">Wnt Signaling</text>
-                <text x="500" y="155" fill="#111827" fontSize="12" fontWeight="600">Mismatch Repair</text>
-              </svg>
-            </div>
+                  </div>
+                  
+                  {/* Gene Interaction Network - show placeholder */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB'
+                  }}>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '1rem'
+                    }}>
+                      Gene Interaction Network
+                    </h3>
+                    
+                    <div style={{ 
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      Gene interaction network visualization will be available in a future update.
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         );
       
@@ -2291,55 +2376,86 @@ const ClinicalViewPage: React.FC = () => {
                 />
               </div>
               
-              <svg width="100%" height="300" viewBox="0 0 800 300">
-                {/* Background */}
-                <rect width="800" height="300" fill="#F9FAFB"/>
+              {/* Check if survival analysis data is available */}
+              {(() => {
+                const survivalData = pipelineResults?.structured_json?.survival_analysis;
                 
-                {/* Grid lines */}
-                {[0, 1, 2, 3, 4, 5].map(i => (
-                  <g key={i}>
-                    <line x1="80" y1={50 + i * 40} x2="700" y2={50 + i * 40} stroke="#E5E7EB" strokeWidth="1"/>
-                    <text x="70" y={55 + i * 40} fill="#6B7280" fontSize="12" textAnchor="end">{100 - i * 20}%</text>
-                  </g>
-                ))}
+                if (!survivalData) {
+                  // No survival data - show informative message
+                  return (
+                    <div style={{ 
+                      padding: '3rem',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      <p style={{ marginBottom: '1rem' }}>
+                        Survival analysis visualization is not yet available from the backend.
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                        This feature will provide personalized survival curves based on your genetic risk profile.
+                      </p>
+                    </div>
+                  );
+                }
                 
-                {/* Age axis */}
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                  <g key={i}>
-                    <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
-                    <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{30 + i * 10}</text>
-                  </g>
-                ))}
-                
-                {/* Population average survival curve */}
-                <path 
-                  d="M 80 60 L 160 70 L 240 85 L 320 105 L 400 130 L 480 160 L 560 200 L 640 240 L 720 250" 
-                  stroke="#2563EB" 
-                  strokeWidth="3" 
-                  fill="none"
-                  strokeDasharray="5,5"
-                />
-                
-                {/* High-risk patient survival curve */}
-                <path 
-                  d="M 80 60 L 160 80 L 240 110 L 320 140 L 400 170 L 480 200 L 560 225 L 640 245 L 720 250" 
-                  stroke="#EF4444" 
-                  strokeWidth="3" 
-                  fill="none"
-                />
-                
-                {/* Legend */}
-                <g transform="translate(500, 80)">
-                  <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
-                  <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
-                  <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
-                  <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">High-Risk Profile</text>
-                </g>
-                
-                {/* Axis labels */}
-                <text x="400" y="290" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600">Age</text>
-                <text x="30" y="150" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600" transform="rotate(-90 30 150)">Survival Probability</text>
-              </svg>
+                // Use real survival data
+                return (
+                  <svg width="100%" height="300" viewBox="0 0 800 300">
+                    {/* Background */}
+                    <rect width="800" height="300" fill="#F9FAFB"/>
+                    
+                    {/* Grid lines */}
+                    {[0, 1, 2, 3, 4, 5].map(i => (
+                      <g key={i}>
+                        <line x1="80" y1={50 + i * 40} x2="700" y2={50 + i * 40} stroke="#E5E7EB" strokeWidth="1"/>
+                        <text x="70" y={55 + i * 40} fill="#6B7280" fontSize="12" textAnchor="end">{100 - i * 20}%</text>
+                      </g>
+                    ))}
+                    
+                    {/* Age axis */}
+                    {survivalData.patient_profile.estimated_survival.map((point, i) => (
+                      <g key={i}>
+                        <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
+                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age}</text>
+                      </g>
+                    ))}
+                    
+                    {/* Population average survival curve */}
+                    <path 
+                      d={`M ${survivalData.population_average.map((point, i) => 
+                        `${80 + i * 80} ${250 - (point.probability * 200)}`
+                      ).join(' L ')}`}
+                      stroke="#2563EB" 
+                      strokeWidth="3" 
+                      fill="none"
+                      strokeDasharray="5,5"
+                    />
+                    
+                    {/* Patient risk profile survival curve */}
+                    <path 
+                      d={`M ${survivalData.patient_profile.estimated_survival.map((point, i) => 
+                        `${80 + i * 80} ${250 - (point.probability * 200)}`
+                      ).join(' L ')}`}
+                      stroke="#EF4444" 
+                      strokeWidth="3" 
+                      fill="none"
+                    />
+                    
+                    {/* Legend */}
+                    <g transform="translate(500, 80)">
+                      <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
+                      <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
+                      <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
+                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{survivalData.patient_profile.risk_category} Risk Profile</text>
+                    </g>
+                    
+                    {/* Axis labels */}
+                    <text x="400" y="290" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600">Age</text>
+                    <text x="30" y="150" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600" transform="rotate(-90 30 150)">Survival Probability</text>
+                  </svg>
+                );
+              })()}
             </div>
             
             {/* Clinical Recommendations */}
@@ -2359,73 +2475,195 @@ const ClinicalViewPage: React.FC = () => {
                 Clinical Recommendations
               </h3>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {genomicData.risk_findings.filter(r => r.risk_level === 'high').map((risk, index) => (
-                  <div key={index} style={{
-                    padding: '1.5rem',
-                    border: '2px solid #EF4444',
-                    borderRadius: '0.75rem',
-                    background: '#FEF2F2'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                      <h4 style={{ 
-                        color: '#111827',
-              fontSize: '1rem',
-                        fontWeight: '600',
-                        textTransform: 'capitalize'
-                      }}>
-                        {risk.cancer_type} Cancer Screening
-                      </h4>
-                      <div style={{
-                        background: '#EF4444',
-                        color: '#FFFFFF',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600'
-                      }}>
-                        {risk.risk_percentage}% Risk
-                      </div>
-                    </div>
-            <p style={{ 
-              color: '#4B5563',
-                      fontSize: '0.875rem',
-                      marginBottom: '1rem'
-            }}>
-                      {risk.recommendation}
-            </p>
-            <div style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #FECACA'
-                    }}>
-                      <h5 style={{ 
-                        color: '#111827',
-                        fontSize: '0.875rem',
-                        fontWeight: '600',
-                        marginBottom: '0.5rem'
-                      }}>
-                        Affected Genes:
-                      </h5>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {risk.affected_genes.map((gene, geneIndex) => (
-                          <span key={geneIndex} style={{
-                            background: '#EF4444',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600'
+              {/* Check if clinical recommendations are available from backend */}
+              {(() => {
+                const clinicalRecs = pipelineResults?.structured_json?.clinical_recommendations;
+                
+                if (clinicalRecs && Array.isArray(clinicalRecs) && clinicalRecs.length > 0) {
+                  // Use real clinical recommendations
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {clinicalRecs.map((rec: any, index: number) => (
+                        <div key={index} style={{
+                          padding: '1.5rem',
+                          border: `2px solid ${getRiskColor(rec.risk_level)}`,
+                          borderRadius: '0.75rem',
+                          background: rec.risk_level === 'high' ? '#FEF2F2' : 
+                                      rec.risk_level === 'medium' ? '#FFFBEB' : '#F0FDF4'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              textTransform: 'capitalize'
+                            }}>
+                              {rec.cancer_type} Cancer Screening
+                            </h4>
+                            <div style={{
+                              background: getRiskColor(rec.risk_level),
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {rec.risk_percentage}% Risk
+                            </div>
+                          </div>
+                          <p style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem',
+                            marginBottom: '1rem'
                           }}>
-                            {gene}
-                          </span>
-                        ))}
-                      </div>
+                            {rec.recommendation}
+                          </p>
+                          {rec.screening_protocol && (
+                            <div style={{
+                              background: '#FFFFFF',
+                              padding: '1rem',
+                              borderRadius: '0.5rem',
+                              border: '1px solid #E5E7EB',
+                              marginBottom: '1rem'
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem'
+                              }}>
+                                Screening Protocol:
+                              </h5>
+                              <ul style={{ 
+                                margin: 0,
+                                paddingLeft: '1.5rem',
+                                fontSize: '0.75rem',
+                                color: '#4B5563'
+                              }}>
+                                <li>Test: {rec.screening_protocol.test}</li>
+                                <li>Frequency: {rec.screening_protocol.frequency}</li>
+                                <li>Start: {rec.screening_protocol.start_age}</li>
+                              </ul>
+                            </div>
+                          )}
+                          {rec.prevention_options && rec.prevention_options.length > 0 && (
+                            <div style={{
+                              background: '#F9FAFB',
+                              padding: '1rem',
+                              borderRadius: '0.5rem'
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem'
+                              }}>
+                                Prevention Options:
+                              </h5>
+                              <ul style={{ 
+                                margin: 0,
+                                paddingLeft: '1.5rem',
+                                fontSize: '0.75rem',
+                                color: '#4B5563'
+                              }}>
+                                {rec.prevention_options.map((option: string, i: number) => (
+                                  <li key={i}>{option}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  );
+                } else {
+                  // Use basic recommendations based on risk scores
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {genomicData.risk_findings.filter(r => r.risk_level === 'high' || r.risk_level === 'medium').map((risk, index) => (
+                        <div key={index} style={{
+                          padding: '1.5rem',
+                          border: `2px solid ${getRiskColor(risk.risk_level)}`,
+                          borderRadius: '0.75rem',
+                          background: risk.risk_level === 'high' ? '#FEF2F2' : '#FFFBEB'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              textTransform: 'capitalize'
+                            }}>
+                              {risk.cancer_type} Cancer Screening
+                            </h4>
+                            <div style={{
+                              background: getRiskColor(risk.risk_level),
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {risk.risk_percentage}% Risk
+                            </div>
+                          </div>
+                          <p style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem',
+                            marginBottom: '1rem'
+                          }}>
+                            {risk.recommendation}
+                          </p>
+                          <div style={{
+                            background: '#FFFFFF',
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            border: '1px solid #E5E7EB'
+                          }}>
+                            <h5 style={{ 
+                              color: '#111827',
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              marginBottom: '0.5rem'
+                            }}>
+                              Affected Genes:
+                            </h5>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {risk.affected_genes.length > 0 ? risk.affected_genes.map((gene, geneIndex) => (
+                                <span key={geneIndex} style={{
+                                  background: getRiskColor(risk.risk_level),
+                                  color: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600'
+                                }}>
+                                  {gene}
+                                </span>
+                              )) : (
+                                <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                  No specific genes identified
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {genomicData.risk_findings.filter(r => r.risk_level === 'high' || r.risk_level === 'medium').length === 0 && (
+                        <div style={{ 
+                          padding: '2rem',
+                          textAlign: 'center',
+                          color: '#6B7280',
+                          fontSize: '0.875rem'
+                        }}>
+                          No high or medium risk findings requiring special screening recommendations.
+                          Standard population screening guidelines apply.
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         );
@@ -2442,215 +2680,269 @@ const ClinicalViewPage: React.FC = () => {
               Family Analysis & Hereditary Risk
             </h2>
             
-            {/* Family Pedigree */}
-            <div id="family-pedigree" style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
-                }}>
-                  Family Pedigree Analysis
-                </h3>
-                <DownloadButton 
-                  elementId="family-pedigree"
-                  title="Family Pedigree Analysis"
-                  summary="Comprehensive family pedigree showing BRCA1 inheritance pattern with strong maternal line history. Analysis reveals 50% sister carrier risk, autosomal dominant pattern, and provides cascade testing recommendations for at-risk family members."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
-              </div>
+            {/* Check if family analysis data is available */}
+            {(() => {
+              const familyData = pipelineResults?.structured_json?.family_analysis;
               
-              <svg width="100%" height="300" viewBox="0 0 600 300">
-                {/* Background */}
-                <rect width="600" height="300" fill="#F9FAFB"/>
-                
-                {/* Family connections */}
-                <line x1="150" y1="80" x2="200" y2="80" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="175" y1="80" x2="175" y2="120" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="150" y1="120" x2="200" y2="120" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="175" y1="120" x2="175" y2="160" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="150" y1="160" x2="200" y2="160" stroke="#4B5563" strokeWidth="2"/>
-                
-                {/* Family members */}
-                {/* Grandparents */}
-                <g>
-                  <rect x="120" y="50" width="30" height="30" fill="#F59E0B" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="135" y="70" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">GM</text>
-                  <text x="135" y="45" fill="#4B5563" fontSize="10" textAnchor="middle">Breast Cancer</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="65" r="15" fill="#E5E7EB" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="70" fill="#4B5563" fontSize="10" textAnchor="middle" fontWeight="600">GF</text>
-                </g>
-                
-                {/* Parents */}
-                <g>
-                  <rect x="120" y="105" width="30" height="30" fill="#EF4444" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="135" y="125" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">M</text>
-                  <text x="135" y="100" fill="#4B5563" fontSize="10" textAnchor="middle">BRCA1+</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="120" r="15" fill="#E5E7EB" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="125" fill="#4B5563" fontSize="10" textAnchor="middle" fontWeight="600">F</text>
-                </g>
-                
-                {/* Current generation */}
-                <g>
-                  <rect x="120" y="145" width="30" height="30" fill="#EF4444" opacity="0.8" stroke="#4B5563" strokeWidth="4"/>
-                  <text x="135" y="165" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">P</text>
-                  <text x="135" y="140" fill="#4B5563" fontSize="10" textAnchor="middle">Patient</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="160" r="15" fill="#F59E0B" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="165" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">S</text>
-                  <text x="220" y="190" fill="#4B5563" fontSize="10" textAnchor="middle">Sister</text>
-                </g>
-                
-                {/* Legend */}
-                <g transform="translate(350, 50)">
-                  <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Legend</text>
-                  <rect x="0" y="15" width="15" height="15" fill="#EF4444" opacity="0.8"/>
-                  <text x="20" y="27" fill="#4B5563" fontSize="11">High Risk / Affected</text>
-                  <rect x="0" y="35" width="15" height="15" fill="#F59E0B" opacity="0.8"/>
-                  <text x="20" y="47" fill="#4B5563" fontSize="11">Medium Risk</text>
-                  <rect x="0" y="55" width="15" height="15" fill="#E5E7EB"/>
-                  <text x="20" y="67" fill="#4B5563" fontSize="11">Unknown / Low Risk</text>
-                  <rect x="0" y="80" width="15" height="15" fill="none" stroke="#4B5563" strokeWidth="4"/>
-                  <text x="20" y="92" fill="#4B5563" fontSize="11">Current Patient</text>
-                </g>
-              </svg>
-            </div>
-            
-            {/* Hereditary Risk Assessment */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                marginBottom: '1rem'
-              }}>
-                Hereditary Risk Assessment
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #EF4444',
-                  borderRadius: '0.75rem',
-                  background: '#FEF2F2'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Maternal Inheritance
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Strong family history of breast cancer with confirmed BRCA1 mutation in maternal line.
-                  </p>
+              if (!familyData) {
+                // No family data available - show informative message
+                return (
                   <div style={{
-                    background: '#EF4444',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
+                    background: '#FFFFFF',
+                    padding: '3rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
                     textAlign: 'center'
                   }}>
-                    High Risk (85%)
+                    <div style={{ 
+                      color: '#6B7280',
+                      fontSize: '1.125rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <svg 
+                        style={{ width: '3rem', height: '3rem', marginBottom: '1rem' }}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={1.5} 
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
+                        />
+                      </svg>
+                    </div>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Family Analysis Coming Soon
+                    </h3>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '600px',
+                      margin: '0 auto',
+                      marginBottom: '1.5rem'
+                    }}>
+                      Family pedigree analysis and hereditary risk assessment will be available in a future update. 
+                      This feature will help identify inheritance patterns and provide cascade testing recommendations 
+                      for family members.
+                    </p>
+                    {/* Show basic hereditary risk info based on detected variants */}
+                    {genomicData.risk_findings.some(r => r.risk_level === 'high') && (
+                      <div style={{
+                        background: '#FEF3C7',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        maxWidth: '500px',
+                        margin: '0 auto',
+                        textAlign: 'left'
+                      }}>
+                        <h4 style={{ 
+                          color: '#92400E',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          marginBottom: '0.5rem'
+                        }}>
+                          Important Note:
+                        </h4>
+                        <p style={{ 
+                          color: '#92400E',
+                          fontSize: '0.75rem',
+                          margin: 0
+                        }}>
+                          High-risk genetic variants have been detected. Consider genetic counseling 
+                          to discuss inheritance patterns and testing recommendations for family members.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
-                
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #F59E0B',
-                  borderRadius: '0.75rem',
-                  background: '#FFFBEB'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Sibling Risk
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Sister has 50% chance of inheriting the same BRCA1 mutation. Testing recommended.
-                  </p>
-                  <div style={{
-                    background: '#F59E0B',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    Testing Recommended
-                  </div>
-              </div>
+                );
+              }
               
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #3B82F6',
-                  borderRadius: '0.75rem',
-                  background: '#EFF6FF'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
+              // If family data exists, use it
+              return (
+                <>
+                  {/* Family Pedigree */}
+                  <div id="family-pedigree" style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '2rem'
                   }}>
-                    Future Generations
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Each child has 50% chance of inheriting the mutation. Genetic counseling recommended.
-                  </p>
-                  <div style={{
-                    background: '#3B82F6',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    Counseling Advised
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h3 style={{ 
+                        color: '#111827',
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        margin: 0
+                      }}>
+                        Family Pedigree Analysis
+                      </h3>
+                      <DownloadButton 
+                        elementId="family-pedigree"
+                        title="Family Pedigree Analysis"
+                        summary="Comprehensive family pedigree showing inheritance patterns based on detected genetic variants."
+                        isPDFGenerating={isPDFGenerating}
+                        setIsPDFGenerating={setIsPDFGenerating}
+                      />
+                    </div>
+                    
+                    <div style={{ 
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      Interactive family pedigree visualization based on your family history data.
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                  
+                  {/* Hereditary Risk Assessment */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB'
+                  }}>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '1rem'
+                    }}>
+                      Hereditary Risk Assessment
+                    </h3>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                      <div style={{
+                        padding: '1.5rem',
+                        border: '2px solid #EF4444',
+                        borderRadius: '0.75rem',
+                        background: '#FEF2F2'
+                      }}>
+                        <h4 style={{ 
+                          color: '#111827',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          marginBottom: '0.5rem'
+                        }}>
+                          Inheritance Pattern
+                        </h4>
+                        <p style={{ 
+                          color: '#4B5563',
+                          fontSize: '0.875rem',
+                          marginBottom: '1rem'
+                        }}>
+                          Pattern: {familyData.hereditary_risk.pattern.replace('_', ' ')}
+                          <br />
+                          Penetrance: {(familyData.hereditary_risk.penetrance * 100).toFixed(0)}%
+                        </p>
+                        <div style={{
+                          background: '#EF4444',
+                          color: '#FFFFFF',
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          High Hereditary Risk
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        padding: '1.5rem',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '0.75rem',
+                        background: '#FFFBEB'
+                      }}>
+                        <h4 style={{ 
+                          color: '#111827',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          marginBottom: '0.5rem'
+                        }}>
+                          Family Member Risk
+                        </h4>
+                        <div style={{ 
+                          color: '#4B5563',
+                          fontSize: '0.875rem',
+                          marginBottom: '1rem'
+                        }}>
+                          {Object.entries(familyData.hereditary_risk.inheritance_probability).map(([relationship, probability]) => (
+                            <div key={relationship} style={{ marginBottom: '0.25rem' }}>
+                              {relationship.charAt(0).toUpperCase() + relationship.slice(1)}: {(probability * 100).toFixed(0)}%
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          background: '#F59E0B',
+                          color: '#FFFFFF',
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          Testing Recommended
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        padding: '1.5rem',
+                        border: '2px solid #3B82F6',
+                        borderRadius: '0.75rem',
+                        background: '#EFF6FF'
+                      }}>
+                        <h4 style={{ 
+                          color: '#111827',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          marginBottom: '0.5rem'
+                        }}>
+                          Cascade Testing
+                        </h4>
+                        <div style={{ 
+                          color: '#4B5563',
+                          fontSize: '0.875rem',
+                          marginBottom: '1rem'
+                        }}>
+                          {familyData.cascade_testing_recommendations.map((rec, index) => (
+                            <div key={index} style={{ marginBottom: '0.5rem' }}>
+                              <strong>{rec.relationship.replace('_', ' ')}</strong>
+                              <br />
+                              Priority: {rec.testing_priority}
+                              <br />
+                              Risk: {(rec.estimated_carrier_probability * 100).toFixed(0)}%
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{
+                          background: '#3B82F6',
+                          color: '#FFFFFF',
+                          padding: '0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          Counseling Advised
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         );
       
