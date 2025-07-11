@@ -5,6 +5,7 @@ import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { invoke } from '@tauri-apps/api/core';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
+import { jsPDF } from 'jspdf';
 
 // Type definitions
 interface MetricData {
@@ -997,7 +998,134 @@ Consider genetic counseling if:
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
 
+  // Generate PDF from markdown content
+  const downloadPDF = React.useCallback(async () => {
+    const content = markdownContent || pipelineResults?.enhanced_report_content?.markdown || '';
+    if (!content) {
+      console.error('No content available for PDF generation');
+      return;
+    }
 
+    try {
+      // Create new PDF document
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - (2 * margin);
+      let yPosition = margin;
+
+      // Add title
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Genomic Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 15;
+
+      // Add date
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 20;
+
+      // Convert markdown to text (simple conversion - removes markdown syntax)
+      const plainText = content
+        .replace(/#{1,6}\s/g, '') // Remove headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+        .replace(/`([^`]+)`/g, '$1') // Remove inline code
+        .replace(/```[^`]*```/g, '') // Remove code blocks
+        .replace(/^\s*[-*+]\s/gm, '• ') // Convert lists to bullets
+        .replace(/^\s*\d+\.\s/gm, '') // Remove numbered lists
+        .replace(/\|.*\|/g, '') // Remove tables
+        .replace(/^\s*[-:]+\s*$/gm, '') // Remove table separators
+        .replace(/---/g, '') // Remove horizontal rules
+        .replace(/\n{3,}/g, '\n\n'); // Reduce multiple newlines
+
+      // Split text into lines
+      const lines = plainText.split('\n');
+      
+      // Process each line
+      for (const line of lines) {
+        // Check if we need a new page
+        if (yPosition > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+
+        // Handle different line types
+        if (line.trim() === '') {
+          yPosition += 5; // Empty line spacing
+          continue;
+        }
+
+        // Check for headers (lines that were originally headers tend to be shorter and important)
+        const isHeader = line.length < 50 && !line.startsWith('•') && !line.includes(':');
+        
+        if (isHeader) {
+          pdf.setFontSize(14);
+          pdf.setFont('helvetica', 'bold');
+        } else {
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+        }
+
+        // Split long lines
+        const wrappedLines = pdf.splitTextToSize(line, maxWidth);
+        
+        for (const wrappedLine of wrappedLines) {
+          if (yPosition > pageHeight - margin) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          
+          pdf.text(wrappedLine, margin, yPosition);
+          yPosition += isHeader ? 8 : 6;
+        }
+        
+        if (isHeader) {
+          yPosition += 4; // Extra space after headers
+        }
+      }
+
+      // Add footer on last page
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        'This report is for informational purposes only and should not replace professional medical advice.',
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+
+      // Save the PDF using Tauri's file dialog
+      const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Get the PDF as array buffer
+      const pdfArrayBuffer = pdf.output('arraybuffer');
+      
+      // Convert to Uint8Array for Tauri
+      const pdfBytes = new Uint8Array(pdfArrayBuffer);
+      
+      // Use Tauri's save dialog
+      try {
+        const savedPath = await invoke<string>('save_file_dialog', {
+          filename: filename,
+          fileContent: Array.from(pdfBytes) // Convert to regular array for serialization
+        });
+        
+        console.log('PDF saved successfully to:', savedPath);
+      } catch (error) {
+        if (error !== 'Save cancelled by user') {
+          console.error('Failed to save PDF:', error);
+          alert('Failed to save PDF: ' + error);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  }, [markdownContent, pipelineResults, fileName]);
 
   return (
     <Layout>
