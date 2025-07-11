@@ -2106,14 +2106,76 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Gene-Cancer Type Association Matrix
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Gene-Cancer Type Association Matrix
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('gene-cancer-matrix')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: 'calc(100% + 0.5rem)',
+                      transform: 'translateX(-50%)',
+                      width: '20rem',
+                      padding: '0.75rem',
+                      background: '#1F2937',
+                      color: '#FFFFFF',
+                      fontSize: '0.75rem',
+                      borderRadius: '0.5rem',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      opacity: hoveredTooltip === 'gene-cancer-matrix' ? 1 : 0,
+                      visibility: hoveredTooltip === 'gene-cancer-matrix' ? 'visible' as const : 'hidden' as const,
+                      transition: 'opacity 300ms ease, visibility 300ms ease',
+                      zIndex: 1000,
+                      pointerEvents: 'none' as const,
+                      lineHeight: '1.4',
+                      border: '1px solid #374151'
+                    }}>
+                      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>
+                        Color-coded heatmap showing the strength of association between specific genes and cancer types. 
+                        Red indicates high association (≥80%), orange medium (60-80%), blue low (30-60%), light blue very low (1-30%), 
+                        and gray no association. Based on pathway burden analysis and clinical literature. 
+                        Use this to understand which genes are most relevant for specific cancer screening protocols.
+                      </p>
+                      <div style={{
+                        position: 'absolute',
+                        left: '50%',
+                        bottom: '100%',
+                        transform: 'translateX(-50%)',
+                        width: '0',
+                        height: '0',
+                        borderLeft: '0.5rem solid transparent',
+                        borderRight: '0.5rem solid transparent',
+                        borderBottom: '0.5rem solid #1F2937'
+                      }}></div>
+                    </div>
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="gene-cancer-matrix"
                   title="Gene-Cancer Association Matrix"
