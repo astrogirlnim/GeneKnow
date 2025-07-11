@@ -27,6 +27,62 @@ def create_sample_state():
                 "prostate": 3.2,
                 "pancreatic": 2.1
             },
+            "risk_assessment": {
+                "scores": {
+                    "breast": 82.5,
+                    "ovarian": 45.2,
+                    "colon": 15.3,
+                    "lung": 8.7,
+                    "prostate": 3.2,
+                    "pancreatic": 2.1
+                },
+                "risk_genes": {
+                    "breast": ["BRCA1", "BRCA2"],
+                    "ovarian": ["BRCA1", "BRCA2"],
+                    "colon": ["TP53"]
+                }
+            },
+            "summary": {
+                "total_variants_found": 1250,
+                "variants_passed_qc": 1250,
+                "high_risk_findings": 3
+            },
+            "variant_details": [
+                {
+                    "gene": "BRCA1",
+                    "variant": "chr17:41246747",
+                    "consequence": "frameshift_variant",
+                    "hgvs_c": "c.5266dupC",
+                    "hgvs_p": "p.Gln1756Profs*74",
+                    "quality_metrics": {
+                        "quality": 99,
+                        "depth": 45,
+                        "allele_freq": 0.673
+                    },
+                    "cadd_scores": {
+                        "phred": 35.0,
+                        "raw": 6.2
+                    },
+                    "clinical_significance": "Pathogenic"
+                },
+                {
+                    "gene": "TP53",
+                    "variant": "chr17:7577121",
+                    "consequence": "missense_variant",
+                    "hgvs_c": "c.743G>A",
+                    "hgvs_p": "p.Arg248Gln",
+                    "quality_metrics": {
+                        "quality": 85,
+                        "depth": 38,
+                        "allele_freq": 0.527
+                    },
+                    "cadd_scores": {
+                        "phred": 28.5,
+                        "raw": 5.1
+                    },
+                    "clinical_significance": "Likely pathogenic"
+                }
+            ],
             "variants": [
                 {
                     "gene": "BRCA1",
