@@ -401,6 +401,7 @@ jobs:
 
       - name: 🔍 Detect platform-specific changes
         id: changes
+        shell: bash
         run: |
           echo "🔍 Analyzing changes to determine which platforms need rebuilding..."
           
@@ -734,6 +735,7 @@ jobs:
       - name: 📂 Locate build artifacts (Unix)
         id: artifacts-unix
         if: matrix.os != 'windows-latest' && steps.should-build.outputs.should-build == 'true'
+        shell: bash
         run: |
           echo "📂 Locating build artifacts..."
           echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/"
@@ -772,6 +774,7 @@ jobs:
           compression-level: 9
 
       - name: 📊 Build summary
+        shell: bash
         run: |
           echo "📊 Build completed successfully for ${{ matrix.name }}"
           echo "🎯 Version: ${{ needs.version.outputs.version }}"
@@ -787,6 +790,7 @@ jobs:
       - name: 🏪 Store artifacts for release (Direct Storage)
         # For release builds, also prepare artifacts for direct release upload
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && steps.should-build.outputs.should-build == 'true'
+        shell: bash
         run: |
           echo "🏪 Preparing artifacts for direct release storage..."
           mkdir -p ./release-ready
@@ -832,11 +836,13 @@ jobs:
           merge-multiple: true
 
       - name: 📂 List artifacts
+        shell: bash
         run: |
           echo "📂 Downloaded artifacts:"
           find ./artifacts -type f -name "*" | sort
 
       - name: 🗂️ Organize artifacts by platform
+        shell: bash
         run: |
           echo "🗂️ Organizing installer files for release..."
           mkdir -p ./release-assets
