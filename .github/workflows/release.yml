@@ -14,6 +14,8 @@ on:
       - 'requirements.txt'
       - 'requirements-lite.txt'  # Add this for optimized requirements
       - 'docs/**'
+    tags:
+      - 'v*'  # Trigger on version tags created by the pipeline
   workflow_dispatch:
     inputs:
       version_type:
@@ -508,23 +510,21 @@ jobs:
             name: 'Linux x64'
             emoji: '🐧'
             build-key: 'linux'
-          # TEMPORARILY DISABLED - Expensive builds (macOS = $0.08/min, Windows = $0.016/min)
-          # Re-enable these when you have higher GitHub Actions quota
-          # - os: windows-latest
-          #   rust-target: x86_64-pc-windows-msvc
-          #   name: 'Windows x64'
-          #   emoji: '🪟'
-          #   build-key: 'windows'
-          # - os: macos-latest
-          #   rust-target: x86_64-apple-darwin
-          #   name: 'macOS x64'
-          #   emoji: '🍎'
-          #   build-key: 'macos'
-          # - os: macos-latest
-          #   rust-target: aarch64-apple-darwin
-          #   name: 'macOS ARM64'
-          #   emoji: '🍏'
-          #   build-key: 'macos-arm'
+          - os: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+            name: 'Windows x64'
+            emoji: '🪟'
+            build-key: 'windows'
+          - os: macos-latest
+            rust-target: x86_64-apple-darwin
+            name: 'macOS x64'
+            emoji: '🍎'
+            build-key: 'macos'
+          - os: macos-latest
+            rust-target: aarch64-apple-darwin
+            name: 'macOS ARM64'
+            emoji: '🍏'
+            build-key: 'macos-arm'
     runs-on: ${{ matrix.os }}
     steps:
       - name: 🔍 Check if platform needs building
@@ -550,7 +550,7 @@ jobs:
           elif [ "$PLATFORM" = "windows" ] && [ "$BUILD_WINDOWS" = "true" ]; then
             SHOULD_BUILD="true"
             echo "✅ Building $PLATFORM - Windows-specific changes detected"
-          elif [ "$PLATFORM" = "macos" ] && [ "$BUILD_MACOS" = "true" ]; then
+          elif [[ "$PLATFORM" = "macos" || "$PLATFORM" = "macos-arm" ]] && [ "$BUILD_MACOS" = "true" ]; then
             SHOULD_BUILD="true"
             echo "✅ Building $PLATFORM - macOS-specific changes detected"
           else
@@ -642,14 +642,27 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: 🔧 Install system dependencies (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && steps.should-build.outputs.should-build == 'true'
         run: |
           echo "🔧 Installing Linux system dependencies..."
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
           echo "✅ Linux dependencies installed"
 
+      - name: 🔧 Install system dependencies (Windows)
+        if: matrix.os == 'windows-latest' && steps.should-build.outputs.should-build == 'true'
+        run: |
+          echo "🔧 Windows system dependencies are handled by Tauri automatically"
+          echo "✅ Windows dependencies ready"
+
+      - name: 🔧 Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest' && steps.should-build.outputs.should-build == 'true'
+        run: |
+          echo "🔧 macOS system dependencies are handled by Tauri automatically"
+          echo "✅ macOS dependencies ready"
+
       - name: 📦 Install frontend dependencies
+        if: steps.should-build.outputs.should-build == 'true'
         working-directory: desktop/ui
         run: |
           echo "📦 Installing frontend dependencies..."
@@ -657,6 +670,7 @@ jobs:
           echo "✅ Frontend dependencies installed"
 
       - name: 🔨 Build frontend
+        if: steps.should-build.outputs.should-build == 'true'
         working-directory: desktop/ui
         run: |
           echo "🔨 Building frontend for release..."
@@ -664,6 +678,7 @@ jobs:
           echo "✅ Frontend build completed"
 
       - name: 🐍 Bundle Python runtime and dependencies
+        if: steps.should-build.outputs.should-build == 'true'
         working-directory: desktop
         shell: bash
         run: |
@@ -678,6 +693,7 @@ jobs:
           echo "✅ Python runtime bundled successfully"
 
       - name: 🔨 Build Tauri Release
+        if: steps.should-build.outputs.should-build == 'true'
         working-directory: desktop/src-tauri
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -693,7 +709,7 @@ jobs:
 
       - name: 📂 Locate build artifacts (Unix)
         id: artifacts-unix
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-latest' && steps.should-build.outputs.should-build == 'true'
         run: |
           echo "📂 Locating build artifacts..."
           echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/"
@@ -705,7 +721,7 @@ jobs:
 
       - name: 📂 Locate build artifacts (Windows)
         id: artifacts-windows
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest' && steps.should-build.outputs.should-build == 'true'
         shell: pwsh
         run: |
           echo "📂 Locating build artifacts..."
@@ -717,8 +733,8 @@ jobs:
           echo "✅ Build artifacts located"
 
       - name: 📤 Upload build artifacts
-        # Only upload artifacts for tagged releases to save storage
-        if: startsWith(github.ref, 'refs/tags/')
+        # Upload artifacts for release builds (main branch pushes, tag pushes, and workflow dispatch)
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && steps.should-build.outputs.should-build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-${{ needs.version.outputs.version }}
@@ -736,17 +752,17 @@ jobs:
           echo "📊 Build completed successfully for ${{ matrix.name }}"
           echo "🎯 Version: ${{ needs.version.outputs.version }}"
           echo "🏷️ Tag: ${{ needs.version.outputs.tag }}"
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "📦 Artifacts uploaded to GitHub Actions (tagged release)"
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == refs/tags/* || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "📦 Artifacts uploaded to GitHub Actions (release build)"
             echo "🏪 Artifacts will be permanently stored in GitHub Release"
           else
-            echo "📦 Artifacts built but not uploaded (main branch push - saves storage)"
+            echo "📦 Artifacts built but not uploaded (branch push - saves storage)"
             echo "🔍 Build validation completed without storage usage"
           fi
 
       - name: 🏪 Store artifacts for release (Direct Storage)
-        # For tagged releases, also prepare artifacts for direct release upload
-        if: startsWith(github.ref, 'refs/tags/')
+        # For release builds, also prepare artifacts for direct release upload
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && steps.should-build.outputs.should-build == 'true'
         run: |
           echo "🏪 Preparing artifacts for direct release storage..."
           mkdir -p ./release-ready
@@ -762,7 +778,7 @@ jobs:
 
       - name: 📤 Upload release-ready artifacts
         # Upload prepared artifacts for the release job
-        if: startsWith(github.ref, 'refs/tags/')
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && steps.should-build.outputs.should-build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: release-ready-${{ matrix.name }}-${{ needs.version.outputs.version }}
@@ -776,8 +792,8 @@ jobs:
     name: 🚀 Create GitHub Release
     needs: [version, build]
     runs-on: ubuntu-latest
-    # Only create releases for tagged builds (when artifacts are uploaded)
-    if: startsWith(github.ref, 'refs/tags/')
+    # Create releases for main branch pushes, tag pushes, and workflow dispatch events
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
