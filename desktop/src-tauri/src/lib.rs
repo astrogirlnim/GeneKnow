@@ -597,13 +597,17 @@ async fn start_api_server() -> Result<bool, String> {
         *process_guard = Some(child);
     }
     
-    // Get a reference to the child for stdout/stderr handling
-    let child_ref = {
+    // Handle stdout output in a separate thread
+    let stdout = {
         let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
-        process_guard.as_mut().unwrap()
+        if let Some(ref mut child) = *process_guard {
+            child.stdout.take()
+        } else {
+            None
+        }
     };
     
-    if let Some(stdout) = child_ref.stdout.take() {
+    if let Some(stdout) = stdout {
         use std::sync::mpsc;
         let (port_tx, port_rx) = mpsc::channel();
         
@@ -664,12 +668,16 @@ async fn start_api_server() -> Result<bool, String> {
     }
     
     // Handle stderr output in a separate thread
-    let child_ref = {
+    let stderr = {
         let mut process_guard = API_SERVER_PROCESS.lock().unwrap();
-        process_guard.as_mut().unwrap()
+        if let Some(ref mut child) = *process_guard {
+            child.stderr.take()
+        } else {
+            None
+        }
     };
     
-    if let Some(stderr) = child_ref.stderr.take() {
+    if let Some(stderr) = stderr {
         thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stderr);
