@@ -3,9 +3,10 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import { invoke } from '@tauri-apps/api/core';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import { invoke } from '@tauri-apps/api/core';
 
 // Type definitions
 interface MetricData {
@@ -1007,96 +1008,99 @@ Consider genetic counseling if:
     }
 
     try {
-      // Create new PDF document
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const maxWidth = pageWidth - (2 * margin);
-      let yPosition = margin;
+      // Create a temporary container to render the markdown
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '210mm'; // A4 width
+      tempContainer.style.padding = '20mm';
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.fontFamily = 'Arial, sans-serif';
+      document.body.appendChild(tempContainer);
 
-      // Add title
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Genomic Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += 15;
+      // Create the content structure
+      const headerDiv = document.createElement('div');
+      headerDiv.innerHTML = `
+        <h1 style="text-align: center; margin-bottom: 10px; font-size: 28px; font-weight: bold; color: #111827;">
+          Genomic Analysis Report
+        </h1>
+        <p style="text-align: center; margin-bottom: 30px; font-size: 14px; color: #6B7280;">
+          Generated: ${new Date().toLocaleDateString()}
+        </p>
+      `;
+      tempContainer.appendChild(headerDiv);
 
-      // Add date
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += 20;
+      // Create a container for the markdown content
+      const contentDiv = document.createElement('div');
+      tempContainer.appendChild(contentDiv);
 
-      // Convert markdown to text (simple conversion - removes markdown syntax)
-      const plainText = content
-        .replace(/#{1,6}\s/g, '') // Remove headers
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-        .replace(/\*(.*?)\*/g, '$1') // Remove italic
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-        .replace(/`([^`]+)`/g, '$1') // Remove inline code
-        .replace(/```[^`]*```/g, '') // Remove code blocks
-        .replace(/^\s*[-*+]\s/gm, '• ') // Convert lists to bullets
-        .replace(/^\s*\d+\.\s/gm, '') // Remove numbered lists
-        .replace(/\|.*\|/g, '') // Remove tables
-        .replace(/^\s*[-:]+\s*$/gm, '') // Remove table separators
-        .replace(/---/g, '') // Remove horizontal rules
-        .replace(/\n{3,}/g, '\n\n'); // Reduce multiple newlines
-
-      // Split text into lines
-      const lines = plainText.split('\n');
+      // Use ReactDOM to render the MarkdownRenderer
+      const { createRoot } = await import('react-dom/client');
+      const root = createRoot(contentDiv);
       
-      // Process each line
-      for (const line of lines) {
-        // Check if we need a new page
-        if (yPosition > pageHeight - margin) {
-          pdf.addPage();
-          yPosition = margin;
-        }
+      // Render the markdown content with all styling
+      await new Promise<void>((resolve) => {
+        root.render(<MarkdownRenderer content={content} />);
+        // Give React time to render
+        setTimeout(resolve, 500);
+      });
 
-        // Handle different line types
-        if (line.trim() === '') {
-          yPosition += 5; // Empty line spacing
-          continue;
-        }
+      // Add footer
+      const footerDiv = document.createElement('div');
+      footerDiv.innerHTML = `
+        <p style="margin-top: 40px; text-align: center; font-size: 12px; font-style: italic; color: #6B7280;">
+          This report is for informational purposes only and should not replace professional medical advice.
+        </p>
+      `;
+      tempContainer.appendChild(footerDiv);
 
-        // Check for headers (lines that were originally headers tend to be shorter and important)
-        const isHeader = line.length < 50 && !line.startsWith('•') && !line.includes(':');
-        
-        if (isHeader) {
-          pdf.setFontSize(14);
-          pdf.setFont('helvetica', 'bold');
-        } else {
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'normal');
-        }
+      // Use html2canvas to capture the rendered content
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794, // A4 width in pixels at 96 DPI
+      });
 
-        // Split long lines
-        const wrappedLines = pdf.splitTextToSize(line, maxWidth);
-        
-        for (const wrappedLine of wrappedLines) {
-          if (yPosition > pageHeight - margin) {
-            pdf.addPage();
-            yPosition = margin;
-          }
-          
-          pdf.text(wrappedLine, margin, yPosition);
-          yPosition += isHeader ? 8 : 6;
-        }
-        
-        if (isHeader) {
-          yPosition += 4; // Extra space after headers
-        }
+      // Create PDF with proper dimensions
+      const imgWidth = 190; // A4 width minus margins (210mm - 20mm margins)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 277; // A4 height minus margins (297mm - 20mm margins)
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+      let heightLeft = imgHeight;
+
+      // Add the first page
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.95), // Use JPEG for smaller file size
+        'JPEG',
+        10, // left margin
+        10, // top margin
+        imgWidth,
+        imgHeight
+      );
+      heightLeft -= pageHeight;
+
+      // Add additional pages if content is longer than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          10, // left margin
+          position + 10, // position plus top margin
+          imgWidth,
+          imgHeight
+        );
+        heightLeft -= pageHeight;
       }
 
-      // Add footer on last page
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(
-        'This report is for informational purposes only and should not replace professional medical advice.',
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
+      // Clean up
+      root.unmount();
+      document.body.removeChild(tempContainer);
 
       // Save the PDF using Tauri's file dialog
       const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -1115,6 +1119,7 @@ Consider genetic counseling if:
         });
         
         console.log('PDF saved successfully to:', savedPath);
+        console.log('PDF generated with full markdown styling preserved');
       } catch (error) {
         if (error !== 'Save cancelled by user') {
           console.error('Failed to save PDF:', error);
