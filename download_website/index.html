@@ -19,6 +19,12 @@
             background: #f9fafb;
             background: linear-gradient(135deg, #f9fafb 0%, #f0f4ff 100%);
         }
+        .video-container {
+            transform: rotate(0deg) !important;
+            transform-origin: center;
+            display: block;
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-white text-gray-800">
@@ -69,7 +75,7 @@
                         </div>
                     </div>
                     <div class="hidden md:block">
-                        <div class="bg-white p-2 rounded-xl shadow-2xl">
+                        <div class="bg-white p-2 rounded-xl shadow-2xl video-container">
                             <div class="aspect-video bg-gray-100 rounded-lg p-4 border border-gray-200">
                                 <video 
                                     class="rounded-md shadow-lg w-full h-full object-cover"
