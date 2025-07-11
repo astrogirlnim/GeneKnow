@@ -501,12 +501,6 @@ const UploadPage: React.FC = () => {
                 description="TP53 variant with low penetrance - protective factors identified"
                 onClick={() => handleMockDataSelect('low')}
               />
-              <MockTestCase
-                riskLevel="Confidence Check Skipped"
-                condition="Rare Variant Profile"
-                description="Unusual variant pattern outside validation scope"
-                onClick={() => handleMockDataSelect('skipped')}
-              />
             </div>
           </div>
         </div>
