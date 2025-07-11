@@ -201,7 +201,7 @@ def annotate_cnv(cnv: Dict) -> Dict:
 def process(state: Dict) -> Dict:
     """Detect and annotate CNVs"""
     logger.info("Starting CNV detection")
-    state["current_node"] = "cnv_detector"
+    # Don't set current_node to avoid concurrent updates
     
     try:
         # Get variants and genes
@@ -273,9 +273,6 @@ def process(state: Dict) -> Dict:
         annotated_cnvs.sort(key=lambda x: significance_order.get(
             x.get('clinical_significance', 'uncertain_significance'), 2))
         
-        # Update state
-        state['copy_number_variants'] = annotated_cnvs
-        
         # Summary statistics
         cnv_summary = {
             'total_cnvs': len(annotated_cnvs),
@@ -290,24 +287,30 @@ def process(state: Dict) -> Dict:
             'therapeutic_targets': [cnv['gene'] for cnv in annotated_cnvs 
                                   if cnv.get('therapeutic_relevance')]
         }
-        state['cnv_summary'] = cnv_summary
         
         # Add to completed nodes
         completed = state.get("completed_nodes", [])
         if "cnv_detector" not in completed:
             completed.append("cnv_detector")
-        state["completed_nodes"] = completed
         
         logger.info(f"Detected {len(annotated_cnvs)} CNVs")
         
+        # Return only the keys this node updates
+        return {
+            'copy_number_variants': annotated_cnvs,
+            'cnv_summary': cnv_summary,
+            'completed_nodes': completed
+        }
+        
     except Exception as e:
         logger.error(f"Error in CNV detection: {str(e)}")
-        state["errors"] = state.get("errors", []) + [{
+        errors = state.get("errors", []) + [{
             "node": "cnv_detector",
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }]
-        # Set empty results on error
-        state['copy_number_variants'] = []
-    
-    return state 
+        # Return only the keys this node updates
+        return {
+            'copy_number_variants': [],
+            'errors': errors
+        } 

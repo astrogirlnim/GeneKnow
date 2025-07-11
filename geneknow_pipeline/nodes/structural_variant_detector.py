@@ -246,7 +246,7 @@ def annotate_sv_impact(sv: Dict) -> Dict:
 def process(state: Dict) -> Dict:
     """Process structural variant detection"""
     logger.info("Starting structural variant detection")
-    state["current_node"] = "structural_variant_detector"
+    # Don't set current_node to avoid concurrent updates
     
     try:
         # Get variants
@@ -281,9 +281,6 @@ def process(state: Dict) -> Dict:
                 annotated_sv = annotate_sv_impact(sv)
                 unique_svs.append(annotated_sv)
         
-        # Update state
-        state['structural_variants'] = unique_svs
-        
         # Summary statistics
         sv_summary = {
             'total_svs': len(unique_svs),
@@ -294,24 +291,30 @@ def process(state: Dict) -> Dict:
                                 if sv.get('clinical_significance') in ['pathogenic', 'likely_pathogenic']),
             'gene_fusions': [sv.get('fusion_name') for sv in unique_svs if 'fusion_name' in sv]
         }
-        state['structural_variant_summary'] = sv_summary
         
         # Add to completed nodes
         completed = state.get("completed_nodes", [])
         if "structural_variant_detector" not in completed:
             completed.append("structural_variant_detector")
-        state["completed_nodes"] = completed
         
         logger.info(f"Detected {len(unique_svs)} structural variants")
         
+        # Return only the keys this node updates
+        return {
+            'structural_variants': unique_svs,
+            'structural_variant_summary': sv_summary,
+            'completed_nodes': completed
+        }
+        
     except Exception as e:
         logger.error(f"Error in structural variant detection: {str(e)}")
-        state["errors"] = state.get("errors", []) + [{
+        errors = state.get("errors", []) + [{
             "node": "structural_variant_detector",
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }]
-        # Set empty results on error
-        state['structural_variants'] = []
-    
-    return state 
+        # Return only the keys this node updates
+        return {
+            'structural_variants': [],
+            'errors': errors
+        } 
