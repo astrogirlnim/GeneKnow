@@ -130,7 +130,7 @@ class SHAPValidator:
         if not has_pathogenic_contributor:
             # Check if pathogenic variant exists in data
             has_pathogenic_variant = any(
-                v.get('clinvar_clinical_significance', '').lower() in ['pathogenic', 'likely pathogenic']
+                (v.get('clinvar_clinical_significance') or '').lower() in ['pathogenic', 'likely pathogenic']
                 for v in variant_data.get('filtered_variants', [])
             )
             
@@ -167,7 +167,7 @@ class SHAPValidator:
         # Check for pathogenic variants in the data
         pathogenic_variants = [
             v for v in variant_data.get('filtered_variants', [])
-            if v.get('clinvar_clinical_significance', '').lower() in ['pathogenic', 'likely pathogenic']
+            if (v.get('clinvar_clinical_significance') or '').lower() in ['pathogenic', 'likely pathogenic']
         ]
         
         if pathogenic_variants:

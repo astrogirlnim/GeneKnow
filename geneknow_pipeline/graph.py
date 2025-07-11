@@ -632,6 +632,17 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
     # Initialize the pipeline
     pipeline = create_genomic_pipeline()
 
+    # Clean preferences to remove non-serializable values (like callbacks)
+    if user_preferences is None:
+        user_preferences = {}
+    
+    # Create a copy and remove any non-serializable values
+    clean_preferences = {}
+    for key, value in user_preferences.items():
+        # Skip function objects and other non-serializable types
+        if not callable(value):
+            clean_preferences[key] = value
+
     # Prepare initial state
     initial_state = {
         "file_path": file_path,
@@ -693,10 +704,10 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "completed_nodes": [],
         "errors": [],
         "warnings": [],
-        "preferences": user_preferences,
-        "patient_data": user_preferences.get("patient_data", {}),
-        "include_technical_details": user_preferences.get("include_technical", True),
-        "language": user_preferences.get("language", "en"),
+        "preferences": clean_preferences,  # Use cleaned preferences
+        "patient_data": clean_preferences.get("patient_data", {}),
+        "include_technical_details": clean_preferences.get("include_technical", True),
+        "language": clean_preferences.get("language", "en"),
         "pipeline_start_time": datetime.now(),
     }
 
