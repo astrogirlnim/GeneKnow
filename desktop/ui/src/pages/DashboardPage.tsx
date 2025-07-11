@@ -198,7 +198,7 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
   </div>
 );
 
-// TEMPORARY: Mock SHAP validation for testing - different statuses for different risk levels
+// Mock SHAP validation for testing - different statuses for different risk levels
 const getMockSHAPValidation = (riskLevel: string) => {
   switch (riskLevel) {
     case 'high':

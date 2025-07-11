@@ -134,7 +134,6 @@ const mockValidations: Record<string, SHAPValidation> = {
 
 const ConfidenceCheckTest: React.FC = () => {
   const handleNavigate = () => {
-    console.log('Navigate to detailed view');
     alert('Would navigate to In-Depth Analysis');
   };
 

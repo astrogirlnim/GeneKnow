@@ -118,7 +118,6 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
   const config = getStateConfig(validation.status);
 
   const handleAcknowledge = () => {
-    console.log(`Confidence Check acknowledged: ${validation.status}`);
     setIsAcknowledged(true);
     setShowDetails(false); // Hide details when acknowledging
   };
