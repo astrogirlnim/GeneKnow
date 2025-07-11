@@ -144,10 +144,11 @@ def simulate_codon_context(variant: Dict) -> tuple:
         'MDM2': {'ref': 'GAT', 'alt': 'AAT'},  # SNP309 - common MDM2 variant
     }
     
-    if gene in cancer_gene_codons and len(ref) == 1 and len(alt) == 1:
+    # Handle known cancer genes with predefined codons (for both SNVs and complex variants)
+    if gene in cancer_gene_codons:
         return cancer_gene_codons[gene]['ref'], cancer_gene_codons[gene]['alt']
     
-    # For other variants, create plausible codons based on nucleotide change
+    # For simple SNVs, create plausible codons based on nucleotide change
     if len(ref) == 1 and len(alt) == 1:
         # Common codon templates for each nucleotide
         codon_templates = {
@@ -185,8 +186,18 @@ def simulate_codon_context(variant: Dict) -> tuple:
         
         return ref_codon, alt_codon
     
-    # For indels or complex variants, return empty (will be handled gracefully)
-    return '', ''
+    # For complex indels, try to provide meaningful context based on gene and variant type
+    if len(ref) != len(alt):
+        # This is an indel
+        if len(ref) > len(alt):
+            # Deletion - provide context for protein truncation
+            return 'DEL', 'FRAMESHIFT'
+        else:
+            # Insertion - provide context for protein extension/frameshift
+            return 'INS', 'FRAMESHIFT'
+    
+    # For complex substitutions, provide generic context
+    return 'COMPLEX', 'SUBSTITUTION'
 
 
 def get_protein_change(variant: Dict) -> Dict:
@@ -227,6 +238,37 @@ def get_protein_change(variant: Dict) -> Dict:
                 "effect": f"Protein change in {gene} requires further analysis"
             }
     
+    # Handle special codon types for complex variants
+    if ref_codon in ['DEL', 'INS', 'COMPLEX']:
+        gene = variant.get('gene', 'Unknown')
+        ref = variant.get('ref', '')
+        alt = variant.get('alt', '')
+        
+        if ref_codon == 'DEL':
+            size_change = len(ref) - len(alt)
+            return {
+                "original": f"{len(ref)}bp",
+                "mutated": f"{len(alt)}bp",
+                "amino_acid_change": f"Deletion ({size_change}bp)",
+                "effect": f"Deletion in {gene} - likely frameshift disrupting protein function"
+            }
+        elif ref_codon == 'INS':
+            size_change = len(alt) - len(ref)
+            return {
+                "original": f"{len(ref)}bp",
+                "mutated": f"{len(alt)}bp",
+                "amino_acid_change": f"Insertion ({size_change}bp)",
+                "effect": f"Insertion in {gene} - likely frameshift disrupting protein function"
+            }
+        elif ref_codon == 'COMPLEX':
+            return {
+                "original": f"{len(ref)}bp",
+                "mutated": f"{len(alt)}bp",
+                "amino_acid_change": f"Complex substitution",
+                "effect": f"Complex sequence change in {gene} - protein impact requires detailed analysis"
+            }
+    
+    # Handle normal codon translation
     ref_aa = CODON_TABLE.get(ref_codon, 'X')
     alt_aa = CODON_TABLE.get(alt_codon, 'X')
     
