@@ -138,6 +138,10 @@ logs/
 test_results_*.json
 cadd_test_report_*.json
 
+# Report generation output
+geneknow_pipeline/reports/
+reports/
+
 # Temporary files
 *.tmp
 *.temp
