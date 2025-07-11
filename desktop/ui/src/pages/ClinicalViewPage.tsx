@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
@@ -840,15 +840,154 @@ const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: {
   </div>
 );
 
-// Tooltip component for detailed alert information
-const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }) => (
+// Enhanced tooltip component with smart positioning
+const SmartTooltip = ({ content, isVisible, triggerRef }: { 
+  content: string; 
+  isVisible: boolean; 
+  triggerRef?: React.RefObject<HTMLDivElement> | null;
+}) => {
+  const [position, setPosition] = useState<'right' | 'above' | 'below'>('right');
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (isVisible && triggerRef?.current && tooltipRef.current) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Check if there's enough space to the right
+      const spaceToRight = viewportWidth - triggerRect.right;
+      const tooltipWidth = 288; // 18rem = 288px
+      
+      // Check if there's enough space above/below
+      const spaceAbove = triggerRect.top;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const tooltipHeight = 100; // Approximate height
+      
+      // Determine best position
+      if (spaceToRight >= tooltipWidth + 16) {
+        // Enough space to the right
+        setPosition('right');
+      } else if (spaceAbove >= tooltipHeight + 16) {
+        // Not enough space to right, but enough space above
+        setPosition('above');
+      } else if (spaceBelow >= tooltipHeight + 16) {
+        // Not enough space to right or above, try below
+        setPosition('below');
+      } else {
+        // Default to right if no good position found
+        setPosition('right');
+      }
+    }
+  }, [isVisible, triggerRef]);
+  
+  const getTooltipStyles = () => {
+    const baseStyles = {
+      position: 'absolute' as const,
+      width: '18rem',
+      padding: '0.75rem',
+      background: '#1F2937',
+      color: '#FFFFFF',
+      fontSize: '0.75rem',
+      borderRadius: '0.5rem',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+      opacity: isVisible ? 1 : 0,
+      visibility: isVisible ? 'visible' as const : 'hidden' as const,
+      transition: 'opacity 300ms ease, visibility 300ms ease',
+      zIndex: 1000,
+      pointerEvents: 'none' as const,
+      lineHeight: '1.4',
+      border: '1px solid #374151'
+    };
+    
+    switch (position) {
+      case 'right':
+        return {
+          ...baseStyles,
+          left: 'calc(100% + 0.5rem)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        };
+      case 'above':
+        return {
+          ...baseStyles,
+          left: '50%',
+          bottom: 'calc(100% + 0.5rem)',
+          transform: 'translateX(-50%)',
+        };
+      case 'below':
+        return {
+          ...baseStyles,
+          left: '50%',
+          top: 'calc(100% + 0.5rem)',
+          transform: 'translateX(-50%)',
+        };
+      default:
+        return baseStyles;
+    }
+  };
+  
+  const getArrowStyles = () => {
+    const baseArrowStyles = {
+      position: 'absolute' as const,
+      width: '0',
+      height: '0',
+    };
+    
+    switch (position) {
+      case 'right':
+        return {
+          ...baseArrowStyles,
+          left: '-0.5rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          borderTop: '0.5rem solid transparent',
+          borderBottom: '0.5rem solid transparent',
+          borderRight: '0.5rem solid #1F2937'
+        };
+      case 'above':
+        return {
+          ...baseArrowStyles,
+          left: '50%',
+          bottom: '-0.5rem',
+          transform: 'translateX(-50%)',
+          borderLeft: '0.5rem solid transparent',
+          borderRight: '0.5rem solid transparent',
+          borderTop: '0.5rem solid #1F2937'
+        };
+      case 'below':
+        return {
+          ...baseArrowStyles,
+          left: '50%',
+          top: '-0.5rem',
+          transform: 'translateX(-50%)',
+          borderLeft: '0.5rem solid transparent',
+          borderRight: '0.5rem solid transparent',
+          borderBottom: '0.5rem solid #1F2937'
+        };
+      default:
+        return baseArrowStyles;
+    }
+  };
+  
+  return (
+    <div ref={tooltipRef} style={getTooltipStyles()}>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
+      <div style={getArrowStyles()}></div>
+    </div>
+  );
+};
+
+// Legacy SectionTooltip component for backward compatibility
+const SectionTooltip = ({ content, isVisible }: { content: string; isVisible: boolean }) => (
   <div style={{
     position: 'absolute',
     left: 'calc(100% + 0.5rem)', // Position to the right of the icon
     top: '50%',
     transform: 'translateY(-50%)',
-    width: '20rem',
-    padding: '1rem',
+    width: '18rem',
+    padding: '0.75rem',
     background: '#1F2937',
     color: '#FFFFFF',
     fontSize: '0.75rem',
@@ -862,53 +1001,7 @@ const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }
     lineHeight: '1.4',
     border: '1px solid #374151'
   }}>
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        What it means:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whatItMeans}</p>
-    </div>
-    
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Why it's important:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whyImportant}</p>
-    </div>
-    
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Clinical significance:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.clinicalSignificance}</p>
-    </div>
-    
-    <div>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Next steps:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.nextSteps}</p>
-    </div>
+    <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
     
     {/* Tooltip arrow pointing to the left towards the "i" icon */}
     <div style={{
@@ -1019,29 +1112,75 @@ const mockDataSets = {
   }
 };
 
-// Generic tooltip component for section information
-const SectionTooltip = ({ content, isVisible }: { content: string; isVisible: boolean }) => (
+// Tooltip component for detailed alert information
+const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }) => (
   <div style={{
     position: 'absolute',
     left: 'calc(100% + 0.5rem)', // Position to the right of the icon
     top: '50%',
     transform: 'translateY(-50%)',
-    width: '18rem',
-    padding: '0.75rem',
+    width: '20rem',
+    padding: '1rem',
     background: '#1F2937',
     color: '#FFFFFF',
     fontSize: '0.75rem',
     borderRadius: '0.5rem',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     opacity: isVisible ? 1 : 0,
-    visibility: isVisible ? 'visible' : 'hidden',
+    visibility: isVisible ? 'visible' as const : 'hidden' as const,
     transition: 'opacity 300ms ease, visibility 300ms ease',
     zIndex: 1000,
-    pointerEvents: 'none',
+    pointerEvents: 'none' as const,
     lineHeight: '1.4',
     border: '1px solid #374151'
   }}>
-    <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        What it means:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whatItMeans}</p>
+    </div>
+    
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Why it's important:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whyImportant}</p>
+    </div>
+    
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Clinical significance:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.clinicalSignificance}</p>
+    </div>
+    
+    <div>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Next steps:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.nextSteps}</p>
+    </div>
     
     {/* Tooltip arrow pointing to the left towards the "i" icon */}
     <div style={{
@@ -1410,10 +1549,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Shows calculated cancer risk percentages based on genetic variants and pathway analysis. Each cancer type is assessed individually using machine learning models trained on population data and clinical outcomes."
-                      isVisible={hoveredTooltip === 'risk-assessment'} 
-                    />
+                    <SmartTooltip content="Shows calculated cancer risk percentages based on genetic variants and pathway analysis. Each cancer type is assessed individually using machine learning models trained on population data and clinical outcomes." isVisible={hoveredTooltip === 'risk-assessment'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -1522,10 +1658,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Manhattan plot showing statistical significance of genetic variants. Higher points indicate stronger associations with cancer risk. Red dots represent pathogenic variants, blue dots show variants under investigation."
-                      isVisible={hoveredTooltip === 'gene-significance'} 
-                    />
+                    <SmartTooltip content="Manhattan plot showing statistical significance of genetic variants. Higher points indicate stronger associations with cancer risk. Red dots represent pathogenic variants, blue dots show variants under investigation." isVisible={hoveredTooltip === 'gene-significance'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -1636,10 +1769,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Breakdown of mutation types found in the genetic analysis. SNVs (single nucleotide variants) are point mutations, INDELs are insertions/deletions, CNVs are copy number variations, and structural variants are large chromosomal rearrangements."
-                      isVisible={hoveredTooltip === 'mutation-types'} 
-                    />
+                    <SmartTooltip content="Breakdown of mutation types found in the genetic analysis. SNVs (single nucleotide variants) are point mutations, INDELs are insertions/deletions, CNVs are copy number variations, and structural variants are large chromosomal rearrangements." isVisible={hoveredTooltip === 'mutation-types'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -1735,10 +1865,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Mutational signatures reveal the underlying biological processes that caused DNA damage. Each signature represents a specific pattern of mutations caused by factors like aging, smoking, UV exposure, DNA repair defects, or chemotherapy. The percentage shows each signature's contribution to the overall mutational profile."
-                      isVisible={hoveredTooltip === 'mutational-signatures'} 
-                    />
+                    <SmartTooltip content="Mutational signatures reveal the underlying biological processes that caused DNA damage. Each signature represents a specific pattern of mutations caused by factors like aging, smoking, UV exposure, DNA repair defects, or chemotherapy. The percentage shows each signature's contribution to the overall mutational profile." isVisible={hoveredTooltip === 'mutational-signatures'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -1883,10 +2010,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Quality control metrics for the genomic analysis. Shows total variants found, those passing quality filters, high-risk findings requiring clinical attention, and processing time for the analysis pipeline."
-                      isVisible={hoveredTooltip === 'quality-metrics'} 
-                    />
+                    <SmartTooltip content="Quality control metrics for the genomic analysis. Shows total variants found, those passing quality filters, high-risk findings requiring clinical attention, and processing time for the analysis pipeline." isVisible={hoveredTooltip === 'quality-metrics'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -1968,10 +2092,7 @@ const ClinicalViewPage: React.FC = () => {
                     e.currentTarget.style.borderColor = '#D1D5DB';
                   }}
                 />
-                <SectionTooltip 
-                  content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns."
-                  isVisible={hoveredTooltip === 'variant-heatmap'} 
-                />
+                <SmartTooltip content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns." isVisible={hoveredTooltip === 'variant-heatmap'} triggerRef={null} />
               </div>
             </div>
             
@@ -2408,10 +2529,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SectionTooltip 
-                      content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments."
-                      isVisible={hoveredTooltip === 'detected-variants'} 
-                    />
+                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
                   </div>
                 </div>
                 <DownloadButton 
@@ -2461,10 +2579,39 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment."
-                              isVisible={hoveredTooltip === 'header-gene'} 
-                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              bottom: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              opacity: hoveredTooltip === 'header-gene' ? 1 : 0,
+                              visibility: hoveredTooltip === 'header-gene' ? 'visible' as const : 'hidden' as const,
+                              transition: 'opacity 300ms ease, visibility 300ms ease',
+                              zIndex: 1000,
+                              pointerEvents: 'none' as const,
+                              lineHeight: '1.4',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment.</p>
+                              <div style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '100%',
+                                transform: 'translateX(-50%)',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '0.5rem solid transparent',
+                                borderRight: '0.5rem solid transparent',
+                                borderTop: '0.5rem solid #1F2937'
+                              }}></div>
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2497,10 +2644,39 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Genomic coordinates and nucleotide change. Format: position:reference>alternate (e.g., 17:41223094:A>G). This uniquely identifies the DNA change."
-                              isVisible={hoveredTooltip === 'header-variant'} 
-                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              bottom: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
+                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
+                              transition: 'opacity 300ms ease, visibility 300ms ease',
+                              zIndex: 1000,
+                              pointerEvents: 'none' as const,
+                              lineHeight: '1.4',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference{'>'}alternate (e.g., 17:41223094:A{'>'}G). This uniquely identifies the DNA change.</p>
+                              <div style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '100%',
+                                transform: 'translateX(-50%)',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '0.5rem solid transparent',
+                                borderRight: '0.5rem solid transparent',
+                                borderTop: '0.5rem solid #1F2937'
+                              }}></div>
+                            </div>
                           </div>
                         </div>
                       </th>
@@ -2533,10 +2709,7 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications."
-                              isVisible={hoveredTooltip === 'header-type'} 
-                            />
+                            <SmartTooltip content="Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications." isVisible={hoveredTooltip === 'header-type'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
@@ -2569,10 +2742,7 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact."
-                              isVisible={hoveredTooltip === 'header-transformation'} 
-                            />
+                            <SmartTooltip content="Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact." isVisible={hoveredTooltip === 'header-transformation'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
@@ -2605,10 +2775,7 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Variant call quality score (0-100). Green (>90) = high confidence, Yellow (70-90) = moderate confidence, Red (<70) = low confidence. Score of 100 indicates variants that passed all quality filters."
-                              isVisible={hoveredTooltip === 'header-quality'} 
-                            />
+                            <SmartTooltip content="Variant call quality score (0-100). Green (>90) = high confidence, Yellow (70-90) = moderate confidence, Red (<70) = low confidence. Score of 100 indicates variants that passed all quality filters." isVisible={hoveredTooltip === 'header-quality'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
@@ -2641,10 +2808,7 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact."
-                              isVisible={hoveredTooltip === 'header-significance'} 
-                            />
+                            <SmartTooltip content="Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact." isVisible={hoveredTooltip === 'header-significance'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
@@ -2677,10 +2841,7 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <SectionTooltip 
-                              content="Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function."
-                              isVisible={hoveredTooltip === 'header-impact'} 
-                            />
+                            <SmartTooltip content="Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function." isVisible={hoveredTooltip === 'header-impact'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
@@ -3880,7 +4041,7 @@ const ClinicalViewPage: React.FC = () => {
                             e.currentTarget.style.borderColor = '#D1D5DB';
                           }}
                         />
-                        <AlertTooltip alert={alert} isVisible={hoveredAlert === index} />
+                                                 <AlertTooltip alert={alert} isVisible={hoveredAlert === index} />
                       </div>
                     </div>
                     <p style={{ fontSize: '0.75rem', opacity: 0.8, color: '#4B5563' }}>{alert.desc}</p>
