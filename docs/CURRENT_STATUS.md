@@ -1,4 +1,4 @@
-# Current Development Status - GenePredict
+# Current Development Status - GeneKnow
 
 ## Latest Activity: Logo/Icon Implementation (January 2025)
 
@@ -47,7 +47,7 @@
 
 #### Phase 4: Testing ⚠️ ISSUE IDENTIFIED
 **Problem**: Application still shows default orange/blue Tauri icon in macOS dock/tray
-**Expected**: Should show the new GenePredict logo (DNA helix design)
+**Expected**: Should show the new GeneKnow logo (DNA helix design)
 
 ### 🔧 Current Icon Architecture Analysis
 

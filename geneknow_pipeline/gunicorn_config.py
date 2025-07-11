@@ -30,12 +30,8 @@ else:
 bind = f"127.0.0.1:{port}"  # Only localhost for security
 backlog = 64
 
-# Write port to file if requested
-port_file = os.environ.get('PORT_FILE')
-if port_file:
-    with open(port_file, 'w') as f:
-        f.write(str(port))
-    print(f"API_SERVER_PORT:{port}")  # For process monitoring
+# Always announce the port to stdout for Rust backend to capture
+print(f"API_SERVER_PORT:{port}", flush=True)
 
 # Worker processes
 # For desktop app, 2-4 workers is optimal

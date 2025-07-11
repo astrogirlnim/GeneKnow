@@ -1,4 +1,4 @@
-# FASTQ to VCF Integration Guide for GenePredict
+# FASTQ to VCF Integration Guide for GeneKnow
 
 ## Overview
 

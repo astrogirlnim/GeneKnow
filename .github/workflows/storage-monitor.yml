@@ -175,7 +175,7 @@ jobs:
                \`\`\`
             
             ### Why This Happened
-            - Your GenePredict app creates ~900MB artifacts per release
+            - Your GeneKnow app creates ~900MB artifacts per release
             - Free plan only provides 500MB storage
             - Multiple releases exceeded the quota
             

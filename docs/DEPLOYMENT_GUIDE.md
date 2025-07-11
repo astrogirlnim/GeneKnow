@@ -1,6 +1,6 @@
-# 🚀 GenePredict Deployment Guide
+# 🚀 GeneKnow Deployment Guide
 
-This guide explains how to build, package, and distribute the GenePredict desktop application with its integrated Python pipeline server.
+This guide explains how to build, package, and distribute the GeneKnow desktop application with its integrated Python pipeline server.
 
 ## 📋 Table of Contents
 
@@ -14,7 +14,7 @@ This guide explains how to build, package, and distribute the GenePredict deskto
 
 ## 🏗️ Architecture Overview
 
-GenePredict consists of two main components that are bundled together:
+GeneKnow consists of two main components that are bundled together:
 
 ```mermaid
 graph TD
@@ -61,8 +61,8 @@ graph TD
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd LiteratureGapper
+git clone https://github.com/astrogirlnim/GeneKnow.git
+cd GeneKnow
 
 # Install frontend dependencies
 cd desktop/ui
@@ -121,7 +121,7 @@ This will:
 
 ### macOS
 
-**Output:** `desktop/src-tauri/target/release/bundle/dmg/GenePredict_x.x.x_<arch>.dmg`
+**Output:** `desktop/src-tauri/target/release/bundle/dmg/GeneKnow_x.x.x_<arch>.dmg`
 
 **Requirements:**
 - macOS 10.13+
@@ -135,7 +135,7 @@ pnpm run tauri-build -- --target universal-apple-darwin
 
 ### Windows
 
-**Output:** `desktop/src-tauri/target/release/bundle/msi/GenePredict_x.x.x_x64_en-US.msi`
+**Output:** `desktop/src-tauri/target/release/bundle/msi/GeneKnow_x.x.x_x64_en-US.msi`
 
 **Requirements:**
 - Windows 10/11
@@ -150,8 +150,8 @@ pnpm run tauri-build -- --target x86_64-pc-windows-msvc
 ### Linux
 
 **Output:** 
-- AppImage: `desktop/src-tauri/target/release/bundle/appimage/gene-predict_x.x.x_amd64.AppImage`
-- Debian: `desktop/src-tauri/target/release/bundle/deb/gene-predict_x.x.x_amd64.deb`
+- AppImage: `desktop/src-tauri/target/release/bundle/appimage/gene-know_x.x.x_amd64.AppImage`
+- Debian: `desktop/src-tauri/target/release/bundle/deb/gene-know_x.x.x_amd64.deb`
 
 **Requirements:**
 - Ubuntu 20.04+ or compatible
@@ -183,10 +183,10 @@ The project uses GitHub Actions for automated releases:
 2. **Notarization** (macOS)
    ```bash
    xcrun altool --notarize-app \
-     --primary-bundle-id "com.genepredict.app" \
+     --primary-bundle-id "com.geneknow.app" \
      --username "your-apple-id" \
      --password "app-specific-password" \
-     --file GenePredict.dmg
+            --file GeneKnow.dmg
    ```
 
 3. **Upload to Distribution Channels**
@@ -196,7 +196,7 @@ The project uses GitHub Actions for automated releases:
 
 ## 🎯 First-Run Experience
 
-When users first launch GenePredict:
+When users first launch GeneKnow:
 
 1. **Environment Check**
    - Verifies bundled Python runtime

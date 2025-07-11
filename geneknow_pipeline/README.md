@@ -297,4 +297,4 @@ The CADD scoring node provides offline variant deleteriousness predictions witho
 
 ## 📝 License
 
-Part of the LiteratureGapper/GeneKnow project. 
+Part of the GeneKnow project. 

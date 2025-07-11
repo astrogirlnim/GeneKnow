@@ -1,8 +1,8 @@
-# 🔖 GenePredict Versioning Guidelines
+# 🔖 GeneKnow Versioning Guidelines
 
 ## Overview
 
-This document outlines the versioning strategy for GenePredict to prevent tag conflicts and ensure smooth releases.
+This document outlines the versioning strategy for GeneKnow to prevent tag conflicts and ensure smooth releases.
 
 ## 🎯 Core Principles
 

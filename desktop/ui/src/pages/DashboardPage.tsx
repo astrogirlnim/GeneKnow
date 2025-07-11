@@ -15,6 +15,19 @@ interface MetricData {
   };
 }
 
+interface DisplayData {
+  probability: number;
+  hazardScore: string;
+  patient?: {
+    name: string;
+    condition: string;
+  };
+  riskLevel?: string;
+  condition?: string;
+  otherMetrics: MetricData[];
+  topCancerRisks: Array<[string, number]>;
+}
+
 // Icon components
 const InformationCircleIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -69,14 +82,64 @@ const ProbabilityCard = ({ value, tooltipContent }: { value: number; tooltipCont
       color: colors.text
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <h3 style={{ fontWeight: '600', fontSize: '1.125rem' }}>Risk Probability</h3>
+        <h3 style={{ fontWeight: '600', fontSize: '1.125rem' }}>Highest Cancer Risk</h3>
         <div style={{ position: 'relative' }} className="group">
           <InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-500" />
           <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
         </div>
       </div>
-      <p style={{ fontSize: '3rem', fontWeight: 'bold', marginTop: '0.5rem' }}>{value}%</p>
-      <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Probability of having this cancer type.</p>
+      <p style={{ fontSize: '3rem', fontWeight: 'bold', marginTop: '0.5rem' }}>{value.toFixed(1)}%</p>
+      <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Highest individual cancer type risk detected.</p>
+    </div>
+  );
+};
+
+// Hazard Score Card - Enhanced visual presentation
+const HazardScoreCard = ({ value, tooltipContent }: { value: string; tooltipContent: { content: string; link?: string } }) => {
+  const numValue = parseFloat(value);
+  const getHazardColor = (score: number) => {
+    if (score >= 2.0) return { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', level: 'High Risk' };
+    if (score >= 1.0) return { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', level: 'Moderate Risk' };
+    return { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', level: 'Low Risk' };
+  };
+
+  const colors = getHazardColor(numValue);
+
+  return (
+    <div style={{
+      padding: '1.5rem',
+      borderRadius: '0.75rem',
+      border: `1px solid ${colors.border}`,
+      backgroundColor: colors.bg,
+      color: colors.text
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <h3 style={{ fontWeight: '600', fontSize: '1.125rem' }}>Hazard Score</h3>
+        <div style={{ position: 'relative' }} className="group">
+          <InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-500" />
+          <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.5rem' }}>
+        <p style={{ fontSize: '3rem', fontWeight: 'bold' }}>{value}</p>
+        <p style={{ fontSize: '1.5rem', fontWeight: '500' }}>×</p>
+      </div>
+      <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>{colors.level} compared to baseline</p>
+      <div style={{
+        marginTop: '1rem',
+        height: '8px',
+        backgroundColor: colors.bg,
+        borderRadius: '4px',
+        overflow: 'hidden',
+        border: `1px solid ${colors.border}`
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${Math.min(numValue * 25, 100)}%`,
+          backgroundColor: colors.text,
+          transition: 'width 500ms ease'
+        }} />
+      </div>
     </div>
   );
 };
@@ -93,7 +156,8 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
     padding: '1rem',
     borderRadius: '0.75rem',
     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-    border: '1px solid #E5E7EB'
+    border: '1px solid #E5E7EB',
+    minWidth: 0, // Enable text truncation
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <h4 style={{ fontWeight: '600', color: '#4B5563' }}>{title}</h4>
@@ -102,19 +166,72 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
         <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
       </div>
     </div>
-    <p style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#111827', marginTop: '0.5rem' }}>
+    <p style={{ 
+      fontSize: '1.875rem', 
+      fontWeight: 'bold', 
+      color: '#111827', 
+      marginTop: '0.5rem',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
+    }}>
       {value} <span style={{ fontSize: '1.25rem', fontWeight: '500', color: '#6B7280' }}>{unit}</span>
     </p>
   </div>
 );
 
+// Filename Card with dynamic font sizing
+const FilenameCard = ({ filename, tooltipContent }: { 
+  filename: string; 
+  tooltipContent: { content: string; link?: string } 
+}) => {
+  const fontSize = React.useMemo(() => {
+    // Calculate font size based on filename length
+    if (filename.length <= 15) return '1.875rem';
+    if (filename.length <= 25) return '1.5rem';
+    if (filename.length <= 35) return '1.25rem';
+    if (filename.length <= 45) return '1rem';
+    return '0.875rem'; // Minimum size for very long filenames
+  }, [filename]);
+
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      padding: '1rem',
+      borderRadius: '0.75rem',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+      border: '1px solid #E5E7EB',
+      minWidth: 0,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ fontWeight: '600', color: '#4B5563' }}>File Analyzed</h4>
+        <div style={{ position: 'relative' }} className="group">
+          <InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-400" />
+          <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
+        </div>
+      </div>
+      <p style={{ 
+        fontSize,
+        fontWeight: 'bold', 
+        color: '#111827', 
+        marginTop: '0.5rem',
+        wordBreak: 'break-all',
+        lineHeight: '1.2'
+      }}>
+        {filename}
+      </p>
+    </div>
+  );
+};
+
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
     probability: 82,
-    hazardScore: 2.4,
+    hazardScore: "2.4",
     riskLevel: 'High Risk',
     condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
+    topCancerRisks: [['breast', 82], ['ovarian', 45]] as Array<[string, number]>,
     otherMetrics: [
       { 
         id: 1, 
@@ -200,9 +317,10 @@ const mockDataSets = {
   },
   medium: {
     probability: 45,
-    hazardScore: 1.8,
+    hazardScore: "1.8",
     riskLevel: 'Medium Risk',
     condition: 'Lynch Syndrome',
+    topCancerRisks: [['colon', 45], ['endometrial', 28]] as Array<[string, number]>,
     otherMetrics: [
       { 
         id: 1, 
@@ -288,9 +406,10 @@ const mockDataSets = {
   },
   low: {
     probability: 15,
-    hazardScore: 0.9,
+    hazardScore: "0.9",
     riskLevel: 'Low Risk',
     condition: 'Li-Fraumeni Syndrome',
+    topCancerRisks: [] as Array<[string, number]>,
     otherMetrics: [
       { 
         id: 1, 
@@ -378,7 +497,7 @@ const mockDataSets = {
 
 const baseTooltips = {
   probability: { 
-    content: "This score represents the likelihood of a specific cancer type based on the genetic markers found.", 
+    content: "This shows the highest individual cancer type risk detected in your genetic analysis. Each cancer type has its own separate risk percentage.", 
     link: "#" 
   },
   hazardScore: { 
@@ -402,7 +521,7 @@ const DashboardPage: React.FC = () => {
   const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
   
   // Use real data if available, otherwise use mock data
-  const displayData = React.useMemo(() => {
+  const displayData: DisplayData = React.useMemo(() => {
     if (pipelineResults) {
       // Extract the highest risk score for display
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
@@ -412,26 +531,23 @@ const DashboardPage: React.FC = () => {
       );
       
       // Use pipeline results directly (already in percentage format)
-      const probability = Math.round(highestRisk.score);
+      const probability = parseFloat(highestRisk.score.toFixed(1));
       const hazardScore = highestRisk.score ? (highestRisk.score / 100 * 3).toFixed(1) : "0.0"; // Convert from percentage to hazard score scale
       
       // Extract key metrics from the pipeline results
       const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
       const variantCount = pipelineResults.variant_count || 0;
       
+      // Sort cancer risks by score and filter out baseline risks
+      const BASELINE_THRESHOLD = 5.0; // Only show risks above 5%
+      const topCancerRisks = riskScores
+        .filter(([, score]) => score > BASELINE_THRESHOLD)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // Show top 10 risks above threshold
+      
       const otherMetrics: MetricData[] = [
         {
           id: 1,
-          title: "Highest Risk Cancer",
-          value: highestRisk.cancer || "None detected",
-          unit: "",
-          tooltipContent: {
-            content: "The cancer type with the highest predicted risk based on genetic analysis.",
-            link: "#"
-          }
-        },
-        {
-          id: 2,
           title: "Total Variants",
           value: variantCount,
           unit: "found",
@@ -441,22 +557,12 @@ const DashboardPage: React.FC = () => {
           }
         },
         {
-          id: 3,
+          id: 2,
           title: "Processing Time",
           value: pipelineResults.processing_time_seconds ? pipelineResults.processing_time_seconds.toFixed(1) : "N/A",
           unit: pipelineResults.processing_time_seconds ? "seconds" : "",
           tooltipContent: {
             content: "Time taken to process and analyze the genomic data.",
-            link: "#"
-          }
-        },
-        {
-          id: 4,
-          title: "File Analyzed",
-          value: fileName || "Unknown",
-          unit: "",
-          tooltipContent: {
-            content: "The genomic file that was analyzed.",
             link: "#"
           }
         }
@@ -466,7 +572,7 @@ const DashboardPage: React.FC = () => {
       if (keyVariants.length > 0) {
         keyVariants.forEach((variant, index) => {
           otherMetrics.push({
-            id: 5 + index,
+            id: 4 + index,
             title: `Variant ${index + 1}`,
             value: variant.gene,
             unit: variant.type,
@@ -478,31 +584,15 @@ const DashboardPage: React.FC = () => {
         });
       }
       
-      // Add risk scores for other cancer types
-      let metricId = 8;
-      riskScores.forEach(([cancer, score]) => {
-        if (cancer !== highestRisk.cancer) {
-          otherMetrics.push({
-            id: metricId++,
-            title: `${cancer} Risk`,
-            value: score ? score.toFixed(1) : "0.0",
-            unit: "%",
-            tooltipContent: {
-              content: `Predicted risk score for ${cancer}.`,
-              link: "#"
-            }
-          });
-        }
-      });
-      
       return {
         probability,
         hazardScore,
         patient: { 
           name: fileName || 'Analyzed Sample', 
-          condition: `${highestRisk.cancer} - ${probability}% risk` 
+          condition: `${highestRisk.cancer} - ${probability.toFixed(1)}% risk` 
         },
-        otherMetrics
+        otherMetrics,
+        topCancerRisks // New field for cancer risks
       };
     } else {
       // Use mock data
@@ -552,7 +642,7 @@ const DashboardPage: React.FC = () => {
               {pipelineResults && (
                 <p style={{
                   fontSize: '0.875rem',
-                  color: '#6B7280',
+                  color: '#374151',
                   marginTop: '0.25rem'
                 }}>
                   Analysis completed for: {fileName}
@@ -621,7 +711,7 @@ const DashboardPage: React.FC = () => {
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               border: '1px solid #E5E7EB'
             }}>
-              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem' }}>
+              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem', color: '#111827' }}>
                 Analysis Report
               </h3>
               {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
@@ -864,7 +954,7 @@ const DashboardPage: React.FC = () => {
           {/* Headline Metrics */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: fileName ? 'repeat(auto-fit, minmax(320px, 1fr))' : 'repeat(auto-fit, minmax(350px, 1fr))',
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
@@ -872,13 +962,144 @@ const DashboardPage: React.FC = () => {
               value={displayData.probability} 
               tooltipContent={baseTooltips.probability} 
             />
-            <MetricCard 
-              title="Hazard Score" 
+            <HazardScoreCard 
               value={displayData.hazardScore} 
-              unit="" 
               tooltipContent={baseTooltips.hazardScore} 
             />
+            {fileName && (
+              <FilenameCard 
+                filename={fileName} 
+                tooltipContent={{ content: `Full filename: ${fileName}`, link: "#" }} 
+              />
+            )}
           </div>
+
+          {/* Cancer Risk Assessment - Only show if we have real pipeline results */}
+          {pipelineResults && (
+            <div style={{
+              marginBottom: '2rem',
+              padding: '1.5rem',
+              background: '#FFFFFF',
+              borderRadius: '0.75rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              border: '1px solid #E5E7EB'
+            }}>
+              <h3 style={{ 
+                fontWeight: '600', 
+                fontSize: '1.25rem', 
+                marginBottom: '1rem',
+                color: '#111827'
+              }}>
+                Cancer Risk Assessment
+              </h3>
+              
+              {displayData.topCancerRisks && displayData.topCancerRisks.length > 0 ? (
+                <>
+                  <p style={{ 
+                    color: '#6B7280', 
+                    marginBottom: '1rem',
+                    fontSize: '0.875rem'
+                  }}>
+                    Showing cancer types with elevated risk (above 5% baseline)
+                  </p>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '1rem'
+                  }}>
+                    {displayData.topCancerRisks.map(([cancer, score]: [string, number]) => {
+                      const getRiskColor = (risk: number) => {
+                        if (risk >= 30) return '#DC2626'; // Red for high risk
+                        if (risk >= 15) return '#F59E0B'; // Amber for medium risk
+                        return '#059669'; // Green for lower risk
+                      };
+                      
+                      const getRiskLevel = (risk: number) => {
+                        if (risk >= 30) return 'High';
+                        if (risk >= 15) return 'Moderate';
+                        return 'Slightly Elevated';
+                      };
+                      
+                      return (
+                        <div key={cancer} style={{
+                          padding: '1rem',
+                          borderRadius: '0.5rem',
+                          background: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div>
+                            <p style={{ 
+                              fontWeight: '600',
+                              color: '#374151',
+                              textTransform: 'capitalize',
+                              marginBottom: '0.25rem'
+                            }}>
+                              {cancer}
+                            </p>
+                            <p style={{ 
+                              fontSize: '0.75rem',
+                              color: getRiskColor(score)
+                            }}>
+                              {getRiskLevel(score)} Risk
+                            </p>
+                          </div>
+                          <p style={{ 
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            color: getRiskColor(score)
+                          }}>
+                            {score.toFixed(1)}%
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {displayData.topCancerRisks.length <= 2 && (
+                    <p style={{ 
+                      color: '#6B7280', 
+                      marginTop: '1rem',
+                      fontSize: '0.875rem',
+                      fontStyle: 'italic'
+                    }}>
+                      Other cancer types are within normal baseline risk levels.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: '#F0FDF4',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #BBF7D0'
+                }}>
+                  <div style={{ 
+                    fontSize: '3rem',
+                    marginBottom: '0.5rem'
+                  }}>
+                    ✅
+                  </div>
+                  <p style={{ 
+                    color: '#166534',
+                    fontWeight: '600',
+                    fontSize: '1.125rem'
+                  }}>
+                    No Elevated Cancer Risks Detected
+                  </p>
+                  <p style={{ 
+                    color: '#15803D',
+                    marginTop: '0.5rem',
+                    fontSize: '0.875rem'
+                  }}>
+                    All cancer risk scores are within normal baseline levels (below 5%)
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Other Metrics Grid */}
           <div style={{

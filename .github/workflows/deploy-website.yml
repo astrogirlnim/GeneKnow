@@ -90,4 +90,4 @@ jobs:
           echo "- ✅ Responsive design on mobile" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
+          echo "🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 

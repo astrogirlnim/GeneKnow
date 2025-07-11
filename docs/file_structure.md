@@ -1,11 +1,11 @@
-# 📁 GenePredict File Structure Documentation
+# 📁 GeneKnow File Structure Documentation
 
 ## Project Overview
-This document outlines the complete file structure for the GenePredict project, including all directories and their purposes.
+This document outlines the complete file structure for the GeneKnow project, including all directories and their purposes.
 
 ## Root Directory Structure
 ```
-LiteratureGapper/
+GeneKnow/
 ├── .cursor/                    # Cursor IDE configuration and rules
 ├── .git/                       # Git repository data
 ├── .github/                    # GitHub Actions workflows and templates
@@ -170,3 +170,8 @@ LiteratureGapper/
 - Cache and temporary files
 
 This structure supports the project's privacy-first, local-processing architecture while maintaining clear organization and scalability. 
+
+## Repository Information
+- **GitHub Repository**: https://github.com/astrogirlnim/GeneKnow
+- **Main Branch**: `main`
+- **Clone Command**: `git clone https://github.com/astrogirlnim/GeneKnow.git` 

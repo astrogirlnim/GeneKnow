@@ -248,7 +248,7 @@ jobs:
           COMMITS=$(git log --oneline --no-merges "$LAST_TAG"..HEAD --pretty=format:"- %s" | head -20)
           
           CHANGELOG=$(cat << EOF
-          ## 🧬 GenePredict Release $NEW_VERSION
+          ## 🧬 GeneKnow Release $NEW_VERSION
           
           ### 📋 What's New
           - Automated release build for desktop application
@@ -820,7 +820,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.version.outputs.tag }}
-          name: 🧬 GenePredict ${{ needs.version.outputs.version }}
+          name: 🧬 GeneKnow ${{ needs.version.outputs.version }}
           body: ${{ needs.version.outputs.changelog }}
           draft: false
           prerelease: false
@@ -832,7 +832,7 @@ jobs:
 
       - name: 📋 Release summary
         run: |
-          echo "# 🧬 GenePredict Release ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "# 🧬 GeneKnow Release ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -851,4 +851,4 @@ jobs:
           echo "- [📥 Download Page](https://github.com/${{ github.repository }}/releases/latest)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "🧬 **GenePredict** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
+          echo "🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
