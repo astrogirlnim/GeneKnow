@@ -140,7 +140,13 @@ def convert_numpy_types(obj):
     
     # Handle dictionaries
     if isinstance(obj, dict):
-        return {k: convert_numpy_types(v) for k, v in obj.items()}
+        converted = {}
+        for k, v in obj.items():
+            # Skip non-serializable keys like ML model instances
+            if k in ['ml_fusion_model_instance', 'ml_fusion_feature_matrix']:
+                continue  # Skip these ML objects that can't be serialized
+            converted[k] = convert_numpy_types(v)
+        return converted
     
     # Handle lists and tuples
     elif isinstance(obj, (list, tuple)):

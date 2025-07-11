@@ -180,50 +180,6 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
   </div>
 );
 
-// Filename Card with dynamic font sizing
-const FilenameCard = ({ filename, tooltipContent }: { 
-  filename: string; 
-  tooltipContent: { content: string; link?: string } 
-}) => {
-  const fontSize = React.useMemo(() => {
-    // Calculate font size based on filename length
-    if (filename.length <= 15) return '1.875rem';
-    if (filename.length <= 25) return '1.5rem';
-    if (filename.length <= 35) return '1.25rem';
-    if (filename.length <= 45) return '1rem';
-    return '0.875rem'; // Minimum size for very long filenames
-  }, [filename]);
-
-  return (
-    <div style={{
-      background: '#FFFFFF',
-      padding: '1rem',
-      borderRadius: '0.75rem',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-      border: '1px solid #E5E7EB',
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ fontWeight: '600', color: '#4B5563' }}>File Analyzed</h4>
-        <div style={{ position: 'relative' }} className="group">
-          <InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-400" />
-          <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
-        </div>
-      </div>
-      <p style={{ 
-        fontSize,
-        fontWeight: 'bold', 
-        color: '#111827', 
-        marginTop: '0.5rem',
-        wordBreak: 'break-all',
-        lineHeight: '1.2'
-      }}>
-        {filename}
-      </p>
-    </div>
-  );
-};
-
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
@@ -645,7 +601,7 @@ const DashboardPage: React.FC = () => {
                   color: '#374151',
                   marginTop: '0.25rem'
                 }}>
-                  Analysis completed for: {fileName}
+                  Analysis completed.
                 </p>
               )}
             </div>
@@ -741,220 +697,10 @@ const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Comprehensive Metrics Section */}
-          {pipelineResults && pipelineResults.structured_json && pipelineResults.structured_json.metrics && (
-            <div style={{
-              marginBottom: '2rem',
-              padding: '1.5rem',
-              background: '#FFFFFF',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem' }}>
-                📊 Comprehensive Metrics
-              </h3>
-              
-              {/* Metrics Summary */}
-              {pipelineResults.structured_json.metrics_summary && (
-                <div style={{ 
-                  marginBottom: '1.5rem', 
-                  padding: '1rem',
-                  background: '#F9FAFB',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #E5E7EB'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem' }}>
-                    Summary
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <div>
-                      <span style={{ fontWeight: '500' }}>Highest Risk Cancer: </span>
-                      <span style={{ color: '#DC2626', fontWeight: '600' }}>
-                        {pipelineResults.structured_json.metrics_summary.highest_risk_cancer}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ fontWeight: '500' }}>Risk Score: </span>
-                      <span style={{ color: '#DC2626', fontWeight: '600' }}>
-                        {pipelineResults.structured_json.metrics_summary.highest_risk_score}%
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ fontWeight: '500' }}>Pathogenic Variants: </span>
-                      <span style={{ color: '#EF4444', fontWeight: '600' }}>
-                        {pipelineResults.structured_json.metrics_summary.pathogenic_variant_count}
-                      </span>
-                    </div>
-                    <div>
-                      <span style={{ fontWeight: '500' }}>Confidence Level: </span>
-                      <span style={{ 
-                        color: pipelineResults.structured_json.metrics_summary.confidence_level === 'high' ? '#22C55E' : 
-                               pipelineResults.structured_json.metrics_summary.confidence_level === 'medium' ? '#F59E0B' : '#EF4444',
-                        fontWeight: '600'
-                      }}>
-                        {pipelineResults.structured_json.metrics_summary.confidence_level}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Detailed Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                
-                {/* Variant Metrics */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#F0F9FF',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #BAE6FD'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#0369A1' }}>
-                    🧬 Variant Analysis
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>Total Variants: <strong>{pipelineResults.structured_json.metrics.variant_metrics.total_variants}</strong></div>
-                    <div>Pathogenic: <strong style={{ color: '#DC2626' }}>{pipelineResults.structured_json.metrics.variant_metrics.pathogenic_variants}</strong></div>
-                    <div>Uncertain: <strong style={{ color: '#F59E0B' }}>{pipelineResults.structured_json.metrics.variant_metrics.uncertain_variants}</strong></div>
-                    <div>High CADD Score: <strong>{pipelineResults.structured_json.metrics.variant_metrics.high_cadd_variants}</strong></div>
-                    <div>Genes Affected: <strong>{pipelineResults.structured_json.metrics.variant_metrics.genes_affected}</strong></div>
-                    {pipelineResults.structured_json.metrics.variant_metrics.mean_cadd_score > 0 && (
-                      <div>Mean CADD Score: <strong>{pipelineResults.structured_json.metrics.variant_metrics.mean_cadd_score.toFixed(2)}</strong></div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Confidence Metrics */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#F0FDF4',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #BBF7D0'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#166534' }}>
-                    🎯 Model Confidence
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>Model Confidence: <strong>{(pipelineResults.structured_json.metrics.confidence_metrics.mean_model_confidence * 100).toFixed(1)}%</strong></div>
-                    <div>ML Fusion Confidence: <strong>{(pipelineResults.structured_json.metrics.confidence_metrics.ml_fusion_confidence * 100).toFixed(1)}%</strong></div>
-                    <div>Risk Score Range: <strong>{pipelineResults.structured_json.metrics.confidence_metrics.risk_score_range.toFixed(1)}%</strong></div>
-                  </div>
-                </div>
-
-                {/* PRS Metrics */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#FEF3C7',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #FCD34D'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#92400E' }}>
-                    🧮 Polygenic Risk Score
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>Max PRS Percentile: <strong>{pipelineResults.structured_json.metrics.prs_metrics.max_prs_percentile}%</strong></div>
-                    <div>Mean PRS Score: <strong>{pipelineResults.structured_json.metrics.prs_metrics.mean_prs_score.toFixed(3)}</strong></div>
-                    <div>Overall Confidence: <strong>{pipelineResults.structured_json.metrics.prs_metrics.overall_confidence}</strong></div>
-                  </div>
-                </div>
-
-                {/* Pathway Metrics */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#FDF4FF',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #E9D5FF'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#7C3AED' }}>
-                    🛤️ Pathway Analysis
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>High Burden Pathways: <strong>{pipelineResults.structured_json.metrics.pathway_metrics.high_burden_pathway_count}</strong></div>
-                    <div>Mean Pathway Burden: <strong>{pipelineResults.structured_json.metrics.pathway_metrics.mean_pathway_burden.toFixed(3)}</strong></div>
-                    <div>Risk Level: <strong>{pipelineResults.structured_json.metrics.pathway_metrics.pathway_risk_level}</strong></div>
-                  </div>
-                </div>
-
-                {/* Overall Assessment */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#FEF2F2',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #FECACA'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#DC2626' }}>
-                    ⚡ Overall Assessment
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>High-Risk Cancers: <strong>{pipelineResults.structured_json.metrics.overall_assessment.high_risk_cancers.join(', ')}</strong></div>
-                    <div>Max Risk Score: <strong>{pipelineResults.structured_json.metrics.overall_assessment.max_risk_score.toFixed(1)}%</strong></div>
-                    <div>Clinical Action Needed: <strong style={{ color: pipelineResults.structured_json.metrics.overall_assessment.clinical_action_needed ? '#DC2626' : '#22C55E' }}>
-                      {pipelineResults.structured_json.metrics.overall_assessment.clinical_action_needed ? 'Yes' : 'No'}
-                    </strong></div>
-                    <div>Risk Category: <strong>{pipelineResults.structured_json.metrics.overall_assessment.risk_category}</strong></div>
-                  </div>
-                </div>
-
-                {/* Performance Indicators */}
-                <div style={{ 
-                  padding: '1rem',
-                  background: '#F8FAFC',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #E2E8F0'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#475569' }}>
-                    ⚙️ Performance Indicators
-                  </h4>
-                  <div style={{ fontSize: '0.875rem', lineHeight: '1.4' }}>
-                    <div>Variant Coverage: <strong style={{ color: pipelineResults.structured_json.metrics.performance_indicators.variant_coverage ? '#22C55E' : '#EF4444' }}>
-                      {pipelineResults.structured_json.metrics.performance_indicators.variant_coverage ? 'Adequate' : 'Limited'}
-                    </strong></div>
-                    <div>Model Confidence: <strong style={{ color: pipelineResults.structured_json.metrics.performance_indicators.model_confidence_adequate ? '#22C55E' : '#EF4444' }}>
-                      {pipelineResults.structured_json.metrics.performance_indicators.model_confidence_adequate ? 'Adequate' : 'Limited'}
-                    </strong></div>
-                    <div>Evidence Sufficiency: <strong style={{ color: pipelineResults.structured_json.metrics.performance_indicators.sufficient_evidence ? '#22C55E' : '#EF4444' }}>
-                      {pipelineResults.structured_json.metrics.performance_indicators.sufficient_evidence ? 'Sufficient' : 'Insufficient'}
-                    </strong></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Validation Metrics (if available) */}
-              {pipelineResults.structured_json.metrics.validation_metrics.ground_truth_available && (
-                <div style={{ 
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  background: '#F3F4F6',
-                  borderRadius: '0.5rem',
-                  border: '1px solid #D1D5DB'
-                }}>
-                  <h4 style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.5rem', color: '#374151' }}>
-                    🔬 Validation Metrics
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', fontSize: '0.875rem' }}>
-                    {pipelineResults.structured_json.metrics.validation_metrics.auc_roc && (
-                      <div>AUC-ROC: <strong>{pipelineResults.structured_json.metrics.validation_metrics.auc_roc.toFixed(3)}</strong></div>
-                    )}
-                    {pipelineResults.structured_json.metrics.validation_metrics.sensitivity && (
-                      <div>Sensitivity: <strong>{pipelineResults.structured_json.metrics.validation_metrics.sensitivity.toFixed(3)}</strong></div>
-                    )}
-                    {pipelineResults.structured_json.metrics.validation_metrics.specificity && (
-                      <div>Specificity: <strong>{pipelineResults.structured_json.metrics.validation_metrics.specificity.toFixed(3)}</strong></div>
-                    )}
-                    {pipelineResults.structured_json.metrics.validation_metrics.f1_score && (
-                      <div>F1 Score: <strong>{pipelineResults.structured_json.metrics.validation_metrics.f1_score.toFixed(3)}</strong></div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Headline Metrics */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: fileName ? 'repeat(auto-fit, minmax(320px, 1fr))' : 'repeat(auto-fit, minmax(350px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
@@ -966,12 +712,6 @@ const DashboardPage: React.FC = () => {
               value={displayData.hazardScore} 
               tooltipContent={baseTooltips.hazardScore} 
             />
-            {fileName && (
-              <FilenameCard 
-                filename={fileName} 
-                tooltipContent={{ content: `Full filename: ${fileName}`, link: "#" }} 
-              />
-            )}
           </div>
 
           {/* Cancer Risk Assessment - Only show if we have real pipeline results */}

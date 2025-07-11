@@ -1359,7 +1359,7 @@ const ClinicalViewPage: React.FC = () => {
                 border: '1px solid #BFDBFE'
               }}>
                 <p style={{ color: '#1E40AF', fontSize: '0.875rem', fontWeight: '500' }}>
-                  Analysis completed for: {fileName || 'Uploaded file'}
+                  Analysis completed.
                 </p>
               </div>
             )}
@@ -2841,7 +2841,7 @@ const ClinicalViewPage: React.FC = () => {
         padding: '2rem 0'
       }}>
         <div style={{ 
-          maxWidth: '1400px',
+          maxWidth: '1200px',
           margin: '0 auto',
           padding: '0 1.5rem'
         }}>
@@ -2868,33 +2868,25 @@ const ClinicalViewPage: React.FC = () => {
                 Comprehensive genomic analysis • {currentData.riskLevel}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <button 
-                onClick={() => {
-                  if (pipelineResults) {
-                    // Navigate back with actual pipeline results
-                    navigate('/dashboard', { state: { results: pipelineResults, fileName } });
-                  } else {
-                    // Navigate back with mock data parameter
-                    navigate(`/dashboard?risk=${riskLevel}`);
-                  }
-                }}
+            <div>
+              <button
+                onClick={() => navigate('/dashboard')}
                 style={{
-                  padding: '0.5rem 1rem',
-                  background: '#E5E7EB',
-                  color: '#374151',
+                  padding: '0.5rem 1.25rem',
+                  color: '#FFFFFF',
+                  background: '#2563EB',
                   border: 'none',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
+                  borderRadius: '0.5rem',
                   cursor: 'pointer',
-                  transition: 'all 200ms ease'
+                  transition: 'all 200ms ease',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#D1D5DB';
+                  e.currentTarget.style.background = '#1D4ED8';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#E5E7EB';
+                  e.currentTarget.style.background = '#2563EB';
                 }}
               >
                 Back to Dashboard
@@ -2902,7 +2894,11 @@ const ClinicalViewPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'minmax(280px, 320px) 1fr', 
+            gap: '1.5rem' 
+          }}>
             {/* Sidebar */}
             <div style={{
               background: '#FFFFFF',
