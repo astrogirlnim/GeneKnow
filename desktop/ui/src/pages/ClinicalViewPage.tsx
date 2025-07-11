@@ -1019,6 +1019,45 @@ const mockDataSets = {
   }
 };
 
+// Generic tooltip component for section information
+const SectionTooltip = ({ content, isVisible }: { content: string; isVisible: boolean }) => (
+  <div style={{
+    position: 'absolute',
+    left: 'calc(100% + 0.5rem)', // Position to the right of the icon
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '18rem',
+    padding: '0.75rem',
+    background: '#1F2937',
+    color: '#FFFFFF',
+    fontSize: '0.75rem',
+    borderRadius: '0.5rem',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    opacity: isVisible ? 1 : 0,
+    visibility: isVisible ? 'visible' : 'hidden',
+    transition: 'opacity 300ms ease, visibility 300ms ease',
+    zIndex: 1000,
+    pointerEvents: 'none',
+    lineHeight: '1.4',
+    border: '1px solid #374151'
+  }}>
+    <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
+    
+    {/* Tooltip arrow pointing to the left towards the "i" icon */}
+    <div style={{
+      position: 'absolute',
+      left: '-0.5rem',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: '0',
+      height: '0',
+      borderTop: '0.5rem solid transparent',
+      borderBottom: '0.5rem solid transparent',
+      borderRight: '0.5rem solid #1F2937'
+    }}></div>
+  </div>
+);
+
 const ClinicalViewPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1026,6 +1065,7 @@ const ClinicalViewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analysis');
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
+  const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
   
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
@@ -1297,14 +1337,42 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Cancer Risk Assessment
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Cancer Risk Assessment
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('risk-assessment')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Shows calculated cancer risk percentages based on genetic variants and pathway analysis. Each cancer type is assessed individually using machine learning models trained on population data and clinical outcomes."
+                      isVisible={hoveredTooltip === 'risk-assessment'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="cancer-risk-assessment"
                   title="Cancer Risk Assessment"
@@ -1381,14 +1449,42 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Gene Significance Analysis
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Gene Significance Analysis
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('gene-significance')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Manhattan plot showing statistical significance of genetic variants. Higher points indicate stronger associations with cancer risk. Red dots represent pathogenic variants, blue dots show variants under investigation."
+                      isVisible={hoveredTooltip === 'gene-significance'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="gene-significance-analysis"
                   title="Gene Significance Analysis"
@@ -1467,14 +1563,42 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Mutation Type Distribution
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Mutation Type Distribution
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('mutation-types')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Breakdown of mutation types found in the genetic analysis. SNVs (single nucleotide variants) are point mutations, INDELs are insertions/deletions, CNVs are copy number variations, and structural variants are large chromosomal rearrangements."
+                      isVisible={hoveredTooltip === 'mutation-types'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="mutation-type-distribution"
                   title="Mutation Type Distribution"
@@ -1658,14 +1782,42 @@ const ClinicalViewPage: React.FC = () => {
               border: '1px solid #E5E7EB'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Analysis Quality Metrics
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Analysis Quality Metrics
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('quality-metrics')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Quality control metrics for the genomic analysis. Shows total variants found, those passing quality filters, high-risk findings requiring clinical attention, and processing time for the analysis pipeline."
+                      isVisible={hoveredTooltip === 'quality-metrics'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="quality-metrics"
                   title="Analysis Quality Metrics"
@@ -1714,14 +1866,43 @@ const ClinicalViewPage: React.FC = () => {
             maxWidth: '100%', // Ensure content doesn't exceed container width
             overflow: 'hidden' // Prevent horizontal overflow
           }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               marginBottom: '1.5rem'
             }}>
-              Variant Heatmap Analysis
-            </h2>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
+              }}>
+                Variant Heatmap Analysis
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('variant-heatmap')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SectionTooltip 
+                  content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns."
+                  isVisible={hoveredTooltip === 'variant-heatmap'} 
+                />
+              </div>
+            </div>
             
             {/* Gene-Cancer Type Heatmap */}
             <div id="gene-cancer-matrix" style={{
@@ -2126,14 +2307,42 @@ const ClinicalViewPage: React.FC = () => {
               border: '1px solid #E5E7EB'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Detected Variants
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Detected Variants
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('detected-variants')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SectionTooltip 
+                      content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments."
+                      isVisible={hoveredTooltip === 'detected-variants'} 
+                    />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="detected-variants"
                   title="Detected Variants"
