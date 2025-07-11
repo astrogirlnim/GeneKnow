@@ -180,50 +180,6 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
   </div>
 );
 
-// Filename Card with dynamic font sizing
-const FilenameCard = ({ filename, tooltipContent }: { 
-  filename: string; 
-  tooltipContent: { content: string; link?: string } 
-}) => {
-  const fontSize = React.useMemo(() => {
-    // Calculate font size based on filename length
-    if (filename.length <= 15) return '1.875rem';
-    if (filename.length <= 25) return '1.5rem';
-    if (filename.length <= 35) return '1.25rem';
-    if (filename.length <= 45) return '1rem';
-    return '0.875rem'; // Minimum size for very long filenames
-  }, [filename]);
-
-  return (
-    <div style={{
-      background: '#FFFFFF',
-      padding: '1rem',
-      borderRadius: '0.75rem',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-      border: '1px solid #E5E7EB',
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ fontWeight: '600', color: '#4B5563' }}>File Analyzed</h4>
-        <div style={{ position: 'relative' }} className="group">
-          <InformationCircleIcon className="w-5 h-5 cursor-pointer text-gray-400" />
-          <Tooltip content={tooltipContent.content} link={tooltipContent.link} />
-        </div>
-      </div>
-      <p style={{ 
-        fontSize,
-        fontWeight: 'bold', 
-        color: '#111827', 
-        marginTop: '0.5rem',
-        wordBreak: 'break-all',
-        lineHeight: '1.2'
-      }}>
-        {filename}
-      </p>
-    </div>
-  );
-};
-
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
@@ -645,7 +601,7 @@ const DashboardPage: React.FC = () => {
                   color: '#374151',
                   marginTop: '0.25rem'
                 }}>
-                  Analysis completed for: {fileName}
+                  Analysis completed.
                 </p>
               )}
             </div>
@@ -744,7 +700,7 @@ const DashboardPage: React.FC = () => {
           {/* Headline Metrics */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: fileName ? 'repeat(auto-fit, minmax(320px, 1fr))' : 'repeat(auto-fit, minmax(350px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
@@ -756,12 +712,6 @@ const DashboardPage: React.FC = () => {
               value={displayData.hazardScore} 
               tooltipContent={baseTooltips.hazardScore} 
             />
-            {fileName && (
-              <FilenameCard 
-                filename={fileName} 
-                tooltipContent={{ content: `Full filename: ${fileName}`, link: "#" }} 
-              />
-            )}
           </div>
 
           {/* Cancer Risk Assessment - Only show if we have real pipeline results */}

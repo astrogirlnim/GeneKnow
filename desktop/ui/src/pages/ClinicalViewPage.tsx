@@ -1359,7 +1359,7 @@ const ClinicalViewPage: React.FC = () => {
                 border: '1px solid #BFDBFE'
               }}>
                 <p style={{ color: '#1E40AF', fontSize: '0.875rem', fontWeight: '500' }}>
-                  Analysis completed for: {fileName || 'Uploaded file'}
+                  Analysis completed.
                 </p>
               </div>
             )}
