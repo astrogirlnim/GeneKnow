@@ -947,9 +947,7 @@ Consider genetic counseling if:
     const currentDate = new Date().toLocaleDateString();
     const currentTime = new Date().toLocaleTimeString();
     
-    let markdown = `# Genomic Risk Assessment Report
-
-**Generated:** ${currentDate} at ${currentTime}  
+    let markdown = `**Generated:** ${currentDate} at ${currentTime}  
 **Analysis Type:** Clinical Genomic Analysis  
 **File Analyzed:** ${fileName || 'Unknown'}
 
