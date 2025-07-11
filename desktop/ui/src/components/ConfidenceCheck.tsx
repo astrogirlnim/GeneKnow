@@ -116,10 +116,6 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
     setShowDetails(true);
   };
 
-  const handleHideDetails = () => {
-    setShowDetails(false);
-  };
-
   const handleNavigateToDetail = () => {
     if (onNavigateToDetail) {
       onNavigateToDetail();
@@ -391,65 +387,36 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
             See Details
           </button>
         ) : (
-          <>
-            {/* Warning State or Showing Details - Show main action */}
-            {isAcknowledged && showDetails && (
-              <button
-                onClick={handleHideDetails}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#FFFFFF',
-                  color: '#6B7280',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 200ms ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#F9FAFB';
-                  e.currentTarget.style.borderColor = '#9CA3AF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
-                  e.currentTarget.style.borderColor = '#D1D5DB';
-                }}
-              >
-                Hide Details
-              </button>
-            )}
-            <button
-              onClick={handleAcknowledge}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: config.buttonStyle === 'primary' ? config.buttonColor : '#FFFFFF',
-                color: config.buttonStyle === 'primary' ? '#FFFFFF' : config.buttonColor,
-                border: config.buttonStyle === 'primary' ? 'none' : `1px solid ${config.buttonColor}`,
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                if (config.buttonStyle === 'primary') {
-                  e.currentTarget.style.backgroundColor = config.buttonColor + 'DD';
-                } else {
-                  e.currentTarget.style.backgroundColor = config.buttonColor + '10';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (config.buttonStyle === 'primary') {
-                  e.currentTarget.style.backgroundColor = config.buttonColor;
-                } else {
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
-                }
-              }}
-            >
-              {config.buttonText}
-            </button>
-          </>
+          <button
+            onClick={handleAcknowledge}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: config.buttonStyle === 'primary' ? config.buttonColor : '#FFFFFF',
+              color: config.buttonStyle === 'primary' ? '#FFFFFF' : config.buttonColor,
+              border: config.buttonStyle === 'primary' ? 'none' : `1px solid ${config.buttonColor}`,
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              if (config.buttonStyle === 'primary') {
+                e.currentTarget.style.backgroundColor = config.buttonColor + 'DD';
+              } else {
+                e.currentTarget.style.backgroundColor = config.buttonColor + '10';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (config.buttonStyle === 'primary') {
+                e.currentTarget.style.backgroundColor = config.buttonColor;
+              } else {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+              }
+            }}
+          >
+            {config.buttonText}
+          </button>
         )}
       </div>
     </div>
