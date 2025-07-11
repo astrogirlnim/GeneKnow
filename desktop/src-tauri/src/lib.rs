@@ -437,6 +437,57 @@ async fn read_text_file(path: String) -> Result<String, String> {
     }
 }
 
+#[command]
+async fn save_file_dialog(filename: String, file_content: Vec<u8>) -> Result<String, String> {
+    // Get the user's Downloads directory
+    let downloads_dir = if cfg!(target_os = "windows") {
+        std::env::var("USERPROFILE")
+            .map(|profile| PathBuf::from(profile).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("C:\\Downloads"))
+    } else if cfg!(target_os = "macos") {
+        std::env::var("HOME")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("/tmp"))
+    } else {
+        // Linux
+        std::env::var("HOME")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("/tmp"))
+    };
+    
+    // Ensure the downloads directory exists
+    if let Err(e) = fs::create_dir_all(&downloads_dir) {
+        return Err(format!("Failed to create downloads directory: {}", e));
+    }
+    
+    // Create the full file path
+    let file_path = downloads_dir.join(&filename);
+    
+    // Check if file already exists and create a unique name if needed
+    let mut final_path = file_path.clone();
+    let mut counter = 1;
+    while final_path.exists() {
+        let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
+        let ext = file_path.extension().and_then(|s| s.to_str()).unwrap_or("");
+        let new_name = if ext.is_empty() {
+            format!("{} ({})", stem, counter)
+        } else {
+            format!("{} ({}).{}", stem, counter, ext)
+        };
+        final_path = downloads_dir.join(new_name);
+        counter += 1;
+    }
+    
+    // Write the file
+    match fs::write(&final_path, file_content) {
+        Ok(_) => {
+            log::info!("Saved file to: {:?}", final_path);
+            Ok(final_path.to_string_lossy().to_string())
+        }
+        Err(e) => Err(format!("Failed to save file: {}", e))
+    }
+}
+
 // ========================================
 // GeneKnow Pipeline API Server Management
 // ========================================

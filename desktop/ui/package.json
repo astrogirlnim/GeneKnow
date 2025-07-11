@@ -13,6 +13,7 @@
     "tauri-build": "pnpm build && cd ../src-tauri && ../ui/node_modules/.bin/tauri build"
   },
   "dependencies": {
+    "jspdf": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
