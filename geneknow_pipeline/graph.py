@@ -28,6 +28,16 @@ try:
         metrics_calculator,
         formatter,
         report_writer,
+        # New nodes for clinical view data
+        mutation_classifier,
+        mutational_signatures,
+        variant_transformer,
+        structural_variant_detector,
+        cnv_detector,
+        pathway_analyzer,
+        gene_interaction_network,
+        survival_analyzer,
+        clinical_recommendations,
     )
     from .nodes.report_generator import process as report_generator_process
 except ImportError:
@@ -51,6 +61,16 @@ except ImportError:
         metrics_calculator,
         formatter,
         report_writer,
+        # New nodes for clinical view data
+        mutation_classifier,
+        mutational_signatures,
+        variant_transformer,
+        structural_variant_detector,
+        cnv_detector,
+        pathway_analyzer,
+        gene_interaction_network,
+        survival_analyzer,
+        clinical_recommendations,
     )
     from nodes.report_generator import process as report_generator_process
 
@@ -436,6 +456,46 @@ def check_merge_complete(state: dict) -> str:
         return "wait"
 
 
+def merge_variant_analysis_results(state: dict) -> dict:
+    """
+    Merge results from parallel structural variant and CNV detection.
+    """
+    logger.info("Merging structural variant and CNV results")
+    state["current_node"] = "merge_variant_analysis"
+    
+    # Check if both nodes have completed
+    has_svs = state.get("structural_variants") is not None
+    has_cnvs = state.get("copy_number_variants") is not None
+    
+    # Track completion
+    completed_nodes = state.get("completed_nodes", [])
+    
+    if has_svs and has_cnvs:
+        logger.info("Both SV and CNV detection completed")
+        
+        # Combine all genomic alterations
+        all_alterations = {
+            "structural_variants": state.get("structural_variants", []),
+            "copy_number_variants": state.get("copy_number_variants", []),
+            "total_alterations": len(state.get("structural_variants", [])) + 
+                               len(state.get("copy_number_variants", []))
+        }
+        
+        # Update completed nodes
+        if "merge_variant_analysis" not in completed_nodes:
+            completed_nodes.append("merge_variant_analysis")
+        
+        logger.info(f"Merged {all_alterations['total_alterations']} genomic alterations")
+        
+        return {
+            "genomic_alterations": all_alterations,
+            "completed_nodes": completed_nodes
+        }
+    else:
+        logger.info(f"Waiting for nodes to complete (SV={has_svs}, CNV={has_cnvs})")
+        return {}
+
+
 def create_genomic_pipeline() -> StateGraph:
     """
     Creates the main LangGraph pipeline for genomic analysis.
@@ -467,6 +527,18 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("ml_fusion", ml_fusion_node.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("shap_validator", shap_validator.process)
+    
+    # Add new clinical view nodes
+    workflow.add_node("mutation_classifier", mutation_classifier.process)
+    workflow.add_node("mutational_signatures", mutational_signatures.process)
+    workflow.add_node("variant_transformer", variant_transformer.process)
+    workflow.add_node("structural_variant_detector", structural_variant_detector.process)
+    workflow.add_node("cnv_detector", cnv_detector.process)
+    workflow.add_node("pathway_analyzer", pathway_analyzer.process)
+    workflow.add_node("gene_interaction_network", gene_interaction_network.process)
+    workflow.add_node("survival_analyzer", survival_analyzer.process)
+    workflow.add_node("clinical_recommendations", clinical_recommendations.process)
+    
     workflow.add_node("metrics_calculator", metrics_calculator.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_generator", report_generator_process)
@@ -508,11 +580,33 @@ def create_genomic_pipeline() -> StateGraph:
     # Continue with feature vector building after merge
     workflow.add_edge("merge_static_models", "feature_vector_builder")
 
-    # Feature vector builder -> ML fusion -> risk model -> SHAP validator -> metrics calculator
+    # Feature vector builder -> ML fusion -> risk model -> SHAP validator
     workflow.add_edge("feature_vector_builder", "ml_fusion")
     workflow.add_edge("ml_fusion", "risk_model")
     workflow.add_edge("risk_model", "shap_validator")
-    workflow.add_edge("shap_validator", "metrics_calculator")
+    
+    # After SHAP validator, run new clinical analysis nodes in sequence
+    workflow.add_edge("shap_validator", "mutation_classifier")
+    workflow.add_edge("mutation_classifier", "mutational_signatures")
+    workflow.add_edge("mutational_signatures", "variant_transformer")
+    
+    # Run structural variant and CNV detection in parallel
+    workflow.add_edge("variant_transformer", "structural_variant_detector")
+    workflow.add_edge("variant_transformer", "cnv_detector")
+    
+    # Create a merge point for structural variant and CNV results
+    workflow.add_node("merge_variant_analysis", merge_variant_analysis_results)
+    workflow.add_edge("structural_variant_detector", "merge_variant_analysis")
+    workflow.add_edge("cnv_detector", "merge_variant_analysis")
+    
+    # Continue with pathway analysis after merging
+    workflow.add_edge("merge_variant_analysis", "pathway_analyzer")
+    workflow.add_edge("pathway_analyzer", "gene_interaction_network")
+    workflow.add_edge("gene_interaction_network", "survival_analyzer")
+    workflow.add_edge("survival_analyzer", "clinical_recommendations")
+    
+    # Clinical recommendations -> metrics calculator -> formatter -> report writer
+    workflow.add_edge("clinical_recommendations", "metrics_calculator")
     workflow.add_edge("metrics_calculator", "formatter")
 
     workflow.add_edge("formatter", "report_generator")
@@ -566,6 +660,23 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "shap_top_contributors": None,  # Top contributing features
         "shap_feature_importance": None,  # Full SHAP values
         "shap_validation_details": None,  # Detailed validation info
+        # NEW: Initialize state fields for new nodes
+        "classified_variants": None,  # Mutation classifier
+        "mutation_type_distribution": None,
+        "mutational_signatures": None,  # Mutational signatures
+        "mutational_signatures_summary": None,
+        "variant_details": None,  # Variant transformer
+        "variant_transformation_summary": None,
+        "structural_variants": None,  # Structural variant detector
+        "structural_variant_summary": None,
+        "copy_number_variants": None,  # CNV detector
+        "cnv_summary": None,
+        "pathway_analysis": None,  # Pathway analyzer
+        "gene_interactions": None,  # Gene interaction network
+        "gene_network_analysis": None,
+        "survival_analysis": None,  # Survival analyzer
+        "clinical_recommendations": None,  # Clinical recommendations
+        "genomic_alterations": None,  # From merge_variant_analysis
         "risk_scores": {},
         "risk_details": {},  # Initialize risk details for metrics
         "ml_risk_assessment": {},  # Initialize ML risk assessment for metrics

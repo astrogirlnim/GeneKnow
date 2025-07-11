@@ -65,6 +65,39 @@ class GenomicState(TypedDict):
     shap_feature_importance: Optional[Dict[str, float]]  # Full SHAP values for detailed analysis
     shap_validation_details: Optional[Dict[str, Any]]  # Detailed validation info
 
+    # NEW: Mutation classification results
+    classified_variants: Optional[List[Dict[str, Any]]]  # Variants with mutation types
+    mutation_type_distribution: Optional[Dict[str, int]]  # Count by mutation type
+    
+    # NEW: Mutational signatures results
+    mutational_signatures: Optional[Dict[str, Dict[str, Any]]]  # Signature contributions
+    mutational_signatures_summary: Optional[Dict[str, Any]]  # Summary of signatures
+    
+    # NEW: Variant transformation results
+    variant_details: Optional[List[Dict[str, Any]]]  # Variants with protein changes
+    variant_transformation_summary: Optional[Dict[str, Any]]  # Transformation statistics
+    
+    # NEW: Structural variant results
+    structural_variants: Optional[List[Dict[str, Any]]]  # Detected structural variants
+    structural_variant_summary: Optional[Dict[str, Any]]  # SV summary statistics
+    
+    # NEW: CNV results
+    copy_number_variants: Optional[List[Dict[str, Any]]]  # Detected CNVs
+    cnv_summary: Optional[Dict[str, Any]]  # CNV summary statistics
+    
+    # NEW: Pathway analysis results
+    pathway_analysis: Optional[Dict[str, Any]]  # Pathway disruption analysis
+    
+    # NEW: Gene interaction network results
+    gene_interactions: Optional[List[Dict[str, Any]]]  # Gene-gene interactions
+    gene_network_analysis: Optional[Dict[str, Any]]  # Network analysis results
+    
+    # NEW: Survival analysis results
+    survival_analysis: Optional[Dict[str, Any]]  # Survival curves and prognostic factors
+    
+    # NEW: Clinical recommendations
+    clinical_recommendations: Optional[Dict[str, Any]]  # Comprehensive clinical recommendations
+
     # Risk assessment
     risk_scores: Dict[str, float]  # {cancer_type: risk_percentage}
     risk_genes: Dict[str, List[str]]  # {cancer_type: [affected_genes]}
