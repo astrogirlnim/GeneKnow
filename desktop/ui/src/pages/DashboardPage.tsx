@@ -674,7 +674,7 @@ const DashboardPage: React.FC = () => {
                   e.currentTarget.style.background = '#DBEAFE';
                 }}
               >
-                Clinical View
+                In-Depth Analysis
               </button>
               <button
                 onClick={handleNewAnalysis}

@@ -27,13 +27,13 @@ const WelcomePage = () => {
             }}>Your Personal Genomic Insights</span>
             <h1 style={{
               marginTop: '1rem',
-              fontSize: 'clamp(2.5rem, 5vw, 3.75rem)',
+              fontSize: 'clamp(2.25rem, 5vw, 3.25rem)',
               fontWeight: 'bold',
               letterSpacing: '-0.02em',
               color: '#111827',
               lineHeight: '1.1'
             }}>
-              Understand Your Genomic Health, Privately.
+              Understand Your Genomic Health, Instantly and Privately.
             </h1>
             <p style={{
               marginTop: '1.5rem',
@@ -43,7 +43,7 @@ const WelcomePage = () => {
               maxWidth: '42rem',
               margin: '1.5rem auto 0'
             }}>
-              Our desktop application analyzes your genomic data file (`.fastq`) directly on your computer to provide a secure cancer risk assessment. No data uploads, no cloud processing, complete privacy.
+              Get a private cancer risk assessment by analyzing your genomic data securely on your own device. Start by selecting a file—your data never leaves your computer.
             </p>
             <div style={{ marginTop: '2.5rem' }}>
               <button 
