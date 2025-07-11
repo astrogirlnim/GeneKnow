@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
-import type { PipelineResult } from '../api/geneknowPipeline';
+import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 
 // Type definitions
 interface MetricData {
@@ -99,13 +99,11 @@ const ProbabilityCard = ({ value, tooltipContent }: { value: number; tooltipCont
 const HazardScoreCard = ({ 
   value, 
   tooltipContent, 
-  shapValidation,
-  onNavigateToDetail 
+  shapValidation
 }: { 
   value: string; 
   tooltipContent: { content: string; link?: string };
-  shapValidation?: any;
-  onNavigateToDetail?: () => void;
+  shapValidation?: SHAPValidation | null;
 }) => {
   const numValue = parseFloat(value);
   const getHazardColor = (score: number) => {
@@ -154,8 +152,7 @@ const HazardScoreCard = ({
       
       {/* Confidence Check Summary */}
       <ConfidenceCheck 
-        validation={shapValidation} 
-        onNavigateToDetail={onNavigateToDetail}
+        validation={shapValidation ?? null} 
         isDetailed={false}
       />
     </div>
@@ -747,10 +744,8 @@ const DashboardPage: React.FC = () => {
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
   const fileName = location.state?.fileName as string | undefined;
-  const mockRiskLevel = location.state?.mockRiskLevel as string | undefined;
-  
   // Get the risk level from URL parameters or state, default to 'low' if not specified
-  // const riskLevel = searchParams.get('risk') || mockRiskLevel || 'low';
+  // const riskLevel = searchParams.get('risk') || 'low';
   // const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
   
   // Use real data if available, otherwise use mock data
@@ -846,9 +841,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleNavigateToConfidenceCheck = () => {
-    navigate('/clinical-view?risk=' + riskLevel);
-  };
+
 
   return (
     <Layout>
@@ -992,8 +985,7 @@ const DashboardPage: React.FC = () => {
             <HazardScoreCard 
               value={displayData.hazardScore} 
               tooltipContent={baseTooltips.hazardScore}
-              shapValidation={pipelineResults?.structured_json?.shap_validation || mockSHAPValidation}
-              onNavigateToDetail={handleNavigateToConfidenceCheck}
+              shapValidation={pipelineResults?.structured_json?.shap_validation ?? (mockSHAPValidation as unknown as SHAPValidation)}
             />
           </div>
 

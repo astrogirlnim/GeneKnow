@@ -133,10 +133,6 @@ const mockValidations: Record<string, SHAPValidation> = {
 };
 
 const ConfidenceCheckTest: React.FC = () => {
-  const handleNavigate = () => {
-    alert('Would navigate to In-Depth Analysis');
-  };
-
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', color: '#111827' }}>
@@ -164,7 +160,6 @@ const ConfidenceCheckTest: React.FC = () => {
                 </h3>
                 <ConfidenceCheck 
                   validation={validation}
-                  onNavigateToDetail={handleNavigate}
                   isDetailed={false}
                 />
               </div>

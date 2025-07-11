@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import type { SHAPValidation, SHAPContributor } from '../api/geneknowPipeline';
+import type { SHAPValidation } from '../api/geneknowPipeline';
 
 interface ConfidenceCheckProps {
   validation: SHAPValidation | null;
-  onNavigateToDetail?: () => void;
   isDetailed?: boolean;
 }
 
 const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({ 
   validation, 
-  onNavigateToDetail, 
   isDetailed = false 
 }) => {
   const [isAcknowledged, setIsAcknowledged] = useState(false);
@@ -126,11 +124,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
     setShowDetails(true);
   };
 
-  const handleNavigateToDetail = () => {
-    if (onNavigateToDetail) {
-      onNavigateToDetail();
-    }
-  };
+
 
   const renderDescription = () => {
     switch (validation.status) {
