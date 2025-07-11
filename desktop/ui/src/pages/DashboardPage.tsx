@@ -1,10 +1,10 @@
-import React from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
-import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 import { invoke } from '@tauri-apps/api/core';
+import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 
 // Type definitions
 interface MetricData {
@@ -846,90 +846,18 @@ const DashboardPage: React.FC = () => {
   const fetchMarkdownContent = async (filePath: string) => {
     setLoadingMarkdown(true);
     try {
-      // For now, we'll show a placeholder since we need to implement file reading
-      // In a real implementation, this would fetch the file content from the backend
       console.log('Loading report from:', filePath);
-      const sampleContent = `# Genomic Risk Assessment Report
-
-**Generated:** ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}  
-**Analysis Type:** AI-Enhanced Clinical Report  
-
----
-
-## Executive Summary
-
-This genomic analysis has been completed using advanced AI-powered interpretation. The analysis includes comprehensive variant assessment, population frequency analysis, and risk stratification based on current scientific literature.
-
-## Risk Assessment
-
-### Key Findings
-
-Based on the genomic analysis, the following risk assessments have been determined:
-
-- **Overall Risk Profile**: Within normal parameters
-- **Variants Analyzed**: ${pipelineResults?.variant_count || 0} genetic variants
-- **High-Confidence Predictions**: Available for major cancer types
-
-### Cancer Risk Stratification
-
-The analysis evaluated risk across multiple cancer types using polygenic risk scores and variant pathogenicity assessment.
-
-## Variant Analysis
-
-### Significant Variants
-
-All variants have been evaluated for:
-- **Clinical Significance**: Using ClinVar database annotations
-- **Population Frequency**: Compared against 1000 Genomes and gnomAD databases  
-- **Pathogenicity Prediction**: CADD scores and ensemble predictions
-- **Literature Evidence**: Cross-referenced with TCGA and published studies
-
-## Recommendations
-
-### Clinical Follow-up
-
-1. **Routine Screening**: Continue standard screening protocols for your age group
-2. **Family History**: Consider family history in risk assessment
-3. **Lifestyle Factors**: Maintain healthy lifestyle choices
-
-### Genetic Counseling
-
-Consider genetic counseling if:
-- Family history of cancer is present
-- Questions about risk interpretation arise
-- Additional testing is desired
-
-## Technical Details
-
-### Analysis Pipeline
-
-- **Variant Calling**: DeepVariant algorithm
-- **Quality Control**: Comprehensive filtering applied
-- **Annotation**: Multi-database cross-reference
-- **Risk Modeling**: Machine learning fusion approach
-
-### Data Sources
-
-- **ClinVar**: Clinical variant interpretation
-- **TCGA**: Cancer genomics reference
-- **1000 Genomes**: Population frequency data
-- **PRS Catalog**: Polygenic risk scores
-
-## Glossary
-
-**Variant**: A genetic difference from the reference genome  
-**ClinVar**: Database of genetic variants and their clinical significance  
-**CADD Score**: Combined Annotation Dependent Depletion score for variant pathogenicity  
-**Polygenic Risk Score (PRS)**: Combined effect of multiple genetic variants on disease risk  
-
----
-
-*This report is for informational purposes only and should not replace professional medical advice.*`;
-
-      setMarkdownContent(sampleContent);
+      
+      // Use Tauri invoke API to read the file content
+      const content = await invoke<string>('read_text_file', { path: filePath });
+      
+      setMarkdownContent(content);
+      console.log('Successfully loaded report content from file');
     } catch (error) {
       console.error('Error fetching markdown content:', error);
-      setMarkdownContent('Error loading report content. Please try again.');
+      
+      // If file reading fails, throw error to trigger fallback
+      throw new Error(`Failed to read report file: ${error}`);
     } finally {
       setLoadingMarkdown(false);
     }

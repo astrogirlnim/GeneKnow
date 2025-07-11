@@ -334,34 +334,152 @@ def _generate_llm_content(data: Dict[str, Any],
                          model_interface: ModelInterface,
                          prompt_builder: PromptBuilder,
                          stream_callback: Optional[Callable] = None) -> str:
-    """Generate LLM-enhanced report content."""
+    """Generate LLM-enhanced report content section by section."""
     
     try:
         # Check if we have any high-risk findings to report on
         high_risk_count = _count_high_risk_findings(data, prompt_builder.risk_threshold)
         
-        if high_risk_count == 0:
-            # Generate low-risk report
-            prompt = prompt_builder._build_low_risk_prompt()
-        else:
-            # Generate comprehensive report
-            prompt = prompt_builder.build_full_report_prompt(data)
+        logger.info(f"Generating LLM content for {high_risk_count} high-risk findings using section-by-section approach")
         
-        logger.info(f"Generating LLM content for {high_risk_count} high-risk findings")
+        # Generate each section separately for maximum consistency
+        sections = {}
+        section_names = ["Summary", "Key Variants", "Risk Summary", "Clinical Interpretation", "Recommendations"]
         
-        # Generate content with optional streaming
-        content = model_interface.generate(prompt, stream_callback)
+        for section_name in section_names:
+            if stream_callback:
+                stream_callback({
+                    "section": section_name.lower().replace(" ", "_"),
+                    "content": f"Generating {section_name} section...",
+                    "total_length": 0
+                })
+            
+            try:
+                # Get the appropriate prompt for this section
+                if section_name == "Summary":
+                    prompt = prompt_builder.build_summary_section_prompt(data)
+                elif section_name == "Key Variants":
+                    prompt = prompt_builder.build_key_variants_section_prompt(data)
+                elif section_name == "Risk Summary":
+                    prompt = prompt_builder.build_risk_summary_section_prompt(data)
+                elif section_name == "Clinical Interpretation":
+                    prompt = prompt_builder.build_clinical_interpretation_section_prompt(data)
+                elif section_name == "Recommendations":
+                    prompt = prompt_builder.build_recommendations_section_prompt(data)
+                else:
+                    continue
+                
+                # Generate content for this section
+                section_content = model_interface.generate(prompt, None)  # No streaming per section
+                
+                if section_content:
+                    sections[section_name] = section_content.strip()
+                    logger.info(f"Generated {section_name} section: {len(section_content)} characters")
+                else:
+                    logger.warning(f"Empty content generated for {section_name} section")
+                    sections[section_name] = _get_fallback_section_content(section_name, data)
+                    
+            except Exception as e:
+                logger.error(f"Failed to generate {section_name} section: {e}")
+                sections[section_name] = _get_fallback_section_content(section_name, data)
         
-        if not content:
-            logger.warning("LLM generated empty content")
-            return ""
+        # Combine all sections into the final report
+        final_content = _combine_sections_into_report(sections)
         
-        logger.info(f"Generated {len(content)} characters of LLM content")
-        return content
+        if stream_callback:
+            stream_callback({
+                "section": "complete",
+                "content": "Report generation complete",
+                "total_length": len(final_content)
+            })
+        
+        logger.info(f"Generated complete report with {len(final_content)} characters")
+        return final_content
         
     except Exception as e:
         logger.error(f"LLM content generation failed: {e}")
         return ""
+
+
+def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> str:
+    """Generate fallback content for a section if LLM generation fails."""
+    
+    if section_name == "Summary":
+        summary = data.get("summary", {})
+        return f"This genomic risk assessment analyzed {summary.get('total_variants_found', 0)} genetic variants, with {summary.get('variants_passed_qc', 0)} variants passing quality control filters. The analysis completed successfully with results available for clinical review."
+    
+    elif section_name == "Key Variants":
+        variant_details = data.get("variant_details", [])
+        if not variant_details:
+            return "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
+        else:
+            return f"Analysis identified {len(variant_details)} variants for review. Detailed variant interpretation requires clinical genetics expertise."
+    
+    elif section_name == "Risk Summary":
+        risk_assessment = data.get("risk_assessment", {})
+        scores = risk_assessment.get("scores", {}) if risk_assessment else {}
+        
+        if not scores:
+            return "| Cancer Type | Risk (%) |\n|-------------|----------|\n| No data | N/A |\n\nRisk assessment data not available for this analysis."
+        
+        # Create simple table
+        table_rows = []
+        for cancer_type, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+            table_rows.append(f"| {cancer_type.title()} | {score:.1f} |")
+        
+        table = "| Cancer Type | Risk (%) |\n|-------------|----------|\n" + "\n".join(table_rows)
+        
+        high_risk_count = sum(1 for score in scores.values() if score > 5.0)
+        if high_risk_count > 0:
+            table += "\n\nRisks above 5% are considered elevated and warrant further clinical attention."
+        else:
+            table += "\n\nAll risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
+        
+        return table
+    
+    elif section_name == "Clinical Interpretation":
+        return "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
+    
+    elif section_name == "Recommendations":
+        risk_assessment = data.get("risk_assessment", {})
+        scores = risk_assessment.get("scores", {}) if risk_assessment else {}
+        high_risk_count = sum(1 for score in scores.values() if score > 5.0) if scores else 0
+        
+        if high_risk_count > 0:
+            return "- Genetic counseling is recommended to discuss these findings and develop a personalized risk management plan\n- Enhanced screening protocols may be appropriate for elevated cancer risks\n- Consider consultation with oncology specialists for high-risk findings\n- Maintain regular follow-up care and health monitoring\n- Consult a qualified healthcare provider for personalized guidance."
+        else:
+            return "- Adhere to standard age-appropriate cancer screening protocols\n- Maintain healthy lifestyle including regular exercise and balanced diet\n- Continue routine preventive care and health maintenance\n- Consider genetic counseling if strong family history of cancer emerges\n- Consult a qualified healthcare provider for personalized guidance."
+    
+    return "Content not available."
+
+
+def _combine_sections_into_report(sections: Dict[str, str]) -> str:
+    """Combine individual sections into a complete report with consistent formatting."""
+    
+    report_parts = []
+    
+    # Summary section
+    if "Summary" in sections:
+        report_parts.append(f"**Summary**\n\n{sections['Summary']}")
+    
+    # Key Variants section
+    if "Key Variants" in sections:
+        report_parts.append(f"**Key Variants**\n\n{sections['Key Variants']}")
+    
+    # Risk Summary section
+    if "Risk Summary" in sections:
+        report_parts.append(f"**Risk Summary**\n\n{sections['Risk Summary']}")
+    
+    # Clinical Interpretation section
+    if "Clinical Interpretation" in sections:
+        report_parts.append(f"**Clinical Interpretation**\n\n{sections['Clinical Interpretation']}")
+    
+    # Recommendations section
+    if "Recommendations" in sections:
+        report_parts.append(f"**Recommendations**\n\n{sections['Recommendations']}")
+    
+    # Join all sections with double line breaks
+    return "\n\n".join(report_parts)
 
 
 def generate_report_standalone(json_file_path: str, 

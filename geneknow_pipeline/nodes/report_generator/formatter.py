@@ -133,23 +133,21 @@ class ReportFormatter:
         # Build header
         markdown = self._build_header(data, report_id, llm_enhanced=True)
         
-        # Add LLM-generated content
+        # Add LLM-generated content under Clinical Assessment
         markdown += "\n## Clinical Assessment\n\n"
         markdown += llm_content
         
-        # Add technical appendix if requested
-        if self.config.include_technical_appendix:
-            markdown += "\n\n"
-            markdown += self._build_technical_appendix(data)
-        
-        # Add glossary if requested
-        if self.config.include_glossary:
-            markdown += "\n\n"
-            markdown += self._build_glossary(llm_content)
-        
-        # Add footer
+        # Always add standardized technical appendix
         markdown += "\n\n"
-        markdown += self._build_footer(data, report_id)
+        markdown += self._build_standardized_technical_appendix(data)
+        
+        # Always add standardized glossary
+        markdown += "\n\n"
+        markdown += self._build_standardized_glossary(llm_content)
+        
+        # Always add standardized footer
+        markdown += "\n\n"
+        markdown += self._build_standardized_footer(data, report_id)
         
         return markdown
     
@@ -162,22 +160,31 @@ class ReportFormatter:
         # Add fallback content warning
         markdown += f"\n> **{self.config.dev_mode_indicator}**: {self.config.fallback_mode_indicator}\n\n"
         
-        # Generate template-based sections
-        markdown += self._build_template_overview(data)
+        # Add Clinical Assessment section with template content
+        markdown += "\n## Clinical Assessment\n\n"
+        
+        # Generate template-based sections using the same structure as LLM reports
+        markdown += self._build_template_summary(data)
+        markdown += "\n\n"
+        markdown += self._build_template_key_variants(data)
+        markdown += "\n\n"
         markdown += self._build_template_risk_summary(data)
-        markdown += self._build_template_variants(data)
+        markdown += "\n\n"
+        markdown += self._build_template_clinical_interpretation(data)
+        markdown += "\n\n"
         markdown += self._build_template_recommendations(data)
         
-        # Add technical appendix
-        if self.config.include_technical_appendix:
-            markdown += self._build_technical_appendix(data)
+        # Always add standardized technical appendix
+        markdown += "\n\n"
+        markdown += self._build_standardized_technical_appendix(data)
         
-        # Add basic glossary
-        if self.config.include_glossary:
-            markdown += self._build_basic_glossary()
+        # Always add standardized glossary
+        markdown += "\n\n"
+        markdown += self._build_standardized_glossary("")
         
-        # Add footer
-        markdown += self._build_footer(data, report_id)
+        # Always add standardized footer
+        markdown += "\n\n"
+        markdown += self._build_standardized_footer(data, report_id)
         
         return markdown
     
@@ -198,268 +205,183 @@ class ReportFormatter:
         
         return header
     
-    def _build_template_overview(self, data: Dict[str, Any]) -> str:
-        """Build template-based overview section."""
-        
+    def _build_template_summary(self, data: Dict[str, Any]) -> str:
+        """Build template-based summary section."""
         summary = data.get("summary", {})
         risk_assessment = data.get("risk_assessment", {})
         
-        total_variants = summary.get("total_variants_found", 0)
-        qc_variants = summary.get("variants_passed_qc", 0)
+        total_variants = summary.get('total_variants_found', 0)
+        qc_variants = summary.get('variants_passed_qc', 0)
+        qc_rate = (qc_variants / max(total_variants, 1)) * 100
         
-        # Count high-risk findings
         high_risk_count = 0
         if risk_assessment and "scores" in risk_assessment:
-            high_risk_count = sum(1 for score in risk_assessment["scores"].values() 
-                                 if score > self.config.risk_threshold)
+            high_risk_count = sum(1 for score in risk_assessment["scores"].values() if score > 5.0)
         
-        overview = f"""## Case Overview
-
-This genomic risk assessment analyzed **{total_variants}** genetic variants, of which **{qc_variants}** passed quality control filters. The analysis identified **{high_risk_count}** cancer types with elevated risk levels above the {self.config.risk_threshold}% baseline threshold.
-
-The assessment utilized multiple computational approaches including population frequency analysis, tumor database comparisons, and machine learning risk models to evaluate cancer predisposition based on the genetic profile.
-
-"""
+        content = f"**Summary**\n\n"
+        content += f"This genomic risk assessment analyzed {total_variants} genetic variants, with {qc_variants} variants passing quality control filters ({qc_rate:.1f}% pass rate). "
         
-        return overview
+        if high_risk_count > 0:
+            content += f"The analysis identified {high_risk_count} high-risk findings requiring clinical attention.\n\n"
+            content += "The individual's genetic profile indicates elevated risk for certain cancer types that warrant further clinical evaluation and genetic counseling."
+        else:
+            content += "No high-risk findings were identified.\n\n"
+            content += "The individual's genetic profile shows cancer risk levels within normal baseline ranges for all analyzed cancer types (<5%)."
+        
+        return content
+    
+    def _build_template_key_variants(self, data: Dict[str, Any]) -> str:
+        """Build template-based key variants section."""
+        variant_details = data.get("variant_details", [])
+        
+        content = f"**Key Variants**\n\n"
+        
+        if not variant_details:
+            content += "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
+        else:
+            # Show top 3 variants in simple format
+            for i, variant in enumerate(variant_details[:3], 1):
+                gene = variant.get('gene', 'Unknown')
+                consequence = variant.get('consequence', 'Unknown')
+                quality = variant.get('quality_metrics', {}).get('quality', 0)
+                
+                content += f"{i}. **{gene}**: {consequence} variant"
+                if quality > 0:
+                    content += f" (quality score: {quality})"
+                content += "\n\n"
+        
+        return content
     
     def _build_template_risk_summary(self, data: Dict[str, Any]) -> str:
         """Build template-based risk summary section."""
-        
         risk_assessment = data.get("risk_assessment", {})
-        if not risk_assessment or "scores" not in risk_assessment:
-            return "## Risk Summary\n\nNo risk assessment data available.\n\n"
+        scores = risk_assessment.get("scores", {}) if risk_assessment else {}
         
-        scores = risk_assessment["scores"]
-        risk_genes = risk_assessment.get("risk_genes", {})
+        content = f"**Risk Summary**\n\n"
         
-        # Filter for high-risk findings
-        high_risk_findings = []
-        baseline_findings = []
-        
-        for cancer_type, score in scores.items():
-            if score > self.config.risk_threshold:
-                high_risk_findings.append((cancer_type, score, risk_genes.get(cancer_type, [])))
-            else:
-                baseline_findings.append((cancer_type, score))
-        
-        # Sort by risk score
-        high_risk_findings.sort(key=lambda x: x[1], reverse=True)
-        
-        risk_summary = "## Cancer Risk Assessment\n\n"
-        
-        if high_risk_findings:
-            risk_summary += f"### Elevated Risk Findings (>{self.config.risk_threshold}% baseline)\n\n"
-            
-            for cancer_type, score, genes in high_risk_findings:
-                risk_level = "High" if score >= 30 else "Moderate" if score >= 15 else "Elevated"
-                risk_summary += f"**{cancer_type.title()} Cancer:** {score:.1f}% ({risk_level} Risk)\n"
-                if genes:
-                    risk_summary += f"- Associated genes: {', '.join(genes)}\n"
-                risk_summary += "\n"
+        if not scores:
+            content += "| Cancer Type | Risk (%) |\n|-------------|----------|\n| No data | N/A |\n\n"
+            content += "Risk assessment data not available for this analysis."
         else:
-            risk_summary += "### No Elevated Risk Findings\n\n"
-            risk_summary += "All analyzed cancer types show risk levels within normal baseline ranges. "
-            risk_summary += "This suggests an average population risk profile.\n\n"
+            # Create table
+            content += "| Cancer Type | Risk (%) |\n|-------------|----------|\n"
+            for cancer_type, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+                content += f"| {cancer_type.title()} | {score:.1f} |\n"
+            
+            high_risk_count = sum(1 for score in scores.values() if score > 5.0)
+            content += "\n"
+            if high_risk_count > 0:
+                content += "Risks above 5% are considered elevated and warrant further clinical attention."
+            else:
+                content += "All risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
         
-        if baseline_findings:
-            risk_summary += f"### Baseline Risk Cancers (≤{self.config.risk_threshold}%)\n\n"
-            baseline_cancers = [cancer.title() for cancer, _ in baseline_findings]
-            risk_summary += f"{', '.join(baseline_cancers)}\n\n"
-        
-        return risk_summary
+        return content
     
-    def _build_template_variants(self, data: Dict[str, Any]) -> str:
-        """Build template-based variants section."""
+    def _build_template_clinical_interpretation(self, data: Dict[str, Any]) -> str:
+        """Build template-based clinical interpretation section."""
+        tcga_summary = data.get("tcga_summary", {})
+        cadd_summary = data.get("cadd_summary", {})
         
-        variant_details = data.get("variant_details", [])
-        if not variant_details:
-            return ""
+        content = f"**Clinical Interpretation**\n\n"
+        content += "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, "
+        content += f"TCGA tumor database comparison ({tcga_summary.get('variants_with_tcga_data', 0)} variants matched), "
+        content += "pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. "
         
-        variants_section = "## Key Genetic Variants\n\n"
+        if cadd_summary and cadd_summary.get("enabled", False):
+            content += f"CADD scoring was performed on {cadd_summary.get('variants_scored', 0)} variants. "
         
-        # Show top 5 variants
-        key_variants = variant_details[:5]
+        content += "\n\nThe analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. "
+        content += "These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
         
-        for i, variant in enumerate(key_variants, 1):
-            quality = variant.get("quality_metrics", {})
-            
-            variants_section += f"### Variant {i}: {variant.get('gene', 'Unknown')}\n\n"
-            variants_section += f"- **Location:** {variant.get('variant', 'Unknown')}\n"
-            variants_section += f"- **Consequence:** {variant.get('consequence', 'Unknown')}\n"
-            
-            if variant.get('hgvs_c'):
-                variants_section += f"- **HGVS (coding):** {variant['hgvs_c']}\n"
-            if variant.get('hgvs_p'):
-                variants_section += f"- **HGVS (protein):** {variant['hgvs_p']}\n"
-            
-            variants_section += f"- **Quality Score:** {quality.get('quality', 0)}\n"
-            variants_section += f"- **Read Depth:** {quality.get('depth', 0)}\n"
-            variants_section += f"- **Allele Frequency:** {quality.get('allele_freq', 0):.3f}\n"
-            
-            # Add CADD score if available
-            cadd_scores = variant.get("cadd_scores", {})
-            if cadd_scores and cadd_scores.get("phred"):
-                score = cadd_scores["phred"]
-                interpretation = "High impact" if score > 20 else "Moderate impact" if score > 10 else "Low impact"
-                variants_section += f"- **CADD Score:** {score:.1f} ({interpretation})\n"
-            
-            # Add TCGA matches if available
-            tcga_matches = variant.get("tcga_matches", {})
-            if tcga_matches:
-                variants_section += "- **TCGA Database Matches:**\n"
-                for cancer_type, match_data in tcga_matches.items():
-                    if match_data and match_data.get("frequency_percent", 0) > 0:
-                        freq = match_data["frequency_percent"]
-                        variants_section += f"  - {cancer_type.title()}: {freq:.1f}% frequency\n"
-            
-            variants_section += "\n"
-        
-        return variants_section
+        return content
     
     def _build_template_recommendations(self, data: Dict[str, Any]) -> str:
         """Build template-based recommendations section."""
-        
         risk_assessment = data.get("risk_assessment", {})
+        scores = risk_assessment.get("scores", {}) if risk_assessment else {}
+        high_risk_count = sum(1 for score in scores.values() if score > 5.0) if scores else 0
         
-        recommendations = "## Clinical Recommendations\n\n"
+        content = f"**Recommendations**\n\n"
         
-        # Check for high-risk findings
-        has_high_risk = False
-        if risk_assessment and "scores" in risk_assessment:
-            has_high_risk = any(score > self.config.risk_threshold 
-                              for score in risk_assessment["scores"].values())
-        
-        if has_high_risk:
-            recommendations += """### Immediate Actions
-
-1. **Genetic Counseling:** Consultation with a certified genetic counselor is recommended to discuss these findings and their implications.
-
-2. **Clinical Correlation:** These results should be interpreted in the context of personal and family medical history.
-
-3. **Enhanced Screening:** Consider more frequent or earlier cancer screening based on identified risks.
-
-### Follow-up Considerations
-
-- Discuss findings with your healthcare provider
-- Consider family testing if appropriate
-- Review screening recommendations with specialists
-- Stay informed about advances in genetic medicine
-
-"""
+        if high_risk_count > 0:
+            content += "- Genetic counseling is recommended to discuss these findings and develop a personalized risk management plan\n"
+            content += "- Enhanced screening protocols may be appropriate for elevated cancer risks\n"
+            content += "- Consider consultation with oncology specialists for high-risk findings\n"
+            content += "- Maintain regular follow-up care and health monitoring\n"
         else:
-            recommendations += """### Standard Care Recommendations
-
-1. **Routine Screening:** Continue with standard cancer screening protocols appropriate for your age and risk factors.
-
-2. **Healthy Lifestyle:** Maintain healthy lifestyle choices that can reduce cancer risk regardless of genetic profile.
-
-3. **Stay Informed:** Keep up with evolving genetic research and screening guidelines.
-
-### Important Notes
-
-- These results do not eliminate all cancer risk
-- Environmental and lifestyle factors remain important
-- Genetic testing technology continues to evolve
-
-"""
+            content += "- Adhere to standard age-appropriate cancer screening protocols\n"
+            content += "- Maintain healthy lifestyle including regular exercise and balanced diet\n"
+            content += "- Continue routine preventive care and health maintenance\n"
+            content += "- Consider genetic counseling if strong family history of cancer emerges\n"
         
-        return recommendations
+        content += "- Consult a qualified healthcare provider for personalized guidance."
+        
+        return content
     
-    def _build_technical_appendix(self, data: Dict[str, Any]) -> str:
-        """Build technical appendix section."""
-        
-        appendix = "## Technical Appendix\n\n"
-        
-        # Analysis methods
-        appendix += "### Analysis Methods\n\n"
-        appendix += "This report was generated using the GeneKnow genomic analysis pipeline, which includes:\n\n"
-        appendix += "- **Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency\n"
-        appendix += "- **Population Analysis:** Comparison with reference populations and allele frequencies\n"
-        appendix += "- **TCGA Integration:** Matching variants against The Cancer Genome Atlas database\n"
-        appendix += "- **CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction\n"
-        appendix += "- **Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment\n"
-        appendix += "- **Machine Learning:** Advanced risk models trained on cancer genomics data\n\n"
-        
-        # Quality metrics
+    def _build_standardized_technical_appendix(self, data: Dict[str, Any]) -> str:
+        """Build standardized technical appendix that's the same for every report."""
         summary = data.get("summary", {})
-        appendix += "### Quality Metrics\n\n"
-        appendix += f"- **Total Variants Identified:** {summary.get('total_variants_found', 0)}\n"
-        appendix += f"- **Variants Passing QC:** {summary.get('variants_passed_qc', 0)}\n"
-        
-        if summary.get('total_variants_found', 0) > 0:
-            pass_rate = (summary.get('variants_passed_qc', 0) / summary['total_variants_found']) * 100
-            appendix += f"- **QC Pass Rate:** {pass_rate:.1f}%\n"
-        
-        appendix += "\n"
-        
-        # Database information
         tcga_summary = data.get("tcga_summary", {})
-        if tcga_summary:
-            appendix += "### Database Coverage\n\n"
-            cancer_types = tcga_summary.get("cancer_types_analyzed", [])
-            if cancer_types:
-                appendix += f"- **TCGA Cancer Types:** {len(cancer_types)} ({', '.join(cancer_types)})\n"
-            
-            variants_with_data = tcga_summary.get("variants_with_tcga_data", 0)
-            appendix += f"- **Variants with TCGA Data:** {variants_with_data}\n\n"
         
-        # Limitations
-        appendix += "### Limitations\n\n"
-        appendix += "- This analysis is based on current scientific knowledge and databases\n"
-        appendix += "- Risk estimates are population-based and may not apply to all individuals\n"
-        appendix += "- Not all genetic variants associated with cancer risk are included\n"
-        appendix += "- Results should be interpreted by qualified healthcare professionals\n"
-        appendix += "- This analysis is for research purposes and not for clinical diagnosis\n\n"
+        total_variants = summary.get('total_variants_found', 0)
+        qc_variants = summary.get('variants_passed_qc', 0)
+        qc_rate = (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
+        
+        appendix = f"""## Technical Appendix
+
+### Analysis Methods
+
+This report was generated using the GeneKnow genomic analysis pipeline, which includes:
+
+- **Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency
+- **Population Analysis:** Comparison with reference populations and allele frequencies
+- **TCGA Integration:** Matching variants against The Cancer Genome Atlas database
+- **CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction
+- **Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment
+- **Machine Learning:** Advanced risk models trained on cancer genomics data
+
+### Quality Metrics
+
+- **Total Variants Identified:** {total_variants}
+- **Variants Passing QC:** {qc_variants}
+- **QC Pass Rate:** {qc_rate:.1f}%
+
+### Database Coverage
+
+- **TCGA Cancer Types:** 5 (breast, colon, lung, prostate, blood)
+- **Variants with TCGA Data:** {tcga_summary.get('variants_with_tcga_data', 0)}
+
+### Limitations
+
+- This analysis is based on current scientific knowledge and databases
+- Risk estimates are population-based and may not apply to all individuals
+- Not all genetic variants associated with cancer risk are included
+- Results should be interpreted by qualified healthcare professionals
+- This analysis is for research purposes and not for clinical diagnosis"""
         
         return appendix
     
-    def _build_glossary(self, content: str) -> str:
-        """Build glossary based on terms found in content."""
+    def _build_standardized_glossary(self, content: str) -> str:
+        """Build standardized glossary with terms relevant to the report content."""
+        glossary = "## Glossary\n\n"
         
-        found_terms = self.glossary.find_terms_in_text(content)
+        # Always include these basic terms
+        glossary += "**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n"
+        glossary += "**Pathogenic:** A genetic variant that is known to cause disease.\n\n"
         
-        if not found_terms:
-            return ""
+        # Add additional terms based on content
+        if "frameshift" in content.lower():
+            glossary += "**Frameshift:** A genetic mutation that causes a shift in the reading frame of DNA, often resulting in a nonfunctional protein.\n\n"
         
-        glossary_section = "## Glossary\n\n"
+        if "missense" in content.lower():
+            glossary += "**Missense Variant:** A genetic change that results in a different amino acid being incorporated into the protein.\n\n"
         
-        # Sort terms alphabetically
-        sorted_terms = sorted(found_terms)
-        
-        for term in sorted_terms:
-            definition = self.glossary.get_definition(term)
-            if definition:
-                glossary_section += f"**{term.title()}:** {definition}\n\n"
-        
-        return glossary_section
+        # Remove trailing newlines
+        return glossary.rstrip()
     
-    def _build_basic_glossary(self) -> str:
-        """Build basic glossary with common terms."""
-        
-        common_terms = [
-            "allele frequency",
-            "CADD score", 
-            "clinical significance",
-            "pathogenic",
-            "polygenic risk score",
-            "TCGA",
-            "variant of uncertain significance"
-        ]
-        
-        glossary_section = "## Glossary\n\n"
-        
-        for term in common_terms:
-            definition = self.glossary.get_definition(term)
-            if definition:
-                glossary_section += f"**{term.title()}:** {definition}\n\n"
-        
-        return glossary_section
-    
-    def _build_footer(self, data: Dict[str, Any], report_id: str) -> str:
-        """Build report footer."""
-        
-        footer = """---
+    def _build_standardized_footer(self, data: Dict[str, Any], report_id: str) -> str:
+        """Build standardized footer that's the same for every report."""
+        footer = f"""---
 
 ## Important Disclaimers
 
@@ -473,9 +395,7 @@ The assessment utilized multiple computational approaches including population f
 
 For questions about this report or genetic counseling resources, please consult with your healthcare provider or a certified genetic counselor.
 
-"""
-        
-        footer += f"*Report generated by GeneKnow Pipeline - Report ID: {report_id}*\n"
+*Report generated by GeneKnow Pipeline - Report ID: {report_id}*"""
         
         return footer
     
