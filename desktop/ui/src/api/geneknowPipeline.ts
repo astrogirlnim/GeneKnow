@@ -76,6 +76,39 @@ export interface JobResult {
   processing_time: number;
 }
 
+// SHAP Validation Types
+export interface SHAPContributor {
+  feature: string;
+  display_name: string;
+  shap_value: number;
+  abs_contribution: number;
+  direction: 'increases' | 'decreases';
+}
+
+export interface SHAPValidationDetails {
+  status: 'PASS' | 'FLAG_FOR_REVIEW' | 'ERROR' | 'SKIPPED';
+  risk_score: number;
+  top_contributors: SHAPContributor[];
+  validation_reasons: string[];
+  rule_results: {
+    [ruleName: string]: {
+      passed: boolean;
+      reasons: string[];
+    };
+  };
+  shap_values: number[];
+  feature_names: string[];
+  model_type: string;
+}
+
+export interface SHAPValidation {
+  status: 'PASS' | 'FLAG_FOR_REVIEW' | 'ERROR' | 'SKIPPED';
+  reasons: string[];
+  top_contributors: SHAPContributor[];
+  feature_importance: Record<string, number>;
+  details: SHAPValidationDetails;
+}
+
 export interface JobProgress {
   job_id: string;
   status: string;
@@ -115,6 +148,7 @@ export interface PipelineResult {
       cancer_gene_variants: number;
       description: string;
     };
+    shap_validation?: SHAPValidation;
     metrics?: {
       timestamp: string;
       pipeline_version: string;

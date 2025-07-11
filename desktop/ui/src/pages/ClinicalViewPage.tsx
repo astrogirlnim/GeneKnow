@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
+import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions for external libraries
@@ -37,6 +38,169 @@ declare global {
   // Global jsPDF might be available
   const jsPDF: JsPDFConstructor | undefined;
 }
+
+// Mock SHAP validation for testing - different statuses for different risk levels
+const getMockSHAPValidation = (riskLevel: string) => {
+  switch (riskLevel) {
+    case 'high':
+      return {
+        status: 'FLAG_FOR_REVIEW' as const,
+        reasons: [
+          'The AI predicted HIGH RISK (82%) but this appears to be based on indirect factors (Gene/Pathway Burden Score, TCGA Tumor Enrichment) rather than known disease-causing mutations. The prediction may be less reliable.'
+        ],
+        top_contributors: [
+          {
+            feature: 'gene_burden_score',
+            display_name: 'Gene/Pathway Burden Score',
+            shap_value: 0.35,
+            abs_contribution: 0.35,
+            direction: 'increases' as const
+          },
+          {
+            feature: 'tcga_enrichment',
+            display_name: 'TCGA Tumor Enrichment',
+            shap_value: 0.28,
+            abs_contribution: 0.28,
+            direction: 'increases' as const
+          },
+          {
+            feature: 'prs_score',
+            display_name: 'Polygenic Risk Score',
+            shap_value: 0.19,
+            abs_contribution: 0.19,
+            direction: 'increases' as const
+          }
+        ],
+        feature_importance: {
+          'gene_burden_score': 0.35,
+          'tcga_enrichment': 0.28,
+          'prs_score': 0.19,
+          'clinvar_pathogenic': 0.18,
+          'clinvar_benign': -0.05,
+          'cadd_score': 0.15
+        } as Record<string, number>,
+        details: {
+          status: 'FLAG_FOR_REVIEW' as const,
+          risk_score: 0.82,
+          top_contributors: [],
+          validation_reasons: [],
+          rule_results: {},
+          shap_values: [],
+          feature_names: [],
+          model_type: 'GradientBoostingRegressor'
+        }
+      };
+    
+    case 'medium':
+      return {
+        status: 'ERROR' as const,
+        reasons: [
+          'A technical error occurred during the confidence check validation. The model\'s prediction appears sound, but automated validation could not be completed.'
+        ],
+        top_contributors: [
+          {
+            feature: 'mismatch_repair_genes',
+            display_name: 'Mismatch Repair Genes',
+            shap_value: 0.42,
+            abs_contribution: 0.42,
+            direction: 'increases' as const
+          },
+          {
+            feature: 'prs_score',
+            display_name: 'Polygenic Risk Score',
+            shap_value: 0.31,
+            abs_contribution: 0.31,
+            direction: 'increases' as const
+          }
+        ],
+        feature_importance: {
+          'mismatch_repair_genes': 0.42,
+          'prs_score': 0.31,
+          'clinvar_pathogenic': 0.27
+        } as Record<string, number>,
+        details: {
+          status: 'ERROR' as const,
+          risk_score: 0.45,
+          top_contributors: [],
+          validation_reasons: [],
+          rule_results: {},
+          shap_values: [],
+          feature_names: [],
+          model_type: 'GradientBoostingRegressor'
+        }
+      };
+    
+    case 'low':
+      return {
+        status: 'PASS' as const,
+        reasons: [
+          'The AI\'s risk prediction is well-supported by the genomic evidence. The model\'s reasoning aligns with established clinical guidelines.'
+        ],
+        top_contributors: [
+          {
+            feature: 'clinvar_pathogenic',
+            display_name: 'Known Pathogenic Variants',
+            shap_value: 0.25,
+            abs_contribution: 0.25,
+            direction: 'increases' as const
+          },
+          {
+            feature: 'tumor_suppressor_genes',
+            display_name: 'Tumor Suppressor Genes',
+            shap_value: 0.22,
+            abs_contribution: 0.22,
+            direction: 'increases' as const
+          },
+          {
+            feature: 'protective_variants',
+            display_name: 'Protective Variants',
+            shap_value: -0.18,
+            abs_contribution: 0.18,
+            direction: 'decreases' as const
+          }
+        ],
+        feature_importance: {
+          'clinvar_pathogenic': 0.25,
+          'tumor_suppressor_genes': 0.22,
+          'protective_variants': -0.18,
+          'prs_score': 0.15
+        } as Record<string, number>,
+        details: {
+          status: 'PASS' as const,
+          risk_score: 0.15,
+          top_contributors: [],
+          validation_reasons: [],
+          rule_results: {},
+          shap_values: [],
+          feature_names: [],
+          model_type: 'GradientBoostingRegressor'
+        }
+      };
+    
+    case 'skipped':
+      return {
+        status: 'SKIPPED' as const,
+        reasons: [
+          'The confidence check was not applicable to this analysis type. The genetic variants identified do not fall within the model\'s validation scope.'
+        ],
+        top_contributors: [],
+        feature_importance: {} as Record<string, number>,
+        details: {
+          status: 'SKIPPED' as const,
+          risk_score: 0.0,
+          top_contributors: [],
+          validation_reasons: [],
+          rule_results: {},
+          shap_values: [],
+          feature_names: [],
+          model_type: 'GradientBoostingRegressor'
+        }
+      };
+    
+    default:
+      return null;
+  }
+};
 
 // Enhanced genomic data structure with transformations and mutations
 const mockGenomicData = {
@@ -1249,12 +1413,17 @@ const ClinicalViewPage: React.FC = () => {
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
   
+  // Extract risk level from URL parameter
+  const riskLevel = searchParams.get('risk') || 'high';
+  
+  // Get the appropriate SHAP validation data
+  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
+  
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
   const fileName = location.state?.fileName as string | undefined;
   
-  // Get the risk level from URL parameters, default to 'low' if not specified
-  const riskLevel = searchParams.get('risk') || 'low';
+  // Get mock data for UI elements
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
   // Function to convert pipeline results to the format expected by the clinical view
@@ -3073,6 +3242,12 @@ const ClinicalViewPage: React.FC = () => {
                     <p style={{ fontSize: '0.75rem', opacity: 0.8, color: '#4B5563' }}>{alert.desc}</p>
                   </div>
                 ))}
+                
+                {/* Confidence Check */}
+                <ConfidenceCheck 
+                  validation={mockSHAPValidation} 
+                  isDetailed={true} 
+                />
               </div>
             </div>
 
