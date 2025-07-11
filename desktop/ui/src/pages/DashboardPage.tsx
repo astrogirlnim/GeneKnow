@@ -1404,6 +1404,39 @@ ${content}`;
                   Clinical Reports
                 </h3>
                 
+                {/* Download PDF Button */}
+                {(markdownContent || pipelineResults?.enhanced_report_content?.markdown) && (
+                  <button
+                    onClick={downloadPDF}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#2563EB',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 200ms ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#1D4ED8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#2563EB';
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download PDF
+                  </button>
+                )}
 
               </div>
 
