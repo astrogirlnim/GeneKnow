@@ -971,6 +971,7 @@ const DashboardPage: React.FC = () => {
             </div>
           )}
 
+
           {/* Headline Metrics */}
           <div style={{
             display: 'grid',

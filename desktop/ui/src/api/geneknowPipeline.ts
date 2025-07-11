@@ -154,56 +154,67 @@ export interface PipelineResult {
       pipeline_version: string;
       confidence_metrics: {
         mean_model_confidence: number;
+        min_model_confidence?: number;
+        max_model_confidence?: number;
+        risk_score_mean?: number;
+        risk_score_std?: number;
+        risk_score_cv?: number;
+        max_risk_score?: number;
+        high_risk_count?: number;
         ml_fusion_confidence: number;
-        risk_score_range: number;
-        model_confidences: Record<string, number>;
+        ml_fusion_risk_category?: string;
       };
       variant_metrics: {
         total_variants: number;
         pathogenic_variants: number;
         benign_variants: number;
         uncertain_variants: number;
+        pathogenic_ratio?: number;
         high_cadd_variants: number;
         genes_affected: number;
-        mean_cadd_score: number;
-        max_cadd_score: number;
-        pathogenic_ratio: number;
+        cancer_genes_affected?: number;
+        high_impact_genes?: number;
+        mean_cadd_score?: number;
+        max_cadd_score?: number;
       };
-      prediction_metrics: {
-        max_risk_score: number;
-        high_risk_cancer_count: number;
-        ml_risk_category: string;
-        aggregate_confidence: number;
-        overall_risk_level: string;
-        high_risk_cancers: string[];
+      prediction_metrics: Record<string, number | string>;
+      integration_metrics?: {
+        prs_confidence: string;
+        prs_high_risk_cancers: string[];
+        pathway_burden_score: number;
+        high_burden_pathways: string[];
       };
       performance_indicators: {
         mean_confidence: number;
         mean_risk_score: number;
         high_confidence_ratio: number;
         variant_quality_score: number;
-        total_predictions: number;
-      };
-      integration_metrics: {
-        prs_confidence: string;
-        prs_high_risk_cancers: string[];
-        pathway_burden_score: number;
-        high_burden_pathways: string[];
+        total_predictions?: number;
       };
       validation_structure: {
         validation_ready: boolean;
         ground_truth_available: boolean;
-        validation_metrics: {
+        metrics_placeholder?: {
           auc_roc?: number;
           sensitivity?: number;
           specificity?: number;
           f1_score?: number;
+          matthews_corrcoef?: number;
+          balanced_accuracy?: number;
+          mae?: number;
+          rmse?: number;
+          r2_score?: number;
+          concordance_rate?: number;
+          cohen_kappa?: number;
+          c_index?: number;
+          log_rank_p?: number;
         };
+        validation_note?: string;
       };
     };
     metrics_summary?: {
       key_findings: {
-        highest_risk_cancer: string;
+        highest_risk_cancer: string | null;
         highest_risk_score: number;
         pathogenic_variant_count: number;
         confidence_level: string;
@@ -213,7 +224,6 @@ export interface PipelineResult {
         mean_risk_score: number;
         high_confidence_ratio: number;
         variant_quality_score: number;
-        total_predictions: number;
       };
       validation_status: boolean;
     };
