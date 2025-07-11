@@ -2582,7 +2582,7 @@ const ClinicalViewPage: React.FC = () => {
                             <div style={{
                               position: 'absolute',
                               left: '50%',
-                              bottom: 'calc(100% + 0.5rem)',
+                              top: 'calc(100% + 0.5rem)',
                               transform: 'translateX(-50%)',
                               width: '18rem',
                               padding: '0.75rem',
@@ -2603,13 +2603,13 @@ const ClinicalViewPage: React.FC = () => {
                               <div style={{
                                 position: 'absolute',
                                 left: '50%',
-                                top: '100%',
+                                bottom: '100%',
                                 transform: 'translateX(-50%)',
                                 width: '0',
                                 height: '0',
                                 borderLeft: '0.5rem solid transparent',
                                 borderRight: '0.5rem solid transparent',
-                                borderTop: '0.5rem solid #1F2937'
+                                borderBottom: '0.5rem solid #1F2937'
                               }}></div>
                             </div>
                           </div>
@@ -2647,7 +2647,7 @@ const ClinicalViewPage: React.FC = () => {
                             <div style={{
                               position: 'absolute',
                               left: '50%',
-                              bottom: 'calc(100% + 0.5rem)',
+                              top: 'calc(100% + 0.5rem)',
                               transform: 'translateX(-50%)',
                               width: '18rem',
                               padding: '0.75rem',
@@ -2668,13 +2668,13 @@ const ClinicalViewPage: React.FC = () => {
                               <div style={{
                                 position: 'absolute',
                                 left: '50%',
-                                top: '100%',
+                                bottom: '100%',
                                 transform: 'translateX(-50%)',
                                 width: '0',
                                 height: '0',
                                 borderLeft: '0.5rem solid transparent',
                                 borderRight: '0.5rem solid transparent',
-                                borderTop: '0.5rem solid #1F2937'
+                                borderBottom: '0.5rem solid #1F2937'
                               }}></div>
                             </div>
                           </div>
@@ -2856,7 +2856,7 @@ const ClinicalViewPage: React.FC = () => {
                               pointerEvents: 'none',
                               border: '1px solid #374151'
                             }}>
-                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Variant call quality score (0-100). Green ({'>'}90) = high confidence, Yellow (70-90) = moderate confidence, Red ({'<'}70) = low confidence. Score of 100 indicates variants that passed all quality filters.</p>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Variant call quality score (0-100). Green (&gt;90) = high confidence, Yellow (70-90) = moderate confidence, Red (&lt;70) = low confidence. Score of 100 indicates variants that passed all quality filters.</p>
                               <div style={{
                                 position: 'absolute',
                                 bottom: '100%',
