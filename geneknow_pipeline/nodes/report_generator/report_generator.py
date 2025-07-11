@@ -44,6 +44,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             structured_json = _create_basic_structured_json(state)
             state["structured_json"] = structured_json
         
+        logger.info(f"Structured JSON keys: {list(structured_json.keys()) if structured_json else 'None'}")
+        
         # Filter for high-risk findings only (>5% risk)
         filtered_data = _filter_high_risk_findings(structured_json, config.risk_threshold)
         
@@ -61,6 +63,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Get backend info for logging
         backend_info = model_interface.get_backend_info()
         logger.info(f"Report generation backend: {backend_info}")
+        
+        # Create report info early (before generating content)
+        report_info = {
+            "report_id": report_id,
+            "backend_used": backend_info["backend"],
+            "model_used": backend_info.get("model"),
+            "llm_enhanced": backend_info["available"],
+            "generation_time": datetime.now().isoformat(),
+            "high_risk_findings_count": _count_high_risk_findings(filtered_data, config.risk_threshold)
+        }
         
         # Generate report content
         llm_content = None
@@ -92,23 +104,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         
         logger.info(f"Report generation complete. Files: {list(report_paths.keys())}")
         
-        # Update state with report information
-        report_info = {
-            "report_id": report_id,
-            "report_paths": report_paths,
-            "backend_used": backend_info["backend"],
-            "model_used": backend_info.get("model"),
-            "llm_enhanced": backend_info["available"],
-            "generation_time": datetime.now().isoformat(),
-            "high_risk_findings_count": _count_high_risk_findings(filtered_data, config.risk_threshold)
-        }
+        # Update report info with paths
+        report_info["report_paths"] = report_paths
         
-        # Preserve original report_sections for dashboard compatibility
-        original_report_sections = state.get("report_sections", {})
+        # Create report_sections for dashboard compatibility
+        dashboard_report_sections = _create_dashboard_report_sections(filtered_data, report_info)
         
         # Return updated state
         return {
-            "report_sections": original_report_sections,  # Keep original for dashboard
+            "report_sections": dashboard_report_sections,  # For dashboard display
             "report_generator_info": report_info,  # New report generator info
             "enhanced_report_paths": report_paths,  # Paths to generated files
             "pipeline_status": "completed"
@@ -118,8 +122,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Report generation failed: {str(e)}")
         
         # Return error state but don't break the pipeline
+        error_report_sections = {
+            "error": {
+                "title": "Report Generation Error",
+                "content": f"Failed to generate enhanced report: {str(e)}",
+                "severity": "high"
+            }
+        }
+        
         return {
-            "report_sections": state.get("report_sections", {}),  # Preserve original
+            "report_sections": error_report_sections,  # Error message for dashboard
             "report_generator_info": {
                 "error": str(e),
                 "generation_time": datetime.now().isoformat(),
@@ -209,7 +221,7 @@ def _filter_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> D
     filtered_data = data.copy()
     
     # Filter risk assessment for high-risk findings only
-    risk_assessment = filtered_data.get("risk_assessment", {})
+    risk_assessment = filtered_data.get("risk_assessment") or {}
     if risk_assessment and "scores" in risk_assessment:
         scores = risk_assessment["scores"]
         risk_genes = risk_assessment.get("risk_genes", {})
@@ -246,11 +258,76 @@ def _filter_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> D
 def _count_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> int:
     """Count the number of high-risk findings."""
     
-    risk_assessment = data.get("risk_assessment", {})
+    risk_assessment = data.get("risk_assessment") or {}
     if not risk_assessment or "scores" not in risk_assessment:
         return 0
     
     return sum(1 for score in risk_assessment["scores"].values() if score > risk_threshold)
+
+
+def _create_dashboard_report_sections(data: Dict[str, Any], report_info: Dict[str, Any]) -> Dict[str, Any]:
+    """Create report_sections structure for dashboard display."""
+    
+    logger.info(f"Creating dashboard sections with data keys: {list(data.keys()) if data else 'None'}")
+    logger.info(f"Report info available: {report_info is not None}")
+    
+    sections = {}
+    
+    # Overview section
+    risk_assessment = data.get("risk_assessment") or {}
+    high_risk_findings = risk_assessment.get("high_risk_findings", [])
+    
+    if high_risk_findings:
+        # High-risk overview
+        top_risk = max(high_risk_findings, key=lambda x: x["risk_percentage"])
+        sections["overview"] = {
+            "title": "Analysis Overview",
+            "content": f"Genomic analysis identified {len(high_risk_findings)} cancer types with elevated risk. Highest risk: {top_risk['cancer_type']} at {top_risk['risk_percentage']:.1f}%.",
+            "severity": "high" if top_risk["risk_percentage"] >= 50 else "medium"
+        }
+    else:
+        # Low-risk overview
+        sections["overview"] = {
+            "title": "Analysis Overview", 
+            "content": "Genomic analysis completed successfully. All cancer risk levels are within normal baseline ranges.",
+            "severity": "low"
+        }
+    
+    # Key findings section
+    if high_risk_findings:
+        findings_content = []
+        for finding in high_risk_findings[:3]:  # Top 3 findings
+            findings_content.append(f"{finding['cancer_type'].title()}: {finding['risk_percentage']:.1f}% risk")
+        
+        sections["key_findings"] = {
+            "title": "Key Findings",
+            "content": ". ".join(findings_content) + ".",
+            "severity": "high" if high_risk_findings[0]["risk_percentage"] >= 50 else "medium",
+            "technical_details": f"Analysis included {data.get('summary', {}).get('total_variants_found', 0)} variants with {data.get('summary', {}).get('variants_passed_qc', 0)} passing quality control."
+        }
+    
+    # Variant analysis section
+    variant_details = data.get("variant_details", [])
+    if variant_details:
+        key_genes = [v["gene"] for v in variant_details[:3]]
+        sections["variant_analysis"] = {
+            "title": "Variant Analysis",
+            "content": f"Key genetic variants identified in {', '.join(key_genes)}. Detailed pathogenicity assessment completed.",
+            "severity": "medium",
+            "technical_details": f"CADD scores and clinical significance evaluated for {len(variant_details)} variants."
+        }
+    
+    # Report generation info
+    if report_info:
+        backend_used = report_info.get("backend_used", "template")
+        if backend_used != "none":
+            sections["ai_enhancement"] = {
+                "title": "AI-Enhanced Analysis",
+                "content": f"Report generated using {backend_used} LLM with model {report_info.get('model_used', 'unknown')}. Enhanced clinical interpretations provided.",
+                "severity": "low"
+            }
+    
+    return sections
 
 
 def _generate_llm_content(data: Dict[str, Any], 
