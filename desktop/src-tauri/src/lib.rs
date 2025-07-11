@@ -415,10 +415,6 @@ async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<Stri
 
 #[command]
 async fn delete_temp_file(file_path: String) -> Result<(), String> {
-    use std::path::Path;
-    
-    let path = Path::new(&file_path);
-    
     // Security check: only delete files in temp directories
     let temp_markers = ["geneknow_temp", "tmp", "temp", "T/"];
     let path_str = file_path.to_lowercase();
@@ -427,12 +423,69 @@ async fn delete_temp_file(file_path: String) -> Result<(), String> {
         return Err("Can only delete files in temporary directories".to_string());
     }
     
-    if path.exists() {
-        fs::remove_file(path).map_err(|e| e.to_string())?;
-        log::info!("Deleted temporary file: {}", file_path);
+    match fs::remove_file(&file_path) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to delete file {}: {}", file_path, e))
+    }
+}
+
+#[command]
+async fn read_text_file(path: String) -> Result<String, String> {
+    match fs::read_to_string(&path) {
+        Ok(content) => Ok(content),
+        Err(e) => Err(format!("Failed to read file {}: {}", path, e))
+    }
+}
+
+#[command]
+async fn save_file_dialog(filename: String, file_content: Vec<u8>) -> Result<String, String> {
+    // Get the user's Downloads directory
+    let downloads_dir = if cfg!(target_os = "windows") {
+        std::env::var("USERPROFILE")
+            .map(|profile| PathBuf::from(profile).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("C:\\Downloads"))
+    } else if cfg!(target_os = "macos") {
+        std::env::var("HOME")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("/tmp"))
+    } else {
+        // Linux
+        std::env::var("HOME")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|_| PathBuf::from("/tmp"))
+    };
+    
+    // Ensure the downloads directory exists
+    if let Err(e) = fs::create_dir_all(&downloads_dir) {
+        return Err(format!("Failed to create downloads directory: {}", e));
     }
     
-    Ok(())
+    // Create the full file path
+    let file_path = downloads_dir.join(&filename);
+    
+    // Check if file already exists and create a unique name if needed
+    let mut final_path = file_path.clone();
+    let mut counter = 1;
+    while final_path.exists() {
+        let stem = file_path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
+        let ext = file_path.extension().and_then(|s| s.to_str()).unwrap_or("");
+        let new_name = if ext.is_empty() {
+            format!("{} ({})", stem, counter)
+        } else {
+            format!("{} ({}).{}", stem, counter, ext)
+        };
+        final_path = downloads_dir.join(new_name);
+        counter += 1;
+    }
+    
+    // Write the file
+    match fs::write(&final_path, file_content) {
+        Ok(_) => {
+            log::info!("Saved file to: {:?}", final_path);
+            Ok(final_path.to_string_lossy().to_string())
+        }
+        Err(e) => Err(format!("Failed to save file: {}", e))
+    }
 }
 
 // ========================================
@@ -973,6 +1026,126 @@ async fn get_job_results(job_id: String) -> Result<serde_json::Value, String> {
     }
 }
 
+#[command]
+async fn convert_markdown_to_pdf(
+    markdown_content: String, 
+    filename: String
+) -> Result<String, String> {
+    use std::io::Write;
+    use std::env;
+    
+    println!("Converting markdown to PDF using pandoc");
+    
+    // Create temporary directory for markdown file
+    let temp_dir = env::temp_dir();
+    let temp_md_path = temp_dir.join(format!("geneknow_report_{}.md", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()));
+    let temp_pdf_path = temp_dir.join(format!("geneknow_report_{}.pdf", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()));
+    
+    // Write markdown content to temporary file
+    let mut temp_file = std::fs::File::create(&temp_md_path)
+        .map_err(|e| format!("Failed to create temporary markdown file: {}", e))?;
+    
+    temp_file.write_all(markdown_content.as_bytes())
+        .map_err(|e| format!("Failed to write markdown content: {}", e))?;
+    
+    // Check if pandoc is available
+    let pandoc_check = Command::new("pandoc")
+        .arg("--version")
+        .output();
+    
+    if pandoc_check.is_err() {
+        // Clean up temp file
+        let _ = std::fs::remove_file(&temp_md_path);
+        return Err("pandoc command not found. Please install pandoc first.".to_string());
+    }
+    
+    // Run pandoc to convert markdown to PDF
+    let mut pandoc_cmd = Command::new("pandoc");
+    
+    // Add LaTeX path to environment for macOS
+    if cfg!(target_os = "macos") {
+        if let Ok(current_path) = env::var("PATH") {
+            let new_path = format!("{}:/Library/TeX/texbin", current_path);
+            pandoc_cmd.env("PATH", new_path);
+        } else {
+            pandoc_cmd.env("PATH", "/Library/TeX/texbin:/usr/local/bin:/usr/bin:/bin");
+        }
+    }
+    
+    let pandoc_result = pandoc_cmd
+        .arg(temp_md_path.to_str().unwrap())
+        .arg("-o")
+        .arg(temp_pdf_path.to_str().unwrap())
+        .arg("--variable=geometry:margin=2cm")
+        .arg("--variable=fontsize=11pt")
+        .arg("--variable=papersize=a4")
+        .output();
+    
+    // Clean up temporary markdown file
+    let _ = std::fs::remove_file(&temp_md_path);
+    
+    match pandoc_result {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            
+            println!("Pandoc stdout: {}", stdout);
+            println!("Pandoc stderr: {}", stderr);
+            println!("Pandoc exit status: {}", output.status);
+            
+            if output.status.success() {
+                // Check if PDF was actually created
+                if !temp_pdf_path.exists() {
+                    let _ = std::fs::remove_file(&temp_pdf_path);
+                    return Err("Pandoc completed but PDF file was not created".to_string());
+                }
+                
+                println!("PDF generated successfully, opening save dialog");
+                
+                // Read the generated PDF
+                let pdf_content = std::fs::read(&temp_pdf_path)
+                    .map_err(|e| format!("Failed to read generated PDF: {}", e))?;
+                
+                // Use Tauri's file dialog to save the PDF
+                let save_dialog = rfd::AsyncFileDialog::new()
+                    .set_file_name(&filename)
+                    .add_filter("PDF files", &["pdf"])
+                    .save_file()
+                    .await;
+                
+                let final_path = if let Some(file_path) = save_dialog {
+                    let path_str = file_path.path().to_string_lossy().to_string();
+                    
+                    // Write PDF content to chosen location
+                    std::fs::write(file_path.path(), &pdf_content)
+                        .map_err(|e| format!("Failed to save PDF file: {}", e))?;
+                    
+                    println!("PDF saved to: {}", path_str);
+                    path_str
+                } else {
+                    // Clean up temp PDF file
+                    let _ = std::fs::remove_file(&temp_pdf_path);
+                    return Err("Save cancelled by user".to_string());
+                };
+                
+                // Clean up temporary PDF file
+                let _ = std::fs::remove_file(&temp_pdf_path);
+                
+                Ok(final_path)
+            } else {
+                // Clean up temp PDF file
+                let _ = std::fs::remove_file(&temp_pdf_path);
+                Err(format!("pandoc failed with exit code {}: {}", output.status, stderr))
+            }
+        },
+        Err(e) => {
+            // Clean up temp PDF file
+            let _ = std::fs::remove_file(&temp_pdf_path);
+            Err(format!("Failed to run pandoc command: {}", e))
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -1107,7 +1280,11 @@ pub fn run() {
         test_pipeline_connectivity,
         // File processing helpers
         save_temp_file,
-        delete_temp_file
+        delete_temp_file,
+        read_text_file,
+        save_file_dialog,
+        // PDF generation
+        convert_markdown_to_pdf
     ])
     .on_window_event(|_window, event| {
         // Stop API server when app closes

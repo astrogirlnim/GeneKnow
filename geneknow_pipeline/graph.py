@@ -29,6 +29,7 @@ try:
         formatter,
         report_writer,
     )
+    from .nodes.report_generator import process as report_generator_process
 except ImportError:
     # Fall back to absolute imports (when running directly)
     from state import GenomicState
@@ -51,6 +52,7 @@ except ImportError:
         formatter,
         report_writer,
     )
+    from nodes.report_generator import process as report_generator_process
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -467,7 +469,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("shap_validator", shap_validator.process)
     workflow.add_node("metrics_calculator", metrics_calculator.process)
     workflow.add_node("formatter", formatter.process)
-    workflow.add_node("report_writer", report_writer.process)
+    workflow.add_node("report_generator", report_generator_process)
 
     # Define the entry point
     workflow.set_entry_point("file_input")
@@ -513,8 +515,8 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("shap_validator", "metrics_calculator")
     workflow.add_edge("metrics_calculator", "formatter")
 
-    workflow.add_edge("formatter", "report_writer")
-    workflow.add_edge("report_writer", END)
+    workflow.add_edge("formatter", "report_generator")
+    workflow.add_edge("report_generator", END)
 
     # Compile the graph
     compiled = workflow.compile()
@@ -573,6 +575,8 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "structured_json": {},
         "report_markdown": "",
         "report_sections": {},  # Add this line
+        "enhanced_report_content": {},  # For in-memory report content (HIPAA compliant)
+        "report_generator_info": {},  # For report generator
         "pipeline_status": "in_progress",
         "current_node": None,
         "completed_nodes": [],

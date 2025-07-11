@@ -33,7 +33,16 @@ except ImportError:
     HAS_NUMPY = False
 
 # Import local modules
-from graph import run_pipeline
+try:
+    # Try relative import first (when run as module)
+    from .graph import run_pipeline
+except ImportError:
+    # Fall back to absolute import (when run directly)
+    import sys
+    import os
+    # Add the parent directory to the path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from graph import run_pipeline
 
 # Custom JSON encoder to handle numpy types and datetime
 class NumpyEncoder(json.JSONEncoder):
@@ -280,6 +289,8 @@ def process_file_async(job_id: str):
                     'ml_risk_assessment': result.get('ml_risk_assessment', {}),
                     'completed_nodes': result.get('completed_nodes', []),
                     'warnings': result.get('warnings', []),
+                    'enhanced_report_content': result.get('enhanced_report_content', {}),
+                    'report_generator_info': result.get('report_generator_info', {}),
                     'result_file': result_file
                 })
             })

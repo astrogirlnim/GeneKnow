@@ -74,6 +74,8 @@ class GenomicState(TypedDict):
     report_markdown: Optional[str]  # LLM-generated report
     report_sections: Dict[str, Any]  # Structured report sections for frontend
     report_pdf_path: Optional[str]  # Final PDF location
+    enhanced_report_content: Dict[str, str]  # In-memory report content (markdown, html, txt)
+    report_generator_info: Dict[str, Any]  # Report generator metadata and info
 
     # Pipeline metadata
     pipeline_start_time: datetime

@@ -3039,7 +3039,21 @@ const ClinicalViewPage: React.FC = () => {
             </div>
             <div>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => {
+                  // Navigate back to dashboard preserving the analysis state
+                  if (pipelineResults && fileName) {
+                    // User has real analysis results - pass them back
+                    navigate('/dashboard', { 
+                      state: { 
+                        results: pipelineResults, 
+                        fileName: fileName 
+                      } 
+                    });
+                  } else {
+                    // Mock data case - pass the risk level
+                    navigate(`/dashboard?risk=${riskLevel}`);
+                  }
+                }}
                 style={{
                   padding: '0.5rem 1.25rem',
                   color: '#FFFFFF',
