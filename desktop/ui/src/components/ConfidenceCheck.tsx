@@ -355,7 +355,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
       
       <div style={{ marginBottom: '1rem' }}>
         {isAcknowledged && !showDetails ? (
-          <p style={{ fontSize: '0.875rem', color: '#166534', fontWeight: '500' }}>
+          <p style={{ fontSize: '0.875rem', color: '#4B5563', fontWeight: 'normal' }}>
             This analysis has been reviewed and confirmed by the user. The AI's risk assessment 
             and contributing factors have been acknowledged.
           </p>
@@ -366,51 +366,30 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
       
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
         {isAcknowledged && !showDetails ? (
-          <>
-            {/* Reviewed State - Show both Reviewed status and See Details option */}
-            <button
-              onClick={handleShowDetails}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#FFFFFF',
-                color: '#6B7280',
-                border: '1px solid #D1D5DB',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#F9FAFB';
-                e.currentTarget.style.borderColor = '#9CA3AF';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#FFFFFF';
-                e.currentTarget.style.borderColor = '#D1D5DB';
-              }}
-            >
-              See Details
-            </button>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#6B7280',
-                fontSize: '0.875rem',
-                fontWeight: '500'
-              }}
-            >
-              <div style={{
-                width: '0.5rem',
-                height: '0.5rem',
-                borderRadius: '50%',
-                background: '#22C55E'
-              }}></div>
-              Reviewed
-            </div>
-          </>
+          <button
+            onClick={handleShowDetails}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#FFFFFF',
+              color: '#6B7280',
+              border: '1px solid #D1D5DB',
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F9FAFB';
+              e.currentTarget.style.borderColor = '#9CA3AF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#D1D5DB';
+            }}
+          >
+            See Details
+          </button>
         ) : (
           <>
             {/* Warning State or Showing Details - Show main action */}
