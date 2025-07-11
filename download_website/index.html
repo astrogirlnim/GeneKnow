@@ -19,6 +19,12 @@
             background: #f9fafb;
             background: linear-gradient(135deg, #f9fafb 0%, #f0f4ff 100%);
         }
+        .video-container {
+            transform: rotate(0deg) !important;
+            transform-origin: center;
+            display: block;
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-white text-gray-800">
@@ -69,12 +75,20 @@
                         </div>
                     </div>
                     <div class="hidden md:block">
-                        <div class="bg-white p-2 rounded-xl shadow-2xl transform rotate-3">
+                        <div class="bg-white p-2 rounded-xl shadow-2xl video-container">
                             <div class="aspect-video bg-gray-100 rounded-lg p-4 border border-gray-200">
-                                <img src="https://assets-global.website-files.com/6571cd80213754c2540055b6/657233355e1d409b8b15082e_image_0305f5.jpeg" 
-                                     class="rounded-md shadow-lg w-full h-full object-cover"
-                                     alt="GeneKnow application dashboard preview"
-                                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/EBF4FF/3B82F6?text=App+Preview';" />
+                                <video 
+                                    class="rounded-md shadow-lg w-full h-full object-cover"
+                                    autoplay 
+                                    muted 
+                                    loop 
+                                    playsinline
+                                    controls>
+                                    <source src="assets/images/GeneKnow_Intro_MVP.mp4" type="video/mp4">
+                                    <img src="https://placehold.co/600x400/EBF4FF/3B82F6?text=App+Preview" 
+                                         class="rounded-md shadow-lg w-full h-full object-cover"
+                                         alt="GeneKnow application dashboard preview - Video not supported" />
+                                </video>
                             </div>
                         </div>
                     </div>
