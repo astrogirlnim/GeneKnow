@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
+import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions for external libraries
@@ -37,6 +38,55 @@ declare global {
   // Global jsPDF might be available
   const jsPDF: JsPDFConstructor | undefined;
 }
+
+// TEMPORARY: Mock SHAP validation for testing
+const MOCK_SHAP_VALIDATION = {
+  status: 'FLAG_FOR_REVIEW' as const,
+  reasons: [
+    'The AI predicted HIGH RISK (82%) but this appears to be based on indirect factors (Gene/Pathway Burden Score, TCGA Tumor Enrichment) rather than known disease-causing mutations. The prediction may be less reliable.'
+  ],
+  top_contributors: [
+    {
+      feature: 'gene_burden_score',
+      display_name: 'Gene/Pathway Burden Score',
+      shap_value: 0.35,
+      abs_contribution: 0.35,
+      direction: 'increases' as const
+    },
+    {
+      feature: 'tcga_enrichment',
+      display_name: 'TCGA Tumor Enrichment',
+      shap_value: 0.28,
+      abs_contribution: 0.28,
+      direction: 'increases' as const
+    },
+    {
+      feature: 'prs_score',
+      display_name: 'Polygenic Risk Score',
+      shap_value: 0.19,
+      abs_contribution: 0.19,
+      direction: 'increases' as const
+    }
+  ],
+  feature_importance: {
+    'gene_burden_score': 0.35,
+    'tcga_enrichment': 0.28,
+    'prs_score': 0.19,
+    'clinvar_pathogenic': 0.18,
+    'clinvar_benign': -0.05,
+    'cadd_score': 0.15
+  },
+  details: {
+    status: 'FLAG_FOR_REVIEW' as const,
+    risk_score: 0.82,
+    top_contributors: [],
+    validation_reasons: [],
+    rule_results: {},
+    shap_values: [],
+    feature_names: [],
+    model_type: 'GradientBoostingRegressor'
+  }
+};
 
 // Enhanced genomic data structure with transformations and mutations
 const mockGenomicData = {
@@ -3073,6 +3123,12 @@ const ClinicalViewPage: React.FC = () => {
                     <p style={{ fontSize: '0.75rem', opacity: 0.8, color: '#4B5563' }}>{alert.desc}</p>
                   </div>
                 ))}
+                
+                {/* Confidence Check */}
+                <ConfidenceCheck 
+                  validation={pipelineResults?.structured_json?.shap_validation || MOCK_SHAP_VALIDATION}
+                  isDetailed={true}
+                />
               </div>
             </div>
 

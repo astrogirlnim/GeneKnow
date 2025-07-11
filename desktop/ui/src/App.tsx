@@ -6,6 +6,7 @@ import HowItWorksPage from './pages/HowItWorksPage'
 import UploadPage from './pages/UploadPage'
 import DashboardPage from './pages/DashboardPage'
 import ClinicalViewPage from './pages/ClinicalViewPage'
+import ConfidenceCheckTest from './components/ConfidenceCheckTest' // TEMPORARY FOR TESTING
 import { apiConfig } from './api/apiConfig';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/clinical" element={<ClinicalViewPage />} />
+        <Route path="/test-confidence" element={<ConfidenceCheckTest />} /> {/* TEMPORARY FOR TESTING */}
       </Routes>
     </Router>
   )
