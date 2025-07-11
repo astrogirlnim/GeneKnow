@@ -17,7 +17,7 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
     """
     Simple variant caller for testing.
     In production, this would run DeepVariant.
-    
+
     For now, we'll use our pre-generated test VCF.
     """
     # In production, this would run:
@@ -27,18 +27,18 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
     #   --ref=reference.fa \
     #   --reads=aligned.bam \
     #   --output_vcf=variants.vcf
-    
+
     # For testing, use pre-generated VCF
     test_vcf = os.path.join(os.path.dirname(__file__), "..", "test_data", "test_variants.vcf")
     if os.path.exists(test_vcf):
         return test_vcf
-    
+
     # If no test VCF, create a simple one based on the BAM
     if output_dir is None:
         output_dir = os.path.dirname(bam_path)
-    
+
     vcf_path = os.path.join(output_dir, "variants.vcf")
-    
+
     # Create a minimal VCF header
     vcf_content = """##fileformat=VCFv4.2
 ##source=SimpleVariantCaller
@@ -52,10 +52,10 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample
 """.format(ref=os.path.basename(reference_path))
-    
+
     with open(vcf_path, 'w') as f:
         f.write(vcf_content)
-    
+
     logger.warning("Using simplified variant caller for testing. In production, use DeepVariant.")
     return vcf_path
 
@@ -63,22 +63,22 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
 def load_variant_annotations(annotation_file: str) -> Dict[str, Dict[str, Any]]:
     """
     Load variant annotations from TSV file.
-    
+
     Returns:
         Dictionary mapping variant_id to annotation info
     """
     annotations = {}
-    
+
     if not os.path.exists(annotation_file):
         logger.warning(f"Annotation file not found: {annotation_file}")
         return annotations
-    
+
     with open(annotation_file, 'r') as f:
         reader = csv.DictReader(f, delimiter='\t')
         for row in reader:
             # Create variant ID
             variant_id = f"{row['CHROM']}:{row['POS']}:{row['REF']}>{row['ALT']}"
-            
+
             annotations[variant_id] = {
                 "gene": row.get('GENE', 'Unknown'),
                 "consequence": row.get('CONSEQUENCE', 'unknown'),
@@ -86,54 +86,54 @@ def load_variant_annotations(annotation_file: str) -> Dict[str, Dict[str, Any]]:
                 "hgvs_p": row.get('HGVS_P', ''),
                 "impact": row.get('IMPACT', 'UNKNOWN')
             }
-    
+
     return annotations
 
 
 def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
     """
     Parse VCF file and extract variant information.
-    
+
     Args:
         vcf_path: Path to VCF file
-        
+
     Returns:
         List of variant dictionaries
     """
     variants = []
-    
+
     # Load annotations if available
     annotation_file = vcf_path.replace('.vcf', '_annotations.tsv')
     if not os.path.exists(annotation_file):
         annotation_file = os.path.join(
-            os.path.dirname(vcf_path), 
+            os.path.dirname(vcf_path),
             "test_annotations.tsv"
         )
-    
+
     annotations = load_variant_annotations(annotation_file)
-    
+
     # Parse VCF file
     vcf_reader = vcf.Reader(open(vcf_path, 'r'))
-    
+
     for record in vcf_reader:
         # Skip non-variant positions
         if record.ALT[0] is None:
             continue
-        
+
         # Extract basic variant info
         chrom = record.CHROM
         pos = record.POS
         ref = record.REF
         alt = str(record.ALT[0])
         qual = record.QUAL if record.QUAL else 0
-        
+
         # Create variant ID
         variant_id = f"{chrom}:{pos}:{ref}>{alt}"
-        
+
         # Extract INFO fields
         depth = record.INFO.get('DP', 0)
         allele_freq = record.INFO.get('AF', [0])[0] if 'AF' in record.INFO else 0
-        
+
         # Get genotype information
         if record.samples:
             sample = record.samples[0]
@@ -142,7 +142,7 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
         else:
             genotype = '0/1'
             sample_depth = depth
-        
+
         # Build variant dictionary
         variant = {
             "chrom": chrom,
@@ -155,7 +155,7 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
             "allele_freq": float(allele_freq),
             "genotype": genotype
         }
-        
+
         # Add annotations if available
         if variant_id in annotations:
             variant.update(annotations[variant_id])
@@ -168,16 +168,16 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
                 "hgvs_p": "",
                 "impact": "UNKNOWN"
             })
-        
+
         variants.append(variant)
-    
+
     return variants
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Call variants using DeepVariant.
-    
+
     Updates state with:
     - vcf_path: path to output VCF file
     - raw_variants: list of variant dictionaries
@@ -185,44 +185,44 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     logger.info("Starting variant calling with DeepVariant")
     # Note: Don't set current_node to avoid concurrent updates during parallel execution
-    
+
     try:
         bam_path = state["aligned_bam_path"]
-        
+
         # Get reference genome path
         reference_path = os.path.join(
-            os.path.dirname(__file__), 
-            "..", 
-            "test_reference", 
+            os.path.dirname(__file__),
+            "..",
+            "test_reference",
             "test_genome.fa"
         )
-        
+
         # Run variant caller (simplified for testing)
         vcf_path = run_simple_variant_caller(
-            bam_path, 
+            bam_path,
             reference_path,
             os.path.dirname(bam_path)
         )
-        
+
         # Parse VCF file
         variants = parse_vcf_file(vcf_path)
-        
+
         logger.info(f"Variant calling complete. Found {len(variants)} variants")
-        
+
         # Log some variant details
         for v in variants[:3]:  # First 3 variants
             logger.debug(f"Variant: {v['variant_id']} in {v.get('gene', 'Unknown')} - {v.get('consequence', 'unknown')}")
-        
+
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion
-        
+
         # Return only the keys this node updates
         return {
             "vcf_path": vcf_path,
             "raw_variants": variants,
             "variant_count": len(variants)
         }
-        
+
     except Exception as e:
         logger.error(f"Variant calling failed: {str(e)}")
         return {
@@ -232,4 +232,4 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "timestamp": datetime.now()
             }],
             "pipeline_status": "failed"
-        } 
+        }

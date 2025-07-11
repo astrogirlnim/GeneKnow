@@ -1,0 +1,21 @@
+{
+  "pipeline_status": "completed",
+  "completed_nodes": [
+        "file_input",
+    "variant_calling"
+  ],
+  "parallel_nodes_status": {
+    "tcga_mapper": true,
+    "cadd_scoring": true,
+    "clinvar_annotator": true,
+    "prs_calculator": true
+  },
+  "node_count": 2,
+  "unique_node_count": 2,
+  "errors": [],
+  "has_tcga": true,
+  "has_cadd": true,
+  "has_clinvar": false,
+  "has_prs": true,
+  "has_pathway": false
+}

@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate structured report sections.
-    
+
     Updates state with:
     - report_sections: structured report data
     - report_markdown: full markdown (optional, for PDF generation)
     - pipeline_status: 'completed'
     """
     logger.info("Starting report generation")
-    state["current_node"] = "report_writer"
-    
+    # Note: Don't set current_node to avoid concurrent updates
+
     try:
         # Check if structured_json exists, if not, create a basic one
         if "structured_json" not in state or not state["structured_json"]:
@@ -56,7 +56,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 "warnings": state.get("warnings", [])
             }
-            
+
             # Build high risk findings
             for cancer_type, score in state.get("risk_scores", {}).items():
                 if score >= 50:
@@ -65,11 +65,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "risk_percentage": score,
                         "affected_genes": state.get("risk_genes", {}).get(cancer_type, [])
                     })
-        
+
         structured_data = state["structured_json"]
         language = state.get("language", "en")
         include_technical = state.get("include_technical_details", True)
-        
+
         # Build structured report sections
         report_sections = {
             "header": {
@@ -80,7 +80,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "processing_time_seconds": structured_data['report_metadata'].get('processing_time_seconds', 0),
                 "language": language
             },
-            
+
             "summary": {
                 "description": "This report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.",
                 "total_variants_found": structured_data['summary']['total_variants_found'],
@@ -88,11 +88,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "high_risk_findings_count": structured_data['summary']['high_risk_findings'],
                 "patient_info": state.get("patient_data", {})
             },
-            
+
             "risk_findings": _format_risk_findings(structured_data) if structured_data.get("risk_assessment") else [],
-            
+
             "variant_table": _format_variant_table(structured_data),
-            
+
             "quality_control": {
                 "total_variants": structured_data['summary']['total_variants_found'],
                 "passed_variants": structured_data['summary']['variants_passed_qc'],
@@ -104,21 +104,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     "min_allele_frequency": 0.01
                 }
             },
-            
-            "tcga_summary": _format_tcga_summary(structured_data),
-            
-            "cadd_summary": _format_cadd_summary(structured_data),
-            
+
+            "tcga_summary": _format_tcga_summary(state),  # Pass state instead of structured_data
+
+            "cadd_summary": _format_cadd_summary(state),  # Pass state instead of structured_data
+
             "recommendations": _generate_recommendations(structured_data),
-            
+
             "technical_details": _format_technical_details(state) if include_technical else None,
-            
+
             "disclaimers": [
                 "This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.",
                 "Genetic risk assessment is based on current scientific understanding and may change as new research emerges.",
                 "Not all genetic variants are included in this analysis."
             ],
-            
+
             "metadata": {
                 "report_id": f"GR-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
                 "model_version": state.get("model_version", "1.0.0"),
@@ -126,44 +126,46 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "file_analyzed": state.get("file_path", "Unknown")
             }
         }
-        
+
         # Also generate markdown version for PDF export
         report_markdown = _generate_markdown_from_sections(report_sections)
-        
-        # Update state
-        state["report_sections"] = report_sections
-        state["report_markdown"] = report_markdown
-        state["pipeline_status"] = "completed"
-        state["completed_nodes"].append("report_writer")
-        
+
         # Debug logging
         logger.info(f"Report sections created with keys: {list(report_sections.keys())}")
         logger.info(f"Report sections header: {report_sections.get('header', {})}")
-        
+
         logger.info("Report generation complete")
-        
+
+        # Return only the keys this node updates
+        return {
+            "report_sections": report_sections,
+            "report_markdown": report_markdown,
+            "pipeline_status": "completed"
+        }
+
     except Exception as e:
         import traceback
         logger.error(f"Report generation failed: {str(e)}")
         logger.error(f"Full traceback: {traceback.format_exc()}")
-        state["errors"].append({
-            "node": "report_writer",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-    
-    return state
+        # Return error state updates
+        return {
+            "pipeline_status": "failed",
+            "errors": [{
+                "node": "report_writer",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }
 
 
 def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Format risk findings for easy frontend consumption."""
     findings = []
-    
+
     risk_assessment = data.get("risk_assessment")
     if not risk_assessment:
         return findings
-    
+
     for finding in risk_assessment.get("high_risk_findings", []):
         findings.append({
             "cancer_type": finding["cancer_type"],
@@ -173,11 +175,11 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "gene_count": len(finding["affected_genes"]),
             "recommendation": _get_risk_recommendation(finding["cancer_type"], finding["risk_percentage"])
         })
-    
+
     # Add low-risk findings
     all_scores = risk_assessment.get("scores", {})
     high_risk_types = [f["cancer_type"] for f in findings]
-    
+
     for cancer_type, score in all_scores.items():
         if cancer_type not in high_risk_types:
             findings.append({
@@ -188,22 +190,22 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "gene_count": len(risk_assessment.get("risk_genes", {}).get(cancer_type, [])),
                 "recommendation": _get_risk_recommendation(cancer_type, score)
             })
-    
+
     # Sort by risk percentage descending
     findings.sort(key=lambda x: x["risk_percentage"], reverse=True)
-    
+
     return findings
 
 
 def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Format variant details as structured table data."""
     table_data = []
-    
+
     for variant in data["variant_details"][:10]:  # Limit to top 10
         # Find best TCGA match
         best_match = None
         best_frequency = 0
-        
+
         for cancer_type, match_data in variant["tcga_matches"].items():
             if match_data and match_data["frequency_percent"] > best_frequency:
                 best_match = {
@@ -212,7 +214,7 @@ def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "patient_fraction": match_data["patient_fraction"]
                 }
                 best_frequency = match_data["frequency_percent"]
-        
+
         table_data.append({
             "gene": variant["gene"],
             "variant_id": variant["variant"],
@@ -227,29 +229,45 @@ def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "cadd_interpretation": _interpret_cadd_score(variant.get("cadd_scores", {}).get("phred")) if "cadd_scores" in variant else None,
             "clinical_significance": _get_clinical_significance(variant["gene"])
         })
-    
+
     return table_data
 
 
-def _format_tcga_summary(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format TCGA comparison summary."""
-    tcga_summary = data.get("tcga_summary", {})
+def _format_tcga_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Format TCGA comparison summary from state."""
+    # Get TCGA data from state
+    tcga_summary = state.get("tcga_summary", {})
+    tcga_matches = state.get("tcga_matches", {})
+    tcga_cohort_sizes = state.get("tcga_cohort_sizes", {})
     
+    # Count variants with TCGA matches
+    variants_with_matches = 0
+    if tcga_matches:
+        # Count unique variants across all cancer types
+        all_variant_ids = set()
+        for cancer_matches in tcga_matches.values():
+            if isinstance(cancer_matches, dict):
+                all_variant_ids.update(cancer_matches.keys())
+        variants_with_matches = len(all_variant_ids)
+    
+    total_variants = state.get("variant_count", 0)
+    match_rate = (variants_with_matches / total_variants * 100) if total_variants > 0 else 0
+
     return {
-        "cancer_types_analyzed": tcga_summary.get("cancer_types_analyzed", []),
-        "total_cohort_size": sum(tcga_summary.get("cohort_sizes", {}).values()),
-        "cohort_sizes": tcga_summary.get("cohort_sizes", {}),
-        "variants_with_matches": tcga_summary.get("variants_with_tcga_data", 0),
-        "match_rate_percent": (tcga_summary.get("variants_with_tcga_data", 0) / 
-                              data['summary']['variants_passed_qc'] * 100) if data['summary']['variants_passed_qc'] > 0 else 0
+        "cancer_types_analyzed": list(tcga_matches.keys()) if tcga_matches else tcga_summary.get("cancer_types_analyzed", []),
+        "total_cohort_size": sum(tcga_cohort_sizes.values()) if tcga_cohort_sizes else sum(tcga_summary.get("cohort_sizes", {}).values()),
+        "cohort_sizes": tcga_cohort_sizes if tcga_cohort_sizes else tcga_summary.get("cohort_sizes", {}),
+        "variants_with_matches": variants_with_matches if tcga_matches else tcga_summary.get("variants_with_tcga_data", 0),
+        "match_rate_percent": match_rate
     }
 
 
-def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Format CADD summary."""
-    cadd_summary = data.get("cadd_summary", {})
-    
-    if not cadd_summary:
+def _format_cadd_summary(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Format CADD summary from state's cadd_stats."""
+    # Get cadd_stats from state directly
+    cadd_stats = state.get("cadd_stats", {})
+
+    if not cadd_stats:
         return {
             "enabled": False,
             "variants_scored": 0,
@@ -259,14 +277,14 @@ def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
             "cancer_gene_variants": 0,
             "description": "CADD scoring not available"
         }
-    
+
     return {
         "enabled": True,
-        "variants_scored": cadd_summary.get("variants_scored", 0),
-        "mean_phred_score": round(cadd_summary.get("mean_phred", 0), 2),
-        "max_phred_score": round(cadd_summary.get("max_phred", 0), 2),
-        "high_impact_variants": cadd_summary.get("high_impact_variants", 0),
-        "cancer_gene_variants": cadd_summary.get("cancer_gene_variants", 0),
+        "variants_scored": cadd_stats.get("variants_scored", 0),
+        "mean_phred_score": round(cadd_stats.get("mean_phred", 0), 2),
+        "max_phred_score": round(cadd_stats.get("max_phred", 0), 2),
+        "high_impact_variants": cadd_stats.get("high_impact_variants", 0),
+        "cancer_gene_variants": cadd_stats.get("cancer_gene_variants", 0),
         "description": "Combined Annotation Dependent Depletion (CADD) scores predict variant deleteriousness"
     }
 
@@ -274,7 +292,7 @@ def _format_cadd_summary(data: Dict[str, Any]) -> Dict[str, Any]:
 def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Generate actionable recommendations based on findings."""
     recommendations = []
-    
+
     risk_assessment = data.get("risk_assessment")
     if not risk_assessment:
         # No risk assessment performed, provide general recommendations
@@ -286,7 +304,7 @@ def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "genes_involved": []
         })
         return recommendations
-    
+
     # Check high-risk findings
     for finding in risk_assessment.get("high_risk_findings", []):
         if finding["risk_percentage"] > 70:
@@ -305,7 +323,7 @@ def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "description": f"Moderate risk detected ({finding['risk_percentage']}%). Regular monitoring is recommended.",
                 "genes_involved": finding["affected_genes"]
             })
-    
+
     # General recommendations
     if data['summary']['high_risk_findings'] > 0:
         recommendations.append({
@@ -315,7 +333,7 @@ def _generate_recommendations(data: Dict[str, Any]) -> List[Dict[str, Any]]:
             "description": "Consider scheduling a consultation with a genetic counselor to discuss these findings in detail.",
             "genes_involved": []
         })
-    
+
     return recommendations
 
 
@@ -325,7 +343,7 @@ def _format_technical_details(state: Dict[str, Any]) -> Dict[str, Any]:
         "pipeline_nodes": state.get("completed_nodes", []),
         "file_metadata": state.get("file_metadata", {}),
         "alignment_stats": state.get("alignment_stats", {}),
-        "variant_calling_method": "Mock DeepVariant (simulated)",
+        "variant_calling_method": state.get("variant_calling_method", "Direct variant loading from file"),
         "reference_genome": "GRCh38",
         "quality_thresholds": {
             "min_quality_score": 30,
@@ -371,7 +389,7 @@ def _get_clinical_significance(gene: str) -> str:
     """Determine clinical significance based on gene."""
     high_risk_genes = ["BRCA1", "BRCA2", "TP53", "APC", "MLH1", "MSH2"]
     moderate_risk_genes = ["KRAS", "PIK3CA", "PTEN", "JAK2", "FLT3"]
-    
+
     if gene in high_risk_genes:
         return "pathogenic"
     elif gene in moderate_risk_genes:
@@ -400,7 +418,7 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
     """Generate markdown report from structured sections (for PDF export)."""
     md = f"""# {sections['header']['title']}
 
-**Generated**: {sections['header']['generated_date']} at {sections['header']['generated_time']}  
+**Generated**: {sections['header']['generated_date']} at {sections['header']['generated_time']}
 **Pipeline Version**: {sections['header']['pipeline_version']}
 
 ## Summary
@@ -414,7 +432,7 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
 ## Risk Assessment
 
 """
-    
+
     # Add risk findings
     if 'risk_findings' in sections and sections['risk_findings']:
         for finding in sections['risk_findings']:
@@ -426,23 +444,23 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
             md += f"- **Recommendation**: {finding['recommendation']}\n\n"
     else:
         md += "*No risk assessment performed*\n\n"
-    
+
     # Add variant table
     md += "## Key Genetic Variants\n\n"
     md += "| Gene | Variant | Consequence | TCGA Match | Clinical Significance | CADD Score |\n"
     md += "|------|---------|-------------|------------|-----------------------|------------|\n"
-    
+
     for variant in sections['variant_table'][:5]:
         tcga_text = "No match"
         if variant['tcga_best_match']:
             tcga_text = f"{variant['tcga_best_match']['frequency']:.1f}% in {variant['tcga_best_match']['cancer_type']}"
-        
+
         cadd_text = "Score not available"
         if variant['cadd_score'] is not None:
             cadd_text = f"{variant['cadd_score']:.1f} ({variant['cadd_interpretation']})"
-        
+
         md += f"| {variant['gene']} | {variant['variant_id'][:20]}... | {variant['consequence']} | {tcga_text} | {variant['clinical_significance']} | {cadd_text} |\n"
-    
+
     # Add recommendations
     if sections['recommendations']:
         md += "\n## Recommendations\n\n"
@@ -450,13 +468,13 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
             priority_emoji = "❗" if rec['priority'] == 'high' else "⚠️"
             md += f"{priority_emoji} **{rec['title']}**\n"
             md += f"   {rec['description']}\n\n"
-    
+
     # Add disclaimers
     md += "\n## Important Notice\n\n"
     for disclaimer in sections['disclaimers']:
         md += f"- {disclaimer}\n"
-    
+
     md += f"\n---\n*Report ID: {sections['metadata']['report_id']}*\n"
     md += f"*Processing time: {sections['header']['processing_time_seconds']:.2f} seconds*\n"
-    
-    return md 
+
+    return md

@@ -12,21 +12,21 @@ logger = logging.getLogger(__name__)
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Format all pipeline results into structured JSON.
-    
+
     Updates state with:
     - structured_json: formatted data ready for frontend/report
     """
     logger.info("Starting result formatting")
-    state["current_node"] = "formatter"
-    
+    # Note: Don't set current_node to avoid concurrent updates
+
     try:
         # Extract high-risk findings if risk scores are available
         high_risk_findings = []
         risk_threshold = state.get("risk_threshold_percentage", 50.0)
-        
+
         risk_scores = state.get("risk_scores", {})
         risk_genes = state.get("risk_genes", {})
-        
+
         # Only process risk findings if risk assessment was performed
         if risk_scores:
             for cancer_type, risk_score in risk_scores.items():
@@ -36,7 +36,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "risk_percentage": risk_score,
                         "affected_genes": risk_genes.get(cancer_type, [])
                     })
-        
+
         # Format variant summary with TCGA matches
         variant_summary = []
         for variant in state["filtered_variants"]:
@@ -53,11 +53,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 "tcga_matches": {}
             }
-            
+
             # Add clinical significance if available (from MAF)
             if "clinical_significance" in variant:
                 variant_info["clinical_significance"] = variant["clinical_significance"]
-            
+
             # Add CADD scores if available
             if "cadd_phred" in variant:
                 variant_info["cadd_scores"] = {
@@ -65,7 +65,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     "raw": variant.get("cadd_raw"),
                     "risk_weight": variant.get("cadd_risk_weight")
                 }
-            
+
             # Add TCGA match info
             tcga_matches = state.get("tcga_matches", {})
             for cancer_type, matches in tcga_matches.items():
@@ -75,15 +75,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "frequency_percent": match_info["frequency"] * 100,
                         "patient_fraction": f"{match_info['sample_count']}/{match_info['total_samples']}"
                     }
-            
+
             variant_summary.append(variant_info)
-        
+
         # Build structured JSON
         # Calculate processing time if not set
         processing_time = None
         if state.get("pipeline_start_time"):
             processing_time = (datetime.now() - state["pipeline_start_time"]).total_seconds()
-        
+
         # Build TCGA summary
         tcga_matches = state.get("tcga_matches", {})
         tcga_summary = {
@@ -91,7 +91,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "cohort_sizes": state.get("tcga_cohort_sizes", {}),
             "variants_with_tcga_data": len([v for v in variant_summary if v["tcga_matches"]])
         }
-        
+
         # Include CADD statistics if available
         cadd_stats = state.get("cadd_stats", {})
         if cadd_stats and "variants_scored" in cadd_stats:
@@ -104,7 +104,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
         else:
             cadd_summary = None
-        
+
         structured_json = {
             "report_metadata": {
                 "pipeline_version": "1.0.0",
@@ -130,21 +130,31 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "quality_control": state["file_metadata"].get("qc_stats", {}),
             "tcga_summary": tcga_summary,
             "cadd_summary": cadd_summary,
+            "metrics": state.get("metrics", {}),
+            "metrics_summary": state.get("metrics_summary", {}),
             "warnings": state["warnings"]
         }
-        
-        state["structured_json"] = structured_json
-        state["completed_nodes"].append("formatter")
-        
+
+        # Log metrics status to help debug
+        metrics_available = "metrics" in state and state["metrics"]
+        metrics_summary_available = "metrics_summary" in state and state["metrics_summary"]
+        logger.info(f"Formatting complete - Metrics available: {metrics_available}, Summary available: {metrics_summary_available}")
+
         logger.info("Formatting complete")
-        
+
+        # Return only the keys this node updates
+        return {
+            "structured_json": structured_json
+        }
+
     except Exception as e:
         logger.error(f"Formatting failed: {str(e)}")
-        state["errors"].append({
-            "node": "formatter",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
-        state["pipeline_status"] = "failed"
-    
-    return state 
+        # Return error state updates
+        return {
+            "pipeline_status": "failed",
+            "errors": [{
+                "node": "formatter",
+                "error": str(e),
+                "timestamp": datetime.now()
+            }]
+        }
