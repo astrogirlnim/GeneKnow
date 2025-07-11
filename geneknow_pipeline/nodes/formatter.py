@@ -37,15 +37,23 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "affected_genes": risk_genes.get(cancer_type, [])
                     })
 
-        # Format variant summary with TCGA matches
+        # Format variant summary with TCGA matches and transformations
         variant_summary = []
-        for variant in state["filtered_variants"]:
+        
+        # Use variant_details if available (from variant_transformer), otherwise use filtered_variants
+        variants_to_format = state.get("variant_details") or state.get("filtered_variants", [])
+        
+        for variant in variants_to_format:
             variant_info = {
                 "gene": variant.get("gene", "Unknown"),
                 "variant": variant.get("variant_id", "Unknown"),
+                "variant_id": variant.get("variant_id", "Unknown"),
                 "consequence": variant.get("consequence", variant.get("variant_classification", "unknown")),
+                "mutation_type": variant.get("mutation_type", "snv"),  # From mutation_classifier
                 "hgvs_c": variant.get("hgvs_c", ""),
                 "hgvs_p": variant.get("hgvs_p", variant.get("protein_change", "")),
+                "protein_change": variant.get("protein_change", ""),  # From variant_transformer
+                "functional_impact": variant.get("functional_impact", "Unknown"),
                 "quality_metrics": {
                     "quality": variant.get("quality", variant.get("qual", 0)),
                     "depth": variant.get("depth", 0),
@@ -53,6 +61,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 "tcga_matches": {}
             }
+
+            # Add transformation data if available
+            if "transformation" in variant:
+                variant_info["transformation"] = variant["transformation"]
 
             # Add clinical significance if available (from MAF)
             if "clinical_significance" in variant:
@@ -72,7 +84,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 if variant.get("variant_id") in matches:
                     match_info = matches[variant["variant_id"]]
                     variant_info["tcga_matches"][cancer_type] = {
-                        "frequency_percent": match_info["frequency"] * 100,
+                        "frequency": match_info.get("frequency", 0),
+                        "frequency_percent": match_info.get("frequency", 0) * 100,
                         "patient_fraction": f"{match_info['sample_count']}/{match_info['total_samples']}"
                     }
 
@@ -116,6 +129,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "details": state.get("shap_validation_details", {})
             }
 
+        # Build comprehensive summary including mutation types
+        summary = {
+            "total_variants_found": state["variant_count"],
+            "variants_passed_qc": len(state["filtered_variants"]),
+            "high_risk_findings": len(high_risk_findings)
+        }
+        
+        # Add mutation type distribution if available
+        if state.get("mutation_type_distribution"):
+            summary["mutation_types"] = state["mutation_type_distribution"]
+
         structured_json = {
             "report_metadata": {
                 "pipeline_version": "1.0.0",
@@ -127,11 +151,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "file_type": state["file_type"],
                 "file_metadata": state["file_metadata"]
             },
-            "summary": {
-                "total_variants_found": state["variant_count"],
-                "variants_passed_qc": len(state["filtered_variants"]),
-                "high_risk_findings": len(high_risk_findings)
-            },
+            "summary": summary,
             "risk_assessment": {
                 "scores": risk_scores,
                 "high_risk_findings": high_risk_findings,
@@ -144,7 +164,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "shap_validation": shap_validation,
             "metrics": state.get("metrics", {}),
             "metrics_summary": state.get("metrics_summary", {}),
-            "warnings": state["warnings"]
+            "warnings": state["warnings"],
+            
+            # Add all new analysis results
+            "mutation_signatures": state.get("mutation_signatures", []),
+            "structural_variants": state.get("structural_variants", []),
+            "copy_number_variants": state.get("copy_number_variants", []),
+            "pathway_analysis": state.get("pathway_analysis"),
+            "gene_interactions": state.get("gene_interactions", []),
+            "gene_network_analysis": state.get("gene_network_analysis"),
+            "survival_analysis": state.get("survival_analysis"),
+            "clinical_recommendations": state.get("clinical_recommendations")
         }
 
         # Log metrics status to help debug

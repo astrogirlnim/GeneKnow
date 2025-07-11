@@ -1388,225 +1388,6 @@ class ClinicalRecommendationsNode:
 
 ---
 
-## 10. Family Risk Assessment
-
-### Implementation Strategy
-Calculate hereditary risk patterns and family testing recommendations.
-
-### Code Implementation
-
-```python
-# geneknow_pipeline/nodes/family_risk_assessment.py
-from typing import Dict, List
-import math
-
-class FamilyRiskAssessmentNode:
-    """Assesses hereditary risk and family implications"""
-    
-    def __init__(self):
-        # Load inheritance patterns for known syndromes
-        self.hereditary_syndromes = self.load_hereditary_syndromes()
-    
-    def load_hereditary_syndromes(self) -> Dict:
-        """Load known hereditary cancer syndromes"""
-        return {
-            'HBOC': {  # Hereditary Breast and Ovarian Cancer
-                'genes': ['BRCA1', 'BRCA2'],
-                'pattern': 'autosomal_dominant',
-                'penetrance': {'BRCA1': 0.85, 'BRCA2': 0.80},
-                'cancers': ['breast', 'ovarian', 'pancreatic', 'prostate']
-            },
-            'Lynch': {  # Lynch Syndrome
-                'genes': ['MLH1', 'MSH2', 'MSH6', 'PMS2'],
-                'pattern': 'autosomal_dominant',
-                'penetrance': {'MLH1': 0.80, 'MSH2': 0.80, 'MSH6': 0.60, 'PMS2': 0.40},
-                'cancers': ['colon', 'endometrial', 'ovarian', 'stomach']
-            },
-            'FAP': {  # Familial Adenomatous Polyposis
-                'genes': ['APC'],
-                'pattern': 'autosomal_dominant',
-                'penetrance': {'APC': 0.95},
-                'cancers': ['colon']
-            },
-            'LFS': {  # Li-Fraumeni Syndrome
-                'genes': ['TP53'],
-                'pattern': 'autosomal_dominant',
-                'penetrance': {'TP53': 0.90},
-                'cancers': ['breast', 'sarcoma', 'brain', 'adrenal']
-            }
-        }
-    
-    def identify_syndrome(self, variants: List[Dict]) -> Dict:
-        """Identify hereditary syndrome based on variants"""
-        variant_genes = [v.get('gene') for v in variants 
-                        if v.get('clinical_significance') in ['pathogenic', 'likely_pathogenic']]
-        
-        for syndrome_name, syndrome_data in self.hereditary_syndromes.items():
-            if any(gene in syndrome_data['genes'] for gene in variant_genes):
-                # Found matching syndrome
-                matching_gene = next(g for g in variant_genes if g in syndrome_data['genes'])
-                return {
-                    'syndrome': syndrome_name,
-                    'gene': matching_gene,
-                    'data': syndrome_data
-                }
-        
-        return None
-    
-    def calculate_inheritance_probabilities(self, pattern: str) -> Dict:
-        """Calculate inheritance probabilities for family members"""
-        if pattern == 'autosomal_dominant':
-            return {
-                'children': 0.50,
-                'siblings': 0.50,
-                'parents': 0.50,  # One parent is likely a carrier
-                'grandchildren': 0.25,
-                'nieces_nephews': 0.25
-            }
-        elif pattern == 'autosomal_recessive':
-            return {
-                'children': 0.0,  # Carriers but not affected
-                'siblings': 0.25,
-                'parents': 0.0,   # Carriers
-                'grandchildren': 0.0,
-                'nieces_nephews': 0.0625
-            }
-        elif pattern == 'x_linked':
-            return {
-                'sons': 0.50,
-                'daughters': 0.0,  # Carriers
-                'brothers': 0.50,
-                'sisters': 0.0     # Potential carriers
-            }
-        else:
-            return {}
-    
-    def generate_cascade_testing_recommendations(self, syndrome: Dict, 
-                                                inheritance_probs: Dict) -> List[Dict]:
-        """Generate testing recommendations for family members"""
-        recommendations = []
-        
-        # First-degree relatives - highest priority
-        if inheritance_probs.get('children', 0) >= 0.25:
-            recommendations.append({
-                'relationship': 'children',
-                'testing_priority': 'high',
-                'estimated_carrier_probability': inheritance_probs['children'],
-                'recommendation': 'Genetic testing strongly recommended',
-                'timing': 'As soon as appropriate (consider age)'
-            })
-        
-        if inheritance_probs.get('siblings', 0) >= 0.25:
-            recommendations.append({
-                'relationship': 'siblings',
-                'testing_priority': 'high',
-                'estimated_carrier_probability': inheritance_probs['siblings'],
-                'recommendation': 'Genetic testing strongly recommended',
-                'timing': 'As soon as possible'
-            })
-        
-        if inheritance_probs.get('parents', 0) >= 0.25:
-            recommendations.append({
-                'relationship': 'parents',
-                'testing_priority': 'high',
-                'estimated_carrier_probability': inheritance_probs['parents'],
-                'recommendation': 'Genetic testing recommended',
-                'timing': 'As soon as possible'
-            })
-        
-        # Second-degree relatives
-        if inheritance_probs.get('grandchildren', 0) >= 0.10:
-            recommendations.append({
-                'relationship': 'grandchildren',
-                'testing_priority': 'moderate',
-                'estimated_carrier_probability': inheritance_probs['grandchildren'],
-                'recommendation': 'Consider genetic counseling',
-                'timing': 'When age-appropriate'
-            })
-        
-        return recommendations
-    
-    def assess_family_history_impact(self, syndrome: Dict) -> Dict:
-        """Assess impact on maternal vs paternal lineage"""
-        pattern = syndrome['data']['pattern']
-        
-        if pattern == 'autosomal_dominant':
-            return {
-                'maternal_line': 'Equal risk if variant from mother',
-                'paternal_line': 'Equal risk if variant from father',
-                'inheritance_pattern': '50% chance from affected parent'
-            }
-        elif pattern == 'x_linked':
-            return {
-                'maternal_line': 'Carrier females, affected males',
-                'paternal_line': 'Affected father cannot pass to sons',
-                'inheritance_pattern': 'X-linked inheritance pattern'
-            }
-        else:
-            return {
-                'maternal_line': 'Risk depends on variant origin',
-                'paternal_line': 'Risk depends on variant origin',
-                'inheritance_pattern': pattern
-            }
-    
-    def __call__(self, state: Dict) -> Dict:
-        """Perform family risk assessment"""
-        variants = state.get('variant_details', [])
-        
-        # Identify hereditary syndrome
-        syndrome = self.identify_syndrome(variants)
-        
-        if not syndrome:
-            # No clear hereditary syndrome
-            state['family_analysis'] = {
-                'hereditary_risk': {
-                    'pattern': 'unknown',
-                    'interpretation': 'No clear hereditary cancer syndrome identified'
-                },
-                'cascade_testing_recommendations': [],
-                'family_history_impact': {}
-            }
-            return {"messages": [BaseMessage(content="No hereditary syndrome identified", type="system")]}
-        
-        # Calculate inheritance probabilities
-        pattern = syndrome['data']['pattern']
-        penetrance = syndrome['data']['penetrance'].get(syndrome['gene'], 0.5)
-        inheritance_probs = self.calculate_inheritance_probabilities(pattern)
-        
-        # Generate cascade testing recommendations
-        cascade_recommendations = self.generate_cascade_testing_recommendations(
-            syndrome, inheritance_probs
-        )
-        
-        # Assess family history impact
-        family_impact = self.assess_family_history_impact(syndrome)
-        
-        # Create comprehensive family analysis
-        family_analysis = {
-            'hereditary_risk': {
-                'syndrome': syndrome['syndrome'],
-                'gene': syndrome['gene'],
-                'pattern': pattern,
-                'penetrance': penetrance,
-                'inheritance_probability': inheritance_probs,
-                'associated_cancers': syndrome['data']['cancers']
-            },
-            'cascade_testing_recommendations': cascade_recommendations,
-            'family_history_impact': family_impact,
-            'clinical_management': {
-                'screening': f"Enhanced screening for {', '.join(syndrome['data']['cancers'])} cancers",
-                'prevention': 'Consider risk-reducing interventions',
-                'counseling': 'Genetic counseling strongly recommended for family'
-            }
-        }
-        
-        state['family_analysis'] = family_analysis
-        
-        return {"messages": [BaseMessage(content=f"Family risk assessment completed - {syndrome['syndrome']} identified", type="system")]}
-```
-
----
-
 ## Integration Strategy
 
 ### 1. Update Graph Configuration
@@ -1624,7 +1405,6 @@ from nodes.pathway_analyzer import PathwayAnalyzerNode
 from nodes.gene_interaction_network import GeneInteractionNetworkNode
 from nodes.survival_analyzer import SurvivalAnalyzerNode
 from nodes.clinical_recommendations import ClinicalRecommendationsNode
-from nodes.family_risk_assessment import FamilyRiskAssessmentNode
 
 # Add nodes to workflow
 workflow.add_node("mutation_classifier", MutationClassifierNode())
@@ -1636,7 +1416,6 @@ workflow.add_node("pathway_analyzer", PathwayAnalyzerNode())
 workflow.add_node("gene_interactions", GeneInteractionNetworkNode())
 workflow.add_node("survival_analysis", SurvivalAnalyzerNode())
 workflow.add_node("clinical_recommendations", ClinicalRecommendationsNode())
-workflow.add_node("family_assessment", FamilyRiskAssessmentNode())
 
 # Update edges for proper flow
 workflow.add_edge("preprocess", "mutation_classifier")
@@ -1662,7 +1441,6 @@ class GenomicState(TypedDict):
     gene_interactions: List[Dict]
     survival_analysis: Dict
     clinical_recommendations: List[Dict]
-    family_analysis: Dict
 ```
 
 ### 3. Update Report Writer
@@ -1687,8 +1465,7 @@ def format_results(self) -> Dict:
         "pathway_analysis": state.get("pathway_analysis", {}),
         "gene_interactions": state.get("gene_interactions", []),
         "survival_analysis": state.get("survival_analysis", {}),
-        "clinical_recommendations": state.get("clinical_recommendations", []),
-        "family_analysis": state.get("family_analysis", {})
+        "clinical_recommendations": state.get("clinical_recommendations", [])
     }
     
     return structured_json
@@ -1718,14 +1495,12 @@ Test full pipeline with sample data to ensure all new analyses work together.
 2. `gene_interactions` - Protein-protein interactions
 3. `pathway_definitions` - Biological pathway data
 4. `clinical_guidelines` - Clinical recommendation rules
-5. `hereditary_syndromes` - Hereditary cancer syndrome definitions
 
 ### Data Sources
 - COSMIC for mutational signatures
 - STRING/BioGRID for protein interactions
 - KEGG/Reactome for pathways
 - NCCN/ASCO for clinical guidelines
-- ClinGen for hereditary syndromes
 
 ## Deployment Checklist
 
