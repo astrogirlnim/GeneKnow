@@ -135,16 +135,193 @@ export interface PipelineResult {
   structured_json?: {
     shap_validation?: SHAPValidation;
     patient_data?: Record<string, unknown>;
-    summary?: Record<string, unknown>;
+    // Summary statistics
+    summary?: {
+      total_variants_found: number;
+      variants_passed_qc: number;
+      high_risk_findings: number;
+      mutation_types?: {
+        snv: number;
+        indel: number;
+        cnv: number;
+        structural: number;
+      };
+    };
     risk_assessment?: Record<string, unknown>;
-    variant_details?: Record<string, unknown>;
+    // Variant details with transformations
+    variant_details?: Array<{
+      gene: string;
+      variant?: string;
+      variant_id?: string;
+      consequence: string;
+      mutation_type?: string;
+      quality_metrics?: {
+        quality: number;
+        depth?: number;
+        allele_freq?: number;
+      };
+      clinical_significance?: string;
+      tcga_matches?: Record<string, unknown>;
+      protein_change?: string;
+      hgvs_p?: string;
+      functional_impact?: string;
+      transformation?: {
+        original: string;
+        mutated: string;
+        amino_acid_change: string;
+        effect: string;
+      };
+    }>;
     quality_control?: Record<string, unknown>;
     tcga_summary?: Record<string, unknown>;
-    cadd_summary?: Record<string, unknown>;
-    metrics?: Record<string, unknown>;
-    metrics_summary?: Record<string, unknown>;
+    // Structural variants
+    structural_variants?: Array<{
+      type: string;
+      chromosome: string;
+      start: number;
+      end: number;
+      size: number;
+      genes_affected: string[];
+      clinical_significance: string;
+      functional_impact: string;
+    }>;
+    // Copy number variants
+    copy_number_variants?: Array<{
+      gene: string;
+      chromosome: string;
+      copy_number: number;
+      normal_copy_number: number;
+      fold_change: number;
+      clinical_significance: string;
+      cancer_relevance: string;
+    }>;
+    // Mutation signatures
+    mutation_signatures?: Array<{
+      signature: string;
+      name: string;
+      contribution: number;
+      description: string;
+      etiology: string;
+    }>;
+    // Pathway analysis
+    pathway_analysis?: {
+      disrupted_pathways: Array<{
+        name: string;
+        pathway_id: string;
+        significance: number;
+        affected_genes: string[];
+        mutations: Array<{
+          gene: string;
+          type: string;
+          effect: string;
+        }>;
+      }>;
+      cancer_pathway_associations: Record<string, string[]>;
+    };
+    // Survival analysis
+    survival_analysis?: {
+      patient_profile: {
+        risk_category: string;
+        estimated_survival: Array<{
+          age: number;
+          probability: number;
+        }>;
+      };
+      population_average: Array<{
+        age: number;
+        probability: number;
+      }>;
+    };
+    cadd_summary?: {
+      enabled: boolean;
+      variants_scored: number;
+      mean_phred_score: number;
+      max_phred_score: number;
+      high_impact_variants: number;
+      cancer_gene_variants: number;
+      description: string;
+    };
+    metrics?: {
+      timestamp: string;
+      pipeline_version: string;
+      confidence_metrics: {
+        mean_model_confidence: number;
+        min_model_confidence?: number;
+        max_model_confidence?: number;
+        risk_score_mean?: number;
+        risk_score_std?: number;
+        risk_score_cv?: number;
+        max_risk_score?: number;
+        high_risk_count?: number;
+        ml_fusion_confidence: number;
+        ml_fusion_risk_category?: string;
+      };
+      variant_metrics: {
+        total_variants: number;
+        pathogenic_variants: number;
+        benign_variants: number;
+        uncertain_variants: number;
+        pathogenic_ratio?: number;
+        high_cadd_variants: number;
+        genes_affected: number;
+        cancer_genes_affected?: number;
+        high_impact_genes?: number;
+        mean_cadd_score?: number;
+        max_cadd_score?: number;
+      };
+      prediction_metrics: Record<string, number | string>;
+      integration_metrics?: {
+        prs_confidence: string;
+        prs_high_risk_cancers: string[];
+        pathway_burden_score: number;
+        high_burden_pathways: string[];
+      };
+      performance_indicators: {
+        mean_confidence: number;
+        mean_risk_score: number;
+        high_confidence_ratio: number;
+        variant_quality_score: number;
+        total_predictions?: number;
+      };
+      validation_structure: {
+        validation_ready: boolean;
+        ground_truth_available: boolean;
+        metrics_placeholder?: {
+          auc_roc?: number;
+          sensitivity?: number;
+          specificity?: number;
+          f1_score?: number;
+          matthews_corrcoef?: number;
+          balanced_accuracy?: number;
+          mae?: number;
+          rmse?: number;
+          r2_score?: number;
+          concordance_rate?: number;
+          cohen_kappa?: number;
+          c_index?: number;
+          log_rank_p?: number;
+        };
+        validation_note?: string;
+      };
+    };
+    metrics_summary?: {
+      key_findings: {
+        highest_risk_cancer: string | null;
+        highest_risk_score: number;
+        pathogenic_variant_count: number;
+        confidence_level: string;
+      };
+      quality_indicators: {
+        mean_confidence: number;
+        mean_risk_score: number;
+        high_confidence_ratio: number;
+        variant_quality_score: number;
+      };
+      validation_status: boolean;
+    };
     warnings?: Record<string, unknown>;
     report_metadata?: Record<string, unknown>;
+    [key: string]: unknown;
   };
   enhanced_report_content?: Record<string, string>; // In-memory report content (markdown, html, txt)
   report_generator_info?: {
