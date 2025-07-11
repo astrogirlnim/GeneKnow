@@ -1496,65 +1496,96 @@ const ClinicalViewPage: React.FC = () => {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {genomicData.mutation_signatures.map((signature, index) => (
-                  <div key={index} style={{
-            display: 'flex',
-            alignItems: 'center',
-                    padding: '1rem',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '0.5rem',
-                    background: '#F9FAFB'
+                {genomicData.mutation_signatures.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '3rem',
+                    color: '#6B7280'
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <h4 style={{ 
-                          color: '#111827',
-                          fontSize: '1rem',
-                          fontWeight: '600',
+                    <div style={{ 
+                      fontSize: '3rem',
+                      marginBottom: '1rem'
+                    }}>
+                      🔬
+                    </div>
+                    <h4 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
+                    }}>
+                      No Mutational Signatures Found
+                    </h4>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '400px',
+                      margin: '0 auto'
+                    }}>
+                      The analysis did not detect any significant mutational signatures in the provided genomic data. This could indicate insufficient data or variants not matching known signature patterns.
+                    </p>
+                  </div>
+                ) : (
+                  genomicData.mutation_signatures.map((signature, index) => (
+                    <div key={index} style={{
+              display: 'flex',
+              alignItems: 'center',
+                      padding: '1rem',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '0.5rem',
+                      background: '#F9FAFB'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                          <h4 style={{ 
+                            color: '#111827',
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            margin: 0
+                          }}>
+                            {signature.signature}
+                          </h4>
+                          <span style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem'
+                          }}>
+                            {signature.name}
+                          </span>
+                        </div>
+                        <p style={{ 
+                          color: '#6B7280',
+                          fontSize: '0.875rem',
+                          marginBottom: '0.5rem',
                           margin: 0
                         }}>
-                          {signature.signature}
-                        </h4>
-                        <span style={{ 
-                          color: '#4B5563',
-                          fontSize: '0.875rem'
-                        }}>
-                          {signature.name}
-                        </span>
-                      </div>
-                      <p style={{ 
-                        color: '#6B7280',
-                        fontSize: '0.875rem',
-                        marginBottom: '0.5rem',
-                        margin: 0
-                      }}>
-                        {signature.description} • {signature.etiology}
-                      </p>
-                      <div style={{
-                        background: '#E5E7EB',
-                        borderRadius: '0.25rem',
-                        height: '0.5rem',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}>
+                          {signature.description} • {signature.etiology}
+                        </p>
                         <div style={{
-                          background: '#3B82F6',
-                          height: '100%',
-                          width: `${signature.contribution * 100}%`,
-                          transition: 'width 0.3s ease'
-                        }}/>
+                          background: '#E5E7EB',
+                          borderRadius: '0.25rem',
+                          height: '0.5rem',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            background: '#3B82F6',
+                            height: '100%',
+                            width: `${signature.contribution * 100}%`,
+                            transition: 'width 0.3s ease'
+                          }}/>
+                        </div>
+                      </div>
+                      <div style={{
+                        marginLeft: '1rem',
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold',
+                        color: '#3B82F6'
+                      }}>
+                        {(signature.contribution * 100).toFixed(1)}%
                       </div>
                     </div>
-                    <div style={{
-                      marginLeft: '1rem',
-                      fontSize: '1.25rem',
-                      fontWeight: 'bold',
-                      color: '#3B82F6'
-                    }}>
-                      {(signature.contribution * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -1942,53 +1973,84 @@ const ClinicalViewPage: React.FC = () => {
                 </h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.structural_variants.map((variant, index) => (
-                    <div key={index} style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                  {genomicData.structural_variants.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      color: '#6B7280'
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <div style={{
-                            background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            textTransform: 'uppercase'
-                          }}>
-                            {variant.type}
-                          </div>
-                          <span style={{ fontWeight: '600', color: '#111827' }}>
-                            {variant.genes_affected.join(', ')}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                          {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                          {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
-                        </div>
-                      </div>
-                      <div style={{
-                        background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
-                        color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textAlign: 'center'
+                      <div style={{ 
+                        fontSize: '2rem',
+                        marginBottom: '0.5rem'
                       }}>
-                        {variant.clinical_significance.replace('_', ' ')}
+                        🧬
                       </div>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        No Structural Variants Detected
+                      </h4>
+                      <p style={{ 
+                        color: '#6B7280',
+                        fontSize: '0.875rem',
+                        maxWidth: '350px',
+                        margin: '0 auto'
+                      }}>
+                        No large-scale genomic rearrangements were found in the analysis.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    genomicData.structural_variants.map((variant, index) => (
+                      <div key={index} style={{
+                        background: '#FFFFFF',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <div style={{
+                              background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              textTransform: 'uppercase'
+                            }}>
+                              {variant.type}
+                            </div>
+                            <span style={{ fontWeight: '600', color: '#111827' }}>
+                              {variant.genes_affected.join(', ')}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                            {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                            {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
+                          </div>
+                        </div>
+                        <div style={{
+                          background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
+                          color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {variant.clinical_significance.replace('_', ' ')}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
               
@@ -2010,52 +2072,83 @@ const ClinicalViewPage: React.FC = () => {
                 </h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.copy_number_variants.map((variant, index) => (
-                    <div key={index} style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: '2px solid #F59E0B',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                  {genomicData.copy_number_variants.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      color: '#6B7280'
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: '600', color: '#111827' }}>
-                            {variant.gene}
-                          </span>
-                          <div style={{
-                            background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600'
-                          }}>
-                            {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
+                      <div style={{ 
+                        fontSize: '2rem',
+                        marginBottom: '0.5rem'
+                      }}>
+                        📊
+                      </div>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        No Copy Number Variants Detected
+                      </h4>
+                      <p style={{ 
+                        color: '#6B7280',
+                        fontSize: '0.875rem',
+                        maxWidth: '350px',
+                        margin: '0 auto'
+                      }}>
+                        No significant gene amplifications or deletions were detected in the analysis.
+                      </p>
+                    </div>
+                  ) : (
+                    genomicData.copy_number_variants.map((variant, index) => (
+                      <div key={index} style={{
+                        background: '#FFFFFF',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: '2px solid #F59E0B',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: '600', color: '#111827' }}>
+                              {variant.gene}
+                            </span>
+                            <div style={{
+                              background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                            {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                            {variant.cancer_relevance}
                           </div>
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                          {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                          {variant.cancer_relevance}
+                        <div style={{
+                          background: '#FFFBEB',
+                          color: '#F59E0B',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {variant.clinical_significance}
                         </div>
                       </div>
-                      <div style={{
-                        background: '#FFFBEB',
-                        color: '#F59E0B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textAlign: 'center'
-                      }}>
-                        {variant.clinical_significance}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
