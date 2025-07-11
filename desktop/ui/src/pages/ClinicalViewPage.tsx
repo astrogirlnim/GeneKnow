@@ -1072,11 +1072,71 @@ const ClinicalViewPage: React.FC = () => {
       
       // Extract risk scores and findings
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
+      const pathwayBurdenResults = pipelineResults.pathway_burden_results || {};
+      
+      // Build cancer-gene associations from pathway burden data
+      const cancerGeneMapping: Record<string, string[]> = {
+        'breast': [],
+        'lung': [],
+        'colon': [],
+        'prostate': [],
+        'blood': []
+      };
+      
+      // Map pathways to cancer types and collect genes
+      const pathwayCancerMapping: Record<string, string[]> = {
+        'dna_repair': ['breast', 'colon'],
+        'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
+        'oncogenes': ['lung', 'colon', 'breast'],
+        'ras_mapk': ['lung', 'colon', 'prostate'],
+        'cell_cycle': ['breast', 'lung', 'prostate'],
+        'apoptosis': ['breast', 'lung', 'colon'],
+        'chromatin_remodeling': ['blood', 'lung'],
+        'mismatch_repair': ['colon'],
+        'wnt_signaling': ['colon'],
+        'pi3k_akt': ['breast', 'prostate']
+      };
+      
+      // Populate cancer-gene associations from pathway burden results
+      Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]) => {
+        const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+        const burdenScore = pathwayResult.burden_score || 0;
+        
+        // Only include genes from high-burden pathways
+        if (burdenScore > 0.5 && pathwayResult.damaging_genes) {
+          pathwayResult.damaging_genes.forEach(gene => {
+            associatedCancers.forEach(cancer => {
+              if (cancerGeneMapping[cancer] && !cancerGeneMapping[cancer].includes(gene)) {
+                cancerGeneMapping[cancer].push(gene);
+              }
+            });
+          });
+        }
+      });
+      
+      // Also add genes from multi-pathway associations
+      const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
+      Object.entries(multiPathwayGenes).forEach(([gene, pathways]) => {
+        if (pathways.length > 1) {
+          // Gene appears in multiple pathways, add to all relevant cancer types
+          pathways.forEach(pathwayName => {
+            const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+            associatedCancers.forEach(cancer => {
+              if (cancerGeneMapping[cancer] && !cancerGeneMapping[cancer].includes(gene)) {
+                cancerGeneMapping[cancer].push(gene);
+              }
+            });
+          });
+        }
+      });
+      
+      console.log('🧬 Built cancer-gene associations:', cancerGeneMapping);
+      
       const riskFindings = riskScores.map(([cancer_type, risk_percentage]) => ({
         cancer_type,
         risk_percentage,
         risk_level: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
-        affected_genes: pipelineResults.risk_genes?.[cancer_type] || [],
+        affected_genes: cancerGeneMapping[cancer_type] || [], // Use pathway-derived genes
         recommendation: risk_percentage > 50 
           ? `Enhanced ${cancer_type} cancer screening recommended`
           : risk_percentage > 20
@@ -1688,11 +1748,35 @@ const ClinicalViewPage: React.FC = () => {
               
               {/* Build gene-cancer associations from real data */}
               {(() => {
-                // Extract unique genes from variant table
-                const uniqueGenes = [...new Set(genomicData.variant_table.map(v => v.gene))].slice(0, 5); // Limit to 5 for display
+                console.log('🔍 Building heatmap with pathway burden data:', pipelineResults?.pathway_burden_results);
+                
+                // Extract genes from pathway burden results instead of variant table
+                const pathwayBurdenResults = pipelineResults?.pathway_burden_results || {};
+                const allGenes = new Set<string>();
+                
+                // Collect all genes from pathway burden analysis
+                Object.values(pathwayBurdenResults).forEach((pathwayResult: any) => {
+                  if (pathwayResult.contributing_genes) {
+                    pathwayResult.contributing_genes.forEach((gene: string) => allGenes.add(gene));
+                  }
+                  if (pathwayResult.damaging_genes) {
+                    pathwayResult.damaging_genes.forEach((gene: string) => allGenes.add(gene));
+                  }
+                });
+                
+                // If no pathway data, fall back to variant table
+                if (allGenes.size === 0) {
+                  genomicData.variant_table.forEach(v => {
+                    if (v.gene && v.gene !== 'Unknown') {
+                      allGenes.add(v.gene);
+                    }
+                  });
+                }
+                
+                const uniqueGenes = Array.from(allGenes).slice(0, 5); // Limit to 5 for display
                 const cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'];
                 
-                // Build association matrix from risk genes data
+                // Build association matrix from pathway burden data
                 const geneAssociations: Record<string, Record<string, number>> = {};
                 
                 // Initialize with zeros
@@ -1703,32 +1787,63 @@ const ClinicalViewPage: React.FC = () => {
                   });
                 });
                 
-                // Populate with real associations from risk_findings
-                if (pipelineResults) {
-                  genomicData.risk_findings.forEach(finding => {
-                    finding.affected_genes.forEach(gene => {
-                      if (geneAssociations[gene]) {
-                        geneAssociations[gene][finding.cancer_type] = finding.risk_percentage;
-                      }
-                    });
+                // Use pathway burden results to build gene-cancer associations
+                if (pipelineResults && Object.keys(pathwayBurdenResults).length > 0) {
+                  // Map pathways to cancer types based on literature
+                  const pathwayCancerMapping: Record<string, string[]> = {
+                    'dna_repair': ['breast', 'colon'],
+                    'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
+                    'oncogenes': ['lung', 'colon', 'breast'],
+                    'ras_mapk': ['lung', 'colon', 'prostate'],
+                    'cell_cycle': ['breast', 'lung', 'prostate'],
+                    'apoptosis': ['breast', 'lung', 'colon'],
+                    'chromatin_remodeling': ['blood', 'lung'],
+                    'mismatch_repair': ['colon'],
+                    'wnt_signaling': ['colon'],
+                    'pi3k_akt': ['breast', 'prostate']
+                  };
+                  
+                  // Build associations based on pathway burden scores
+                  Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, any]) => {
+                    const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+                    const burdenScore = pathwayResult.burden_score || 0;
+                    
+                    // Map genes in this pathway to associated cancer types
+                    if (pathwayResult.damaging_genes) {
+                      pathwayResult.damaging_genes.forEach((gene: string) => {
+                        if (geneAssociations[gene]) {
+                          associatedCancers.forEach(cancer => {
+                            // Use burden score as base, multiply by gene-specific factors
+                            const geneVariantCount = pathwayResult.gene_damaging_counts?.[gene] || 1;
+                            const associationScore = burdenScore * 100 * Math.min(geneVariantCount, 2); // Cap at 2x
+                            geneAssociations[gene][cancer] = Math.max(
+                              geneAssociations[gene][cancer] || 0,
+                              Math.min(associationScore, 100) // Cap at 100%
+                            );
+                          });
+                        }
+                      });
+                    }
                   });
                   
-                  // Also check TCGA matches for additional associations
-                  if (pipelineResults.tcga_matches) {
-                    Object.entries(pipelineResults.tcga_matches).forEach(([cancer, matches]) => {
-                      Object.entries(matches as Record<string, any>).forEach(([variantId, matchInfo]) => {
-                        // Extract gene from variant ID if possible
-                        const gene = genomicData.variant_table.find(v => v.variant_id === variantId)?.gene;
-                        if (gene && geneAssociations[gene]) {
-                          const frequency = (matchInfo as any).frequency || 0;
+                  // Also incorporate risk scores for additional cancer associations
+                  const riskScores = pipelineResults.risk_scores || {};
+                  Object.entries(riskScores).forEach(([cancer, riskScore]) => {
+                    if (cancerTypes.includes(cancer)) {
+                      // For genes that appear in multiple pathways, boost their association
+                      const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
+                      Object.entries(multiPathwayGenes).forEach(([gene, pathways]: [string, any]) => {
+                        if (geneAssociations[gene] && pathways.length > 1) {
                           geneAssociations[gene][cancer] = Math.max(
                             geneAssociations[gene][cancer] || 0,
-                            frequency * 100
+                            (riskScore as number) * 0.8 // 80% of risk score for multi-pathway genes
                           );
                         }
                       });
-                    });
-                  }
+                    }
+                  });
+                  
+                  console.log('📊 Built gene associations:', geneAssociations);
                 }
                 
                 // If no genes found, show message
@@ -1744,9 +1859,87 @@ const ClinicalViewPage: React.FC = () => {
                     </div>
                   );
                 }
+
+                // Calculate summary statistics
+                const totalAssociations = uniqueGenes.reduce((sum, gene) => {
+                  return sum + cancerTypes.reduce((geneSum, cancer) => {
+                    return geneSum + (geneAssociations[gene]?.[cancer] > 0 ? 1 : 0);
+                  }, 0);
+                }, 0);
+
+                const highRiskAssociations = uniqueGenes.reduce((sum, gene) => {
+                  return sum + cancerTypes.reduce((geneSum, cancer) => {
+                    return geneSum + (geneAssociations[gene]?.[cancer] > 80 ? 1 : 0);
+                  }, 0);
+                }, 0);
+
+                const pathwayBurdenSummary = pipelineResults?.pathway_burden_summary;
                 
                 return (
-                  <svg width="100%" height="400" viewBox="0 0 800 400">
+                  <div>
+                    {/* Summary Statistics */}
+                    <div style={{ 
+                      marginBottom: '1.5rem',
+                      padding: '1rem',
+                      background: '#F9FAFB',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #E5E7EB'
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3B82F6' }}>
+                            {uniqueGenes.length}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            Genes Analyzed
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10B981' }}>
+                            {totalAssociations}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            Total Associations
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#EF4444' }}>
+                            {highRiskAssociations}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            High Risk (&gt;80%)
+                          </div>
+                        </div>
+                        {pathwayBurdenSummary && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8B5CF6' }}>
+                              {pathwayBurdenSummary.high_burden_pathways.length}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                              High-Burden Pathways
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {pathwayBurdenSummary && pathwayBurdenSummary.primary_concern && (
+                        <div style={{ 
+                          marginTop: '0.75rem', 
+                          padding: '0.5rem',
+                          background: '#FEF2F2',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #FECACA'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#EF4444', fontWeight: '600' }}>
+                            Primary Concern: {pathwayBurdenSummary.primary_concern.replace('_', ' ').toUpperCase()}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#7F1D1D', marginTop: '0.25rem' }}>
+                            Overall burden score: {pathwayBurdenSummary.overall_burden_score.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <svg width="100%" height="400" viewBox="0 0 800 400">
                     {/* Background */}
                     <rect width="800" height="400" fill="#F9FAFB"/>
                     
@@ -1838,6 +2031,7 @@ const ClinicalViewPage: React.FC = () => {
                       <text x="20" y="102" fill="#4B5563" fontSize="11">No Association</text>
                     </g>
                   </svg>
+                </div>
                 );
               })()}
             </div>
