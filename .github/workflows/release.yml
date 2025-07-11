@@ -420,12 +420,12 @@ jobs:
           CHANGED_FILES=$(git diff --name-only $LAST_TAG..HEAD)
           
           # Check for core changes that affect all platforms
-          CORE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(desktop/src-tauri/|desktop/ui/|\.github/workflows/release\.yml)" | wc -l)
+          CORE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(desktop/src-tauri/|desktop/ui/|\.github/workflows/release\.yml)" | wc -l | tr -d ' ')
           
           # Check for platform-specific changes
-          LINUX_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.deb|\.AppImage|linux)" | wc -l)
-          WINDOWS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.msi|\.exe|windows)" | wc -l)
-          MACOS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.dmg|macos|darwin)" | wc -l)
+          LINUX_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.deb|\.AppImage|linux)" | wc -l | tr -d ' ')
+          WINDOWS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.msi|\.exe|windows)" | wc -l | tr -d ' ')
+          MACOS_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.dmg|macos|darwin)" | wc -l | tr -d ' ')
           
           echo "📋 Change Analysis:"
           echo "  Core changes: $CORE_CHANGES files"
