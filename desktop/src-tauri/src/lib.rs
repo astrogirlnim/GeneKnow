@@ -401,8 +401,6 @@ async fn get_plugin_registry_stats() -> Result<String, String> {
 
 #[command]
 async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<String, String> {
-    use std::fs;
-    
     // Create a temporary directory for genomic files
     let temp_dir = std::env::temp_dir().join("geneknow_temp");
     fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
@@ -417,7 +415,6 @@ async fn save_temp_file(file_name: String, file_content: Vec<u8>) -> Result<Stri
 
 #[command]
 async fn delete_temp_file(file_path: String) -> Result<(), String> {
-    use std::fs;
     use std::path::Path;
     
     let path = Path::new(&file_path);
