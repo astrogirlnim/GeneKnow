@@ -1198,45 +1198,7 @@ Consider genetic counseling if:
                 />
               </div>
 
-              {/* Report Sections from Pipeline Results */}
-              {pipelineResults && pipelineResults.report_sections && (
-                <div style={{
-                  marginBottom: '2rem',
-                  padding: '1.5rem',
-                  background: '#FFFFFF',
-                  borderRadius: '0.75rem',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                  border: '1px solid #E5E7EB'
-                }}>
-                  <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem', color: '#111827' }}>
-                    Analysis Report
-                  </h3>
-                  {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
-                    <div key={key} style={{ marginBottom: '1rem' }}>
-                      <h4 style={{ 
-                        fontWeight: '600', 
-                        fontSize: '1rem',
-                        color: section.severity === 'high' ? '#DC2626' : 
-                               section.severity === 'medium' ? '#F59E0B' : '#059669',
-                        marginBottom: '0.5rem'
-                      }}>
-                        {section.title}
-                      </h4>
-                      <p style={{ color: '#4B5563', lineHeight: '1.5' }}>{section.content}</p>
-                      {section.technical_details && (
-                        <details style={{ marginTop: '0.5rem' }}>
-                          <summary style={{ cursor: 'pointer', color: '#6B7280', fontSize: '0.875rem' }}>
-                            Technical Details
-                          </summary>
-                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
-                            {section.technical_details}
-                          </p>
-                        </details>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+
 
               {/* Cancer Risk Assessment - Only show if we have real pipeline results */}
               {pipelineResults && (
@@ -1539,6 +1501,8 @@ Consider genetic counseling if:
                       </div>
                     ) : markdownContent ? (
                       <MarkdownRenderer content={markdownContent} />
+                    ) : pipelineResults.enhanced_report_content?.markdown ? (
+                      <MarkdownRenderer content={pipelineResults.enhanced_report_content.markdown} />
                     ) : (
                       <div style={{ textAlign: 'center', padding: '2rem' }}>
                         <p style={{ color: '#6B7280', fontStyle: 'italic' }}>

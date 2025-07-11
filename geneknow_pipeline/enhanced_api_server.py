@@ -33,7 +33,16 @@ except ImportError:
     HAS_NUMPY = False
 
 # Import local modules
-from graph import run_pipeline
+try:
+    # Try relative import first (when run as module)
+    from .graph import run_pipeline
+except ImportError:
+    # Fall back to absolute import (when run directly)
+    import sys
+    import os
+    # Add the parent directory to the path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from graph import run_pipeline
 
 # Custom JSON encoder to handle numpy types and datetime
 class NumpyEncoder(json.JSONEncoder):
