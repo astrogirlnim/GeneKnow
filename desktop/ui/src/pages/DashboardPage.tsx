@@ -708,8 +708,6 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-
-
   // Generate markdown content from pipeline results
   const generateMarkdownFromResults = React.useCallback((results: PipelineResult): string => {
     const currentDate = new Date().toLocaleDateString();
@@ -862,59 +860,6 @@ Consider genetic counseling if:
       }
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
-
-  // Generate PDF from markdown content using pandoc
-  const downloadPDF = React.useCallback(async () => {
-    const content = markdownContent || pipelineResults?.enhanced_report_content?.markdown || '';
-    if (!content) {
-      console.error('No content available for PDF generation');
-      return;
-    }
-
-    try {
-      // Create complete markdown content with header and footer
-      const currentDate = new Date().toLocaleDateString();
-      const filename = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.pdf`;
-      
-      const completeMarkdown = `---
-title: "Genomic Analysis Report"
-author: "GeneKnow Platform"
-date: "${currentDate}"
-geometry: margin=2cm
-fontsize: 11pt
-papersize: a4
-documentclass: article
-header-includes:
-  - \\usepackage{fancyhdr}
-  - \\pagestyle{fancy}
-  - \\fancyfoot[C]{This report is for informational purposes only and should not replace professional medical advice.}
----
-
-${content}`;
-
-      // Use Tauri to convert markdown to PDF with pandoc
-      try {
-        const savedPath = await invoke<string>('convert_markdown_to_pdf', {
-          markdownContent: completeMarkdown,
-          filename: filename
-        });
-        
-        console.log('PDF saved successfully to:', savedPath);
-        console.log('PDF generated using pandoc');
-      } catch (error) {
-        // Fallback: If pandoc command is not available, show helpful error
-        if (error && typeof error === 'string' && error.includes('pandoc')) {
-          alert('Pandoc is not installed. Please install pandoc to generate PDF reports.\n\nOn macOS: brew install pandoc\nOn Windows: Download from https://pandoc.org/installing.html\nOn Linux: sudo apt-get install pandoc');
-        } else if (error !== 'Save cancelled by user') {
-          console.error('Failed to generate PDF with pandoc:', error);
-          alert('Failed to generate PDF: ' + error);
-        }
-      }
-    } catch (error) {
-      console.error('Error preparing PDF generation:', error);
-      alert('Failed to generate PDF. Please try again.');
-    }
-  }, [markdownContent, pipelineResults, fileName]);
 
   return (
     <Layout>
@@ -1310,38 +1255,107 @@ ${content}`;
                   Clinical Reports
                 </h3>
                 
-                {/* Download PDF Button */}
-                {(markdownContent || pipelineResults?.enhanced_report_content?.markdown) && (
-                  <button
-                    onClick={downloadPDF}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#2563EB',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: '0.375rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 200ms ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#1D4ED8';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#2563EB';
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7,10 12,15 17,10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Download PDF
-                  </button>
+                {pipelineResults && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {pipelineResults.enhanced_report_content?.markdown && (
+                      <>
+                        <button
+                          onClick={() => {
+                            // Download the in-memory markdown content
+                            const content = pipelineResults.enhanced_report_content?.markdown;
+                            if (content) {
+                              const blob = new Blob([content], { type: 'text/markdown' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#2563EB',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'background 200ms ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#1D4ED8'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
+                        >
+                          Download Markdown
+                        </button>
+                        {pipelineResults.enhanced_report_content?.html && (
+                          <button
+                            onClick={() => {
+                              // Download the in-memory HTML content
+                              const content = pipelineResults.enhanced_report_content?.html;
+                              if (content) {
+                                const blob = new Blob([content], { type: 'text/html' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.html`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                              }
+                            }}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: '#DC2626',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.875rem',
+                              cursor: 'pointer',
+                              transition: 'background 200ms ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#B91C1C'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#DC2626'}
+                          >
+                            Download HTML
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {!pipelineResults.enhanced_report_content?.markdown && markdownContent && (
+                      <button
+                        onClick={() => {
+                          // Create and download the generated markdown
+                          const blob = new Blob([markdownContent], { type: 'text/markdown' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          background: '#059669',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          transition: 'background 200ms ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
+                      >
+                        Download Report
+                      </button>
+                    )}
+                  </div>
                 )}
 
               </div>
