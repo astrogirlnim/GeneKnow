@@ -861,6 +861,8 @@ Consider genetic counseling if:
     }
   }, [activeTab, pipelineResults, markdownContent, generateMarkdownFromResults]);
 
+
+
   return (
     <Layout>
       <section style={{ 
