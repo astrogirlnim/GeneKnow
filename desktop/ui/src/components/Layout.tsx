@@ -1,37 +1,161 @@
 import type { ReactNode, FC } from 'react'
 import { Link } from 'react-router-dom'
+import { invoke } from '@tauri-apps/api/core'
+import { useState, useEffect } from 'react'
 
 const GeneKnowLogo = () => (
-  <svg className="w-8 h-8" style={{ color: '#0066cc' }} viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="dnaGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style={{stopColor:'#0066cc', stopOpacity:1}} />
-        <stop offset="100%" style={{stopColor:'#003d7a', stopOpacity:1}} />
-      </linearGradient>
-      <linearGradient id="dnaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style={{stopColor:'#00a8e6', stopOpacity:1}} />
-        <stop offset="100%" style={{stopColor:'#0066cc', stopOpacity:1}} />
-      </linearGradient>
-    </defs>
-    <g transform="translate(120, 120)">
-      <g>
-        <path d="M -25,-70 C -25,-50 25,-40 25,-20 C 25,0 -25,10 -25,30 C -25,50 25,60 25,80" 
-              fill="none" stroke="url(#dnaGradient1)" strokeWidth="5" strokeLinecap="round"/>
-        <path d="M 25,-70 C 25,-50 -25,-40 -25,-20 C -25,0 25,10 25,30 C 25,50 -25,60 -25,80" 
-              fill="none" stroke="url(#dnaGradient2)" strokeWidth="5" strokeLinecap="round"/>
-        <line x1="-25" y1="-60" x2="25" y2="-60" stroke="url(#dnaGradient1)" strokeWidth="3"/>
-        <line x1="-15" y1="-45" x2="15" y2="-45" stroke="url(#dnaGradient2)" strokeWidth="3"/>
-        <line x1="-25" y1="-30" x2="25" y2="-30" stroke="url(#dnaGradient1)" strokeWidth="3"/>
-        <line x1="-15" y1="-15" x2="15" y2="-15" stroke="url(#dnaGradient2)" strokeWidth="3"/>
-        <line x1="-25" y1="0" x2="25" y2="0" stroke="url(#dnaGradient1)" strokeWidth="3"/>
-        <line x1="-15" y1="15" x2="15" y2="15" stroke="url(#dnaGradient2)" strokeWidth="3"/>
-        <line x1="-25" y1="30" x2="25" y2="30" stroke="url(#dnaGradient1)" strokeWidth="3"/>
-        <line x1="-15" y1="45" x2="15" y2="45" stroke="url(#dnaGradient2)" strokeWidth="3"/>
-        <line x1="-25" y1="60" x2="25" y2="60" stroke="url(#dnaGradient1)" strokeWidth="3"/>
+  <div 
+    style={{
+      width: '32px',
+      height: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}
+  >
+    <svg width="20" height="20" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Enhanced gradients with blue and green */}
+        <linearGradient id="dnaGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#0ea5e9', stopOpacity:1}} />
+          <stop offset="50%" style={{stopColor:'#0284c7', stopOpacity:1}} />
+          <stop offset="100%" style={{stopColor:'#0369a1', stopOpacity:1}} />
+        </linearGradient>
+        <linearGradient id="dnaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#10b981', stopOpacity:1}} />
+          <stop offset="50%" style={{stopColor:'#059669', stopOpacity:1}} />
+          <stop offset="100%" style={{stopColor:'#047857', stopOpacity:1}} />
+        </linearGradient>
+      </defs>
+      
+      {/* Main DNA Structure - Made Larger */}
+      <g transform="translate(120, 120)">
+        {/* DNA Double Helix - Larger structure */}
+        <g>
+          {/* Primary strand (Blue) */}
+          <path d="M -35,-90 C -35,-65 35,-50 35,-25 C 35,0 -35,15 -35,40 C -35,65 35,80 35,105" 
+                fill="none" stroke="url(#dnaGradient1)" strokeWidth="8" strokeLinecap="round"/>
+          
+          {/* Secondary strand (Green) */}
+          <path d="M 35,-90 C 35,-65 -35,-50 -35,-25 C -35,0 35,15 35,40 C 35,65 -35,80 -35,105" 
+                fill="none" stroke="url(#dnaGradient2)" strokeWidth="8" strokeLinecap="round"/>
+          
+          {/* Base pairs - Larger and more colorful */}
+          <line x1="-35" y1="-77" x2="35" y2="-77" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="-58" x2="20" y2="-58" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="-38" x2="35" y2="-38" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="-19" x2="20" y2="-19" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="0" x2="35" y2="0" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="19" x2="20" y2="19" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="38" x2="35" y2="38" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="58" x2="20" y2="58" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="77" x2="35" y2="77" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="96" x2="20" y2="96" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+        </g>
       </g>
-    </g>
-  </svg>
+    </svg>
+  </div>
 )
+
+const FirstTimeLaunchModal = ({ isOpen, onAccept }: { isOpen: boolean; onAccept: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '1rem'
+    }}>
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '12px',
+        padding: '2rem',
+        maxWidth: '600px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        border: '1px solid #E5E7EB'
+      }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+          color: '#1F2937',
+          margin: '0 0 1.5rem 0',
+          textAlign: 'center'
+        }}>
+          Welcome to GeneKnow
+        </h2>
+        
+        <div style={{
+          color: '#374151',
+          lineHeight: '1.6',
+          fontSize: '0.95rem',
+          marginBottom: '1.5rem'
+        }}>
+          <p style={{ marginBottom: '1rem' }}>
+            Before you proceed, please read and acknowledge the following:
+          </p>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong style={{ color: '#DC2626' }}>For Investigational Use Only:</strong> This is a research-grade tool and is intended for investigational use only. It is NOT a substitute for professional medical advice, diagnosis, or treatment.
+          </div>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong style={{ color: '#DC2626' }}>Professional Verification Required:</strong> All interpretations, risk scores, and conclusions generated by this software are preliminary and must be verified by a qualified healthcare professional (such as a physician or genetic counselor) before any clinical decisions are made.
+          </div>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <strong style={{ color: '#059669' }}>Data Privacy:</strong> This application processes your data locally on your machine. Your files are never uploaded. You are responsible for the security of your data on your own device.
+          </div>
+          
+          <p style={{ 
+            marginTop: '1.5rem',
+            fontSize: '0.9rem',
+            color: '#6B7280',
+            fontStyle: 'italic'
+          }}>
+            By clicking "I Understand and Agree" below, you acknowledge that you have read and understood these limitations and agree to use GeneKnow for informational and investigational purposes only.
+          </p>
+        </div>
+        
+        <div style={{ textAlign: 'center' }}>
+          <button
+            onClick={onAccept}
+            style={{
+              backgroundColor: '#2563EB',
+              color: '#FFFFFF',
+              padding: '0.75rem 2rem',
+              borderRadius: '8px',
+              border: 'none',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'background-color 200ms ease',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#1D4ED8';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#2563EB';
+            }}
+          >
+            I Understand and Agree
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Header = () => (
   <header style={{
@@ -51,14 +175,15 @@ const Header = () => (
         textDecoration: 'none', 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '0.5rem' 
+        gap: '0.1rem' 
       }}>
         <GeneKnowLogo />
         <h1 style={{ 
-          fontSize: '1.5rem', 
+          fontSize: '2rem', 
           fontWeight: 'bold', 
           color: '#1F2937', 
-          margin: 0 
+          margin: 0,
+          padding: 0
         }}>GeneKnow</h1>
       </Link>
       <nav style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
@@ -98,12 +223,75 @@ const Header = () => (
 )
 
 const Footer = () => (
-  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '2rem 0', textAlign: 'center' }}>
+  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '2rem 0' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
-      <p>&copy; 2025 GeneKnow. All rights reserved.</p>
-      <p style={{ fontSize: '0.875rem', color: 'var(--gray-400)', marginTop: '0.5rem' }}>
-        Disclaimer: This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.
-      </p>
+      {/* Row with copyright & disclaimer on left and GitHub button on right */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
+        {/* Copyright & Disclaimer - left side */}
+        <div style={{ flex: '1', minWidth: '300px' }}>
+          <p style={{ 
+            fontSize: '0.875rem', 
+            color: 'var(--gray-400)', 
+            margin: '0 0 0.5rem 0',
+            textAlign: 'left'
+          }}>
+            &copy; 2025 GeneKnow. All rights reserved.
+          </p>
+          <p style={{ 
+            fontSize: '0.875rem', 
+            color: 'var(--gray-400)', 
+            margin: 0,
+            textAlign: 'left'
+          }}>
+            Disclaimer: This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.
+          </p>
+        </div>
+        
+        {/* GitHub Link - right side */}
+        <div style={{ flexShrink: 0 }}>
+          <button 
+            onClick={async () => {
+              try {
+                await invoke('plugin:shell|open', {
+                  path: 'https://github.com/astrogirlnim/GeneKnow'
+                });
+              } catch (error) {
+                console.error('Failed to open GitHub link:', error);
+              }
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--gray-400)',
+              background: 'none',
+              border: 'none',
+              padding: '0',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '400',
+              transition: 'color 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--gray-400)';
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            View on GitHub
+          </button>
+        </div>
+      </div>
     </div>
   </footer>
 )
@@ -112,14 +300,32 @@ interface LayoutProps {
   children: ReactNode
 }
 
-const Layout: FC<LayoutProps> = ({ children }) => (
-  <div style={{ fontFamily: 'var(--font-family-sans)', background: '#FFFFFF', color: 'var(--gray-800)', minHeight: '100vh' }}>
-    <Header />
-    <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
-      {children}
-    </main>
-    <Footer />
-  </div>
-)
+const Layout: FC<LayoutProps> = ({ children }) => {
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    // Check if user has already accepted the terms
+    const hasAccepted = localStorage.getItem('geneknow-terms-accepted');
+    if (!hasAccepted) {
+      setShowModal(true);
+    }
+  }, []);
+
+  const handleAcceptTerms = () => {
+    localStorage.setItem('geneknow-terms-accepted', 'true');
+    setShowModal(false);
+  };
+
+  return (
+    <div style={{ fontFamily: 'var(--font-family-sans)', background: '#FFFFFF', color: 'var(--gray-800)', minHeight: '100vh' }}>
+      <FirstTimeLaunchModal isOpen={showModal} onAccept={handleAcceptTerms} />
+      <Header />
+      <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 export default Layout 

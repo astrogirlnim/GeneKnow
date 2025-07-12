@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
+import DetailedDisclaimer from '../components/DetailedDisclaimer';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions for genomic data structures
@@ -4738,6 +4739,9 @@ const ClinicalViewPage: React.FC = () => {
               {renderTabContent()}
             </div>
           </div>
+          
+          {/* Analysis Disclaimer */}
+          <DetailedDisclaimer />
         </div>
       </section>
     </Layout>

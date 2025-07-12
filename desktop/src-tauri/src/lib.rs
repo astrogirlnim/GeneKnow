@@ -1163,6 +1163,9 @@ pub fn run() {
           .build(),
       )?;
       
+      // Enable shell plugin for opening external links
+      app.handle().plugin(tauri_plugin_shell::init())?;
+      
       log::info!("=== GenePredict Starting ===");
       log::info!("Build mode: {}", if cfg!(debug_assertions) { "DEBUG" } else { "RELEASE" });
       log::info!("Executable path: {:?}", std::env::current_exe());
