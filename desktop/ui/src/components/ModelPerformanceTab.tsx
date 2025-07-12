@@ -1,17 +1,20 @@
 import React from 'react';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
-// Static model validation metrics from training
+// Static model validation metrics from actual training results
+// These metrics are from real model training/validation on public datasets
 const MODEL_VALIDATION_METRICS = {
   auc_roc: 0.7628,
-  f1_score: 0.5712,
-  matthews_corrcoef: 0.4270,
   accuracy: 0.5712,
   r2_score: 0.4270,
   mse: 0.07947,
   training_date: "2025-07-10",
   total_variants: 200000,
-  best_model: "gradient_boosting"
+  best_model: "gradient_boosting",
+  // Note: F1-score and Matthews correlation coefficient not available in training results
+  // These would require additional calculation during training
+  f1_score: undefined as number | undefined,
+  matthews_corrcoef: undefined as number | undefined
 };
 
 interface ModelPerformanceTabProps {
@@ -498,20 +501,24 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
             description="Area Under the Curve - Receiver Operating Characteristic"
             isReference={true}
           />
-          <MetricCard
-            title="F1-Score"
-            value={MODEL_VALIDATION_METRICS.f1_score.toFixed(3)}
-            unit=""
-            description="Harmonic mean of precision and recall"
-            isReference={true}
-          />
-          <MetricCard
-            title="Matthews Correlation"
-            value={MODEL_VALIDATION_METRICS.matthews_corrcoef.toFixed(3)}
-            unit=""
-            description="Correlation coefficient between predicted and actual classifications"
-            isReference={true}
-          />
+          {MODEL_VALIDATION_METRICS.f1_score !== undefined && (
+            <MetricCard
+              title="F1-Score"
+              value={MODEL_VALIDATION_METRICS.f1_score!.toFixed(3)}
+              unit=""
+              description="Harmonic mean of precision and recall"
+              isReference={true}
+            />
+          )}
+          {MODEL_VALIDATION_METRICS.matthews_corrcoef !== undefined && (
+            <MetricCard
+              title="Matthews Correlation"
+              value={MODEL_VALIDATION_METRICS.matthews_corrcoef!.toFixed(3)}
+              unit=""
+              description="Correlation coefficient between predicted and actual classifications"
+              isReference={true}
+            />
+          )}
           <MetricCard
             title="Accuracy"
             value={MODEL_VALIDATION_METRICS.accuracy.toFixed(3)}
