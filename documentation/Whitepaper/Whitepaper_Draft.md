@@ -228,6 +228,41 @@ flowchart TD
 
 Each node is implemented as a Python module in `geneknow_pipeline/nodes/`, with clear logging and modular design for extensibility and auditability. For more details, see the code references above or the pipeline documentation.
 
+### Production/Release Architecture: Backend Service, Bundling, and Dynamic Port Management
+
+In the production (release) version of Geneknow, the `geneknow_pipeline` backend is run as a local API service, tightly integrated with the desktop application for privacy, reliability, and ease of use.
+
+**Key Features:**
+- **Local API Service:** The backend runs as a Flask+SocketIO API server (`enhanced_api_server.py`), started automatically by the Tauri app. All processing is local—no data ever leaves the device.
+- **Dynamic Port Setup:** On startup, the backend finds an available port (default 5000+, see `find_available_port` in `enhanced_api_server.py` and `gunicorn_config.py`). The port is announced to the Rust backend, which relays it to the frontend for all API calls.
+- **Bundled Python Runtime:** For production, a full Python 3 runtime, all dependencies, and the entire pipeline code are bundled using scripts like `desktop/scripts/bundle-python-optimized.sh`. This ensures the app works out-of-the-box on any supported OS, with no external dependencies.
+- **Startup/Shutdown Management:** The Tauri Rust backend (`desktop/src-tauri/src/lib.rs`) manages starting and stopping the API server. In production, it runs a platform-specific startup script (`start_api_server.sh` or `.bat`) from the bundled resources. The process is monitored, and the port is captured from stdout for robust communication.
+- **API Endpoints:** The backend exposes REST endpoints (see `API_DOCUMENTATION.md`), including `/api/process`, `/api/status/{job_id}`, `/api/results/{job_id}`, and a WebSocket for real-time progress updates.
+- **Frontend Communication:** The React frontend (`desktop/ui/`) communicates with the backend via HTTP and WebSocket, using the dynamically chosen port. All requests are routed through the Rust backend, which ensures the API is running and healthy.
+- **Database Initialization:** On first run, the bundled startup script checks for required databases (e.g., `population_variants.db`) and initializes them if missing, ensuring reproducibility and no external downloads.
+- **Security:** The API server binds only to `localhost` (see `gunicorn_config.py`), preventing any external access. All file paths and requests are validated on the Rust side for safety.
+- **Error Handling:** The Rust backend monitors the API process, restarts it if needed, and provides detailed logs for debugging. The Python API server includes comprehensive error handling and logging.
+
+**Relevant Files & Scripts:**
+- `geneknow_pipeline/enhanced_api_server.py` (API server implementation, dynamic port logic)
+- `geneknow_pipeline/gunicorn_config.py` (production server config, port binding)
+- `geneknow_pipeline/run_with_gunicorn.py` (Gunicorn wrapper for production)
+- `desktop/scripts/bundle-python-optimized.sh` (bundling Python, pipeline, and startup scripts)
+- `desktop/src-tauri/src/lib.rs` (Rust backend: startup, port capture, process management)
+- `desktop/bundled_resources/start_api_server.sh` (startup script for production)
+- `geneknow_pipeline/API_DOCUMENTATION.md` (API endpoints and usage)
+- `geneknow_pipeline/TAURI_INTEGRATION_GUIDE.md` (integration details)
+
+**How it works in production:**
+1. On app launch, the Rust backend starts the bundled Python API server using the startup script.
+2. The API server finds an available port, announces it, and starts listening on `localhost` only.
+3. The Rust backend captures the port and relays it to the frontend for all API and WebSocket calls.
+4. The user uploads a file; the frontend sends it to the backend, which saves it to a temp directory and passes the path to the API server.
+5. The API server processes the file, runs the LangGraph pipeline, and returns results via REST/WebSocket.
+6. On shutdown or error, the Rust backend stops the API server and cleans up resources.
+
+This architecture ensures robust, private, and fully local operation, with no external dependencies or data leakage, and seamless integration between frontend, backend, and pipeline service.
+
 ## 5. Privacy & Security Design
 
 **Narrative Overview:**
