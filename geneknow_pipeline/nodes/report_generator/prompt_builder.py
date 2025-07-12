@@ -57,27 +57,24 @@ INPUT DATA:
 - Top cancer risks: {', '.join(top_risks) if top_risks else 'All within baseline levels (<5%)'}
 
 TASK:
-Write exactly 1-2 paragraphs for the Summary section that:
-1. First paragraph: Briefly describes the analysis performed (variants analyzed, QC results)
-2. Second paragraph: States the overall risk profile and most significant findings
-3. Uses professional medical language appropriate for clinicians
-4. Is concise but informative
-5. For high-risk cases: Mentions the elevated risks found
-6. For low-risk cases: Emphasizes reassuring baseline results
+Write exactly 2-3 detailed paragraphs for the Summary section that:
+1. First paragraph: Describe the analysis performed including methodology overview (e.g., variant calling, QC filters, risk modeling), key statistics like total variants and QC pass rate.
+2. Second paragraph: Detail the overall risk profile, highlighting top risks with brief explanations of contributing factors (e.g., specific genes or scores).
+3. Third paragraph (optional): Discuss general implications and next steps.
+4. Use professional medical language appropriate for clinicians.
+5. Be informative and evidence-based, including brief references to analysis methods where relevant.
+6. For high-risk cases: Elaborate on elevated risks and potential clinical significance.
+7. For low-risk cases: Emphasize reassuring aspects and standard recommendations.
 
 OUTPUT FORMAT:
-Return ONLY the paragraph text. Do not include section headers, bullets, or formatting.
-Start directly with the content.
+Return ONLY the paragraph text. ABSOLUTELY NO section headers, bullets, markdown, or extra formatting. Start directly with the content text.
 
 EXAMPLE OUTPUT (high-risk case):
-"This genomic risk assessment analyzed [X] genetic variants from [file type] data, with [Y] variants passing quality control filters (Z% pass rate). The analysis was completed in [time] seconds and identified [count] high-risk findings requiring clinical attention.
+This genomic risk assessment employed advanced variant calling algorithms followed by rigorous quality control filters, analyzing a total of [X] genetic variants from [file type] data. Of these, [Y] variants passed QC thresholds including minimum read depth and allele frequency requirements, achieving a Z% pass rate. The complete analysis, incorporating TCGA database matching and machine learning risk modeling, was executed in [time] seconds.
 
-The individual's genetic profile indicates significantly elevated risk for [top cancers], with the highest risk being [specific cancer] at [percentage]. These findings warrant further clinical evaluation and genetic counseling to discuss preventive measures and screening protocols."
+The genetic profile reveals significantly elevated risks for [top cancers], with the highest being [specific cancer] at [percentage], primarily driven by pathogenic variants in key oncogenes and high polygenic risk scores. Additional contributing factors include [brief mention of other factors if applicable]. These findings suggest a strong genetic predisposition that may influence clinical management.
 
-EXAMPLE OUTPUT (low-risk case):
-"This genomic risk assessment analyzed [X] genetic variants from [file type] data, with [Y] variants passing quality control filters (Z% pass rate). The analysis was completed in [time] seconds with no high-risk findings identified.
-
-The individual's genetic profile shows cancer risk levels within normal baseline ranges for all analyzed cancer types (<5%). This reassuring result indicates that no known high-risk genetic variants were detected in major cancer susceptibility genes."
+Given these results, immediate genetic counseling is recommended to discuss preventive strategies, enhanced screening protocols, and potential family implications.
 """
 
         return prompt
@@ -163,22 +160,19 @@ Variant {i}:
 
             prompt += """
 TASK:
-Write a numbered list (1., 2., etc.) of the key variants with clinical interpretation.
-For each variant, write 1-2 sentences that:
-1. Identify the gene and mutation type (e.g., "BRCA1 frameshift mutation")
-2. Explain the clinical significance and cancer risk association
-3. Mention quality metrics if confidence is high (quality >90) or low (<50)
-4. Use proper genetic nomenclature
-5. Avoid overstating conclusions
+Write a numbered list (1., 2., etc.) of the key variants with detailed clinical interpretation.
+For each variant, write 2-3 sentences that:
+1. Identify the gene, mutation type, and nomenclature.
+2. Explain the detailed clinical significance, associated cancers, and evidence from databases like ClinVar/TCGA.
+3. Discuss quality metrics, potential functional impacts, and inheritance patterns if relevant.
+4. Use proper genetic nomenclature and evidence-based language.
+5. Avoid overstating conclusions.
 
 OUTPUT FORMAT:
-Return ONLY the numbered list. Do not include section headers or additional formatting.
-Start directly with "1. **[GENE]**: [description]"
+Return ONLY the numbered list. ABSOLUTELY NO section headers or additional formatting. Start directly with "1. **[GENE]**: [description]"
 
 EXAMPLE OUTPUT:
-"1. **BRCA1**: A frameshift mutation (c.5266dupC) resulting in a premature stop codon (p.Gln1756Profs*74). This pathogenic variant significantly increases the risk for breast and ovarian cancer. The quality score of 99 and read depth of 45 indicate high confidence in this finding.
-
-2. **TP53**: A missense mutation (c.743G>A) causing an arginine to glutamine substitution at position 248 (p.Arg248Gln). This variant may contribute to increased cancer risk across multiple cancer types. The quality score of 85 indicates moderate confidence in this finding."
+1. **BRCA1**: A frameshift mutation (c.5266dupC) resulting in a premature stop codon (p.Gln1756Profs*74). This pathogenic variant, classified as pathogenic in ClinVar, significantly increases the risk for breast and ovarian cancer with lifetime risks up to 72% and 44% respectively. The high quality score of 99, read depth of 45, and TCGA enrichment indicate strong confidence in this finding, likely following autosomal dominant inheritance.
 """
 
         return prompt
@@ -220,17 +214,18 @@ TASK:
 Generate the Risk Summary section with:
 1. A markdown table with columns "Cancer Type" and "Risk (%)"
 2. All cancer types sorted by descending risk percentage
-3. One sentence after the table explaining the significance
+3. After the table, 1-2 detailed paragraphs explaining the scores, comparisons to population averages (assume 1-2% baseline), clinical implications, and factors influencing the risks.
 
 OUTPUT FORMAT:
-Return the markdown table followed by exactly one explanatory sentence.
-Do not include section headers or additional formatting.
+Return the markdown table followed by the explanatory paragraphs. ABSOLUTELY NO section headers. Start with the table.
 
 REQUIRED TABLE FORMAT:
 | Cancer Type | Risk (%) |
 |-------------|----------|
 | [Type]      | [X.X]    |
-| [Type]      | [X.X]    |
+
+EXPLANATORY TEXT:
+Explain scores relative to baselines, highlight elevations, discuss potential genetic factors.
 
 REQUIRED SENTENCE (choose based on findings):
 - If high-risk findings: "Risks above 5% are considered elevated and warrant further clinical attention."
@@ -273,7 +268,7 @@ ANALYSIS SUMMARY:
 
         prompt += """
 TASK:
-Write exactly 1-2 paragraphs for the Clinical Interpretation section that:
+Write exactly 2-3 paragraphs for the Clinical Interpretation section that:
 1. First paragraph: Explains the methodology used (TCGA matching, CADD scoring, ML models, etc.)
 2. Second paragraph: Discusses reliability, limitations, and clinical context
 3. Always includes the standard caveat about correlating with family history and clinical presentation
@@ -332,39 +327,14 @@ RISK PROFILE:
 
         prompt += """
 TASK:
-Generate a bulleted list of 3-5 actionable clinical recommendations.
-Tailor recommendations to the risk profile:
-
-FOR HIGH-RISK CASES:
-- Include genetic counseling recommendation
-- Suggest specific screening protocols for elevated cancer types
-- Mention consideration of preventive measures if appropriate
-- Include standard follow-up advice
-
-FOR LOW-RISK CASES:
-- Recommend standard age-appropriate screening
-- Mention continued adherence to preventive care
-- Include lifestyle recommendations
-- Still suggest genetic counseling if family history warrants
+Generate a bulleted list of 4-6 actionable clinical recommendations, each with 1-2 explanatory sentences.
+Tailor to risk profile, elaborating on rationale and evidence.
 
 OUTPUT FORMAT:
-Return ONLY the bulleted list using "- " format.
-Do not include section headers or additional formatting.
-Always end with: "- Consult a qualified healthcare provider for personalized guidance."
+Return ONLY the bulleted list using "- " format. ABSOLUTELY NO headers.
 
-EXAMPLE OUTPUT (high-risk):
-"- Genetic counseling is strongly recommended to discuss these findings and develop a personalized risk management plan
-- Enhanced breast cancer screening including annual mammography and consideration of MRI screening
-- Ovarian cancer surveillance with transvaginal ultrasound and CA-125 testing
-- Consider prophylactic measures in consultation with oncology specialists
-- Consult a qualified healthcare provider for personalized guidance."
-
-EXAMPLE OUTPUT (low-risk):
-"- Adhere to standard age-appropriate cancer screening protocols
-- Maintain healthy lifestyle including regular exercise and balanced diet
-- Continue routine preventive care and health maintenance
-- Consider genetic counseling if strong family history of cancer emerges
-- Consult a qualified healthcare provider for personalized guidance."
+EXAMPLE:
+- Genetic counseling is strongly recommended to discuss these findings in detail, including inheritance patterns and family implications. This helps in developing a personalized risk management plan based on current clinical guidelines."
 """
 
         return prompt
