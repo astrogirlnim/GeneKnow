@@ -281,40 +281,37 @@ Geneknow's core analysis pipeline is orchestrated using LangGraph, a modular, no
 - **Phase 1: Offline Model Training & Validation** (performed before shipping the app)
 - **Phase 2: Online Real-Time Inference Pipeline** (runs locally in the app)
 
-Below is a high-level diagram of the pipeline, followed by a detailed explanation of each node and its implementation in the codebase.
+Below is a simplified diagram of the pipeline, followed by a detailed explanation of each node and its implementation in the codebase. Each node is labeled with a letter (A-U) that corresponds to the detailed explanations in the table below.
 
 ![LangGraph Pipeline Architecture](langgraph_pipeline.svg)
 
-*Figure 6: LangGraph Pipeline Architecture showing the two-phase approach: Phase 1 (Offline Model Training & Validation) performed before shipping the app, and Phase 2 (Online Real-Time Inference Pipeline) running locally in the app. The diagram illustrates the complete workflow from data ingestion through genomic feature extraction, machine learning validation, and report generation, with each node representing a specific processing step in the privacy-preserving genomic analysis pipeline.*
+*Figure 6: Simplified LangGraph Pipeline Architecture showing the two-phase approach: Phase 1 (Offline Model Training & Validation) performed before shipping the app, and Phase 2 (Online Real-Time Inference Pipeline) running locally in the app. The diagram shows the complete workflow from data ingestion through genomic feature extraction, machine learning validation, and report generation. Each node is annotated with letters (A-U) that correspond to the detailed implementation table below.*
 
 ### Node-by-Node Explanation
 
-| Node (Diagram)         | Implementation File/Function                  | Purpose/Role                                                                                   |
-|------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------|
-| **A_Data**             | *N/A (input data)*                            | Public & clinical data sources (TCGA, 1000 Genomes) used for model training                   |
-| **B_Train**            | *Offline ML scripts*                          | Model training (TensorFlow/PyTorch, see `ml_models/`)                                         |
-| **C_Eval**             | *Offline ML scripts*                          | Model evaluation (AUC, F1, MCC)                                                               |
-| **D_Artifact**         | `ml_models/best_fusion_model.pkl`             | Saved, validated model artifact                                                               |
-| **E_Input**            | `nodes/file_input.py:process`                 | Validates and extracts metadata from FASTQ/BAM/VCF/MAF files                                  |
-| **F_Parse**            | `nodes/preprocess.py:process`                 | Preprocesses input: aligns FASTQ, validates BAM, loads VCF/MAF                                |
-| **G_Cond**             | `nodes/preprocess.py:process`                 | Conditional logic for file type handling                                                      |
-| **H_Call**             | `nodes/variant_calling.py:run_simple_variant_caller` | Variant calling (DeepVariant or test VCF)                                                     |
-| **I_QC**               | `nodes/qc_filter.py`                          | Quality control filtering of variants                                                         |
-| **J_Merge**            | `nodes/preprocess.py` / pipeline logic        | Merges and consolidates variant data                                                          |
-| **K_Pop**              | `nodes/population_mapper.py`                  | Maps variants to population frequencies (gnomAD/dbSNP)                                        |
-| **L_TCGA**             | `nodes/tcga_mapper.py`                        | Maps variants to TCGA cancer cohort frequencies                                               |
-| **M_CADD**             | `nodes/cadd_scoring.py:process`               | Computes CADD-like deleteriousness scores locally                                             |
-| **N_ClinVar**          | `nodes/clinvar_annotator.py`                  | Annotates variants with ClinVar clinical significance                                         |
-| **O_PRS**              | `nodes/prs_calculator.py:process`             | Calculates Polygenic Risk Scores (PRS)                                                        |
-| **P_Pathway**          | `nodes/pathway_burden.py`                     | Calculates pathway-specific burden scores                                                     |
-| **Q_Vec**              | `nodes/feature_vector_builder.py:process`     | Builds feature vectors from all static model outputs for ML fusion                            |
-| **R_Model**            | `nodes/ml_fusion_node.py:MLFusionNode`        | ML fusion layer combines static model outputs for final risk assessment                       |
-| **S_Sanity**           | `nodes/shap_validator.py:process`             | SHAP-based explainability and sanity-check of ML predictions                                  |
-| **T_Format**           | `nodes/formatter.py:process`, `report_writer` | Formats results, generates markdown/VCF, prepares for report export                           |
-| **U_Front**            | `desktop/ui/`                                 | Frontend (React + Tailwind) for user interaction and visualization                            |
-| **V_Verify**           | *Frontend logic*                              | Human verification of results                                                                 |
-| **W_KM_Viz**           | `desktop/ui/components/`                      | Kaplan-Meier survival curve visualization                                                     |
-| **V_Confirm/Review**   | *Frontend logic*                              | User confirmation or manual review                                                            |
+| Node | Diagram Reference | Implementation File/Function                  | Purpose/Role                                                                                   |
+|------|-------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------|
+| **A** | Public Data | *Offline ML scripts*                          | Public & clinical data sources (TCGA, gnomAD, ClinVar) used for model training                   |
+| **B** | Model Training | *Offline ML scripts*                          | Model training (TensorFlow/PyTorch, see `ml_models/`)                                         |
+| **C** | Validation | *Offline ML scripts*                          | Model evaluation (AUC, F1, MCC)                                                               |
+| **D** | Model Artifacts | `ml_models/best_fusion_model.pkl`             | Saved, validated model artifact                                                               |
+| **E** | File Input | `nodes/file_input.py:process`                 | Validates and extracts metadata from FASTQ/BAM/VCF/MAF files                                  |
+| **F** | Preprocessing | `nodes/preprocess.py:process`                 | Preprocesses input: aligns FASTQ, validates BAM, loads VCF/MAF                                |
+| **G** | File Type Check | `nodes/preprocess.py:process`                 | Conditional logic for file type handling                                                      |
+| **H** | Variant Calling | `nodes/variant_calling.py:run_simple_variant_caller` | Variant calling (DeepVariant or test VCF)                                                     |
+| **I** | Quality Control | `nodes/qc_filter.py`                          | Quality control filtering of variants                                                         |
+| **J** | Parallel Analysis | `nodes/preprocess.py` / pipeline logic        | Merges and consolidates variant data for parallel processing                                                          |
+| **K** | Population Mapping | `nodes/population_mapper.py`                  | Maps variants to population frequencies (gnomAD/dbSNP)                                        |
+| **L** | TCGA Mapping | `nodes/tcga_mapper.py`                        | Maps variants to TCGA cancer cohort frequencies                                               |
+| **M** | CADD Scoring | `nodes/cadd_scoring.py:process`               | Computes CADD-like deleteriousness scores locally                                             |
+| **N** | ClinVar Annotation | `nodes/clinvar_annotator.py`                  | Annotates variants with ClinVar clinical significance                                         |
+| **O** | PRS Calculator | `nodes/prs_calculator.py:process`             | Calculates Polygenic Risk Scores (PRS)                                                        |
+| **P** | Pathway Burden | `nodes/pathway_burden.py`                     | Calculates pathway-specific burden scores                                                     |
+| **Q** | Feature Builder | `nodes/feature_vector_builder.py:process`     | Builds feature vectors from all static model outputs for ML fusion                            |
+| **R** | ML Fusion | `nodes/ml_fusion_node.py:MLFusionNode`        | ML fusion layer combines static model outputs for final risk assessment                       |
+| **S** | SHAP Validation | `nodes/shap_validator.py:process`             | SHAP-based explainability and sanity-check of ML predictions                                  |
+| **T** | Report Formatting | `nodes/formatter.py:process`, `report_writer` | Formats results, generates markdown/VCF, prepares for report export                           |
+| **U** | Frontend Display | `desktop/ui/`                                 | Frontend (React + Tailwind) for user interaction and visualization                            |
 
 **How It Works:**
 - **Phase 1** (Offline): Models are trained and validated on public/clinical data, producing a validated artifact that is bundled with the app.
