@@ -675,21 +675,22 @@ const DashboardPage: React.FC = () => {
         }
       ];
       
-      // Add variant details if available
-      if (keyVariants.length > 0) {
-        keyVariants.forEach((variant, index) => {
-          otherMetrics.push({
-            id: 4 + index,
-            title: `Variant ${index + 1}`,
-            value: variant.gene,
-            unit: variant.type,
-            tooltipContent: {
-              content: `${variant.impact} impact variant at position ${variant.position}`,
-              link: "#"
-            }
-          });
-        });
-      }
+      // Add variant details if available - REMOVED per user request
+      // The three variant boxes (PLEKHN1, PGD, GMEB1) are now hidden from dashboard
+      // if (keyVariants.length > 0) {
+      //   keyVariants.forEach((variant, index) => {
+      //     otherMetrics.push({
+      //       id: 4 + index,
+      //       title: `Variant ${index + 1}`,
+      //       value: variant.gene,
+      //       unit: variant.type,
+      //       tooltipContent: {
+      //         content: `${variant.impact} impact variant at position ${variant.position}`,
+      //         link: "#"
+      //       }
+      //     });
+      //   });
+      // }
       
       return {
         probability,
