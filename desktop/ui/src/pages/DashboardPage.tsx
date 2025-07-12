@@ -642,7 +642,6 @@ const DashboardPage: React.FC = () => {
       const hazardScore = highestRisk.score ? (highestRisk.score / 100 * 3).toFixed(1) : "0.0"; // Convert from percentage to hazard score scale
       
       // Extract key metrics from the pipeline results
-      const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
       const variantCount = pipelineResults.variant_count || 0;
       
       // Sort cancer risks by score and filter out baseline risks
@@ -674,22 +673,6 @@ const DashboardPage: React.FC = () => {
           }
         }
       ];
-      
-      // Add variant details if available
-      if (keyVariants.length > 0) {
-        keyVariants.forEach((variant, index) => {
-          otherMetrics.push({
-            id: 4 + index,
-            title: `Variant ${index + 1}`,
-            value: variant.gene,
-            unit: variant.type,
-            tooltipContent: {
-              content: `${variant.impact} impact variant at position ${variant.position}`,
-              link: "#"
-            }
-          });
-        });
-      }
       
       return {
         probability,
