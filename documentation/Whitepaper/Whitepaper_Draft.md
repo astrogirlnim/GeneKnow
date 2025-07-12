@@ -2,7 +2,7 @@
 
 **Abstract**
 
-Geneknow is a free, open-source desktop application for privacy-preserving genomic risk assessment. Built on Tauri with React frontend and Python ML backend, it processes genomic data entirely locally using validated ML models achieving AUC 0.76 for cancer risk prediction. The platform leverages established databases (TCGA [14], COSMIC [15], gnomAD [16], ClinVar [17]) and methods (PRS [18], CADD [6], pathway burden analysis [20]) while ensuring complete data privacy through local-only processing. With rigorous data leakage prevention and clinical safety emphasis, Geneknow provides tunable sensitivity (60-90%) for various clinical applications. This whitepaper details the scientific foundation, architecture, and clinical applications of Geneknow for investigative genomic analysis.
+Geneknow is a free, open-source desktop application for privacy-preserving genomic risk assessment. Built on Tauri with React frontend and Python ML backend, it processes genomic data entirely locally using validated ML models achieving AUC 0.76 for cancer risk prediction. The platform leverages established databases (TCGA [14], gnomAD [15], ClinVar [16]) and methods (PRS [17], CADD [6], pathway burden analysis [18]) while ensuring complete data privacy through local-only processing. With rigorous data leakage prevention and clinical safety emphasis, Geneknow provides tunable sensitivity (60-90%) for various clinical applications. This whitepaper details the scientific foundation, architecture, and clinical applications of Geneknow for investigative genomic analysis.
 
 > **Disclaimer:** Geneknow is a statistical tool for investigative and research purposes only. It does not provide medical or clinical advice, diagnosis, or treatment recommendations. All results must be interpreted by qualified professionals and are not intended for clinical decision-making.
 
@@ -243,11 +243,11 @@ Each static model in our pipeline represents established genomic analysis method
 
 | Model | Purpose | Implementation | Literature Validation |
 |-------|---------|----------------|----------------------|
-| **PRS (Polygenic Risk Scores)** | Aggregates GWAS-derived SNP effects for heritable cancer risk | Population-specific scoring with confidence intervals | Validated for breast/prostate cancer risk stratification with 10-20% heritability capture [18] |
-| **ClinVar Annotation** | Maps variants to clinical interpretations | Local SQLite database with 500K+ variant annotations | Clinical concordance >90% with expert curation [17] |
+| **PRS (Polygenic Risk Scores)** | Aggregates GWAS-derived SNP effects for heritable cancer risk | Population-specific scoring with confidence intervals | Validated for breast/prostate cancer risk stratification with 10-20% heritability capture [17] |
+| **ClinVar Annotation** | Maps variants to clinical interpretations | Local SQLite database with 500K+ variant annotations | Clinical concordance >90% with expert curation [16] |
 | **CADD Scoring** | Predicts variant deleteriousness | Offline PHRED-scaled scoring with cancer gene multipliers | AUC 0.80 for pathogenic variant identification [6] |
 | **TCGA Mapping** | Compares to tumor mutation frequencies | Analysis of 10,000+ TCGA samples across 33 cancer types | Mutation signatures correlate with clinical outcomes [14] |
-| **Pathway Burden** | Quantifies biological pathway disruption | Gene set enrichment with weighted burden scoring | Rare variant burden improves familial cancer risk assessment [20] |
+| **Pathway Burden** | Quantifies biological pathway disruption | Gene set enrichment with weighted burden scoring | Rare variant burden improves familial cancer risk assessment [18] |
 
 ### 4.4 Plugin System Architecture
 
@@ -264,9 +264,9 @@ The plugin system provides extensibility while maintaining security and performa
 ### 4.5 Privacy-Preserving Data Management
 
 **Database Architecture:**
-- **population_variants.db:** Aggregate allele frequencies from gnomAD [16] (no individual genomes)
-- **prs_snps.db:** Published GWAS effect sizes (summary statistics only) [18]
-- **clinvar_annotations.db:** Variant interpretations (no patient data) [17]
+- **population_variants.db:** Aggregate allele frequencies from gnomAD [15] (no individual genomes)
+- **prs_snps.db:** Published GWAS effect sizes (summary statistics only) [17]
+- **clinvar_annotations.db:** Variant interpretations (no patient data) [16]
 
 **Privacy Guarantees:**
 - No raw sequence data stored
@@ -316,8 +316,8 @@ flowchart TD
         T_Format["Formatter & Report Writer<br>Generate Markdown/VCF with PASS/FLAG"]
         U_Front(["Frontend<br>React + Tailwind"])
         V_Verify{"Human Verification"}
-        W_KM_Viz["Kaplan-Meier<br>Survival Curve Viz 📊"]
-        V_Confirm["Simple Confirmation<br>👍 / 👎"]
+        W_KM_Viz["Kaplan-Meier<br>Survival Curve Viz"]
+        V_Confirm["Simple Confirmation<br>Yes / No"]
         V_Review["Manual Review Required"]
   end
  subgraph subGraph5["Phase 2: Online Real-Time Inference Pipeline (Runs in the App)"]
@@ -347,8 +347,8 @@ flowchart TD
     S_Sanity --> T_Format
     T_Format --> U_Front
     U_Front --> V_Verify & W_KM_Viz
-    V_Verify -- ✅ PASS Status --> V_Confirm
-    V_Verify -- ⚠️ FLAG Status --> V_Review
+    V_Verify -- PASS Status --> V_Confirm
+    V_Verify -- FLAG Status --> V_Review
     style A_Data fill:#cde4f7,stroke:#333
     style B_Train fill:#e2d9f3,stroke:#333
     style C_Eval fill:#fce8b2,stroke:#333
@@ -672,17 +672,15 @@ The platform's impact extends beyond individual patient care to enabling genomic
 
 14. Hoadley KA, Yau C, Hinoue T, Wolf DM, Lazar AJ, Drill E, Shen R, Taylor AM, Cherniack AD, Thorsson V, Akbani R, Bowlby R, Wong CK, Wiznerowicz M, Sanchez-Vega F, Robertson AG, Schneider BG, Lawrence MS, Noushmehr H, Malta TM; Cancer Genome Atlas Network; Stuart JM, Benz CC, Laird PW. Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer. Cell. 2018 Apr 5;173(2):291-304.e6. doi:10.1016/j.cell.2018.03.022. [Link](https://doi.org/10.1016/j.cell.2018.03.022)
 
-15. Tate JG, Bamford S, Jubb HC, Sondka Z, Beare DM, Bindal N, Boutselakis H, Cole CG, Creatore C, Dawson E, Fish P, Harsha B, Hathaway C, Jupe SC, Kok CY, Noble K, Ponting L, Ramshaw CC, Rye CE, Speedy HE, Stefancsik R, Thompson SL, Wang S, Ward S, Campbell PJ, Forbes SA. COSMIC: the Catalogue Of Somatic Mutations In Cancer. Nucleic Acids Res. 2019 Jan 8;47(D1):D941-D947. doi:10.1093/nar/gky1015. [Link](https://doi.org/10.1093/nar/gky1015)
+15. Karczewski KJ, Francioli LC, Tiao G, Cummings BB, Alföldi J, Wang Q, Collins RL, Laricchia KM, Ganna A, Birnbaum DP, et al. The mutational constraint spectrum quantified from variation in 141,456 humans. Nature. 2020 May;581(7809):434-443. doi:10.1038/s41586-020-2308-7. [Link](https://doi.org/10.1038/s41586-020-2308-7)
 
-16. Karczewski KJ, Francioli LC, Tiao G, Cummings BB, Alföldi J, Wang Q, Collins RL, Laricchia KM, Ganna A, Birnbaum DP, et al. The mutational constraint spectrum quantified from variation in 141,456 humans. Nature. 2020 May;581(7809):434-443. doi:10.1038/s41586-020-2308-7. [Link](https://doi.org/10.1038/s41586-020-2308-7)
+16. Landrum MJ, Chitipiralla S, Brown GR, Chen C, Gu B, Hart J, Hoffman D, Jang W, Kaur K, Liu C, Lyoshin V, Maddipatla Z, Maiti R, Mitchell J, O'Leary N, Riley G, Zhou G, Schneider V, Maglott D, Holmes JB, Kattman BL. ClinVar: improvements to accessing data. Nucleic Acids Res. 2020 Jan 8;48(D1):D835-D844. doi:10.1093/nar/gkz972. [Link](https://doi.org/10.1093/nar/gkz972)
 
-17. Landrum MJ, Chitipiralla S, Brown GR, Chen C, Gu B, Hart J, Hoffman D, Jang W, Kaur K, Liu C, Lyoshin V, Maddipatla Z, Maiti R, Mitchell J, O'Leary N, Riley G, Zhou G, Schneider V, Maglott D, Holmes JB, Kattman BL. ClinVar: improvements to accessing data. Nucleic Acids Res. 2020 Jan 8;48(D1):D835-D844. doi:10.1093/nar/gkz972. [Link](https://doi.org/10.1093/nar/gkz972)
+17. Torkamani A, Wineinger NE, Topol EJ. The personal and clinical utility of polygenic risk scores. Nat Rev Genet. 2018 Sep;19(9):581-590. doi:10.1038/s41576-018-0018-x. [Link](https://doi.org/10.1038/s41576-018-0018-x)
 
-18. Torkamani A, Wineinger NE, Topol EJ. The personal and clinical utility of polygenic risk scores. Nat Rev Genet. 2018 Sep;19(9):581-590. doi:10.1038/s41576-018-0018-x. [Link](https://doi.org/10.1038/s41576-018-0018-x)
+18. Wu MC, Kraft P, Epstein MP, Taylor DM, Chanock SJ, Hunter DJ, Lin X. Powerful SNP-set analysis for case-control genome-wide association studies. Am J Hum Genet. 2010 Jun 11;86(6):929-42. doi:10.1016/j.ajhg.2010.05.002. [Link](https://doi.org/10.1016/j.ajhg.2010.05.002)
 
 19. Lundberg SM, Lee S-I. A Unified Approach to Interpreting Model Predictions. In: Proceedings of the 31st International Conference on Neural Information Processing Systems (NeurIPS 2017). 2017:4765-4774. [Link](https://proceedings.neurips.cc/paper_files/paper/2017/file/8a20a8621978632d76c43dfd28b67767-Paper.pdf)
-
-20. Wu MC, Kraft P, Epstein MP, Taylor DM, Chanock SJ, Hunter DJ, Lin X. Powerful SNP-set analysis for case-control genome-wide association studies. Am J Hum Genet. 2010 Jun 11;86(6):929-42. doi:10.1016/j.ajhg.2010.05.002. [Link](https://doi.org/10.1016/j.ajhg.2010.05.002)
 
 ---
 
