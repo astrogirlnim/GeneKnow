@@ -3950,14 +3950,40 @@ const ClinicalViewPage: React.FC = () => {
       case 'clinical':
         return (
           <div style={{ padding: '2rem' }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               marginBottom: '1.5rem'
             }}>
-              Clinical Report & Recommendations
-            </h2>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
+              }}>
+                Clinical Report & Recommendations
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('clinical-report')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
+              </div>
+            </div>
             
             {/* Survival Analysis */}
             <div id="survival-analysis" style={{
@@ -3969,14 +3995,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Survival Analysis vs Population Average
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Survival Analysis vs Population Average
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('survival-analysis')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Comparative survival analysis showing how your genetic risk profile affects life expectancy compared to the general population. The red solid line represents your personalized risk profile, while the blue dashed line shows population averages. Early intervention and enhanced screening can significantly improve outcomes." isVisible={hoveredTooltip === 'survival-analysis'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="survival-analysis"
                   title="Survival Analysis"
@@ -4119,14 +4170,40 @@ const ClinicalViewPage: React.FC = () => {
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB'
             }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
                 marginBottom: '1rem'
               }}>
-                Clinical Recommendations
-              </h3>
+                <h3 style={{ 
+                  color: '#111827',
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  Clinical Recommendations
+                </h3>
+                <div 
+                  style={{ position: 'relative', display: 'inline-flex' }}
+                  onMouseEnter={() => setHoveredTooltip('clinical-recommendations')}
+                  onMouseLeave={() => setHoveredTooltip(null)}
+                >
+                  <InformationCircleIcon 
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#D1D5DB';
+                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.borderColor = '#9CA3AF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#E5E7EB';
+                      e.currentTarget.style.color = '#6B7280';
+                      e.currentTarget.style.borderColor = '#D1D5DB';
+                    }}
+                  />
+                  <SmartTooltip content="Personalized screening and prevention recommendations based on your genetic risk profile. Each recommendation includes specific cancer types, risk percentages, screening protocols, and prevention strategies. High-risk findings require enhanced surveillance while medium-risk findings may benefit from earlier or more frequent screening." isVisible={hoveredTooltip === 'clinical-recommendations'} triggerRef={null} />
+                </div>
+              </div>
               
               {/* Check if clinical recommendations are available from backend */}
               {(() => {
@@ -4241,23 +4318,57 @@ const ClinicalViewPage: React.FC = () => {
                           background: risk.risk_level === 'high' ? '#FEF2F2' : '#FFFBEB'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                            <h4 style={{ 
-                              color: '#111827',
-                              fontSize: '1rem',
-                              fontWeight: '600',
-                              textTransform: 'capitalize'
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
                             }}>
-                              {risk.cancer_type} Cancer Screening
-                            </h4>
-                            <div style={{
-                              background: getRiskColor(risk.risk_level),
-                              color: '#FFFFFF',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.75rem',
-                              fontWeight: '600'
-                            }}>
-                              {risk.risk_percentage}% Risk
+                              <h4 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                textTransform: 'capitalize',
+                                margin: 0
+                              }}>
+                                {risk.cancer_type} Cancer Screening
+                              </h4>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`screening-${risk.cancer_type}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '16px', height: '16px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip content={`Personalized screening recommendations for ${risk.cancer_type} cancer based on your genetic risk profile. Risk level: ${risk.risk_level}. Enhanced screening protocols may include earlier start ages, more frequent testing, or additional screening modalities compared to standard population guidelines.`} isVisible={hoveredTooltip === `screening-${risk.cancer_type}`} triggerRef={null} />
+                              </div>
+                            </div>
+                            <div 
+                              style={{ position: 'relative', display: 'inline-flex' }}
+                              onMouseEnter={() => setHoveredTooltip(`risk-percentage-${risk.cancer_type}`)}
+                              onMouseLeave={() => setHoveredTooltip(null)}
+                            >
+                              <div style={{
+                                background: getRiskColor(risk.risk_level),
+                                color: '#FFFFFF',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '600'
+                              }}>
+                                {risk.risk_percentage}% Risk
+                              </div>
+                              <SmartTooltip content={`${risk.risk_percentage}% lifetime risk of developing ${risk.cancer_type} cancer based on your genetic variants. This is ${risk.risk_level === 'high' ? 'significantly higher' : risk.risk_level === 'medium' ? 'moderately higher' : 'similar to or lower'} than the general population average. Risk is calculated using machine learning models trained on clinical outcomes and population data.`} isVisible={hoveredTooltip === `risk-percentage-${risk.cancer_type}`} triggerRef={null} />
                             </div>
                           </div>
                           <p style={{ 
@@ -4273,14 +4384,41 @@ const ClinicalViewPage: React.FC = () => {
                             borderRadius: '0.5rem',
                             border: '1px solid #E5E7EB'
                           }}>
-                            <h5 style={{ 
-                              color: '#111827',
-                              fontSize: '0.875rem',
-                              fontWeight: '600',
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
                               marginBottom: '0.5rem'
                             }}>
-                              Affected Genes:
-                            </h5>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                margin: 0
+                              }}>
+                                Affected Genes:
+                              </h5>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`affected-genes-${risk.cancer_type}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '14px', height: '14px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip content={`Genes containing variants that contribute to ${risk.cancer_type} cancer risk. These genes are involved in critical cellular pathways like DNA repair, cell cycle control, and tumor suppression. Variants in these genes can increase cancer susceptibility and influence screening recommendations.`} isVisible={hoveredTooltip === `affected-genes-${risk.cancer_type}`} triggerRef={null} />
+                              </div>
+                            </div>
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                               {risk.affected_genes.length > 0 ? risk.affected_genes.map((gene, geneIndex) => (
                                 <span key={geneIndex} style={{
