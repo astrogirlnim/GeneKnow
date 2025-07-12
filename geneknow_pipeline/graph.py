@@ -354,6 +354,43 @@ def merge_static_model_results(state: dict) -> dict:
     return result
 
 
+def merge_variant_analysis_results(state: dict) -> dict:
+    """
+    Merge results from structural variant and CNV detection nodes.
+    """
+    logger.info("Merging variant analysis results")
+    
+    # Check if we have results from both nodes
+    structural_variants = state.get("structural_variants", [])
+    copy_number_variants = state.get("copy_number_variants", [])
+    
+    # Create summary statistics
+    variant_analysis_summary = {
+        "structural_variants_found": len(structural_variants),
+        "copy_number_variants_found": len(copy_number_variants),
+        "total_genomic_alterations": len(structural_variants) + len(copy_number_variants)
+    }
+    
+    # Combine into genomic alterations
+    genomic_alterations = {
+        "structural_variants": structural_variants,
+        "copy_number_variants": copy_number_variants,
+        "summary": variant_analysis_summary
+    }
+    
+    # Track completion
+    completed = state.get("completed_nodes", [])
+    if "merge_variant_analysis" not in completed:
+        completed.append("merge_variant_analysis")
+    
+    logger.info(f"Merged variant analysis: {len(structural_variants)} SVs, {len(copy_number_variants)} CNVs")
+    
+    return {
+        "genomic_alterations": genomic_alterations,
+        "completed_nodes": completed
+    }
+
+
 def route_after_preprocess(state: dict) -> list:
     """
     Determine which nodes to run after preprocessing.
