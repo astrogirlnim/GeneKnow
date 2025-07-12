@@ -1,5 +1,5 @@
 report_generator:
-  backend: ollama
+  backend: none
   dev_mode_indicator: NON-LLM MODE
   enable_parallel_generation: true
   enable_streaming: true
@@ -8,7 +8,7 @@ report_generator:
   include_technical_appendix: true
   max_parallel_workers: 5
   max_tokens: 2000
-  model_name: llama3.1:8b
+  model_name: null
   output_formats:
   - markdown
   risk_threshold: 5.0

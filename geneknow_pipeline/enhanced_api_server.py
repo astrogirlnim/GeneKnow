@@ -859,6 +859,70 @@ def get_available_models():
         logger.error(f"Error checking available models: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/report-generator/warm-model', methods=['POST'])
+def warm_model():
+    """Warm up a HuggingFace model by loading it into memory."""
+    try:
+        data = request.get_json()
+        if not data or 'model_name' not in data:
+            return jsonify({'error': 'model_name is required'}), 400
+        
+        model_name = data['model_name']
+        backend = data.get('backend', 'huggingface')
+        
+        if backend != 'huggingface':
+            return jsonify({'message': 'Model warming only supported for HuggingFace models'}), 200
+        
+        logger.info(f"Starting model warming for: {model_name}")
+        
+        # Import and initialize the HuggingFace backend
+        from nodes.report_generator.model_interface import HuggingFaceBackend
+        
+        hf_backend = HuggingFaceBackend()
+        if not hf_backend.is_available():
+            return jsonify({'error': 'HuggingFace backend not available'}), 400
+        
+        # Load the model (this will cache it)
+        success = hf_backend._load_pipeline(model_name)
+        
+        if success:
+            logger.info(f"Successfully warmed up model: {model_name}")
+            return jsonify({
+                'message': f'Model {model_name} warmed up successfully',
+                'model_name': model_name,
+                'cached': True
+            })
+        else:
+            logger.error(f"Failed to warm up model: {model_name}")
+            return jsonify({'error': f'Failed to warm up model: {model_name}'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error warming up model: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/report-generator/model-status', methods=['GET'])
+def get_model_status():
+    """Get the current status of loaded models."""
+    try:
+        from nodes.report_generator.model_interface import HuggingFaceBackend
+        
+        hf_backend = HuggingFaceBackend()
+        
+        # Check which models are currently cached
+        cached_models = list(hf_backend._model_cache.keys()) if hasattr(hf_backend, '_model_cache') else []
+        
+        return jsonify({
+            'cached_models': cached_models,
+            'current_model': getattr(hf_backend, 'current_model', None),
+            'cache_size': len(cached_models)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting model status: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # WebSocket events for real-time updates
 
 

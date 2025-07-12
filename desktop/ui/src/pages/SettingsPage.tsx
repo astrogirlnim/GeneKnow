@@ -15,6 +15,21 @@ interface AvailableModels {
   huggingface: string[]
 }
 
+// Add CSS animation for loading spinner
+const spinnerStyle = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`
+
+// Inject the CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style')
+  style.textContent = spinnerStyle
+  document.head.appendChild(style)
+}
+
 // Custom Dropdown Component
 interface CustomDropdownProps {
   value: string
@@ -199,10 +214,22 @@ const SettingsPage: React.FC = () => {
     ollama: false,
     huggingface: false
   })
+  const [modelWarmingStatus, setModelWarmingStatus] = useState<{
+    isWarming: boolean
+    warmingModel: string | null
+    warmingProgress: string
+    cachedModels: string[]
+  }>({
+    isWarming: false,
+    warmingModel: null,
+    warmingProgress: '',
+    cachedModels: []
+  })
 
   // Load current configuration and available models
   useEffect(() => {
     loadConfiguration()
+    loadModelStatus()
   }, [])
 
   const loadConfiguration = async () => {
@@ -236,6 +263,98 @@ const SettingsPage: React.FC = () => {
     }
   }
 
+  const loadModelStatus = async () => {
+    try {
+      const response = await fetch(`${apiConfig.getBaseUrl()}/api/report-generator/model-status`)
+      if (response.ok) {
+        const data = await response.json()
+        setModelWarmingStatus(prev => ({
+          ...prev,
+          cachedModels: data.cached_models || []
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to load model status:', error)
+    }
+  }
+
+  const warmUpModel = async (modelName: string, backend: string) => {
+    if (backend !== 'huggingface' || !modelName || modelName === 'auto') {
+      return
+    }
+
+    // Check if model is already cached
+    if (modelWarmingStatus.cachedModels.includes(modelName)) {
+      console.log(`Model ${modelName} is already cached`)
+      return
+    }
+
+    setModelWarmingStatus(prev => ({
+      ...prev,
+      isWarming: true,
+      warmingModel: modelName,
+      warmingProgress: 'Initializing model...'
+    }))
+
+    try {
+      const response = await fetch(`${apiConfig.getBaseUrl()}/api/report-generator/warm-model`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model_name: modelName,
+          backend: backend
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setModelWarmingStatus(prev => ({
+          ...prev,
+          isWarming: false,
+          warmingModel: null,
+          warmingProgress: 'Model ready! 🎉',
+          cachedModels: [...prev.cachedModels, modelName]
+        }))
+        
+        // Show a browser notification if possible (for when user has navigated away)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('GeneKnow Model Ready', {
+            body: `${modelName} is now ready for report generation`,
+            icon: '/favicon.ico'
+          })
+        }
+        
+        // Clear the success message after a few seconds
+        setTimeout(() => {
+          setModelWarmingStatus(prev => ({
+            ...prev,
+            warmingProgress: ''
+          }))
+        }, 5000)
+      } else {
+        throw new Error('Failed to warm up model')
+      }
+    } catch (error) {
+      console.error('Failed to warm up model:', error)
+      setModelWarmingStatus(prev => ({
+        ...prev,
+        isWarming: false,
+        warmingModel: null,
+        warmingProgress: 'Failed to warm up model ❌'
+      }))
+      
+      // Clear the error message after a few seconds
+      setTimeout(() => {
+        setModelWarmingStatus(prev => ({
+          ...prev,
+          warmingProgress: ''
+        }))
+      }, 5000)
+    }
+  }
+
   const handleSave = async () => {
     try {
       setIsSaving(true)
@@ -264,18 +383,42 @@ const SettingsPage: React.FC = () => {
   }
 
   const handleBackendChange = (backend: 'ollama' | 'huggingface' | 'none') => {
+    const previousBackend = config.backend
+    const previousModel = config.model_name
+    
     setConfig(prev => ({
       ...prev,
       backend,
       model_name: null // Reset model selection when backend changes
     }))
+    
+    // If switching to HuggingFace and there was a previously selected model, 
+    // we could potentially warm it up, but since we're resetting model_name,
+    // the user will need to select a new model which will trigger warming
   }
 
   const handleModelChange = (modelName: string) => {
+    const actualModelName = modelName === 'auto' ? null : modelName
     setConfig(prev => ({
       ...prev,
-      model_name: modelName === 'auto' ? null : modelName
+      model_name: actualModelName
     }))
+
+    // Request notification permission for background loading updates
+    if (config.backend === 'huggingface' && actualModelName && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            console.log('Notification permission granted')
+          }
+        })
+      }
+    }
+
+    // Trigger model warming for HuggingFace models
+    if (config.backend === 'huggingface' && actualModelName) {
+      warmUpModel(actualModelName, config.backend)
+    }
   }
 
   const getRecommendedModels = (backend: 'ollama' | 'huggingface') => {
@@ -294,11 +437,38 @@ const SettingsPage: React.FC = () => {
     
     return [
       { value: 'auto', label: 'Auto-detect best model', description: 'Automatically select the best available model' },
-      ...models.map(model => ({
-        value: model,
-        label: model + (recommended.includes(model) ? ' (Recommended)' : ''),
-        description: recommended.includes(model) ? 'Optimized for medical/scientific writing' : undefined
-      }))
+      ...models.map(model => {
+        let description = recommended.includes(model) ? 'Optimized for medical/scientific writing' : undefined
+        
+        // Add specific descriptions for HuggingFace models
+        if (config.backend === 'huggingface') {
+          const isCached = modelWarmingStatus.cachedModels.includes(model)
+          const isWarming = modelWarmingStatus.isWarming && modelWarmingStatus.warmingModel === model
+          
+          if (model === 'microsoft/phi-2') {
+            description = 'Fast and efficient - Good balance of speed and capability'
+          } else if (model === 'distilgpt2') {
+            description = 'Fastest loading - Lightweight and quick to initialize'
+          } else if (model === 'microsoft/DialoGPT-medium') {
+            description = 'Most capable - Longer loading time but better results'
+          } else if (model === 'google/flan-t5-base') {
+            description = 'Instruction-tuned - Good for following prompts'
+          }
+          
+          // Add caching status to description
+          if (isCached) {
+            description += ' • ✅ Ready (Cached)'
+          } else if (isWarming) {
+            description += ' • 🔄 Loading...'
+          }
+        }
+        
+        return {
+          value: model,
+          label: model + (recommended.includes(model) ? ' (Recommended)' : ''),
+          description: description
+        }
+      })
     ]
   }
 
@@ -500,6 +670,30 @@ const SettingsPage: React.FC = () => {
                     }}>
                       {backendStatus.ollama ? 'Available' : 'Not Available'}
                     </span>
+                    <a
+                      href="https://ollama.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: '#E0E7FF',
+                        color: '#3730A3',
+                        textDecoration: 'none',
+                        transition: 'all 200ms ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#C7D2FE';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#E0E7FF';
+                      }}
+                    >
+                      Download Ollama
+                    </a>
                   </div>
                   <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
                     Run models locally with Ollama. Recommended for privacy and performance.
@@ -562,9 +756,45 @@ const SettingsPage: React.FC = () => {
                     }}>
                       {backendStatus.huggingface ? 'Available' : 'Not Available'}
                     </span>
+                    {backendStatus.huggingface && (
+                      <span style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: '#FEF3C7',
+                        color: '#92400E'
+                      }}>
+                        Initial load: ~60-90s
+                      </span>
+                    )}
+                    <a
+                      href="https://huggingface.co/docs/transformers/installation"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: '#E0E7FF',
+                        color: '#3730A3',
+                        textDecoration: 'none',
+                        transition: 'all 200ms ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#C7D2FE';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#E0E7FF';
+                      }}
+                    >
+                      Install Guide
+                    </a>
                   </div>
                   <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
-                    Use Hugging Face models directly. Requires transformers library.
+                    Use Hugging Face models directly. First-time model loading takes 1-2 minutes, then cached for future use.
                   </div>
                 </div>
               </div>
@@ -624,11 +854,52 @@ const SettingsPage: React.FC = () => {
                     }}>
                       Always Available
                     </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      borderRadius: '12px',
+                      background: '#E0E7FF',
+                      color: '#3730A3'
+                    }}>
+                      Instant
+                    </span>
                   </div>
                   <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
-                    Generate reports using templates without AI assistance.
+                    Generate reports using templates without AI assistance. Fast and reliable.
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            {/* Installation Help Section */}
+            <div style={{ 
+              marginTop: '16px', 
+              padding: '16px', 
+              background: '#F8FAFC', 
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                🚀 Quick Setup Guide
+              </h3>
+              <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.4' }}>
+                <p style={{ margin: '0 0 8px' }}>
+                  <strong>Ollama:</strong> Download and install from{' '}
+                  <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB' }}>
+                    ollama.com
+                  </a>
+                  , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull llama3</code> in terminal.
+                </p>
+                <p style={{ margin: '0' }}>
+                  <strong>Hugging Face:</strong> Install transformers with{' '}
+                  <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>pip install transformers torch</code>
+                  . See{' '}
+                  <a href="https://huggingface.co/docs/transformers/installation" target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB' }}>
+                    installation guide
+                  </a>
+                  {' '}for details.
+                </p>
               </div>
             </div>
           </div>
@@ -646,6 +917,11 @@ const SettingsPage: React.FC = () => {
               </h2>
               <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
                 Choose which specific model to use for report generation.
+                {config.backend === 'huggingface' && (
+                  <span style={{ display: 'block', marginTop: '4px', fontWeight: '500', color: '#D97706' }}>
+                    ⚠️ First-time model loading may take 1-2 minutes. Subsequent uses will be much faster.
+                  </span>
+                )}
               </p>
               
               <CustomDropdown
@@ -662,6 +938,85 @@ const SettingsPage: React.FC = () => {
                   : 'Will automatically select the best available model'
                 }
               </div>
+              
+              {/* Model Warming Status */}
+              {config.backend === 'huggingface' && (
+                <div style={{ marginTop: '12px' }}>
+                  {modelWarmingStatus.isWarming && (
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      background: '#F0F9FF', 
+                      borderRadius: '6px',
+                      border: '1px solid #BFDBFE',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        border: '2px solid #3B82F6',
+                        borderTop: '2px solid transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      <div style={{ fontSize: '12px', color: '#1E40AF', fontWeight: '500' }}>
+                        Preparing {modelWarmingStatus.warmingModel} in background...
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6B7280', fontStyle: 'italic' }}>
+                        (You can navigate away - this continues loading)
+                      </div>
+                    </div>
+                  )}
+                  
+                  {modelWarmingStatus.warmingProgress && !modelWarmingStatus.isWarming && (
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      background: modelWarmingStatus.warmingProgress.includes('ready') ? '#F0FDF4' : '#FEF2F2', 
+                      borderRadius: '6px',
+                      border: `1px solid ${modelWarmingStatus.warmingProgress.includes('ready') ? '#BBF7D0' : '#FECACA'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{ fontSize: '12px', color: modelWarmingStatus.warmingProgress.includes('ready') ? '#166534' : '#991B1B', fontWeight: '500' }}>
+                        {modelWarmingStatus.warmingProgress}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {modelWarmingStatus.cachedModels.length > 0 && (
+                    <div style={{ 
+                      marginTop: '6px',
+                      fontSize: '11px', 
+                      color: '#059669',
+                      fontWeight: '500'
+                    }}>
+                      ✅ Ready models: {modelWarmingStatus.cachedModels.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {config.backend === 'huggingface' && (
+                <div style={{ 
+                  marginTop: '12px', 
+                  padding: '12px', 
+                  background: '#FEF3C7', 
+                  borderRadius: '6px',
+                  border: '1px solid #F59E0B'
+                }}>
+                  <div style={{ fontSize: '14px', color: '#92400E', fontWeight: '500', marginBottom: '4px' }}>
+                    💡 Performance Tips:
+                  </div>
+                  <ul style={{ fontSize: '12px', color: '#92400E', margin: '0', paddingLeft: '16px' }}>
+                    <li><strong>Models load automatically in background</strong> - you can navigate away while they prepare</li>
+                    <li>Once loaded, models are cached for instant report generation</li>
+                    <li>Choose "distilgpt2" for fastest loading (~30s)</li>
+                    <li>Choose "microsoft/phi-2" for best balance of speed and quality (~60s)</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

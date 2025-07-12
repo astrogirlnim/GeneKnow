@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useGeneKnowTauri } from '../api/geneknowTauri';
 import type { JobProgress } from '../api/geneknowPipeline';
 import { invoke } from '@tauri-apps/api/core';
+import { apiConfig } from '../api/apiConfig';
+
+interface ReportConfig {
+  backend: 'ollama' | 'huggingface' | 'none'
+  model_name: string | null
+  style: 'clinician' | 'technical' | 'patient'
+}
 
 // Icon components
 const DocumentIcon = () => (
@@ -144,8 +151,37 @@ const UploadPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<JobProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reportConfig, setReportConfig] = useState<ReportConfig>({
+    backend: 'ollama',
+    model_name: null,
+    style: 'clinician'
+  });
+  const [showGuidance, setShowGuidance] = useState(false);
   
   const { processAndWait, ensureApiRunning } = useGeneKnowTauri();
+
+  useEffect(() => {
+    const fetchReportConfig = async () => {
+      try {
+        const response = await fetch(`${apiConfig.getBaseUrl()}/api/report-generator/config`);
+        if (response.ok) {
+          const config = await response.json();
+          setReportConfig({
+            backend: config.backend || 'ollama',
+            model_name: config.model_name,
+            style: config.style || 'clinician'
+          });
+          setShowGuidance(config.backend === 'none');
+        } else {
+          throw new Error('Failed to fetch config');
+        }
+      } catch (err) {
+        console.error('Failed to fetch report config:', err);
+        setShowGuidance(true); // Show guidance if config fetch fails
+      }
+    };
+    fetchReportConfig();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -422,7 +458,7 @@ const UploadPage: React.FC = () => {
 
               <button
                 onClick={handleStartAnalysis}
-                                 disabled={(!file && !filePath) || isProcessing}
+                disabled={(!file && !filePath) || isProcessing}
                 style={{
                   padding: '0.75rem 1.5rem',
                   fontWeight: 'bold',
@@ -449,6 +485,55 @@ const UploadPage: React.FC = () => {
                 {isProcessing ? 'Processing...' : 'Start Analysis'}
               </button>
             </div>
+
+            {/* No LLM Guidance */}
+            {showGuidance && reportConfig.backend === 'none' && (
+              <div style={{ 
+                marginTop: '1rem',
+                padding: '1rem',
+                background: '#FEF3C7',
+                borderRadius: '0.5rem',
+                border: '1px solid #F59E0B',
+                textAlign: 'center',
+                maxWidth: '600px',
+                margin: '1rem auto 0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <svg style={{ width: '1.25rem', height: '1.25rem', color: '#D97706' }} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span style={{ fontWeight: '600', color: '#92400E', fontSize: '0.875rem' }}>
+                    Template-Based Reports Enabled
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#92400E', margin: '0 0 0.75rem' }}>
+                  Your reports will be generated using templates without AI assistance. For enhanced AI-generated reports, configure your preferred model in settings.
+                </p>
+                <button
+                  onClick={() => navigate('/settings')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    color: '#92400E',
+                    background: '#FFFFFF',
+                    border: '1px solid #F59E0B',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    transition: 'all 200ms ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#FEF3C7';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#FFFFFF';
+                  }}
+                >
+                  Configure AI Models
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mock Test Cases Section */}
