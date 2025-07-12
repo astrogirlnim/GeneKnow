@@ -13,10 +13,7 @@ import logging
 import traceback
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -33,8 +30,8 @@ class CADDTestRunner:
                 "failed": 0,
                 "errors": 0,
                 "performance_metrics": {},
-                "coverage": {}
-            }
+                "coverage": {},
+            },
         }
 
     def run_all_tests(self):
@@ -71,7 +68,7 @@ class CADDTestRunner:
                 [sys.executable, test_file],
                 capture_output=True,
                 text=True,
-                cwd=os.path.dirname(os.path.abspath(__file__))
+                cwd=os.path.dirname(os.path.abspath(__file__)),
             )
 
             end_time = time.time()
@@ -89,7 +86,7 @@ class CADDTestRunner:
                 "duration": duration,
                 "return_code": result.returncode,
                 "output": output,
-                "errors": errors
+                "errors": errors,
             }
 
             # Update summary
@@ -111,7 +108,7 @@ class CADDTestRunner:
                 "file": test_file,
                 "success": False,
                 "error": str(e),
-                "traceback": traceback.format_exc()
+                "traceback": traceback.format_exc(),
             }
             self.results["summary"]["errors"] += 1
             print(f"❌ {test_name} ERROR: {e}")
@@ -140,7 +137,7 @@ class CADDTestRunner:
                 "duration": duration,
                 "tests_run": result.testsRun,
                 "success": result.wasSuccessful(),
-                "details": "See test_cadd_comprehensive.py output for detailed metrics"
+                "details": "See test_cadd_comprehensive.py output for detailed metrics",
             }
 
             if result.wasSuccessful():
@@ -162,14 +159,12 @@ class CADDTestRunner:
 
         if not os.path.exists(db_path):
             print(f"⚠️  Database not found at: {db_path}")
-            self.results["summary"]["database_validation"] = {
-                "exists": False,
-                "path": db_path
-            }
+            self.results["summary"]["database_validation"] = {"exists": False, "path": db_path}
             return
 
         try:
             import sqlite3
+
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
@@ -202,7 +197,7 @@ class CADDTestRunner:
                 "missing_tables": missing_tables,
                 "cadd_scores_count": cadd_count,
                 "indexes": indexes,
-                "valid": len(missing_tables) == 0
+                "valid": len(missing_tables) == 0,
             }
 
             self.results["summary"]["database_validation"] = validation
@@ -218,9 +213,7 @@ class CADDTestRunner:
 
         except Exception as e:
             print(f"❌ Database validation error: {e}")
-            self.results["summary"]["database_validation"] = {
-                "error": str(e)
-            }
+            self.results["summary"]["database_validation"] = {"error": str(e)}
 
     def generate_report(self):
         """Generate comprehensive test report."""
@@ -237,8 +230,8 @@ class CADDTestRunner:
         print(f"  ❌ Failed: {summary['failed']}")
         print(f"  ⚠️  Errors: {summary['errors']}")
 
-        if summary['total_tests'] > 0:
-            success_rate = (summary['passed'] / summary['total_tests']) * 100
+        if summary["total_tests"] > 0:
+            success_rate = (summary["passed"] / summary["total_tests"]) * 100
             print(f"  Success Rate: {success_rate:.1f}%")
 
         # Performance metrics
@@ -272,17 +265,17 @@ class CADDTestRunner:
 
         # Save detailed report
         report_file = f"cadd_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(self.results, f, indent=2)
 
         print(f"\n📄 Detailed report saved to: {report_file}")
 
         # Check if all tests passed
         all_passed = (
-            summary["failed"] == 0 and
-            summary["errors"] == 0 and
-            summary.get("performance_metrics", {}).get("success", True) and
-            summary.get("database_validation", {}).get("valid", True)
+            summary["failed"] == 0
+            and summary["errors"] == 0
+            and summary.get("performance_metrics", {}).get("success", True)
+            and summary.get("database_validation", {}).get("valid", True)
         )
 
         print(f"\n{'='*80}")

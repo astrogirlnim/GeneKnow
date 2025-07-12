@@ -2,10 +2,10 @@
 Feature vector builder node.
 Collects outputs from all static risk model nodes and builds feature vectors for ML fusion.
 """
+
 import logging
 from datetime import datetime
-from typing import Dict, Any, List
-import numpy as np
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Get state-level scores
         prs_results = state.get("prs_results", {})
-        prs_summary = state.get("prs_summary", {})
+        state.get("prs_summary", {})
         pathway_burden_results = state.get("pathway_burden_results", {})
-        pathway_burden_summary = state.get("pathway_burden_summary", {})
+        state.get("pathway_burden_summary", {})
 
         logger.info(f"Feature vector builder received {len(filtered_variants)} variants")
 
@@ -47,7 +47,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             # Since PRS is population-level, we'll use the highest risk score
             prs_scores = []
             for cancer_type, prs_data in prs_results.items():
-                raw_score = prs_data.get("raw_score", 0.0)
+                prs_data.get("raw_score", 0.0)
                 percentile = prs_data.get("percentile", 50) / 100.0
                 # Use percentile as normalized PRS score
                 prs_scores.append(percentile)
@@ -60,13 +60,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 enhanced_variant["clinvar"] = {
                     "clinical_significance": clinvar_sig,
                     "risk_score": variant.get("clinvar_risk_score", 0.0),
-                    "interpretation": variant.get("clinvar_interpretation", "unknown")
+                    "interpretation": variant.get("clinvar_interpretation", "unknown"),
                 }
             else:
                 enhanced_variant["clinvar"] = {
                     "clinical_significance": "not_found",
                     "risk_score": 0.0,
-                    "interpretation": "not_found"
+                    "interpretation": "not_found",
                 }
 
             # 3. CADD Score
@@ -98,9 +98,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Add additional metadata for risk calculation
             enhanced_variant["is_high_impact"] = (
-                cadd_phred > 20 or
-                "pathogenic" in str(clinvar_sig).lower() or
-                burden_score > 0.5
+                cadd_phred > 20 or "pathogenic" in str(clinvar_sig).lower() or burden_score > 0.5
             )
 
             ml_ready_variants.append(enhanced_variant)
@@ -110,10 +108,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("Feature Vector Builder Summary:")
         logger.info(f"  Total variants: {len(ml_ready_variants)}")
         logger.info(f"  Variants with PRS data: {sum(1 for v in ml_ready_variants if v.get('prs_score', 0) != 0.5)}")
-        logger.info(f"  Variants with ClinVar: {sum(1 for v in ml_ready_variants if v['clinvar']['clinical_significance'] != 'not_found')}")
+        logger.info(
+            f"  Variants with ClinVar: {sum(1 for v in ml_ready_variants if v['clinvar']['clinical_significance'] != 'not_found')}"
+        )
         logger.info(f"  Variants with CADD > 20: {sum(1 for v in ml_ready_variants if v.get('cadd_score', 0) > 20)}")
-        logger.info(f"  Variants with TCGA enrichment > 2: {sum(1 for v in ml_ready_variants if v.get('tcga_enrichment', 1) > 2)}")
-        logger.info(f"  Variants with pathway burden > 0: {sum(1 for v in ml_ready_variants if v.get('gene_burden_score', 0) > 0)}")
+        logger.info(
+            f"  Variants with TCGA enrichment > 2: {sum(1 for v in ml_ready_variants if v.get('tcga_enrichment', 1) > 2)}"
+        )
+        logger.info(
+            f"  Variants with pathway burden > 0: {sum(1 for v in ml_ready_variants if v.get('gene_burden_score', 0) > 0)}"
+        )
         logger.info(f"  High impact variants: {sum(1 for v in ml_ready_variants if v.get('is_high_impact', False))}")
 
         # Log a sample variant
@@ -139,8 +143,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "status": "complete",
                 "variant_count": len(ml_ready_variants),
                 "features_extracted": ["prs_score", "clinvar", "cadd_score", "tcga_enrichment", "gene_burden_score"],
-                "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False))
-            }
+                "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False)),
+            },
         }
 
     except Exception as e:
@@ -149,9 +153,5 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "ml_ready_variants": [],
             "feature_vector": {"status": "failed", "error": str(e)},
-            "errors": [{
-                "node": "feature_vector_builder",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
+            "errors": [{"node": "feature_vector_builder", "error": str(e), "timestamp": datetime.now()}],
         }

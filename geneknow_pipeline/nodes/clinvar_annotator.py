@@ -8,8 +8,7 @@ import os
 import sqlite3
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Tuple
-from collections import defaultdict
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,24 +31,42 @@ CLINICAL_SIGNIFICANCE_SCORES = {
     "uncertain_significance": 0.1,
     "conflicting_interpretations_of_pathogenicity": 0.2,
     "other": 0.0,
-    "not_provided": 0.0
+    "not_provided": 0.0,
 }
 
 # Cancer-related conditions for enhanced scoring
 CANCER_CONDITIONS = [
-    "breast cancer", "ovarian cancer", "colorectal cancer", "lung cancer",
-    "prostate cancer", "pancreatic cancer", "melanoma", "lymphoma", "leukemia",
-    "hereditary breast and ovarian cancer", "lynch syndrome", "familial adenomatous polyposis",
-    "hereditary nonpolyposis colorectal cancer", "li-fraumeni syndrome", "cowden syndrome",
-    "peutz-jeghers syndrome", "hereditary diffuse gastric cancer", "multiple endocrine neoplasia",
-    "von hippel-lindau disease", "neurofibromatosis", "tuberous sclerosis", "gorlin syndrome"
+    "breast cancer",
+    "ovarian cancer",
+    "colorectal cancer",
+    "lung cancer",
+    "prostate cancer",
+    "pancreatic cancer",
+    "melanoma",
+    "lymphoma",
+    "leukemia",
+    "hereditary breast and ovarian cancer",
+    "lynch syndrome",
+    "familial adenomatous polyposis",
+    "hereditary nonpolyposis colorectal cancer",
+    "li-fraumeni syndrome",
+    "cowden syndrome",
+    "peutz-jeghers syndrome",
+    "hereditary diffuse gastric cancer",
+    "multiple endocrine neoplasia",
+    "von hippel-lindau disease",
+    "neurofibromatosis",
+    "tuberous sclerosis",
+    "gorlin syndrome",
 ]
+
 
 def normalize_chromosome(chrom: str) -> str:
     """Normalize chromosome format (remove 'chr' prefix)."""
-    if chrom.startswith('chr'):
+    if chrom.startswith("chr"):
         return chrom[3:]
     return chrom
+
 
 def create_clinvar_database():
     """Create ClinVar database with example data if it doesn't exist."""
@@ -61,7 +78,8 @@ def create_clinvar_database():
     cursor = conn.cursor()
 
     # Create table
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS clinvar_variants (
         variation_id INTEGER PRIMARY KEY,
         chrom TEXT,
@@ -81,7 +99,8 @@ def create_clinvar_database():
         cancer_related INTEGER DEFAULT 0,
         pathogenicity_score REAL DEFAULT 0.0
     )
-    """)
+    """
+    )
 
     # Create indexes for fast lookups
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_position ON clinvar_variants(chrom, pos, ref, alt)")
@@ -92,89 +111,319 @@ def create_clinvar_database():
     # Insert example ClinVar data (based on known pathogenic variants)
     example_variants = [
         # BRCA1 pathogenic variants
-        (1, "17", 43045677, "C", "T", "BRCA1", "pathogenic", "criteria_provided_single_submitter",
-         "Hereditary breast and ovarian cancer syndrome", "missense_variant", 12345, "rs80356868",
-         "RCV000077282", "2020-01-15", "ACMG", 1, 1.0),
-
-        (2, "17", 43057135, "G", "A", "BRCA1", "pathogenic", "criteria_provided_multiple_submitters",
-         "Hereditary breast and ovarian cancer syndrome", "nonsense", 12346, "rs80357906",
-         "RCV000077283", "2020-02-20", "ACMG", 1, 1.0),
-
+        (
+            1,
+            "17",
+            43045677,
+            "C",
+            "T",
+            "BRCA1",
+            "pathogenic",
+            "criteria_provided_single_submitter",
+            "Hereditary breast and ovarian cancer syndrome",
+            "missense_variant",
+            12345,
+            "rs80356868",
+            "RCV000077282",
+            "2020-01-15",
+            "ACMG",
+            1,
+            1.0,
+        ),
+        (
+            2,
+            "17",
+            43057135,
+            "G",
+            "A",
+            "BRCA1",
+            "pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Hereditary breast and ovarian cancer syndrome",
+            "nonsense",
+            12346,
+            "rs80357906",
+            "RCV000077283",
+            "2020-02-20",
+            "ACMG",
+            1,
+            1.0,
+        ),
         # BRCA2 pathogenic variants
-        (3, "13", 32363533, "T", "C", "BRCA2", "pathogenic", "practice_guideline",
-         "Hereditary breast and ovarian cancer syndrome", "missense_variant", 12347, "rs80359550",
-         "RCV000077284", "2020-03-10", "ACMG", 1, 1.0),
-
-        (4, "13", 32379617, "G", "T", "BRCA2", "likely_pathogenic", "criteria_provided_multiple_submitters",
-         "Hereditary breast and ovarian cancer syndrome", "splice_acceptor_variant", 12348, "rs80359876",
-         "RCV000077285", "2020-04-05", "ACMG", 1, 0.8),
-
+        (
+            3,
+            "13",
+            32363533,
+            "T",
+            "C",
+            "BRCA2",
+            "pathogenic",
+            "practice_guideline",
+            "Hereditary breast and ovarian cancer syndrome",
+            "missense_variant",
+            12347,
+            "rs80359550",
+            "RCV000077284",
+            "2020-03-10",
+            "ACMG",
+            1,
+            1.0,
+        ),
+        (
+            4,
+            "13",
+            32379617,
+            "G",
+            "T",
+            "BRCA2",
+            "likely_pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Hereditary breast and ovarian cancer syndrome",
+            "splice_acceptor_variant",
+            12348,
+            "rs80359876",
+            "RCV000077285",
+            "2020-04-05",
+            "ACMG",
+            1,
+            0.8,
+        ),
         # TP53 pathogenic variants
-        (5, "17", 7673803, "G", "A", "TP53", "pathogenic", "criteria_provided_multiple_submitters",
-         "Li-Fraumeni syndrome", "missense_variant", 12349, "rs28934578",
-         "RCV000077286", "2020-05-12", "ACMG", 1, 1.0),
-
-        (6, "17", 7674894, "C", "T", "TP53", "pathogenic", "practice_guideline",
-         "Li-Fraumeni syndrome", "nonsense", 12350, "rs121912651",
-         "RCV000077287", "2020-06-18", "ACMG", 1, 1.0),
-
+        (
+            5,
+            "17",
+            7673803,
+            "G",
+            "A",
+            "TP53",
+            "pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Li-Fraumeni syndrome",
+            "missense_variant",
+            12349,
+            "rs28934578",
+            "RCV000077286",
+            "2020-05-12",
+            "ACMG",
+            1,
+            1.0,
+        ),
+        (
+            6,
+            "17",
+            7674894,
+            "C",
+            "T",
+            "TP53",
+            "pathogenic",
+            "practice_guideline",
+            "Li-Fraumeni syndrome",
+            "nonsense",
+            12350,
+            "rs121912651",
+            "RCV000077287",
+            "2020-06-18",
+            "ACMG",
+            1,
+            1.0,
+        ),
         # MLH1 pathogenic variants (Lynch syndrome)
-        (7, "3", 37092337, "A", "G", "MLH1", "pathogenic", "criteria_provided_multiple_submitters",
-         "Lynch syndrome", "missense_variant", 12351, "rs63750447",
-         "RCV000077288", "2020-07-22", "ACMG", 1, 1.0),
-
+        (
+            7,
+            "3",
+            37092337,
+            "A",
+            "G",
+            "MLH1",
+            "pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Lynch syndrome",
+            "missense_variant",
+            12351,
+            "rs63750447",
+            "RCV000077288",
+            "2020-07-22",
+            "ACMG",
+            1,
+            1.0,
+        ),
         # MSH2 pathogenic variants (Lynch syndrome)
-        (8, "2", 47806747, "G", "A", "MSH2", "likely_pathogenic", "criteria_provided_single_submitter",
-         "Lynch syndrome", "splice_donor_variant", 12352, "rs63750323",
-         "RCV000077289", "2020-08-14", "ACMG", 1, 0.8),
-
+        (
+            8,
+            "2",
+            47806747,
+            "G",
+            "A",
+            "MSH2",
+            "likely_pathogenic",
+            "criteria_provided_single_submitter",
+            "Lynch syndrome",
+            "splice_donor_variant",
+            12352,
+            "rs63750323",
+            "RCV000077289",
+            "2020-08-14",
+            "ACMG",
+            1,
+            0.8,
+        ),
         # APC pathogenic variants (FAP)
-        (9, "5", 112839514, "C", "T", "APC", "pathogenic", "criteria_provided_multiple_submitters",
-         "Familial adenomatous polyposis", "nonsense", 12353, "rs137854420",
-         "RCV000077290", "2020-09-30", "ACMG", 1, 1.0),
-
+        (
+            9,
+            "5",
+            112839514,
+            "C",
+            "T",
+            "APC",
+            "pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Familial adenomatous polyposis",
+            "nonsense",
+            12353,
+            "rs137854420",
+            "RCV000077290",
+            "2020-09-30",
+            "ACMG",
+            1,
+            1.0,
+        ),
         # PALB2 pathogenic variants
-        (10, "16", 23652178, "G", "A", "PALB2", "pathogenic", "criteria_provided_multiple_submitters",
-         "Hereditary breast and ovarian cancer syndrome", "nonsense", 12354, "rs180177143",
-         "RCV000077291", "2020-10-25", "ACMG", 1, 1.0),
-
+        (
+            10,
+            "16",
+            23652178,
+            "G",
+            "A",
+            "PALB2",
+            "pathogenic",
+            "criteria_provided_multiple_submitters",
+            "Hereditary breast and ovarian cancer syndrome",
+            "nonsense",
+            12354,
+            "rs180177143",
+            "RCV000077291",
+            "2020-10-25",
+            "ACMG",
+            1,
+            1.0,
+        ),
         # Benign variants for contrast
-        (11, "17", 43045678, "A", "G", "BRCA1", "benign", "criteria_provided_multiple_submitters",
-         "not_provided", "synonymous_variant", 12355, "rs1799950",
-         "RCV000077292", "2020-11-12", "ACMG", 0, 0.0),
-
-        (12, "13", 32363534, "C", "T", "BRCA2", "likely_benign", "criteria_provided_single_submitter",
-         "not_provided", "synonymous_variant", 12356, "rs766173",
-         "RCV000077293", "2020-12-05", "ACMG", 0, 0.0),
-
+        (
+            11,
+            "17",
+            43045678,
+            "A",
+            "G",
+            "BRCA1",
+            "benign",
+            "criteria_provided_multiple_submitters",
+            "not_provided",
+            "synonymous_variant",
+            12355,
+            "rs1799950",
+            "RCV000077292",
+            "2020-11-12",
+            "ACMG",
+            0,
+            0.0,
+        ),
+        (
+            12,
+            "13",
+            32363534,
+            "C",
+            "T",
+            "BRCA2",
+            "likely_benign",
+            "criteria_provided_single_submitter",
+            "not_provided",
+            "synonymous_variant",
+            12356,
+            "rs766173",
+            "RCV000077293",
+            "2020-12-05",
+            "ACMG",
+            0,
+            0.0,
+        ),
         # Uncertain significance variants
-        (13, "17", 43045679, "T", "A", "BRCA1", "uncertain_significance", "criteria_provided_single_submitter",
-         "Hereditary breast and ovarian cancer syndrome", "missense_variant", 12357, "rs1799966",
-         "RCV000077294", "2021-01-20", "ACMG", 1, 0.1),
-
+        (
+            13,
+            "17",
+            43045679,
+            "T",
+            "A",
+            "BRCA1",
+            "uncertain_significance",
+            "criteria_provided_single_submitter",
+            "Hereditary breast and ovarian cancer syndrome",
+            "missense_variant",
+            12357,
+            "rs1799966",
+            "RCV000077294",
+            "2021-01-20",
+            "ACMG",
+            1,
+            0.1,
+        ),
         # Drug response variants
-        (14, "19", 15990431, "C", "T", "CYP2D6", "drug_response", "criteria_provided_multiple_submitters",
-         "drug_response", "missense_variant", 12358, "rs16947",
-         "RCV000077295", "2021-02-15", "PharmGKB", 0, 0.1),
-
+        (
+            14,
+            "19",
+            15990431,
+            "C",
+            "T",
+            "CYP2D6",
+            "drug_response",
+            "criteria_provided_multiple_submitters",
+            "drug_response",
+            "missense_variant",
+            12358,
+            "rs16947",
+            "RCV000077295",
+            "2021-02-15",
+            "PharmGKB",
+            0,
+            0.1,
+        ),
         # Risk factor variants
-        (15, "9", 22125504, "C", "G", "CDKN2A", "risk_factor", "criteria_provided_single_submitter",
-         "Melanoma", "missense_variant", 12359, "rs11515",
-         "RCV000077296", "2021-03-10", "ACMG", 1, 0.3)
+        (
+            15,
+            "9",
+            22125504,
+            "C",
+            "G",
+            "CDKN2A",
+            "risk_factor",
+            "criteria_provided_single_submitter",
+            "Melanoma",
+            "missense_variant",
+            12359,
+            "rs11515",
+            "RCV000077296",
+            "2021-03-10",
+            "ACMG",
+            1,
+            0.3,
+        ),
     ]
 
     # Insert the example data
-    cursor.executemany("""
+    cursor.executemany(
+        """
     INSERT OR IGNORE INTO clinvar_variants
     (variation_id, chrom, pos, ref, alt, gene, clinical_significance, review_status,
      condition, molecular_consequence, allele_id, rs_id, rcv_accession,
      last_evaluated, guidelines, cancer_related, pathogenicity_score)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, example_variants)
+    """,
+        example_variants,
+    )
 
     conn.commit()
     conn.close()
     logger.info(f"Created ClinVar database with {len(example_variants)} example variants")
+
 
 def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str, Any]:
     """Query ClinVar database for clinical significance."""
@@ -189,7 +438,8 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
         norm_chrom = normalize_chromosome(chrom)
 
         # Query for exact match
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT variation_id, gene, clinical_significance, review_status, condition,
                molecular_consequence, allele_id, rs_id, rcv_accession,
                last_evaluated, guidelines, cancer_related, pathogenicity_score
@@ -197,7 +447,9 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
         WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?
         ORDER BY pathogenicity_score DESC, variation_id ASC
         LIMIT 1
-        """, (norm_chrom, pos, ref, alt))
+        """,
+            (norm_chrom, pos, ref, alt),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -216,11 +468,12 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
                 "cancer_related": bool(row[11]),
                 "pathogenicity_score": row[12],
                 "found_in_clinvar": True,
-                "lookup_method": "exact_match"
+                "lookup_method": "exact_match",
             }
 
         # If no exact match, try gene-based lookup for nearby variants
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT variation_id, gene, clinical_significance, review_status, condition,
                molecular_consequence, allele_id, rs_id, rcv_accession,
                last_evaluated, guidelines, cancer_related, pathogenicity_score
@@ -228,7 +481,9 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
         WHERE chrom = ? AND ABS(pos - ?) <= 100 AND gene IS NOT NULL AND gene != ''
         ORDER BY pathogenicity_score DESC, ABS(pos - ?) ASC
         LIMIT 1
-        """, (norm_chrom, pos, pos))
+        """,
+            (norm_chrom, pos, pos),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -247,17 +502,15 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
                 "cancer_related": bool(row[11]),
                 "pathogenicity_score": row[12],
                 "found_in_clinvar": True,
-                "lookup_method": "gene_vicinity_match"
+                "lookup_method": "gene_vicinity_match",
             }
 
         # No match found
-        return {
-            "found_in_clinvar": False,
-            "lookup_method": "not_found"
-        }
+        return {"found_in_clinvar": False, "lookup_method": "not_found"}
 
     finally:
         conn.close()
+
 
 def calculate_clinical_risk_score(variant: Dict[str, Any], clinvar_data: Dict[str, Any]) -> float:
     """Calculate clinical risk score based on ClinVar annotation."""
@@ -283,6 +536,7 @@ def calculate_clinical_risk_score(variant: Dict[str, Any], clinvar_data: Dict[st
     # Ensure score is within bounds
     return max(0.0, min(1.0, base_score))
 
+
 def assess_clinical_significance(variant: Dict[str, Any], clinvar_data: Dict[str, Any]) -> Dict[str, Any]:
     """Assess clinical significance and provide interpretation."""
     if not clinvar_data.get("found_in_clinvar"):
@@ -290,7 +544,7 @@ def assess_clinical_significance(variant: Dict[str, Any], clinvar_data: Dict[str
             "clinical_interpretation": "no_clinical_evidence",
             "confidence": "none",
             "actionability": "none",
-            "recommendation": "No clinical evidence available"
+            "recommendation": "No clinical evidence available",
         }
 
     clinical_sig = clinvar_data.get("clinical_significance", "").lower()
@@ -336,8 +590,9 @@ def assess_clinical_significance(variant: Dict[str, Any], clinvar_data: Dict[str
         "clinical_interpretation": interpretation,
         "confidence": confidence,
         "actionability": actionability,
-        "recommendation": recommendation
+        "recommendation": recommendation,
     }
+
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -367,19 +622,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         risk_factor_variants = []
 
         # Process each variant
-        annotated_variants = []
         total_variants_annotated = 0
 
         for variant in filtered_variants:
             variant_id = variant.get("variant_id", f"{variant.get('chrom')}:{variant.get('pos')}")
 
             # Query ClinVar database
-            clinvar_data = query_clinvar_database(
-                variant["chrom"],
-                variant["pos"],
-                variant["ref"],
-                variant["alt"]
-            )
+            clinvar_data = query_clinvar_database(variant["chrom"], variant["pos"], variant["re"], variant["alt"])
 
             # Calculate clinical risk score
             clinical_risk_score = calculate_clinical_risk_score(variant, clinvar_data)
@@ -388,11 +637,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             clinical_assessment = assess_clinical_significance(variant, clinvar_data)
 
             # Combine data
-            annotation = {
-                **clinvar_data,
-                "clinical_risk_score": clinical_risk_score,
-                **clinical_assessment
-            }
+            annotation = {**clinvar_data, "clinical_risk_score": clinical_risk_score, **clinical_assessment}
 
             clinvar_annotations[variant_id] = annotation
 
@@ -402,53 +647,53 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 clinical_sig = clinvar_data.get("clinical_significance", "").lower()
 
                 if "pathogenic" in clinical_sig and "likely" not in clinical_sig:
-                    pathogenic_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig,
-                        "condition": clinvar_data.get("condition"),
-                        "risk_score": clinical_risk_score
-                    })
+                    pathogenic_variants.append(
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                            "condition": clinvar_data.get("condition"),
+                            "risk_score": clinical_risk_score,
+                        }
+                    )
                 elif "likely_pathogenic" in clinical_sig:
-                    likely_pathogenic_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig,
-                        "condition": clinvar_data.get("condition"),
-                        "risk_score": clinical_risk_score
-                    })
+                    likely_pathogenic_variants.append(
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                            "condition": clinvar_data.get("condition"),
+                            "risk_score": clinical_risk_score,
+                        }
+                    )
                 elif "benign" in clinical_sig:
-                    benign_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig
-                    })
+                    benign_variants.append(
+                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                    )
                 elif "uncertain_significance" in clinical_sig:
-                    vus_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig
-                    })
+                    vus_variants.append(
+                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                    )
                 elif "drug_response" in clinical_sig:
-                    drug_response_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig
-                    })
+                    drug_response_variants.append(
+                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                    )
                 elif "risk_factor" in clinical_sig:
-                    risk_factor_variants.append({
-                        "variant_id": variant_id,
-                        "gene": variant.get("gene"),
-                        "clinical_significance": clinical_sig
-                    })
+                    risk_factor_variants.append(
+                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                    )
 
                 # Log significant findings
                 if clinical_risk_score > 0.7:
-                    logger.warning(f"🔴 High clinical risk: {variant_id} in {variant.get('gene', 'unknown')} "
-                                 f"({clinical_sig}, risk score: {clinical_risk_score:.2f})")
+                    logger.warning(
+                        f"🔴 High clinical risk: {variant_id} in {variant.get('gene', 'unknown')} "
+                        f"({clinical_sig}, risk score: {clinical_risk_score:.2f})"
+                    )
                 elif clinical_risk_score > 0.3:
-                    logger.info(f"🟡 Moderate clinical risk: {variant_id} in {variant.get('gene', 'unknown')} "
-                               f"({clinical_sig}, risk score: {clinical_risk_score:.2f})")
+                    logger.info(
+                        f"🟡 Moderate clinical risk: {variant_id} in {variant.get('gene', 'unknown')} "
+                        f"({clinical_sig}, risk score: {clinical_risk_score:.2f})"
+                    )
 
         # Calculate summary statistics
         clinvar_stats = {
@@ -461,19 +706,23 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "vus_variants": len(vus_variants),
             "drug_response_variants": len(drug_response_variants),
             "risk_factor_variants": len(risk_factor_variants),
-            "high_risk_variants": len([v for v in pathogenic_variants + likely_pathogenic_variants
-                                     if v["risk_score"] > 0.7]),
-            "cancer_related_variants": len([a for a in clinvar_annotations.values()
-                                          if a.get("cancer_related")])
+            "high_risk_variants": len(
+                [v for v in pathogenic_variants + likely_pathogenic_variants if v["risk_score"] > 0.7]
+            ),
+            "cancer_related_variants": len([a for a in clinvar_annotations.values() if a.get("cancer_related")]),
         }
 
         # Summary statistics (will be handled by merge function)
 
         # Log summary
-        logger.info(f"ClinVar annotation complete:")
+        logger.info("ClinVar annotation complete:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
         logger.info(f"  Variants annotated: {total_variants_annotated}")
-        logger.info(f"  Annotation rate: {total_variants_annotated/len(filtered_variants)*100:.1f}%" if filtered_variants else "0%")
+        logger.info(
+            f"  Annotation rate: {total_variants_annotated/len(filtered_variants)*100:.1f}%"
+            if filtered_variants
+            else "0%"
+        )
         logger.info(f"  Pathogenic: {len(pathogenic_variants)}")
         logger.info(f"  Likely pathogenic: {len(likely_pathogenic_variants)}")
         logger.info(f"  Benign: {len(benign_variants)}")
@@ -489,15 +738,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "clinvar_benign_variants": benign_variants,
             "clinvar_vus_variants": vus_variants,
             "clinvar_drug_response_variants": drug_response_variants,
-            "clinvar_risk_factor_variants": risk_factor_variants
+            "clinvar_risk_factor_variants": risk_factor_variants,
         }
 
     except Exception as e:
         logger.error(f"ClinVar annotation failed: {str(e)}")
-        return {
-            "errors": [{
-                "node": "clinvar_annotator",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
-        }
+        return {"errors": [{"node": "clinvar_annotator", "error": str(e), "timestamp": datetime.now()}]}

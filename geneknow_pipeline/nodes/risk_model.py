@@ -2,10 +2,8 @@
 Risk model node.
 Uses scikit-learn models to predict cancer risk.
 """
+
 import logging
-import os
-import pickle
-import json
 import numpy as np
 from datetime import datetime
 from typing import Dict, Any, List
@@ -45,8 +43,14 @@ def extract_enhanced_features(variants: List[Dict[str, Any]], genes: List[str]) 
 
             # 2. Maximum impact score
             impact_scores = {
-                "HIGH": 3, "MODERATE": 2, "LOW": 1, "MODIFIER": 0,
-                "high": 3, "moderate": 2, "low": 1, "modifier": 0
+                "HIGH": 3,
+                "MODERATE": 2,
+                "LOW": 1,
+                "MODIFIER": 0,
+                "high": 3,
+                "moderate": 2,
+                "low": 1,
+                "modifier": 0,
             }
             max_impact = 0
             for v in variants_in_gene:
@@ -105,40 +109,31 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     if ml_fusion_results.get("processing_successful"):
         logger.info("✅ Using ML fusion results for risk calculation")
         return _ml_fusion_risk_calculation(state, ml_fusion_results)
-    
+
     # If ML fusion failed or isn't available, log why and fall back
     if "ml_fusion_results" in state:
         error = ml_fusion_results.get("error", "Unknown error")
         logger.warning(f"⚠️ ML fusion failed: {error}")
     else:
         logger.warning("⚠️ ML fusion results not found in pipeline state")
-    
+
     logger.warning("📊 Falling back to simple risk calculation")
-    
+
     try:
         filtered_variants = state.get("filtered_variants", [])
         if not filtered_variants:
             logger.error("No filtered variants found in state")
-            return {
-                "risk_scores": {},
-                "risk_genes": {},
-                "error": "No variants to analyze"
-            }
-        
+            return {"risk_scores": {}, "risk_genes": {}, "error": "No variants to analyze"}
+
         return _simple_risk_calculation(state, filtered_variants)
 
     except Exception as e:
         logger.error(f"Risk model failed: {str(e)}")
         # Return empty results on complete failure
-        return {
-            "risk_scores": {},
-            "risk_genes": {},
-            "error": str(e)
-        }
+        return {"risk_scores": {}, "risk_genes": {}, "error": str(e)}
 
 
-def _ml_fusion_risk_calculation(state: Dict[str, Any],
-                              ml_fusion_results: Dict[str, Any]) -> Dict[str, Any]:
+def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate risk scores from ML fusion results."""
     try:
         # Get aggregate risk assessment
@@ -178,14 +173,7 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
 
         # Calculate cancer-specific risk scores based on ML fusion
         # Base risks adjusted by aggregate risk score
-        base_risks = {
-            "breast": 15.0,
-            "colon": 13.0,
-            "lung": 14.0,
-            "prostate": 12.0,
-            "blood": 8.0,
-            "bone": 6.0
-        }
+        base_risks = {"breast": 15.0, "colon": 13.0, "lung": 14.0, "prostate": 12.0, "blood": 8.0, "bone": 6.0}
 
         # Scale risks based on ML fusion aggregate score
         risk_multiplier = 1.0 + (aggregate_risk_score * 2.0)  # 1.0 to 3.0 multiplier
@@ -200,7 +188,10 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
             # Further adjust based on specific contributing factors
             if "cadd_score" in contributing_factors and contributing_factors["cadd_score"] > 0.5:
                 adjusted_risk *= 1.2
-            if "clinvar_classification" in contributing_factors and contributing_factors["clinvar_classification"] > 0.5:
+            if (
+                "clinvar_classification" in contributing_factors
+                and contributing_factors["clinvar_classification"] > 0.5
+            ):
                 adjusted_risk *= 1.3
             if "gene_burden_score" in contributing_factors and contributing_factors["gene_burden_score"] > 0.5:
                 adjusted_risk *= 1.25
@@ -220,7 +211,7 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
                 risk_genes[cancer_type] = high_risk_genes[:3]  # Top 3 genes
 
         # Add ML fusion metadata
-        logger.info(f"ML Fusion Risk Assessment:")
+        logger.info("ML Fusion Risk Assessment:")
         logger.info(f"  Aggregate risk score: {aggregate_risk_score:.3f}")
         logger.info(f"  Risk category: {risk_category}")
         logger.info(f"  Confidence: {confidence:.3f}")
@@ -244,8 +235,8 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
                 "high_risk_variants": high_risk_variants,
                 "high_risk_genes": high_risk_genes,
                 "moderate_risk_genes": moderate_risk_genes,
-                "contributing_factors": contributing_factors
-            }
+                "contributing_factors": contributing_factors,
+            },
         }
 
     except Exception as e:
@@ -255,8 +246,7 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any],
         return _simple_risk_calculation(state, filtered_variants)
 
 
-def _simple_risk_calculation(state: Dict[str, Any],
-                           filtered_variants: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Fallback simple risk calculation when ML models aren't available."""
     logger.warning("⚠️ Using simple risk calculation (ML fusion not available)")
     logger.info("This should only happen if ML fusion node failed or was skipped")
@@ -313,18 +303,11 @@ def _simple_risk_calculation(state: Dict[str, Any],
         "AR": {"prostate": 40},
         "PTEN": {"prostate": 35},
         "FOXA1": {"prostate": 25},
-        "SPOP": {"prostate": 20}
+        "SPOP": {"prostate": 20},
     }
 
     # Base risk scores
-    risk_scores = {
-        "breast": 3.0,
-        "colon": 1.7,
-        "lung": 2.4,
-        "prostate": 2.9,
-        "blood": 1.7,
-        "bone": 1.9
-    }
+    risk_scores = {"breast": 3.0, "colon": 1.7, "lung": 2.4, "prostate": 2.9, "blood": 1.7, "bone": 1.9}
 
     # Map PRS cancer types to our risk score keys
     prs_to_risk_mapping = {
@@ -333,7 +316,7 @@ def _simple_risk_calculation(state: Dict[str, Any],
         "PRAD": "prostate",
         "LUAD": "lung",
         "COAD": "colon",
-        "PANCA": "colon"  # Pancreatic shares some risk factors with colon
+        "PANCA": "colon",  # Pancreatic shares some risk factors with colon
     }
 
     # Incorporate PRS scores if available
@@ -346,18 +329,18 @@ def _simple_risk_calculation(state: Dict[str, Any],
                 # Get PRS percentile and confidence
                 percentile = prs_data.get("percentile", 50)
                 confidence = prs_data.get("confidence", "low")
-                risk_category = prs_data.get("risk_category", "low")
+                prs_data.get("risk_category", "low")
 
                 # Calculate PRS contribution based on percentile
                 # High percentile = higher risk
                 if percentile >= 95:
                     prs_contribution = 15.0  # High risk
                 elif percentile >= 80:
-                    prs_contribution = 8.0   # Moderate risk
+                    prs_contribution = 8.0  # Moderate risk
                 elif percentile >= 60:
-                    prs_contribution = 3.0   # Slightly elevated
+                    prs_contribution = 3.0  # Slightly elevated
                 else:
-                    prs_contribution = 0.0   # Average or below
+                    prs_contribution = 0.0  # Average or below
 
                 # Adjust contribution based on confidence
                 if confidence == "low":
@@ -369,8 +352,10 @@ def _simple_risk_calculation(state: Dict[str, Any],
                 # Apply PRS contribution
                 if prs_contribution > 0:
                     risk_scores[risk_type] = min(risk_scores[risk_type] + prs_contribution, 95.0)
-                    logger.info(f"PRS for {prs_cancer} adds {prs_contribution:.1f}% to {risk_type} risk "
-                              f"(percentile: {percentile}, confidence: {confidence})")
+                    logger.info(
+                        f"PRS for {prs_cancer} adds {prs_contribution:.1f}% to {risk_type} risk "
+                        f"(percentile: {percentile}, confidence: {confidence})"
+                    )
 
     risk_genes = {cancer: [] for cancer in risk_scores}
     pathogenic_genes = {cancer: [] for cancer in risk_scores}
@@ -454,7 +439,9 @@ def _simple_risk_calculation(state: Dict[str, Any],
 
     for cancer, score in risk_scores.items():
         if risk_genes[cancer]:
-            logger.info(f"{cancer}: {score:.1f}% (genes: {risk_genes[cancer]}, pathogenic: {pathogenic_genes[cancer]}, benign: {benign_genes[cancer]})")
+            logger.info(
+                f"{cancer}: {score:.1f}% (genes: {risk_genes[cancer]}, pathogenic: {pathogenic_genes[cancer]}, benign: {benign_genes[cancer]})"
+            )
 
     # Build result dictionary
     result = {
@@ -462,11 +449,13 @@ def _simple_risk_calculation(state: Dict[str, Any],
         "risk_genes": risk_genes,
         "pathogenic_risk_genes": pathogenic_genes,
         "benign_risk_genes": benign_genes,
-        "warnings": [{
-            "node": "risk_model",
-            "warning": "Using simple risk calculation - ML models not available",
-            "timestamp": datetime.now()
-        }]
+        "warnings": [
+            {
+                "node": "risk_model",
+                "warning": "Using simple risk calculation - ML models not available",
+                "timestamp": datetime.now(),
+            }
+        ],
     }
 
     # Add PRS integration metadata if available
@@ -474,7 +463,7 @@ def _simple_risk_calculation(state: Dict[str, Any],
         result["risk_integration"] = {
             "prs_high_risk_cancers": prs_summary.get("high_risk_cancers", []),
             "prs_confidence": prs_summary.get("overall_confidence", "not_available"),
-            "risk_calculation_method": "integrated_prs_and_variants"
+            "risk_calculation_method": "integrated_prs_and_variants",
         }
         logger.info(f"Risk calculation integrated PRS data: {prs_summary.get('high_risk_cancers', [])}")
 

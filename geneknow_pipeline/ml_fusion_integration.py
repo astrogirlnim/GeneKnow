@@ -31,7 +31,7 @@ class MLFusionIntegrator:
     def load_models(self) -> bool:
         """Load trained ML models."""
         try:
-            best_model_path = os.path.join(self.model_dir, 'best_model.pkl')
+            best_model_path = os.path.join(self.model_dir, "best_model.pkl")
             if os.path.exists(best_model_path):
                 self.trainer.load_model(best_model_path)
                 self.models_loaded = True
@@ -62,19 +62,20 @@ class MLFusionIntegrator:
             variant_id = variant.get("variant_id", "")
             if variant_id in population_matches:
                 pop_data = population_matches[variant_id]
-                enriched_variant.update({
-                    "population_frequency": pop_data.get("population_frequency", 0.0),
-                    "clinical_significance": pop_data.get("clinical_significance", "Unknown"),
-                    "is_pathogenic": pop_data.get("is_pathogenic", 0),
-                    "review_status": pop_data.get("review_status", "")
-                })
+                enriched_variant.update(
+                    {
+                        "population_frequency": pop_data.get("population_frequency", 0.0),
+                        "clinical_significance": pop_data.get("clinical_significance", "Unknown"),
+                        "is_pathogenic": pop_data.get("is_pathogenic", 0),
+                        "review_status": pop_data.get("review_status", ""),
+                    }
+                )
 
             # Add CADD scores if available
             if "cadd_phred" in variant or "cadd_raw" in variant:
-                enriched_variant.update({
-                    "cadd_phred": variant.get("cadd_phred", 0.0),
-                    "cadd_raw": variant.get("cadd_raw", 0.0)
-                })
+                enriched_variant.update(
+                    {"cadd_phred": variant.get("cadd_phred", 0.0), "cadd_raw": variant.get("cadd_raw", 0.0)}
+                )
 
             # Add TCGA enrichment data
             tcga_enrichment = 0.0
@@ -116,7 +117,7 @@ class MLFusionIntegrator:
                 "pathogenicity_scores": ml_results["risk_scores"],
                 "pathogenicity_predictions": ml_results["predictions"],
                 "model_used": ml_results["model_used"],
-                "prediction_confidence": self._calculate_confidence(ml_results["probabilities"])
+                "prediction_confidence": self._calculate_confidence(ml_results["probabilities"]),
             }
 
             # Update variants with ML scores
@@ -211,11 +212,12 @@ class MLFusionIntegrator:
             "pathogenicity_scores": pathogenicity_scores,
             "pathogenicity_predictions": pathogenicity_predictions,
             "model_used": "rule_based_fallback",
-            "prediction_confidence": confidences
+            "prediction_confidence": confidences,
         }
 
-    def calculate_cancer_risk(self, variants: List[Dict], patient_data: Dict[str, Any],
-                              ml_predictions: Dict[str, Any]) -> Dict[str, float]:
+    def calculate_cancer_risk(
+        self, variants: List[Dict], patient_data: Dict[str, Any], ml_predictions: Dict[str, Any]
+    ) -> Dict[str, float]:
         """
         Calculate cancer-specific risk scores using ML pathogenicity predictions.
         """
@@ -225,17 +227,11 @@ class MLFusionIntegrator:
             "colon": ["APC", "KRAS", "TP53", "MLH1", "MSH2", "MSH6", "PMS2", "SMAD4", "BRAF"],
             "lung": ["TP53", "KRAS", "EGFR", "STK11", "KEAP1", "NF1", "RB1", "CDKN2A"],
             "prostate": ["AR", "PTEN", "TP53", "BRCA1", "BRCA2", "ATM", "HOXB13"],
-            "blood": ["JAK2", "FLT3", "NPM1", "DNMT3A", "TET2", "IDH1", "IDH2", "TP53"]
+            "blood": ["JAK2", "FLT3", "NPM1", "DNMT3A", "TET2", "IDH1", "IDH2", "TP53"],
         }
 
         # Base population risks (lifetime risk percentages)
-        base_risks = {
-            "breast": 12.9,
-            "colon": 4.3,
-            "lung": 6.3,
-            "prostate": 12.5,
-            "blood": 1.8
-        }
+        base_risks = {"breast": 12.9, "colon": 4.3, "lung": 6.3, "prostate": 12.5, "blood": 1.8}
 
         cancer_risks = {}
         pathogenicity_scores = ml_predictions["pathogenicity_scores"]
@@ -329,7 +325,7 @@ def update_feature_vector_builder(state: Dict[str, Any]) -> Dict[str, Any]:
             "high_confidence_predictions": sum(1 for c in ml_predictions["prediction_confidence"] if c > 0.8),
             "cancer_risks": cancer_risks,
             "ml_predictions": ml_predictions,
-            "processing_timestamp": datetime.now().isoformat()
+            "processing_timestamp": datetime.now().isoformat(),
         }
 
         # Update state
@@ -349,18 +345,14 @@ def update_feature_vector_builder(state: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"ML fusion feature vector builder failed: {str(e)}")
-        state["errors"].append({
-            "node": "feature_vector_builder",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
+        state["errors"].append({"node": "feature_vector_builder", "error": str(e), "timestamp": datetime.now()})
 
         # Fallback to basic feature vector
         state["feature_vector"] = {
             "status": "fallback_mode",
             "error": str(e),
             "total_variants": len(state.get("filtered_variants", [])),
-            "ml_available": False
+            "ml_available": False,
         }
 
     return state
@@ -381,7 +373,7 @@ def main():
             "alt": "T",
             "consequence": "missense_variant",
             "quality": 60.0,
-            "depth": 50
+            "depth": 50,
         },
         {
             "variant_id": "17:7579472:G>C",
@@ -392,8 +384,8 @@ def main():
             "alt": "C",
             "consequence": "missense_variant",
             "quality": 45.0,
-            "depth": 30
-        }
+            "depth": 30,
+        },
     ]
 
     test_state = {
@@ -403,14 +395,14 @@ def main():
         "tcga_matches": {},
         "cadd_stats": {},
         "errors": [],
-        "completed_nodes": []
+        "completed_nodes": [],
     }
 
     result_state = update_feature_vector_builder(test_state)
 
     print("ML Fusion Test Results:")
     print(f"Feature vector status: {result_state['feature_vector']['status']}")
-    if 'ml_cancer_risks' in result_state:
+    if "ml_cancer_risks" in result_state:
         print(f"Cancer risks: {result_state['ml_cancer_risks']}")
 
 

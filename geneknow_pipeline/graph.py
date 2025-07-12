@@ -118,9 +118,7 @@ def merge_variants(state: dict) -> dict:
     state["completed_nodes"] = completed_nodes
 
     # Log merge results
-    logger.info(
-        f"Merge complete: {state['variant_count']} filtered variants ready for population frequency mapping"
-    )
+    logger.info(f"Merge complete: {state['variant_count']} filtered variants ready for population frequency mapping")
 
     return state
 
@@ -154,9 +152,7 @@ def merge_static_model_results(state: dict) -> dict:
 
     # If not all nodes have completed, preserve any existing data
     if completed_count < 5:
-        logger.info(
-            f"Waiting for {5 - completed_count} more parallel node(s) to complete"
-        )
+        logger.info(f"Waiting for {5 - completed_count} more parallel node(s) to complete")
         # CRITICAL: Return existing state data to preserve results from completed nodes
         result = {"_merge_call_count": call_count}
 
@@ -207,14 +203,10 @@ def merge_static_model_results(state: dict) -> dict:
 
     # Log what we received
     logger.info(f"TCGA matches: {len(state.get('tcga_matches', {}))}")
-    logger.info(
-        f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}"
-    )
+    logger.info(f"CADD enriched variants: {len(state.get('cadd_enriched_variants', []))}")
     logger.info(f"ClinVar annotations: {len(state.get('clinvar_annotations', {}))}")
     logger.info(f"PRS results: {len(state.get('prs_results', {}))}")
-    logger.info(
-        f"Pathway burden results: {len(state.get('pathway_burden_results', {}))}"
-    )
+    logger.info(f"Pathway burden results: {len(state.get('pathway_burden_results', {}))}")
 
     # Start with the most enriched version of variants
     # Priority: pathway_enriched_variants > cadd_enriched_variants > filtered_variants
@@ -232,9 +224,7 @@ def merge_static_model_results(state: dict) -> dict:
     variant_map = {}
     for variant in base_variants:
         variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
-        variant_map[variant_id] = (
-            variant.copy()
-        )  # Make a copy to avoid modifying originals
+        variant_map[variant_id] = variant.copy()  # Make a copy to avoid modifying originals
 
     logger.info(f"Base variants for merging: {len(base_variants)}")
     logger.info(f"Variant map size: {len(variant_map)}")
@@ -243,25 +233,15 @@ def merge_static_model_results(state: dict) -> dict:
     if "pathway_enriched_variants" in state:
         pathway_merged_count = 0
         for variant in state["pathway_enriched_variants"]:
-            variant_id = variant.get(
-                "variant_id", f"{variant['chrom']}:{variant['pos']}"
-            )
+            variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
             if variant_id in variant_map and "pathway_damage_assessment" in variant:
-                variant_map[variant_id]["pathway_damage_assessment"] = variant[
-                    "pathway_damage_assessment"
-                ]
+                variant_map[variant_id]["pathway_damage_assessment"] = variant["pathway_damage_assessment"]
                 pathway_merged_count += 1
-        logger.info(
-            f"Merged pathway_damage_assessment for {pathway_merged_count} variants"
-        )
+        logger.info(f"Merged pathway_damage_assessment for {pathway_merged_count} variants")
 
     # Check for pathway_damage_assessment presence after merge
-    variants_with_pathway_damage = sum(
-        1 for v in variant_map.values() if "pathway_damage_assessment" in v
-    )
-    logger.info(
-        f"Total variants with pathway_damage_assessment: {variants_with_pathway_damage}"
-    )
+    variants_with_pathway_damage = sum(1 for v in variant_map.values() if "pathway_damage_assessment" in v)
+    logger.info(f"Total variants with pathway_damage_assessment: {variants_with_pathway_damage}")
 
     tcga_matches = state.get("tcga_matches", {})
     clinvar_annotations = state.get("clinvar_annotations", {})
@@ -301,35 +281,21 @@ def merge_static_model_results(state: dict) -> dict:
         # Add ClinVar data to the variant
         clinvar_data = clinvar_annotations.get(variant_id, {})
         if clinvar_data.get("found_in_clinvar"):
-            enriched_variant["clinvar_clinical_significance"] = clinvar_data.get(
-                "clinical_significance"
-            )
-            enriched_variant["clinvar_risk_score"] = clinvar_data.get(
-                "clinical_risk_score", 0.0
-            )
-            enriched_variant["clinvar_interpretation"] = clinvar_data.get(
-                "clinical_interpretation"
-            )
+            enriched_variant["clinvar_clinical_significance"] = clinvar_data.get("clinical_significance")
+            enriched_variant["clinvar_risk_score"] = clinvar_data.get("clinical_risk_score", 0.0)
+            enriched_variant["clinvar_interpretation"] = clinvar_data.get("clinical_interpretation")
             enriched_variant["clinvar_confidence"] = clinvar_data.get("confidence")
-            enriched_variant["clinvar_actionability"] = clinvar_data.get(
-                "actionability"
-            )
-            enriched_variant["clinvar_recommendation"] = clinvar_data.get(
-                "recommendation"
-            )
+            enriched_variant["clinvar_actionability"] = clinvar_data.get("actionability")
+            enriched_variant["clinvar_recommendation"] = clinvar_data.get("recommendation")
             enriched_variant["clinvar_condition"] = clinvar_data.get("condition")
-            enriched_variant["clinvar_cancer_related"] = clinvar_data.get(
-                "cancer_related", False
-            )
+            enriched_variant["clinvar_cancer_related"] = clinvar_data.get("cancer_related", False)
         else:
             enriched_variant["clinvar_clinical_significance"] = None
             enriched_variant["clinvar_risk_score"] = 0.0
             enriched_variant["clinvar_interpretation"] = "no_clinical_evidence"
             enriched_variant["clinvar_confidence"] = "none"
             enriched_variant["clinvar_actionability"] = "none"
-            enriched_variant["clinvar_recommendation"] = (
-                "No clinical evidence available"
-            )
+            enriched_variant["clinvar_recommendation"] = "No clinical evidence available"
             enriched_variant["clinvar_condition"] = None
             enriched_variant["clinvar_cancer_related"] = False
 
@@ -356,12 +322,8 @@ def merge_static_model_results(state: dict) -> dict:
     if "pathway_burden_summary" in state:
         file_metadata["pathway_burden_summary"] = state["pathway_burden_summary"]
 
-    logger.info(
-        f"Merged {len(merged_variants)} variants with TCGA, CADD, ClinVar, and pathway annotations"
-    )
-    logger.info(
-        f"PRS calculation completed for {len(state.get('prs_results', {}))} cancer types"
-    )
+    logger.info(f"Merged {len(merged_variants)} variants with TCGA, CADD, ClinVar, and pathway annotations")
+    logger.info(f"PRS calculation completed for {len(state.get('prs_results', {}))} cancer types")
 
     # Track completion
     completed = state.get("completed_nodes", [])
@@ -398,10 +360,8 @@ def route_after_preprocess(state: dict) -> list:
     Returns a list to enable parallel execution.
     """
     # Check if this is a MAF file that already has filtered variants
-    if state.get("file_type") == "maf" and state.get("filtered_variants"):
-        logger.info(
-            "MAF file detected with pre-processed variants, skipping to population mapping"
-        )
+    if state.get("file_type") == "ma" and state.get("filtered_variants"):
+        logger.info("MAF file detected with pre-processed variants, skipping to population mapping")
         return ["population_mapper"]
 
     nodes_to_run = []
@@ -462,35 +422,31 @@ def merge_variant_analysis_results(state: dict) -> dict:
     """
     logger.info("Merging structural variant and CNV results")
     state["current_node"] = "merge_variant_analysis"
-    
+
     # Check if both nodes have completed
     has_svs = state.get("structural_variants") is not None
     has_cnvs = state.get("copy_number_variants") is not None
-    
+
     # Track completion
     completed_nodes = state.get("completed_nodes", [])
-    
+
     if has_svs and has_cnvs:
         logger.info("Both SV and CNV detection completed")
-        
+
         # Combine all genomic alterations
         all_alterations = {
             "structural_variants": state.get("structural_variants", []),
             "copy_number_variants": state.get("copy_number_variants", []),
-            "total_alterations": len(state.get("structural_variants", [])) + 
-                               len(state.get("copy_number_variants", []))
+            "total_alterations": len(state.get("structural_variants", [])) + len(state.get("copy_number_variants", [])),
         }
-        
+
         # Update completed nodes
         if "merge_variant_analysis" not in completed_nodes:
             completed_nodes.append("merge_variant_analysis")
-        
+
         logger.info(f"Merged {all_alterations['total_alterations']} genomic alterations")
-        
-        return {
-            "genomic_alterations": all_alterations,
-            "completed_nodes": completed_nodes
-        }
+
+        return {"genomic_alterations": all_alterations, "completed_nodes": completed_nodes}
     else:
         logger.info(f"Waiting for nodes to complete (SV={has_svs}, CNV={has_cnvs})")
         return {}
@@ -527,7 +483,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("ml_fusion", ml_fusion_node.process)
     workflow.add_node("risk_model", risk_model.process)
     workflow.add_node("shap_validator", shap_validator.process)
-    
+
     # Add new clinical view nodes
     workflow.add_node("mutation_classifier", mutation_classifier.process)
     workflow.add_node("mutational_signatures", mutational_signatures.process)
@@ -538,7 +494,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("gene_interaction_network", gene_interaction_network.process)
     workflow.add_node("survival_analyzer", survival_analyzer.process)
     workflow.add_node("clinical_recommendations", clinical_recommendations.process)
-    
+
     workflow.add_node("metrics_calculator", metrics_calculator.process)
     workflow.add_node("formatter", formatter.process)
     workflow.add_node("report_generator", report_generator_process)
@@ -584,27 +540,27 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("feature_vector_builder", "ml_fusion")
     workflow.add_edge("ml_fusion", "risk_model")
     workflow.add_edge("risk_model", "shap_validator")
-    
+
     # After SHAP validator, run new clinical analysis nodes in sequence
     workflow.add_edge("shap_validator", "mutation_classifier")
     workflow.add_edge("mutation_classifier", "mutational_signatures")
     workflow.add_edge("mutational_signatures", "variant_transformer")
-    
+
     # Run structural variant and CNV detection in parallel
     workflow.add_edge("variant_transformer", "structural_variant_detector")
     workflow.add_edge("variant_transformer", "cnv_detector")
-    
+
     # Create a merge point for structural variant and CNV results
     workflow.add_node("merge_variant_analysis", merge_variant_analysis_results)
     workflow.add_edge("structural_variant_detector", "merge_variant_analysis")
     workflow.add_edge("cnv_detector", "merge_variant_analysis")
-    
+
     # Continue with pathway analysis after merging
     workflow.add_edge("merge_variant_analysis", "pathway_analyzer")
     workflow.add_edge("pathway_analyzer", "gene_interaction_network")
     workflow.add_edge("gene_interaction_network", "survival_analyzer")
     workflow.add_edge("survival_analyzer", "clinical_recommendations")
-    
+
     # Clinical recommendations -> metrics calculator -> formatter -> report writer
     workflow.add_edge("clinical_recommendations", "metrics_calculator")
     workflow.add_edge("metrics_calculator", "formatter")
@@ -635,7 +591,7 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
     # Clean preferences to remove non-serializable values (like callbacks)
     if user_preferences is None:
         user_preferences = {}
-    
+
     # Create a copy and remove any non-serializable values
     clean_preferences = {}
     for key, value in user_preferences.items():
@@ -722,15 +678,11 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
             final_state["pipeline_end_time"] - final_state["pipeline_start_time"]
         ).total_seconds()
 
-        logger.info(
-            f"Pipeline completed in {final_state['processing_time_seconds']:.2f} seconds"
-        )
+        logger.info(f"Pipeline completed in {final_state['processing_time_seconds']:.2f} seconds")
 
         # Debug logging
         logger.info(f"Final state keys: {list(final_state.keys())}")
-        logger.info(
-            f"Report sections in final state: {final_state.get('report_sections', 'NOT FOUND')}"
-        )
+        logger.info(f"Report sections in final state: {final_state.get('report_sections', 'NOT FOUND')}")
 
         return final_state
 

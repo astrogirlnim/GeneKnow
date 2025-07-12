@@ -5,8 +5,8 @@ This module defines the TypedDict schema for the pipeline state.
 
 from typing import TypedDict, Optional, List, Dict, Any
 from typing_extensions import Annotated
-from langgraph.graph import add_messages
 from datetime import datetime
+
 
 # Define a reducer for completed_nodes that merges lists
 def merge_completed_nodes(existing: List[str], new: List[str]) -> List[str]:
@@ -28,6 +28,7 @@ class GenomicState(TypedDict, total=False):
     State schema for the genomic analysis pipeline.
     All fields are optional (total=False) to support partial updates.
     """
+
     # File information
     file_path: str
     file_type: Optional[str]

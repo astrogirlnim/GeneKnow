@@ -7,26 +7,28 @@ import multiprocessing
 import os
 import socket
 
+
 # Dynamic port allocation
 def find_available_port(start_port=5000, max_attempts=100):
     """Find an available port starting from start_port"""
     for port in range(start_port, start_port + max_attempts):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', port))
+                s.bind(("", port))
                 s.close()
                 return port
         except OSError:
             continue
     raise RuntimeError("No available ports found")
 
+
 # Server socket
 # Try to get port from environment or find available
-if os.environ.get('API_PORT'):
-    port = int(os.environ.get('API_PORT'))
+if os.environ.get("API_PORT"):
+    port = int(os.environ.get("API_PORT"))
 else:
     port = find_available_port()
-    
+
 bind = f"127.0.0.1:{port}"  # Only localhost for security
 backlog = 64
 
@@ -43,12 +45,12 @@ keepalive = 2
 
 # Logging
 accesslog = "-"  # stdout
-errorlog = "-"   # stderr
+errorlog = "-"  # stderr
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
 # Process naming
-proc_name = 'geneknow-api'
+proc_name = "geneknow-api"
 
 # Server mechanics
 daemon = False
@@ -71,12 +73,15 @@ reload_engine = "auto"
 reload_extra_files = []
 spew = False
 
+
 # Server hooks
 def when_ready(server):
     server.log.info("GeneKnow API Server is ready. Listening at: %s", server.address)
 
+
 def worker_int(worker):
     worker.log.info("Worker interrupted!")
 
+
 def pre_fork(server, worker):
-    server.log.info("Worker spawned (pid: %s)", worker.pid) 
+    server.log.info("Worker spawned (pid: %s)", worker.pid)

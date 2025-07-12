@@ -2,7 +2,7 @@
 MAF (Mutation Annotation Format) parser for TCGA data.
 Converts MAF files into the same variant format used by VCF files.
 """
-import os
+
 import logging
 import pandas as pd
 from typing import Dict, Any, List
@@ -12,22 +12,22 @@ logger = logging.getLogger(__name__)
 
 # Clinical significance mapping based on variant classification
 CLASSIFICATION_TO_SIGNIFICANCE = {
-    'Missense_Mutation': 'Uncertain significance',
-    'Nonsense_Mutation': 'Likely pathogenic',
-    'Frame_Shift_Del': 'Pathogenic',
-    'Frame_Shift_Ins': 'Pathogenic',
-    'In_Frame_Del': 'Likely pathogenic',
-    'In_Frame_Ins': 'Likely pathogenic',
-    'Silent': 'Likely benign',
-    'Splice_Site': 'Pathogenic',
-    'Translation_Start_Site': 'Pathogenic',
-    'Nonstop_Mutation': 'Pathogenic',
-    '3\'UTR': 'Likely benign',
-    '5\'UTR': 'Likely benign',
-    'Intron': 'Benign',
-    'IGR': 'Benign',
-    'RNA': 'Uncertain significance',
-    'lincRNA': 'Uncertain significance'
+    "Missense_Mutation": "Uncertain significance",
+    "Nonsense_Mutation": "Likely pathogenic",
+    "Frame_Shift_Del": "Pathogenic",
+    "Frame_Shift_Ins": "Pathogenic",
+    "In_Frame_Del": "Likely pathogenic",
+    "In_Frame_Ins": "Likely pathogenic",
+    "Silent": "Likely benign",
+    "Splice_Site": "Pathogenic",
+    "Translation_Start_Site": "Pathogenic",
+    "Nonstop_Mutation": "Pathogenic",
+    "3'UTR": "Likely benign",
+    "5'UTR": "Likely benign",
+    "Intron": "Benign",
+    "IGR": "Benign",
+    "RNA": "Uncertain significance",
+    "lincRNA": "Uncertain significance",
 }
 
 
@@ -45,7 +45,7 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
 
     try:
         # Read MAF file (tab-separated)
-        df = pd.read_csv(file_path, sep='\t', low_memory=False, comment='#')
+        df = pd.read_csv(file_path, sep="\t", low_memory=False, comment="#")
         logger.info(f"Loaded MAF with {len(df)} variants")
 
         variants = []
@@ -53,15 +53,15 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
         for idx, row in df.iterrows():
             try:
                 # Get chromosome - handle different formats
-                chrom = str(row.get('Chromosome', ''))
-                if not chrom.startswith('chr'):
+                chrom = str(row.get("Chromosome", ""))
+                if not chrom.startswith("chr"):
                     chrom = f"chr{chrom}"
 
                 # Calculate allele frequency if possible
-                t_depth = row.get('t_depth', 0)
-                t_alt_count = row.get('t_alt_count', 0)
-                if pd.notna(row.get('tumor_f')):
-                    allele_freq = float(row.get('tumor_f'))
+                t_depth = row.get("t_depth", 0)
+                t_alt_count = row.get("t_alt_count", 0)
+                if pd.notna(row.get("tumor_")):
+                    allele_freq = float(row.get("tumor_f"))
                 elif t_depth > 0 and pd.notna(t_alt_count):
                     allele_freq = float(t_alt_count) / float(t_depth)
                 else:
@@ -69,41 +69,35 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
 
                 # Create variant in our standard format
                 variant = {
-                    'chrom': chrom,
-                    'pos': int(row.get('Start_Position', 0)),
-                    'ref': str(row.get('Reference_Allele', 'N')),
-                    'alt': str(row.get('Tumor_Seq_Allele2', 'N')),
-                    'gene': str(row.get('Hugo_Symbol', 'Unknown')),
-                    'variant_id': f"{chrom}:{row.get('Start_Position')}:{row.get('Reference_Allele')}>{row.get('Tumor_Seq_Allele2')}",
-
+                    "chrom": chrom,
+                    "pos": int(row.get("Start_Position", 0)),
+                    "re": str(row.get("Reference_Allele", "N")),
+                    "alt": str(row.get("Tumor_Seq_Allele2", "N")),
+                    "gene": str(row.get("Hugo_Symbol", "Unknown")),
+                    "variant_id": f"{chrom}:{row.get('Start_Position')}:{row.get('Reference_Allele')}>{row.get('Tumor_Seq_Allele2')}",
                     # MAF-specific fields
-                    'variant_classification': row.get('Variant_Classification', ''),
-                    'variant_type': row.get('Variant_Type', ''),
-                    'consequence': row.get('Consequence', row.get('Variant_Classification', '')),
-                    'protein_change': row.get('HGVSp', ''),
-
+                    "variant_classification": row.get("Variant_Classification", ""),
+                    "variant_type": row.get("Variant_Type", ""),
+                    "consequence": row.get("Consequence", row.get("Variant_Classification", "")),
+                    "protein_change": row.get("HGVSp", ""),
                     # Quality metrics (MAF files don't have QUAL like VCF)
-                    'qual': 100.0,  # Default high quality for MAF variants
-                    'depth': int(t_depth) if pd.notna(t_depth) else 100,
-                    'allele_freq': allele_freq,
-
+                    "qual": 100.0,  # Default high quality for MAF variants
+                    "depth": int(t_depth) if pd.notna(t_depth) else 100,
+                    "allele_freq": allele_freq,
                     # Clinical interpretation
-                    'clinical_significance': CLASSIFICATION_TO_SIGNIFICANCE.get(
-                        row.get('Variant_Classification', ''),
-                        'Uncertain significance'
+                    "clinical_significance": CLASSIFICATION_TO_SIGNIFICANCE.get(
+                        row.get("Variant_Classification", ""), "Uncertain significance"
                     ),
-
                     # Sample information
-                    'sample_id': str(row.get('Tumor_Sample_Barcode', 'Unknown')),
-                    'normal_sample_id': str(row.get('Matched_Norm_Sample_Barcode', '')),
-
+                    "sample_id": str(row.get("Tumor_Sample_Barcode", "Unknown")),
+                    "normal_sample_id": str(row.get("Matched_Norm_Sample_Barcode", "")),
                     # Additional annotations if available
-                    'dbsnp_rs': str(row.get('dbSNP_RS', '')),
-                    'existing_variation': str(row.get('Existing_variation', ''))
+                    "dbsnp_rs": str(row.get("dbSNP_RS", "")),
+                    "existing_variation": str(row.get("Existing_variation", "")),
                 }
 
                 # Only include variants that pass basic filters
-                if variant['ref'] not in ['N', '-', ''] and variant['alt'] not in ['N', '-', '']:
+                if variant["re"] not in ["N", "-", ""] and variant["alt"] not in ["N", "-", ""]:
                     variants.append(variant)
 
             except Exception as e:
@@ -143,10 +137,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if variants:
             df = pd.DataFrame(variants)
             file_metadata["maf_info"] = {
-                "unique_genes": df['gene'].nunique(),
-                "unique_samples": df['sample_id'].nunique() if 'sample_id' in df else 1,
-                "variant_classifications": dict(df['variant_classification'].value_counts().head(10)),
-                "top_mutated_genes": dict(df['gene'].value_counts().head(10))
+                "unique_genes": df["gene"].nunique(),
+                "unique_samples": df["sample_id"].nunique() if "sample_id" in df else 1,
+                "variant_classifications": dict(df["variant_classification"].value_counts().head(10)),
+                "top_mutated_genes": dict(df["gene"].value_counts().head(10)),
             }
 
         logger.info(f"MAF processing complete: {len(variants)} variants")
@@ -156,16 +150,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "variants": variants,
             "variant_count": len(variants),
             "filtered_variants": variants,  # MAF files are already filtered/processed
-            "file_metadata": file_metadata
+            "file_metadata": file_metadata,
         }
 
     except Exception as e:
         logger.error(f"MAF processing failed: {str(e)}")
         return {
             "pipeline_status": "failed",
-            "errors": [{
-                "node": "maf_parser",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
+            "errors": [{"node": "maf_parser", "error": str(e), "timestamp": datetime.now()}],
         }

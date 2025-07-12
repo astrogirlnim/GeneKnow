@@ -5,7 +5,6 @@ Combines all API testing functionality including basic endpoints, enhanced featu
 WebSocket support, and PRS/TCGA results verification.
 """
 import requests
-import json
 import time
 import sys
 import os
@@ -21,12 +20,7 @@ class APITestSuite:
     """Comprehensive API testing class."""
 
     def __init__(self):
-        self.results = {
-            "total": 0,
-            "passed": 0,
-            "failed": 0,
-            "tests": []
-        }
+        self.results = {"total": 0, "passed": 0, "failed": 0, "tests": []}
 
     def test(self, name, func):
         """Run a test and record results."""
@@ -38,11 +32,11 @@ class APITestSuite:
             result = func()
             if result:
                 self.results["passed"] += 1
-                print(f"✅ PASSED")
+                print("✅ PASSED")
                 self.results["tests"].append({"name": name, "status": "passed"})
             else:
                 self.results["failed"] += 1
-                print(f"❌ FAILED")
+                print("❌ FAILED")
                 self.results["tests"].append({"name": name, "status": "failed"})
         except Exception as e:
             self.results["failed"] += 1
@@ -58,10 +52,10 @@ class APITestSuite:
         print(f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)")
         print(f"Failed: {self.results['failed']}")
 
-        if self.results['failed'] > 0:
+        if self.results["failed"] > 0:
             print("\nFailed tests:")
-            for test in self.results['tests']:
-                if test['status'] != 'passed':
+            for test in self.results["tests"]:
+                if test["status"] != "passed":
                     print(f"  - {test['name']}: {test.get('error', 'Failed')}")
 
 
@@ -108,12 +102,9 @@ def test_job_management():
     # Create a job
     test_file = find_test_file()
     if not test_file:
-        return False
+        assert False, "Test failed"
 
-    process_data = {
-        "file_path": str(test_file),
-        "preferences": {"language": "en"}
-    }
+    process_data = {"file_path": str(test_file), "preferences": {"language": "en"}}
 
     response = requests.post(f"{API_BASE}/process", json=process_data)
     if response.status_code != 202:
@@ -160,7 +151,7 @@ def test_prs_results():
     """Test that PRS results are included in API response."""
     test_file = find_test_file(prefer_maf=True)
     if not test_file:
-        return False
+        assert False, "Test failed"
 
     # Process file
     job_id = submit_file_for_processing(test_file)
@@ -192,7 +183,7 @@ def test_tcga_results():
     """Test that TCGA matches are included in API response."""
     test_file = find_test_file(prefer_maf=True)
     if not test_file:
-        return False
+        assert False, "Test failed"
 
     # Process file
     job_id = submit_file_for_processing(test_file)
@@ -215,7 +206,7 @@ def test_tcga_results():
     has_cohort = "tcga_cohort_sizes" in results
 
     if has_tcga:
-        total_matches = sum(len(matches) for matches in results['tcga_matches'].values())
+        total_matches = sum(len(matches) for matches in results["tcga_matches"].values())
         print(f"  Found {total_matches} total TCGA matches")
 
     return has_tcga and has_cohort
@@ -225,7 +216,7 @@ def test_results_download():
     """Test downloading results as a file."""
     test_file = find_test_file()
     if not test_file:
-        return False
+        assert False, "Test failed"
 
     # Process file
     job_id = submit_file_for_processing(test_file)
@@ -254,15 +245,15 @@ def find_test_file(prefer_maf=False):
     """Find a test file to use."""
     test_files = [
         "test_data/tcga_downloads/3d14b1e2-0555-4d6f-a55b-a56065f915e1.wxs.aliquot_ensemble_masked.maf.gz",
-        "test_data/test_sample.maf",
-        "test_data/test_variants.vcf",
+        "test_data/test_sample.ma",
+        "test_data/test_variants.vc",
         "../test_R1.fastq.gz",
-        "../test-data/sample.vcf"
+        "../test-data/sample.vc",
     ]
 
     if prefer_maf:
         # Move MAF files to front
-        test_files = [f for f in test_files if '.maf' in f] + [f for f in test_files if '.maf' not in f]
+        test_files = [f for f in test_files if ".ma" in f] + [f for f in test_files if ".ma" not in f]
 
     for file in test_files:
         if os.path.exists(file):
@@ -273,13 +264,7 @@ def find_test_file(prefer_maf=False):
 
 def submit_file_for_processing(file_path):
     """Submit a file for processing and return job ID."""
-    process_data = {
-        "file_path": str(file_path),
-        "preferences": {
-            "language": "en",
-            "include_technical_details": True
-        }
-    }
+    process_data = {"file_path": str(file_path), "preferences": {"language": "en", "include_technical_details": True}}
 
     response = requests.post(f"{API_BASE}/process", json=process_data)
     if response.status_code == 202:
@@ -321,12 +306,14 @@ def show_curl_examples():
     print("curl http://localhost:5001/api/pipeline-info")
 
     print("\n3. Process a file:")
-    print("""curl -X POST http://localhost:5001/api/process \\
+    print(
+        """curl -X POST http://localhost:5001/api/process \\
   -H "Content-Type: application/json" \\
   -d '{
-    "file_path": "/path/to/file.vcf",
+    "file_path": "/path/to/file.vc",
     "preferences": {"language": "en"}
-  }'""")
+  }'"""
+    )
 
     print("\n4. Check job status:")
     print("curl http://localhost:5001/api/status/JOB_ID")

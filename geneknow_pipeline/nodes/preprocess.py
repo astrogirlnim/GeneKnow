@@ -2,6 +2,7 @@
 Preprocessing node for alignment.
 Converts FASTQ to aligned BAM using BWA-MEM2 or BWA.
 """
+
 import os
 import subprocess
 import logging
@@ -65,7 +66,7 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
         output_dir = tempfile.gettempdir()
 
     # Generate output filename
-    base_name = os.path.basename(fastq_path).replace('.fastq.gz', '').replace('.fastq', '')
+    base_name = os.path.basename(fastq_path).replace(".fastq.gz", "").replace(".fastq", "")
     sam_path = os.path.join(output_dir, f"{base_name}_aligned.sam")
     bam_path = os.path.join(output_dir, f"{base_name}_aligned.bam")
     sorted_bam_path = os.path.join(output_dir, f"{base_name}_aligned_sorted.bam")
@@ -75,7 +76,7 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
         logger.info(f"Running {bwa_cmd} alignment...")
         align_cmd = [bwa_cmd, "mem", "-t", "4", REFERENCE_GENOME, fastq_path]
 
-        with open(sam_path, 'w') as sam_file:
+        with open(sam_path, "w") as sam_file:
             process = subprocess.Popen(align_cmd, stdout=sam_file, stderr=subprocess.PIPE)
             _, stderr = process.communicate()
 
@@ -97,10 +98,7 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
         # Get alignment statistics
         logger.info("Calculating alignment statistics...")
         stats_output = subprocess.run(
-            ["samtools", "flagstat", sorted_bam_path],
-            capture_output=True,
-            text=True,
-            check=True
+            ["samtools", "flagstat", sorted_bam_path], capture_output=True, text=True, check=True
         ).stdout
 
         # Parse statistics
@@ -123,7 +121,7 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
 def parse_samtools_flagstat(flagstat_output: str) -> Dict[str, Any]:
     """Parse samtools flagstat output into statistics dictionary."""
     stats = {}
-    lines = flagstat_output.strip().split('\n')
+    lines = flagstat_output.strip().split("\n")
 
     for line in lines:
         if "in total" in line:
@@ -131,19 +129,16 @@ def parse_samtools_flagstat(flagstat_output: str) -> Dict[str, Any]:
         elif "mapped (" in line and "primary mapped" not in line:
             stats["mapped_reads"] = int(line.split()[0])
             # Extract percentage
-            pct = line.split('(')[1].split('%')[0]
+            pct = line.split("(")[1].split("%")[0]
             stats["mapping_rate"] = float(pct) / 100
         elif "properly paired" in line:
             stats["properly_paired"] = int(line.split()[0])
 
     # Calculate additional stats
     stats["unmapped_reads"] = stats.get("total_reads", 0) - stats.get("mapped_reads", 0)
-    stats["reference_genome"] = os.path.basename(REFERENCE_GENOME).replace('.fa', '')
+    stats["reference_genome"] = os.path.basename(REFERENCE_GENOME).replace(".fa", "")
 
     return stats
-
-
-
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -167,26 +162,27 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         file_path = state["file_path"]
 
         # Check if input is MAF - pass to MAF parser
-        if file_type == "maf":
+        if file_type == "ma":
             logger.info("Input is MAF, passing to MAF parser")
             # Import and call MAF parser
             from . import maf_parser
+
             # MAF parser will handle its own state updates
             return maf_parser.process(state)
 
         # Check if input is VCF - load variants directly
-        if file_type == "vcf":
+        if file_type == "vc":
             logger.info("Input is VCF, loading variants directly")
             import vcf as pyvcf
 
             variants = []
-            with open(file_path, 'r') as vcf_file:
+            with open(file_path, "r") as vcf_file:
                 vcf_reader = pyvcf.Reader(vcf_file)
                 for record in vcf_reader:
                     variant_data = {
                         "chrom": record.CHROM,
                         "pos": record.POS,
-                        "ref": record.REF,
+                        "re": record.REF,
                         "alt": str(record.ALT[0]) if record.ALT else ".",
                         "qual": record.QUAL or 0,
                         "quality": record.QUAL or 0,  # Map to field name expected by QC filter
@@ -198,7 +194,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     # Add sample-specific data if available
                     if record.samples:
                         sample = record.samples[0]
-                        if hasattr(sample.data, 'DP'):
+                        if hasattr(sample.data, "DP"):
                             variant_data["depth"] = sample.data.DP
                         if hasattr(sample.data, 'AF'):
                             # Handle AF as list (take first value) or single value
@@ -214,10 +210,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Return only the fields this node updates
             # This is important for LangGraph parallel execution
-            return {
-                "raw_variants": variants,
-                "variant_count": len(variants)
-            }
+            return {"raw_variants": variants, "variant_count": len(variants)}
 
         # For FASTQ files, run alignment
         if file_type == "fastq":
@@ -234,7 +227,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             # Update metadata with alignment stats
             state["file_metadata"]["alignment_stats"] = alignment_stats
 
-            logger.info(f"Alignment complete: {alignment_stats['mapped_reads']}/{alignment_stats['total_reads']} reads mapped ({alignment_stats['mapping_rate']*100:.1f}%)")
+            logger.info(
+                f"Alignment complete: {alignment_stats['mapped_reads']}/{alignment_stats['total_reads']} reads mapped ({alignment_stats['mapping_rate']*100:.1f}%)"
+            )
 
         elif file_type == "bam":
             logger.info("BAM file detected, validating alignment")
@@ -247,10 +242,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Basic validation
             try:
-                result = subprocess.run(
-                    ["samtools", "quickcheck", file_path],
-                    capture_output=True
-                )
+                result = subprocess.run(["samtools", "quickcheck", file_path], capture_output=True)
                 if result.returncode != 0:
                     raise ValueError("BAM file validation failed")
             except subprocess.CalledProcessError:
@@ -265,25 +257,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Preprocessing complete. BAM path: {state['aligned_bam_path']}")
 
         # For FASTQ/BAM files, return only the fields we updated
-        return {
-            "aligned_bam_path": state["aligned_bam_path"],
-            "file_metadata": state["file_metadata"]
-        }
+        return {"aligned_bam_path": state["aligned_bam_path"], "file_metadata": state["file_metadata"]}
 
     except Exception as e:
         logger.error(f"Preprocessing failed: {str(e)}")
-        state["errors"].append({
-            "node": "preprocess",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
+        state["errors"].append({"node": "preprocess", "error": str(e), "timestamp": datetime.now()})
         state["pipeline_status"] = "failed"
 
         # Return error state
-        return {
-            "errors": state["errors"],
-            "pipeline_status": state["pipeline_status"]
-        }
+        return {"errors": state["errors"], "pipeline_status": state["pipeline_status"]}
 
     # This should never be reached
     return {}

@@ -13,6 +13,7 @@ from datetime import datetime
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(__file__))
 
+
 def run_command(cmd, description):
     """Run a command and capture its output."""
     print(f"\n{'='*60}")
@@ -23,13 +24,7 @@ def run_command(cmd, description):
 
     start_time = time.time()
     try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minute timeout
-        )
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)  # 5 minute timeout
 
         end_time = time.time()
         duration = end_time - start_time
@@ -56,6 +51,7 @@ def run_command(cmd, description):
     except Exception as e:
         print(f"\n❌ ERROR: {str(e)}")
         return False, 0, "", str(e)
+
 
 def check_prerequisites():
     """Check if all required components are available."""
@@ -85,7 +81,7 @@ def check_prerequisites():
 
     # Check if graph.py has pathway_burden
     try:
-        with open("graph.py", 'r') as f:
+        with open("graph.py", "r") as f:
             content = f.read()
             if "pathway_burden" in content:
                 print("✅ graph.py includes pathway_burden")
@@ -99,7 +95,7 @@ def check_prerequisites():
 
     # Check if __init__.py has pathway_burden
     try:
-        with open("nodes/__init__.py", 'r') as f:
+        with open("nodes/__init__.py", "r") as f:
             content = f.read()
             if "pathway_burden" in content:
                 print("✅ nodes/__init__.py includes pathway_burden")
@@ -115,6 +111,7 @@ def check_prerequisites():
     print(f"\n{'✅ All prerequisites met' if all_good else '❌ Some prerequisites missing'}")
 
     return all_good
+
 
 def run_all_tests():
     """Run all pathway burden tests."""
@@ -134,8 +131,7 @@ def run_all_tests():
 
     # Run comprehensive test
     success, duration, stdout, stderr = run_command(
-        "python test_pathway_burden.py",
-        "Comprehensive Pathway Burden Tests"
+        "python test_pathway_burden.py", "Comprehensive Pathway Burden Tests"
     )
     results["pathway_burden_tests"] = success
     total_duration += duration
@@ -143,8 +139,7 @@ def run_all_tests():
     # Quick Pipeline Test (if available)
     if os.path.exists("test_pipeline_comprehensive.py"):
         success, duration, stdout, stderr = run_command(
-            "python test_pipeline_comprehensive.py",
-            "Comprehensive Pipeline Test"
+            "python test_pipeline_comprehensive.py", "Comprehensive Pipeline Test"
         )
         results["pipeline_test"] = success
         total_duration += duration
@@ -152,15 +147,14 @@ def run_all_tests():
     # Import Test
     success, duration, stdout, stderr = run_command(
         "python -c \"from nodes.pathway_burden import process, CANCER_PATHWAYS; print('Import successful'); print(f'Pathways: {len(CANCER_PATHWAYS)}')\"",
-        "Import Test - Module Loading"
+        "Import Test - Module Loading",
     )
     results["import_test"] = success
     total_duration += duration
 
     # Syntax Check
     success, duration, stdout, stderr = run_command(
-        "python -m py_compile nodes/pathway_burden.py",
-        "Syntax Check - Code Compilation"
+        "python -m py_compile nodes/pathway_burden.py", "Syntax Check - Code Compilation"
     )
     results["syntax_check"] = success
     total_duration += duration
@@ -192,7 +186,7 @@ def run_all_tests():
 
     # Generate test report
     report_file = "pathway_burden_test_report.txt"
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write("Pathway Burden Model Test Report\n")
         f.write("=" * 40 + "\n")
         f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -209,6 +203,7 @@ def run_all_tests():
     print(f"\n📄 Test report saved to: {report_file}")
 
     return overall_success
+
 
 def quick_test():
     """Run a quick smoke test."""
@@ -231,7 +226,7 @@ def quick_test():
             "cadd_phred": 25,
             "clinical_significance": "Pathogenic",
             "allele_frequency": 0.001,
-            "consequence": "missense_variant"
+            "consequence": "missense_variant",
         }
 
         damage_result = is_damaging_variant(test_variant)
@@ -245,7 +240,9 @@ def quick_test():
 
         print("✅ Node processing: SUCCESS")
         print(f"  - Pathways analyzed: {len(result.get('pathway_burden_results', {}))}")
-        print(f"  - Overall burden score: {result.get('pathway_burden_summary', {}).get('overall_burden_score', 0):.3f}")
+        print(
+            f"  - Overall burden score: {result.get('pathway_burden_summary', {}).get('overall_burden_score', 0):.3f}"
+        )
 
         print("\n🎉 Quick test PASSED!")
         return True
@@ -253,8 +250,10 @@ def quick_test():
     except Exception as e:
         print(f"\n❌ Quick test FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Main function."""
@@ -274,6 +273,7 @@ def main():
         success = run_all_tests()
 
     sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     main()

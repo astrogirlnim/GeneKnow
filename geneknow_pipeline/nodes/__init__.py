@@ -24,6 +24,7 @@ try:
     from . import formatter
     from . import report_writer
     from . import maf_parser
+
     # New nodes for clinical view data
     from . import mutation_classifier
     from . import mutational_signatures
@@ -54,6 +55,7 @@ except ImportError:
     import formatter
     import report_writer
     import maf_parser
+
     # New nodes for clinical view data
     import mutation_classifier
     import mutational_signatures
@@ -93,5 +95,5 @@ __all__ = [
     "pathway_analyzer",
     "gene_interaction_network",
     "survival_analyzer",
-    "clinical_recommendations"
+    "clinical_recommendations",
 ]

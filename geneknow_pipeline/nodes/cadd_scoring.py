@@ -4,8 +4,9 @@ Computes CADD-like deleteriousness scores locally without any external dependenc
 This is the only CADD scoring implementation - designed for offline desktop applications.
 No database lookups or remote queries are performed.
 """
+
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from datetime import datetime
 import math
 
@@ -20,67 +21,81 @@ IMPACT_SCORES = {
     "start_lost": 32.0,
     "splice_acceptor_variant": 31.0,
     "splice_donor_variant": 30.0,
-
     # High impact
     "nonsense_mutation": 28.0,
     "nonstop_mutation": 27.0,
     "frameshift_deletion": 26.0,
     "frameshift_insertion": 25.0,
-
     # Moderate impact
     "missense_variant": 20.0,
     "missense_mutation": 20.0,
     "inframe_deletion": 18.0,
     "inframe_insertion": 17.0,
     "protein_altering_variant": 16.0,
-
     # Low impact
     "synonymous_variant": 5.0,
     "silent": 5.0,
     "stop_retained_variant": 8.0,
-
     # Regulatory
     "regulatory_region_variant": 12.0,
     "5_prime_utr_variant": 10.0,
     "3_prime_utr_variant": 9.0,
     "intron_variant": 6.0,
     "intron": 6.0,
-
     # Splice region
     "splice_region_variant": 15.0,
     "splice_region": 15.0,
-
     # Other
     "downstream_gene_variant": 3.0,
     "upstream_gene_variant": 3.0,
     "intergenic_variant": 1.0,
-
     # Default
-    "unknown": 10.0
+    "unknown": 10.0,
 }
 
 # Conservation-based adjustments
 GENE_IMPORTANCE_MULTIPLIERS = {
     # Tumor suppressors
-    "TP53": 1.5, "BRCA1": 1.5, "BRCA2": 1.5, "APC": 1.4, "PTEN": 1.4,
-    "RB1": 1.4, "VHL": 1.3, "MLH1": 1.3, "MSH2": 1.3, "MSH6": 1.3,
-
+    "TP53": 1.5,
+    "BRCA1": 1.5,
+    "BRCA2": 1.5,
+    "APC": 1.4,
+    "PTEN": 1.4,
+    "RB1": 1.4,
+    "VHL": 1.3,
+    "MLH1": 1.3,
+    "MSH2": 1.3,
+    "MSH6": 1.3,
     # Oncogenes
-    "KRAS": 1.4, "EGFR": 1.4, "BRAF": 1.4, "PIK3CA": 1.3, "MYC": 1.3,
-    "ALK": 1.3, "RET": 1.3, "MET": 1.3, "HER2": 1.3, "ERBB2": 1.3,
-
+    "KRAS": 1.4,
+    "EGFR": 1.4,
+    "BRAF": 1.4,
+    "PIK3CA": 1.3,
+    "MYC": 1.3,
+    "ALK": 1.3,
+    "RET": 1.3,
+    "MET": 1.3,
+    "HER2": 1.3,
+    "ERBB2": 1.3,
     # DNA repair genes
-    "ATM": 1.3, "ATR": 1.3, "CHEK1": 1.2, "CHEK2": 1.2, "RAD51": 1.2,
-
+    "ATM": 1.3,
+    "ATR": 1.3,
+    "CHEK1": 1.2,
+    "CHEK2": 1.2,
+    "RAD51": 1.2,
     # Cell cycle regulators
-    "CDKN2A": 1.3, "CDK4": 1.2, "CCND1": 1.2,
-
+    "CDKN2A": 1.3,
+    "CDK4": 1.2,
+    "CCND1": 1.2,
     # Chromatin modifiers
-    "ARID1A": 1.2, "SMARCA4": 1.2, "SMARCB1": 1.2, "EZH2": 1.2,
-
+    "ARID1A": 1.2,
+    "SMARCA4": 1.2,
+    "SMARCB1": 1.2,
+    "EZH2": 1.2,
     # Default for unknown genes
-    "default": 1.0
+    "default": 1.0,
 }
+
 
 # Allele frequency penalty (rare variants are more likely deleterious)
 def calculate_af_penalty(af: float) -> float:
@@ -89,11 +104,11 @@ def calculate_af_penalty(af: float) -> float:
         return 1.5
     elif af < 0.001:  # Very rare
         return 1.3
-    elif af < 0.01:   # Rare
+    elif af < 0.01:  # Rare
         return 1.1
-    elif af < 0.05:   # Low frequency
+    elif af < 0.05:  # Low frequency
         return 1.0
-    else:             # Common
+    else:  # Common
         return 0.8
 
 
@@ -118,15 +133,13 @@ def compute_cadd_score(variant: Dict[str, Any]) -> Dict[str, float]:
     variant_class = variant.get("variant_classification", "").lower()
 
     # Try multiple fields to find the consequence
-    base_score = IMPACT_SCORES.get(consequence,
-                 IMPACT_SCORES.get(impact,
-                 IMPACT_SCORES.get(variant_class,
-                 IMPACT_SCORES["unknown"])))
+    base_score = IMPACT_SCORES.get(
+        consequence, IMPACT_SCORES.get(impact, IMPACT_SCORES.get(variant_class, IMPACT_SCORES["unknown"]))
+    )
 
     # Apply gene importance multiplier
     gene = variant.get("gene", "")
-    gene_multiplier = GENE_IMPORTANCE_MULTIPLIERS.get(gene,
-                      GENE_IMPORTANCE_MULTIPLIERS["default"])
+    gene_multiplier = GENE_IMPORTANCE_MULTIPLIERS.get(gene, GENE_IMPORTANCE_MULTIPLIERS["default"])
 
     # Apply allele frequency penalty
     af = variant.get("allele_frequency", 0.5)
@@ -154,10 +167,7 @@ def compute_cadd_score(variant: Dict[str, Any]) -> Dict[str, float]:
     elif "benign" in clinical_sig or "likely_benign" in clinical_sig:
         phred_score = min(phred_score, 10.0)
 
-    return {
-        "raw": round(raw_score, 3),
-        "phred": round(phred_score, 1)
-    }
+    return {"raw": round(raw_score, 3), "phred": round(phred_score, 1)}
 
 
 def calculate_risk_weight(phred_score: float) -> float:
@@ -219,7 +229,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "mean_phred": 0.0,
             "max_phred": 0.0,
             "variants_gt20": 0,
-            "scoring_method": "offline_algorithm"
+            "scoring_method": "offline_algorithm",
         }
 
         phred_scores = []
@@ -252,7 +262,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Update existing risk weight if lower
             if "risk_weight" in enriched_variant:
-                logger.debug(f"Variant {variant_id}: existing risk_weight={enriched_variant['risk_weight']}, CADD risk_weight={risk_weight}")
+                logger.debug(
+                    f"Variant {variant_id}: existing risk_weight={enriched_variant['risk_weight']}, CADD risk_weight={risk_weight}"
+                )
                 enriched_variant["risk_weight"] = max(enriched_variant["risk_weight"], risk_weight)
             else:
                 enriched_variant["risk_weight"] = risk_weight
@@ -297,17 +309,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"  Mean PHRED score: {stats['mean_phred']:.1f}")
         logger.info(f"  Max PHRED score: {stats['max_phred']:.1f}")
         logger.info(f"  High-impact variants (>20): {stats['variants_gt20']}")
-        logger.info(f"  Scoring method: Offline algorithm (no internet required)")
+        logger.info("  Scoring method: Offline algorithm (no internet required)")
         logger.info("=" * 60)
 
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion
 
         # Return only the keys this node updates
-        return {
-            "cadd_enriched_variants": enriched_variants,
-            "cadd_stats": stats
-        }
+        return {"cadd_enriched_variants": enriched_variants, "cadd_stats": stats}
 
     except Exception as e:
         logger.error(f"CADD scoring failed: {str(e)}")
@@ -315,9 +324,5 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "cadd_enriched_variants": state["filtered_variants"],
             "cadd_stats": {"error": str(e)},
-            "errors": [{
-                "node": "cadd_scoring",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
+            "errors": [{"node": "cadd_scoring", "error": str(e), "timestamp": datetime.now()}],
         }

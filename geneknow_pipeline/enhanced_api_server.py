@@ -3,15 +3,13 @@ Enhanced API server for GeneKnow LangGraph pipeline.
 Designed for seamless integration with Tauri desktop app.
 Supports file processing, progress tracking, and real-time updates.
 """
+
 # Import standard library modules first
 import tempfile
 import uuid
-import subprocess
 import shutil
 import argparse
-import socket
 import json
-from pathlib import Path
 
 # Import third-party modules
 from flask import Flask, request, jsonify, send_file
@@ -21,13 +19,13 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import threading
 import os
-import time
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 
 # Optional numpy import
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -39,10 +37,11 @@ try:
 except ImportError:
     # Fall back to absolute import (when run directly)
     import sys
-    import os
+
     # Add the parent directory to the path
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from graph import run_pipeline
+
 
 # Custom JSON encoder to handle numpy types and datetime
 class NumpyEncoder(json.JSONEncoder):
@@ -58,27 +57,27 @@ class NumpyEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         # Handle pandas NaN/None
-        if obj is None or (hasattr(obj, '__str__') and str(obj) == 'nan'):
+        if obj is None or (hasattr(obj, "__str__") and str(obj) == "nan"):
             return None
         return super().default(obj)
+
 
 # Configure logging with proper formatting and unbuffered output
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()  # Explicitly use StreamHandler for console output
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],  # Explicitly use StreamHandler for console output
 )
 logger = logging.getLogger(__name__)
 
 # Force unbuffered output for Python (important when running as subprocess)
 import sys
+
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
-if hasattr(sys.stdout, 'reconfigure'):
+if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
-if hasattr(sys.stderr, 'reconfigure'):
+if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(line_buffering=True)
 
 # Print startup message immediately (before any imports that might affect output)
@@ -90,38 +89,43 @@ app = Flask(__name__)
 CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
 socketio = SocketIO(app, cors_allowed_origins="*")  # Let SocketIO choose the best available async mode
 
+
 # Configuration
 class Config:
     MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
-    ALLOWED_EXTENSIONS = {'.fastq', '.fq', '.fastq.gz', '.fq.gz', '.bam', '.vcf', '.vcf.gz', '.maf', '.maf.gz'}
-    UPLOAD_FOLDER = tempfile.mkdtemp(prefix='geneknow_uploads_')
-    RESULTS_FOLDER = tempfile.mkdtemp(prefix='geneknow_results_')
+    ALLOWED_EXTENSIONS = {".fastq", ".fq", ".fastq.gz", ".fq.gz", ".bam", ".vc", ".vcf.gz", ".ma", ".maf.gz"}
+    UPLOAD_FOLDER = tempfile.mkdtemp(prefix="geneknow_uploads_")
+    RESULTS_FOLDER = tempfile.mkdtemp(prefix="geneknow_results_")
     SESSION_TIMEOUT = 3600  # 1 hour
-    
+
+
 # In-memory storage for job tracking
 jobs: Dict[str, Any] = {}
 job_lock = threading.Lock()
+
 
 # Utility functions
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed."""
     ext = os.path.splitext(filename.lower())[1]
-    if filename.endswith('.gz'):
-        ext = os.path.splitext(os.path.splitext(filename.lower())[0])[1] + '.gz'
+    if filename.endswith(".gz"):
+        ext = os.path.splitext(os.path.splitext(filename.lower())[0])[1] + ".gz"
     return ext in Config.ALLOWED_EXTENSIONS
+
 
 def get_file_type(filename: str) -> str:
     """Determine file type from extension."""
     filename_lower = filename.lower()
-    if filename_lower.endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz')):
-        return 'fastq'
-    elif filename_lower.endswith('.bam'):
-        return 'bam'
-    elif filename_lower.endswith(('.vcf', '.vcf.gz')):
-        return 'vcf'
-    elif filename_lower.endswith(('.maf', '.maf.gz')):
-        return 'maf'
-    return 'unknown'
+    if filename_lower.endswith((".fastq", ".fq", ".fastq.gz", ".fq.gz")):
+        return "fastq"
+    elif filename_lower.endswith(".bam"):
+        return "bam"
+    elif filename_lower.endswith((".vc", ".vcf.gz")):
+        return "vc"
+    elif filename_lower.endswith((".ma", ".maf.gz")):
+        return "ma"
+    return "unknown"
+
 
 def convert_numpy_types(obj):
     """Convert numpy types and other non-JSON-serializable types to Python native types."""
@@ -136,57 +140,59 @@ def convert_numpy_types(obj):
             return bool(obj)
         elif isinstance(obj, np.str_):
             return str(obj)
-    
+
     # Handle datetime objects
     if isinstance(obj, datetime):
         return obj.isoformat()
-    
+
     # Handle pandas NaN/None and other special values
     if obj is None:
         return None
-    if hasattr(obj, '__str__') and str(obj) == 'nan':
+    if hasattr(obj, "__str__") and str(obj) == "nan":
         return None
-    
+
     # Handle dictionaries
     if isinstance(obj, dict):
         converted = {}
         for k, v in obj.items():
             # Skip non-serializable keys like ML model instances
-            if k in ['ml_fusion_model_instance', 'ml_fusion_feature_matrix']:
+            if k in ["ml_fusion_model_instance", "ml_fusion_feature_matrix"]:
                 continue  # Skip these ML objects that can't be serialized
             converted[k] = convert_numpy_types(v)
         return converted
-    
+
     # Handle lists and tuples
     elif isinstance(obj, (list, tuple)):
         return [convert_numpy_types(item) for item in obj]
-    
+
     # Handle sets
     elif isinstance(obj, set):
         return [convert_numpy_types(item) for item in obj]
-    
+
     # Return as-is for other types
     return obj
+
 
 def create_job(file_path: str, preferences: dict) -> str:
     """Create a new job entry."""
     job_id = str(uuid.uuid4())
     with job_lock:
         jobs[job_id] = {
-            'id': job_id,
-            'status': 'pending',
-            'file_path': file_path,
-            'file_type': get_file_type(file_path),
-            'preferences': preferences,
-            'created_at': datetime.now().isoformat(),
-            'started_at': None,
-            'completed_at': None,
-            'progress': 0,
-            'current_step': None,
-            'result': None,
-            'error': None
+            "id": job_id,
+            "status": "pending",
+            "file_path": file_path,
+            "file_type": get_file_type(file_path),
+            "preferences": preferences,
+            "created_at": datetime.now().isoformat(),
+            "started_at": None,
+            "completed_at": None,
+            "progress": 0,
+            "current_step": None,
+            "result": None,
+            "error": None,
         }
     return job_id
+
 
 def update_job(job_id: str, updates: Dict[str, Any]):
     """Update job information."""
@@ -196,14 +202,19 @@ def update_job(job_id: str, updates: Dict[str, Any]):
             updates = convert_numpy_types(updates)
             jobs[job_id].update(updates)
             # Track last activity
-            jobs[job_id]['last_activity'] = datetime.now().isoformat()
+            jobs[job_id]["last_activity"] = datetime.now().isoformat()
             # Emit update via WebSocket
-            socketio.emit('job_progress', {
-                'job_id': job_id,
-                'status': jobs[job_id]['status'],
-                'progress': jobs[job_id]['progress'],
-                'current_step': jobs[job_id]['current_step']
-            }, room=job_id)
+            socketio.emit(
+                "job_progress",
+                {
+                    "job_id": job_id,
+                    "status": jobs[job_id]["status"],
+                    "progress": jobs[job_id]["progress"],
+                    "current_step": jobs[job_id]["current_step"],
+                },
+                room=job_id,
+            )
+
 
 def cleanup_job_files(job_id: str):
     """Clean up temporary files associated with a job."""
@@ -211,23 +222,23 @@ def cleanup_job_files(job_id: str):
         job = jobs.get(job_id)
         if not job:
             return
-        
+
         # Clean up the uploaded file if it exists in temp directory
-        file_path = job.get('file_path')
+        file_path = job.get("file_path")
         if file_path and os.path.exists(file_path):
             # Only delete if it's in a temp directory
-            temp_markers = ['/tmp/', '/var/folders/', Config.UPLOAD_FOLDER, 'geneknow_temp']
+            temp_markers = ["/tmp/", "/var/folders/", Config.UPLOAD_FOLDER, "geneknow_temp"]
             if any(marker in file_path for marker in temp_markers):
                 try:
                     os.remove(file_path)
                     logger.info(f"Cleaned up temporary file: {file_path}")
                 except Exception as e:
                     logger.error(f"Failed to clean up file {file_path}: {e}")
-        
+
         # Clean up result files
-        result = job.get('result', {})
+        result = job.get("result", {})
         if isinstance(result, dict):
-            result_file = result.get('result_file')
+            result_file = result.get("result_file")
             if result_file and os.path.exists(result_file):
                 try:
                     os.remove(result_file)
@@ -235,409 +246,436 @@ def cleanup_job_files(job_id: str):
                 except Exception as e:
                     logger.error(f"Failed to clean up result file {result_file}: {e}")
 
+
 def process_file_async(job_id: str):
     """Process file in background thread."""
     try:
         job = jobs[job_id]
-        update_job(job_id, {
-            'status': 'processing',
-            'started_at': datetime.now().isoformat(),
-            'progress': 5
-        })
-        
+        update_job(job_id, {"status": "processing", "started_at": datetime.now().isoformat(), "progress": 5})
+
         # Create custom preferences with progress callback
-        preferences = job['preferences'].copy()
-        
+        preferences = job["preferences"].copy()
+
         def progress_callback(node: str, progress: int):
             """Callback to update progress during pipeline execution."""
-            update_job(job_id, {
-                'current_step': node,
-                'progress': min(progress, 95)  # Reserve last 5% for finalization
-            })
-        
-        preferences['progress_callback'] = progress_callback
-        
+            update_job(
+                job_id, {"current_step": node, "progress": min(progress, 95)}  # Reserve last 5% for finalization
+            )
+
+        preferences["progress_callback"] = progress_callback
+
         # Run the pipeline
-        result = run_pipeline(job['file_path'], preferences)
-        
+        result = run_pipeline(job["file_path"], preferences)
+
         # Process results
-        if result.get('pipeline_status') == 'completed':
+        if result.get("pipeline_status") == "completed":
             # Convert all numpy types in the result before saving
             converted_result = convert_numpy_types(result)
-            
+
             # Save results to file
             result_file = os.path.join(Config.RESULTS_FOLDER, f"{job_id}_result.json")
-            with open(result_file, 'w') as f:
+            with open(result_file, "w") as f:
                 json.dump(converted_result, f, indent=2)
-            
-            update_job(job_id, {
-                'status': 'completed',
-                'completed_at': datetime.now().isoformat(),
-                'progress': 100,
-                'result': convert_numpy_types({
-                    'variant_count': result.get('variant_count', 0),
-                    'risk_scores': result.get('risk_scores', {}),
-                    'report_sections': result.get('report_sections', {}),
-                    'processing_time_seconds': result.get('processing_time_seconds', 0),
-                    'cadd_stats': result.get('cadd_stats', {}),
-                    'tcga_matches': result.get('tcga_matches', {}),
-                    'tcga_cohort_sizes': result.get('tcga_cohort_sizes', {}),
-                    'prs_results': result.get('prs_results', {}),
-                    'prs_summary': result.get('prs_summary', {}),
-                    'structured_json': result.get('structured_json', {}),
-                    'ml_fusion_results': result.get('ml_fusion_results', {}),
-                    'ml_risk_assessment': result.get('ml_risk_assessment', {}),
-                    'completed_nodes': result.get('completed_nodes', []),
-                    'warnings': result.get('warnings', []),
-                    'enhanced_report_content': result.get('enhanced_report_content', {}),
-                    'report_generator_info': result.get('report_generator_info', {}),
-                    'result_file': result_file
-                })
-            })
-            cleanup_job_files(job_id) # Clean up files after successful completion
+
+            update_job(
+                job_id,
+                {
+                    "status": "completed",
+                    "completed_at": datetime.now().isoformat(),
+                    "progress": 100,
+                    "result": convert_numpy_types(
+                        {
+                            "variant_count": result.get("variant_count", 0),
+                            "risk_scores": result.get("risk_scores", {}),
+                            "report_sections": result.get("report_sections", {}),
+                            "processing_time_seconds": result.get("processing_time_seconds", 0),
+                            "cadd_stats": result.get("cadd_stats", {}),
+                            "tcga_matches": result.get("tcga_matches", {}),
+                            "tcga_cohort_sizes": result.get("tcga_cohort_sizes", {}),
+                            "prs_results": result.get("prs_results", {}),
+                            "prs_summary": result.get("prs_summary", {}),
+                            "structured_json": result.get("structured_json", {}),
+                            "ml_fusion_results": result.get("ml_fusion_results", {}),
+                            "ml_risk_assessment": result.get("ml_risk_assessment", {}),
+                            "completed_nodes": result.get("completed_nodes", []),
+                            "warnings": result.get("warnings", []),
+                            "enhanced_report_content": result.get("enhanced_report_content", {}),
+                            "report_generator_info": result.get("report_generator_info", {}),
+                            "result_file": result_file,
+                        }
+                    ),
+                },
+            )
+            cleanup_job_files(job_id)  # Clean up files after successful completion
         else:
-            raise Exception(result.get('errors', ['Unknown error'])[0])
-            
+            raise Exception(result.get("errors", ["Unknown error"])[0])
+
     except Exception as e:
         logger.error(f"Job {job_id} failed: {str(e)}")
-        update_job(job_id, {
-            'status': 'failed',
-            'completed_at': datetime.now().isoformat(),
-            'error': str(e)
-        })
-        cleanup_job_files(job_id) # Clean up files on failure
+        update_job(job_id, {"status": "failed", "completed_at": datetime.now().isoformat(), "error": str(e)})
+        cleanup_job_files(job_id)  # Clean up files on failure
+
 
 # API Routes
 
-@app.route('/api/health', methods=['GET'])
+
+@app.route("/api/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'service': 'GeneKnow Pipeline API',
-        'version': '2.0.0',
-        'jobs_active': len([j for j in jobs.values() if j['status'] == 'processing'])
-    })
+    return jsonify(
+        {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "service": "GeneKnow Pipeline API",
+            "version": "2.0.0",
+            "jobs_active": len([j for j in jobs.values() if j["status"] == "processing"]),
+        }
+    )
 
-@app.route('/api/pipeline-info', methods=['GET'])
+
+@app.route("/api/pipeline-info", methods=["GET"])
 def pipeline_info():
     """Get detailed pipeline capabilities."""
-    return jsonify({
-        'name': 'GeneKnow Genomic Risk Assessment',
-        'version': '2.0.0',
-        'capabilities': {
-            'supported_formats': list(Config.ALLOWED_EXTENSIONS),
-            'max_file_size_gb': Config.MAX_FILE_SIZE / (1024**3),
-            'pipeline_nodes': [
-                {'id': 'file_input', 'name': 'File Validation', 'description': 'Validates input file format'},
-                {'id': 'preprocess', 'name': 'Preprocessing', 'description': 'Aligns FASTQ or loads variants'},
-                {'id': 'variant_calling', 'name': 'Variant Calling', 'description': 'Identifies genetic variants'},
-                {'id': 'qc_filter', 'name': 'Quality Control', 'description': 'Filters low-quality variants'},
-                {'id': 'population_mapper', 'name': 'Population Mapping', 'description': 'Maps variants to population frequencies and ClinVar'},
-                {'id': 'tcga_mapper', 'name': 'TCGA Frequency Analysis', 'description': 'Calculates tumor enrichment scores from TCGA database'},
-                {'id': 'cadd_scoring', 'name': 'CADD Scoring', 'description': 'Enriches variants with deleteriousness scores'},
-                {'id': 'feature_vector_builder', 'name': 'Feature Vector Builder', 'description': 'Combines static model outputs'},
-                {'id': 'risk_model', 'name': 'Risk Assessment', 'description': 'ML-based risk prediction with multi-signal fusion'},
-                {'id': 'formatter', 'name': 'Result Formatting', 'description': 'Formats results for frontend'},
-                {'id': 'report_writer', 'name': 'Report Generation', 'description': 'Creates final report'}
-            ],
-            'cancer_types': ['breast', 'colon', 'lung', 'prostate', 'blood'],
-            'output_formats': ['json', 'pdf', 'html'],
-            'languages': ['en', 'es', 'hi']
+    return jsonify(
+        {
+            "name": "GeneKnow Genomic Risk Assessment",
+            "version": "2.0.0",
+            "capabilities": {
+                "supported_formats": list(Config.ALLOWED_EXTENSIONS),
+                "max_file_size_gb": Config.MAX_FILE_SIZE / (1024**3),
+                "pipeline_nodes": [
+                    {"id": "file_input", "name": "File Validation", "description": "Validates input file format"},
+                    {"id": "preprocess", "name": "Preprocessing", "description": "Aligns FASTQ or loads variants"},
+                    {"id": "variant_calling", "name": "Variant Calling", "description": "Identifies genetic variants"},
+                    {"id": "qc_filter", "name": "Quality Control", "description": "Filters low-quality variants"},
+                    {
+                        "id": "population_mapper",
+                        "name": "Population Mapping",
+                        "description": "Maps variants to population frequencies and ClinVar",
+                    },
+                    {
+                        "id": "tcga_mapper",
+                        "name": "TCGA Frequency Analysis",
+                        "description": "Calculates tumor enrichment scores from TCGA database",
+                    },
+                    {
+                        "id": "cadd_scoring",
+                        "name": "CADD Scoring",
+                        "description": "Enriches variants with deleteriousness scores",
+                    },
+                    {
+                        "id": "feature_vector_builder",
+                        "name": "Feature Vector Builder",
+                        "description": "Combines static model outputs",
+                    },
+                    {
+                        "id": "risk_model",
+                        "name": "Risk Assessment",
+                        "description": "ML-based risk prediction with multi-signal fusion",
+                    },
+                    {"id": "formatter", "name": "Result Formatting", "description": "Formats results for frontend"},
+                    {"id": "report_writer", "name": "Report Generation", "description": "Creates final report"},
+                ],
+                "cancer_types": ["breast", "colon", "lung", "prostate", "blood"],
+                "output_formats": ["json", "pd", "html"],
+                "languages": ["en", "es", "hi"],
+            },
         }
-    })
+    )
 
-@app.route('/api/supported-formats', methods=['GET'])
+
+@app.route("/api/supported-formats", methods=["GET"])
 def supported_formats():
     """Get supported file formats with descriptions."""
-    return jsonify({
-        'formats': [
-            {
-                'extension': '.fastq',
-                'description': 'Raw sequencing reads',
-                'compressed': ['.fastq.gz'],
-                'paired_end_support': True
-            },
-            {
-                'extension': '.bam',
-                'description': 'Aligned sequencing reads',
-                'compressed': [],
-                'paired_end_support': False
-            },
-            {
-                'extension': '.vcf',
-                'description': 'Variant Call Format',
-                'compressed': ['.vcf.gz'],
-                'paired_end_support': False
-            },
-            {
-                'extension': '.maf',
-                'description': 'Mutation Annotation Format',
-                'compressed': ['.maf.gz'],
-                'paired_end_support': False
-            }
-        ]
-    })
+    return jsonify(
+        {
+            "formats": [
+                {
+                    "extension": ".fastq",
+                    "description": "Raw sequencing reads",
+                    "compressed": [".fastq.gz"],
+                    "paired_end_support": True,
+                },
+                {
+                    "extension": ".bam",
+                    "description": "Aligned sequencing reads",
+                    "compressed": [],
+                    "paired_end_support": False,
+                },
+                {
+                    "extension": ".vc",
+                    "description": "Variant Call Format",
+                    "compressed": [".vcf.gz"],
+                    "paired_end_support": False,
+                },
+                {
+                    "extension": ".ma",
+                    "description": "Mutation Annotation Format",
+                    "compressed": [".maf.gz"],
+                    "paired_end_support": False,
+                },
+            ]
+        }
+    )
 
-@app.route('/api/upload', methods=['POST'])
+
+@app.route("/api/upload", methods=["POST"])
 def upload_file():
     """Upload a file for processing."""
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        if not file.filename or file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
+        if "file" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files["file"]
+        if not file.filename or file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
         if not allowed_file(file.filename):
-            return jsonify({
-                'error': f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
-            }), 400
-        
+            return jsonify({"error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'}), 400
+
         # Save uploaded file
         filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_filename = f"{timestamp}_{filename}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
-        
+
         # Check file size
         file_size = os.path.getsize(file_path)
         if file_size > Config.MAX_FILE_SIZE:
             os.remove(file_path)
-            return jsonify({
-                'error': f'File too large. Maximum size: {Config.MAX_FILE_SIZE / (1024**3):.1f}GB'
-            }), 413
-        
+            return jsonify({"error": f"File too large. Maximum size: {Config.MAX_FILE_SIZE / (1024**3):.1f}GB"}), 413
+
         # Get preferences from form data or JSON
         preferences = {}
-        preferences_str = request.form.get('preferences')
+        preferences_str = request.form.get("preferences")
         if preferences_str:
             preferences = json.loads(preferences_str)
-        
+
         # Create job
         job_id = create_job(file_path, preferences)
-        
+
         # Start processing in background
         thread = threading.Thread(target=process_file_async, args=(job_id,))
         thread.start()
-        
-        return jsonify({
-            'job_id': job_id,
-            'filename': filename,
-            'file_size': file_size,
-            'file_type': get_file_type(filename),
-            'status': 'uploaded',
-            'message': 'File uploaded successfully. Processing started.'
-        }), 202
-        
+
+        return (
+            jsonify(
+                {
+                    "job_id": job_id,
+                    "filename": filename,
+                    "file_size": file_size,
+                    "file_type": get_file_type(filename),
+                    "status": "uploaded",
+                    "message": "File uploaded successfully. Processing started.",
+                }
+            ),
+            202,
+        )
+
     except Exception as e:
         logger.error(f"Upload error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/process', methods=['POST'])
+
+@app.route("/api/process", methods=["POST"])
 def process_file():
     """Process a file that's already on the system (for Tauri integration)."""
     try:
         data = request.get_json()
-        if not data or 'file_path' not in data:
-            return jsonify({'error': 'file_path is required'}), 400
-        
-        file_path = data['file_path']
-        
+        if not data or "file_path" not in data:
+            return jsonify({"error": "file_path is required"}), 400
+
+        file_path = data["file_path"]
+
         # Validate file exists
         if not os.path.exists(file_path):
-            return jsonify({'error': f'File not found: {file_path}'}), 404
-        
+            return jsonify({"error": f"File not found: {file_path}"}), 404
+
         # Validate file type
         if not allowed_file(file_path):
-            return jsonify({
-                'error': f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
-            }), 400
-        
+            return jsonify({"error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'}), 400
+
         # Get preferences
-        preferences = data.get('preferences', {})
-        
+        preferences = data.get("preferences", {})
+
         # Create job
         job_id = create_job(file_path, preferences)
-        
+
         # Start processing
         thread = threading.Thread(target=process_file_async, args=(job_id,))
         thread.start()
-        
-        return jsonify({
-            'job_id': job_id,
-            'status': 'processing',
-            'message': 'Processing started'
-        }), 202
-        
+
+        return jsonify({"job_id": job_id, "status": "processing", "message": "Processing started"}), 202
+
     except Exception as e:
         logger.error(f"Process error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/status/<job_id>', methods=['GET'])
+
+@app.route("/api/status/<job_id>", methods=["GET"])
 def job_status(job_id: str):
     """Get job status."""
     with job_lock:
         if job_id not in jobs:
-            return jsonify({'error': 'Job not found'}), 404
-        
+            return jsonify({"error": "Job not found"}), 404
+
         job = jobs[job_id].copy()
         # Remove internal data
-        job.pop('file_path', None)
-        
+        job.pop("file_path", None)
+
         # Ensure all numpy types are converted before returning
         converted_job = convert_numpy_types(job)
         return jsonify(converted_job)
 
-@app.route('/api/results/<job_id>', methods=['GET'])
+
+@app.route("/api/results/<job_id>", methods=["GET"])
 def job_results(job_id: str):
     """Get job results."""
     with job_lock:
         if job_id not in jobs:
-            return jsonify({'error': 'Job not found'}), 404
-        
+            return jsonify({"error": "Job not found"}), 404
+
         job = jobs[job_id]
-        if job['status'] != 'completed':
-            return jsonify({
-                'error': f'Job not completed. Current status: {job["status"]}'
-            }), 400
-        
+        if job["status"] != "completed":
+            return jsonify({"error": f'Job not completed. Current status: {job["status"]}'}), 400
+
         # Read full results from file
-        result_file = job['result'].get('result_file')
+        result_file = job["result"].get("result_file")
         if result_file and os.path.exists(result_file):
-            with open(result_file, 'r') as f:
+            with open(result_file, "r") as f:
                 full_results = json.load(f)
             # Ensure all numpy types are converted before returning
             converted_results = convert_numpy_types(full_results)
             return jsonify(converted_results)
         else:
             # Fallback to job result, ensure it's converted
-            converted_result = convert_numpy_types(job['result'])
+            converted_result = convert_numpy_types(job["result"])
             return jsonify(converted_result)
 
-@app.route('/api/results/<job_id>/download', methods=['GET'])
+
+@app.route("/api/results/<job_id>/download", methods=["GET"])
 def download_results(job_id: str):
     """Download results as JSON file."""
     with job_lock:
         if job_id not in jobs:
-            return jsonify({'error': 'Job not found'}), 404
-        
+            return jsonify({"error": "Job not found"}), 404
+
         job = jobs[job_id]
-        if job['status'] != 'completed':
-            return jsonify({
-                'error': f'Job not completed. Current status: {job["status"]}'
-            }), 400
-        
-        result_file = job['result'].get('result_file')
+        if job["status"] != "completed":
+            return jsonify({"error": f'Job not completed. Current status: {job["status"]}'}), 400
+
+        result_file = job["result"].get("result_file")
         if result_file and os.path.exists(result_file):
             return send_file(
                 result_file,
                 as_attachment=True,
-                download_name=f'geneknow_results_{job_id}.json',
-                mimetype='application/json'
+                download_name=f"geneknow_results_{job_id}.json",
+                mimetype="application/json",
             )
         else:
-            return jsonify({'error': 'Results file not found'}), 404
+            return jsonify({"error": "Results file not found"}), 404
 
-@app.route('/api/cancel/<job_id>', methods=['POST'])
+
+@app.route("/api/cancel/<job_id>", methods=["POST"])
 def cancel_job(job_id: str):
     """Cancel a running job."""
     with job_lock:
         if job_id not in jobs:
-            return jsonify({'error': 'Job not found'}), 404
-        
-        job = jobs[job_id]
-        if job['status'] not in ['pending', 'processing']:
-            return jsonify({
-                'error': f'Cannot cancel job with status: {job["status"]}'
-            }), 400
-        
-        # Update job status
-        job['status'] = 'cancelled'
-        job['completed_at'] = datetime.now().isoformat()
-        
-        return jsonify({
-            'message': 'Job cancelled',
-            'job_id': job_id
-        })
+            return jsonify({"error": "Job not found"}), 404
 
-@app.route('/api/jobs', methods=['GET'])
+        job = jobs[job_id]
+        if job["status"] not in ["pending", "processing"]:
+            return jsonify({"error": f'Cannot cancel job with status: {job["status"]}'}), 400
+
+        # Update job status
+        job["status"] = "cancelled"
+        job["completed_at"] = datetime.now().isoformat()
+
+        return jsonify({"message": "Job cancelled", "job_id": job_id})
+
+
+@app.route("/api/jobs", methods=["GET"])
 def list_jobs():
     """List all jobs with optional filtering."""
-    status_filter = request.args.get('status')
-    limit = int(request.args.get('limit', 50))
-    
+    status_filter = request.args.get("status")
+    limit = int(request.args.get("limit", 50))
+
     with job_lock:
         job_list = list(jobs.values())
-        
+
         # Filter by status if provided
         if status_filter:
-            job_list = [j for j in job_list if j['status'] == status_filter]
-        
+            job_list = [j for j in job_list if j["status"] == status_filter]
+
         # Sort by created_at descending
-        job_list.sort(key=lambda x: x['created_at'], reverse=True)
-        
+        job_list.sort(key=lambda x: x["created_at"], reverse=True)
+
         # Apply limit
         job_list = job_list[:limit]
-        
+
         # Remove sensitive data
         for job in job_list:
-            job.pop('file_path', None)
-            if job['result']:
-                job['result'].pop('result_file', None)
-        
-        return jsonify({
-            'total': len(job_list),
-            'jobs': job_list
-        })
+            job.pop("file_path", None)
+            if job["result"]:
+                job["result"].pop("result_file", None)
+
+        return jsonify({"total": len(job_list), "jobs": job_list})
+
 
 # WebSocket events for real-time updates
 
-@socketio.on('connect')
+
+@socketio.on("connect")
 def handle_connect():
     """Handle client connection."""
-    logger.info(f"Client connected")
-    emit('connected', {'message': 'Connected to GeneKnow Pipeline'})
+    logger.info("Client connected")
+    emit("connected", {"message": "Connected to GeneKnow Pipeline"})
 
-@socketio.on('disconnect')
+
+@socketio.on("disconnect")
 def handle_disconnect():
     """Handle client disconnection."""
-    logger.info(f"Client disconnected")
+    logger.info("Client disconnected")
 
-@socketio.on('subscribe_job')
+
+@socketio.on("subscribe_job")
 def handle_job_subscription(data):
     """Subscribe to job updates."""
-    job_id = data.get('job_id')
+    job_id = data.get("job_id")
     if job_id and job_id in jobs:
         # Join room for this job
         join_room(job_id)
-        emit('subscribed', {'job_id': job_id})
-        
+        emit("subscribed", {"job_id": job_id})
+
         # Send current status
         with job_lock:
             job = jobs[job_id]
-            emit('job_progress', {
-                'job_id': job_id,
-                'status': job['status'],
-                'progress': job['progress'],
-                'current_step': job['current_step']
-            })
+            emit(
+                "job_progress",
+                {
+                    "job_id": job_id,
+                    "status": job["status"],
+                    "progress": job["progress"],
+                    "current_step": job["current_step"],
+                },
+            )
     else:
-        emit('error', {'message': 'Invalid job ID'})
+        emit("error", {"message": "Invalid job ID"})
 
-@socketio.on('unsubscribe_job')
+
+@socketio.on("unsubscribe_job")
 def handle_job_unsubscription(data):
     """Unsubscribe from job updates."""
-    job_id = data.get('job_id')
+    job_id = data.get("job_id")
     if job_id:
         leave_room(job_id)
-        emit('unsubscribed', {'job_id': job_id})
+        emit("unsubscribed", {"job_id": job_id})
+
 
 # Cleanup temporary files on shutdown
 import atexit
+
 
 def cleanup_temp_files():
     """Clean up temporary directories."""
@@ -648,54 +686,57 @@ def cleanup_temp_files():
     except Exception as e:
         logger.error(f"Error cleaning up temp files: {e}")
 
+
 atexit.register(cleanup_temp_files)
+
 
 def find_available_port(start_port=5000, max_attempts=100):
     """Find an available port starting from start_port"""
     import socket
-    
+
     for port in range(start_port, start_port + max_attempts):
         try:
             # Try to bind to the port
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', port))
+                s.bind(("", port))
                 s.close()
                 return port
         except OSError:
             # Port is in use, try the next one
             continue
-    
+
     raise RuntimeError(f"No available ports found in range {start_port}-{start_port + max_attempts}")
 
+
 # Main entry point
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='GeneKnow Pipeline API Server')
-    parser.add_argument('--port', type=int, help='Port to run the server on')
-    parser.add_argument('--debug', action='store_true', help='Run in debug mode')
-    
+    parser = argparse.ArgumentParser(description="GeneKnow Pipeline API Server")
+    parser.add_argument("--port", type=int, help="Port to run the server on")
+    parser.add_argument("--debug", action="store_true", help="Run in debug mode")
+
     args = parser.parse_args()
-    
+
     # Find available port
     port = args.port if args.port else find_available_port()
     actual_port = port
-    
+
     # Always announce the port to stdout for Rust backend to capture
     print(f"API_SERVER_PORT:{actual_port}", flush=True)
-    
+
     # Start the server (Flask development server - for Gunicorn, this block won't run)
     print(f"Starting GeneKnow Pipeline API Server on port {actual_port}", flush=True)
     logger.info(f"Starting GeneKnow Pipeline API Server on port {actual_port}")
-    debug = args.debug or os.environ.get('DEBUG', '').lower() == 'true'
-    
+    debug = args.debug or os.environ.get("DEBUG", "").lower() == "true"
+
     # Print configuration for debugging
     print(f"Debug mode: {debug}", flush=True)
-    
+
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag
-    socketio.run(app, host='0.0.0.0', port=actual_port, debug=debug, allow_unsafe_werkzeug=True)
-    
-    print(f"Server stopped", flush=True)
+    socketio.run(app, host="0.0.0.0", port=actual_port, debug=debug, allow_unsafe_werkzeug=True)
+
+    print("Server stopped", flush=True)
 
 # Expose app for Gunicorn
-application = app  # Some WSGI servers look for 'application' 
+application = app  # Some WSGI servers look for 'application'

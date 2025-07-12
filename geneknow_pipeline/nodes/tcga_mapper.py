@@ -8,19 +8,20 @@ import os
 import sqlite3
 import logging
 from datetime import datetime
-from typing import Dict, Any, List
-from collections import defaultdict
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 # Path to unified database (contains both population_variants and tcga_variants tables)
 TCGA_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "population_variants.db")
 
+
 def normalize_chromosome(chrom: str) -> str:
     """Normalize chromosome format (remove 'chr' prefix)."""
-    if chrom.startswith('chr'):
+    if chrom.startswith("chr"):
         return chrom[3:]
     return chrom
+
 
 def query_tcga_database(chrom: str, pos: int, ref: str, alt: str, cancer_type: str) -> Dict[str, Any]:
     """Query TCGA database for tumor frequency data."""
@@ -36,12 +37,15 @@ def query_tcga_database(chrom: str, pos: int, ref: str, alt: str, cancer_type: s
         norm_chrom = normalize_chromosome(chrom)
 
         # Query for exact match
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT gene, tumor_frequency, normal_frequency, enrichment_score,
                sample_count, total_samples
         FROM tcga_variants
         WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ? AND cancer_type = ?
-        """, (norm_chrom, pos, ref, alt, cancer_type))
+        """,
+            (norm_chrom, pos, ref, alt, cancer_type),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -53,11 +57,12 @@ def query_tcga_database(chrom: str, pos: int, ref: str, alt: str, cancer_type: s
                 "sample_count": row[4],
                 "total_samples": row[5],
                 "found_in_tcga": True,
-                "lookup_method": "exact_match"
+                "lookup_method": "exact_match",
             }
 
         # If no exact match, try gene-based lookup
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT gene, AVG(tumor_frequency) as avg_tumor_freq,
                AVG(normal_frequency) as avg_normal_freq,
                AVG(enrichment_score) as avg_enrichment,
@@ -72,7 +77,9 @@ def query_tcga_database(chrom: str, pos: int, ref: str, alt: str, cancer_type: s
         AND cancer_type = ?
         GROUP BY gene
         LIMIT 1
-        """, (norm_chrom, pos, cancer_type, cancer_type))
+        """,
+            (norm_chrom, pos, cancer_type, cancer_type),
+        )
 
         row = cursor.fetchone()
         if row and row[0]:  # Make sure gene is not None
@@ -84,17 +91,15 @@ def query_tcga_database(chrom: str, pos: int, ref: str, alt: str, cancer_type: s
                 "sample_count": row[4] or 0,
                 "total_samples": row[5] or 1000,
                 "found_in_tcga": True,
-                "lookup_method": "gene_vicinity_match"
+                "lookup_method": "gene_vicinity_match",
             }
 
         # No match found
-        return {
-            "found_in_tcga": False,
-            "lookup_method": "not_found"
-        }
+        return {"found_in_tcga": False, "lookup_method": "not_found"}
 
     finally:
         conn.close()
+
 
 def calculate_enrichment_score(variant: Dict[str, Any], tcga_data: Dict[str, Any]) -> float:
     """Calculate variant enrichment score for cancer risk."""
@@ -113,6 +118,7 @@ def calculate_enrichment_score(variant: Dict[str, Any], tcga_data: Dict[str, Any
 
     # Cap enrichment at reasonable levels
     return min(enrichment, 1000.0)
+
 
 def assess_cancer_relevance(variant: Dict[str, Any], tcga_matches: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     """Assess overall cancer relevance based on TCGA matches across cancer types."""
@@ -135,7 +141,7 @@ def assess_cancer_relevance(variant: Dict[str, Any], tcga_matches: Dict[str, Dic
                     "frequency": match_data.get("tumor_frequency", 0.0),
                     "enrichment": enrichment,
                     "sample_count": match_data.get("sample_count", 0),
-                    "total_samples": match_data.get("total_samples", 1000)
+                    "total_samples": match_data.get("total_samples", 1000),
                 }
 
     # Calculate overall cancer relevance score
@@ -151,8 +157,9 @@ def assess_cancer_relevance(variant: Dict[str, Any], tcga_matches: Dict[str, Dic
         "average_enrichment": avg_enrichment,
         "max_enrichment": max_enrichment,
         "cancer_types_matched": cancer_types_matched,
-        "best_match": best_cancer_match
+        "best_match": best_cancer_match,
     }
+
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -173,13 +180,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         tcga_matches = {cancer_type: {} for cancer_type in cancer_types}
 
         # Cohort sizes from your documentation
-        tcga_cohort_sizes = {
-            "breast": 1084,
-            "colon": 461,
-            "lung": 585,
-            "prostate": 498,
-            "blood": 200
-        }
+        tcga_cohort_sizes = {"breast": 1084, "colon": 461, "lung": 585, "prostate": 498, "blood": 200}
 
         # Process each variant
         enriched_variants = []
@@ -193,11 +194,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             for cancer_type in cancer_types:
                 tcga_data = query_tcga_database(
-                    variant["chrom"],
-                    variant["pos"],
-                    variant["ref"],
-                    variant["alt"],
-                    cancer_type
+                    variant["chrom"], variant["pos"], variant["re"], variant["alt"], cancer_type
                 )
 
                 if tcga_data.get("found_in_tcga"):
@@ -211,16 +208,20 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
                     # Log significant enrichments
                     if enrichment > 10.0:  # More than 10x enriched
-                        logger.warning(f"🔥 High enrichment: {variant_id} in {cancer_type} "
-                                     f"(tumor: {tcga_data['tumor_frequency']:.1%}, "
-                                     f"normal: {tcga_data['normal_frequency']:.1%}, "
-                                     f"enrichment: {enrichment:.1f}x)")
-                        enriched_variants.append({
-                            "variant_id": variant_id,
-                            "gene": variant.get("gene"),
-                            "cancer_type": cancer_type,
-                            "enrichment": enrichment
-                        })
+                        logger.warning(
+                            f"🔥 High enrichment: {variant_id} in {cancer_type} "
+                            f"(tumor: {tcga_data['tumor_frequency']:.1%}, "
+                            f"normal: {tcga_data['normal_frequency']:.1%}, "
+                            f"enrichment: {enrichment:.1f}x)"
+                        )
+                        enriched_variants.append(
+                            {
+                                "variant_id": variant_id,
+                                "gene": variant.get("gene"),
+                                "cancer_type": cancer_type,
+                                "enrichment": enrichment,
+                            }
+                        )
 
             # Assess overall cancer relevance for this variant
             if variant_tcga_matches:
@@ -229,8 +230,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
                 # Note: We don't modify the original variant in place to avoid concurrent modification issues
                 # The merge node will handle combining TCGA and CADD results
-                logger.info(f"🔬 TCGA match: {variant_id} - relevance: {cancer_assessment['cancer_relevance_score']:.2f}, "
-                           f"matched in {cancer_assessment['cancer_types_matched']} cancer types")
+                logger.info(
+                    f"🔬 TCGA match: {variant_id} - relevance: {cancer_assessment['cancer_relevance_score']:.2f}, "
+                    f"matched in {cancer_assessment['cancer_types_matched']} cancer types"
+                )
 
         # Create summary statistics (will be handled by merge function)
         tcga_summary = {
@@ -239,14 +242,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "match_rate": total_variants_matched / len(filtered_variants) if filtered_variants else 0,
             "cancer_types_analyzed": cancer_types,
             "cohort_sizes": tcga_cohort_sizes,
-            "highly_enriched_variants": len([v for v in enriched_variants if v["enrichment"] > 50])
+            "highly_enriched_variants": len([v for v in enriched_variants if v["enrichment"] > 50]),
         }
 
         # Log summary
-        logger.info(f"TCGA mapping complete:")
+        logger.info("TCGA mapping complete:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
         logger.info(f"  Variants matched: {total_variants_matched}")
-        logger.info(f"  Match rate: {total_variants_matched/len(filtered_variants)*100:.1f}%" if filtered_variants else "0%")
+        logger.info(
+            f"  Match rate: {total_variants_matched/len(filtered_variants)*100:.1f}%" if filtered_variants else "0%"
+        )
         logger.info(f"  Highly enriched variants: {len([v for v in enriched_variants if v['enrichment'] > 50])}")
 
         # Note: Don't append to completed_nodes to avoid concurrent updates
@@ -257,15 +262,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "tcga_matches": tcga_matches,
             "tcga_cohort_sizes": tcga_cohort_sizes,
             "tcga_enriched_variants": enriched_variants,
-            "tcga_summary": tcga_summary
+            "tcga_summary": tcga_summary,
         }
 
     except Exception as e:
         logger.error(f"TCGA mapping failed: {str(e)}")
-        return {
-            "errors": [{
-                "node": "tcga_mapper",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
-        }
+        return {"errors": [{"node": "tcga_mapper", "error": str(e), "timestamp": datetime.now()}]}
