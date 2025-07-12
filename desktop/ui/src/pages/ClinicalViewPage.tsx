@@ -4,6 +4,38 @@ import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
+// Type definitions for genomic data structures
+interface StructuralVariant {
+  type: string;
+  chromosome: string;
+  start: number;
+  end: number;
+  size: number;
+  genes_affected: string[];
+  clinical_significance: string;
+  functional_impact: string;
+  transformation: {
+    original: string;
+    mutated: string;
+    effect: string;
+  };
+}
+
+interface CopyNumberVariant {
+  gene: string;
+  chromosome: string;
+  copy_number: number;
+  normal_copy_number: number;
+  fold_change: number;
+  clinical_significance: string;
+  cancer_relevance: string;
+  transformation: {
+    original: string;
+    mutated: string;
+    effect: string;
+  };
+}
+
 // Type definitions for external libraries
 interface JsPDFConstructor {
   new (orientation?: string, unit?: string, format?: string): JsPDFInstance;
@@ -39,427 +71,9 @@ declare global {
   const jsPDF: JsPDFConstructor | undefined;
 }
 
-// Mock SHAP validation for testing - different statuses for different risk levels
-const getMockSHAPValidation = (riskLevel: string) => {
-  switch (riskLevel) {
-    case 'high':
-      return {
-        status: 'FLAG_FOR_REVIEW' as const,
-        reasons: [
-          'The AI predicted HIGH RISK (82%) but this appears to be based on indirect factors (Gene/Pathway Burden Score, TCGA Tumor Enrichment) rather than known disease-causing mutations. The prediction may be less reliable.'
-        ],
-        top_contributors: [
-          {
-            feature: 'gene_burden_score',
-            display_name: 'Gene/Pathway Burden Score',
-            shap_value: 0.35,
-            abs_contribution: 0.35,
-            direction: 'increases' as const
-          },
-          {
-            feature: 'tcga_enrichment',
-            display_name: 'TCGA Tumor Enrichment',
-            shap_value: 0.28,
-            abs_contribution: 0.28,
-            direction: 'increases' as const
-          },
-          {
-            feature: 'prs_score',
-            display_name: 'Polygenic Risk Score',
-            shap_value: 0.19,
-            abs_contribution: 0.19,
-            direction: 'increases' as const
-          }
-        ],
-        feature_importance: {
-          'gene_burden_score': 0.35,
-          'tcga_enrichment': 0.28,
-          'prs_score': 0.19,
-          'clinvar_pathogenic': 0.18,
-          'clinvar_benign': -0.05,
-          'cadd_score': 0.15
-        } as Record<string, number>,
-        details: {
-          status: 'FLAG_FOR_REVIEW' as const,
-          risk_score: 0.82,
-          top_contributors: [],
-          validation_reasons: [],
-          rule_results: {},
-          shap_values: [],
-          feature_names: [],
-          model_type: 'GradientBoostingRegressor'
-        }
-      };
-    
-    case 'medium':
-      return {
-        status: 'ERROR' as const,
-        reasons: [
-          'A technical error occurred during the confidence check validation. The model\'s prediction appears sound, but automated validation could not be completed.'
-        ],
-        top_contributors: [
-          {
-            feature: 'mismatch_repair_genes',
-            display_name: 'Mismatch Repair Genes',
-            shap_value: 0.42,
-            abs_contribution: 0.42,
-            direction: 'increases' as const
-          },
-          {
-            feature: 'prs_score',
-            display_name: 'Polygenic Risk Score',
-            shap_value: 0.31,
-            abs_contribution: 0.31,
-            direction: 'increases' as const
-          }
-        ],
-        feature_importance: {
-          'mismatch_repair_genes': 0.42,
-          'prs_score': 0.31,
-          'clinvar_pathogenic': 0.27
-        } as Record<string, number>,
-        details: {
-          status: 'ERROR' as const,
-          risk_score: 0.45,
-          top_contributors: [],
-          validation_reasons: [],
-          rule_results: {},
-          shap_values: [],
-          feature_names: [],
-          model_type: 'GradientBoostingRegressor'
-        }
-      };
-    
-    case 'low':
-      return {
-        status: 'PASS' as const,
-        reasons: [
-          'The AI\'s risk prediction is well-supported by the genomic evidence. The model\'s reasoning aligns with established clinical guidelines.'
-        ],
-        top_contributors: [
-          {
-            feature: 'clinvar_pathogenic',
-            display_name: 'Known Pathogenic Variants',
-            shap_value: 0.25,
-            abs_contribution: 0.25,
-            direction: 'increases' as const
-          },
-          {
-            feature: 'tumor_suppressor_genes',
-            display_name: 'Tumor Suppressor Genes',
-            shap_value: 0.22,
-            abs_contribution: 0.22,
-            direction: 'increases' as const
-          },
-          {
-            feature: 'protective_variants',
-            display_name: 'Protective Variants',
-            shap_value: -0.18,
-            abs_contribution: 0.18,
-            direction: 'decreases' as const
-          }
-        ],
-        feature_importance: {
-          'clinvar_pathogenic': 0.25,
-          'tumor_suppressor_genes': 0.22,
-          'protective_variants': -0.18,
-          'prs_score': 0.15
-        } as Record<string, number>,
-        details: {
-          status: 'PASS' as const,
-          risk_score: 0.15,
-          top_contributors: [],
-          validation_reasons: [],
-          rule_results: {},
-          shap_values: [],
-          feature_names: [],
-          model_type: 'GradientBoostingRegressor'
-        }
-      };
-    
-    case 'skipped':
-      return {
-        status: 'SKIPPED' as const,
-        reasons: [
-          'The confidence check was not applicable to this analysis type. The genetic variants identified do not fall within the model\'s validation scope.'
-        ],
-        top_contributors: [],
-        feature_importance: {} as Record<string, number>,
-        details: {
-          status: 'SKIPPED' as const,
-          risk_score: 0.0,
-          top_contributors: [],
-          validation_reasons: [],
-          rule_results: {},
-          shap_values: [],
-          feature_names: [],
-          model_type: 'GradientBoostingRegressor'
-        }
-      };
-    
-    default:
-      return null;
-  }
-};
+// Mock SHAP validation function removed - only real pipeline data is used
 
-// Enhanced genomic data structure with transformations and mutations
-const mockGenomicData = {
-  "summary": {
-    "total_variants_found": 12,
-    "variants_passed_qc": 11,
-    "high_risk_findings_count": 6,
-    "processing_time_seconds": 0.703601,
-    "mutation_types": {
-      "snv": 5,
-      "indel": 4,
-      "cnv": 2,
-      "structural": 1
-    }
-  },
-  "risk_findings": [
-    {
-      "cancer_type": "breast",
-      "risk_percentage": 100.0,
-      "risk_level": "high",
-      "affected_genes": ["BRCA1", "TP53"],
-      "recommendation": "Enhanced breast cancer screening recommended",
-      "mutation_burden": "high",
-      "pathway_disruption": ["DNA_REPAIR", "CELL_CYCLE"]
-    },
-    {
-      "cancer_type": "colon",
-      "risk_percentage": 100.0,
-      "risk_level": "high",
-      "affected_genes": ["APC", "TP53"],
-      "recommendation": "Enhanced colon cancer screening recommended",
-      "mutation_burden": "high",
-      "pathway_disruption": ["WNT_SIGNALING", "APOPTOSIS"]
-    },
-    {
-      "cancer_type": "lung",
-      "risk_percentage": 97.7,
-      "risk_level": "high",
-      "affected_genes": ["TP53"],
-      "recommendation": "Enhanced lung cancer screening recommended",
-      "mutation_burden": "medium",
-      "pathway_disruption": ["CELL_CYCLE", "APOPTOSIS"]
-    },
-    {
-      "cancer_type": "prostate",
-      "risk_percentage": 81.4,
-      "risk_level": "high",
-      "affected_genes": ["TP53"],
-      "recommendation": "Enhanced prostate cancer screening recommended",
-      "mutation_burden": "medium",
-      "pathway_disruption": ["CELL_CYCLE"]
-    },
-    {
-      "cancer_type": "blood",
-      "risk_percentage": 1.7,
-      "risk_level": "low",
-      "affected_genes": [],
-      "recommendation": "Standard screening guidelines apply",
-      "mutation_burden": "low",
-      "pathway_disruption": []
-    }
-  ],
-  "variant_table": [
-    {
-      "gene": "BRCA1",
-      "variant_id": "chr17:41223094:A>G",
-      "consequence": "missense_variant",
-      "mutation_type": "snv",
-      "quality_score": 99.0,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "breast", "frequency": 6.3 },
-      "protein_change": "p.Ile1756Val",
-      "functional_impact": "Loss of function",
-      "transformation": {
-        "original": "ATT",
-        "mutated": "GTT",
-        "amino_acid_change": "Ile→Val",
-        "effect": "Structural disruption of DNA binding domain"
-      }
-    },
-    {
-      "gene": "BRCA1",
-      "variant_id": "chr17:41244936:GATC>G",
-      "consequence": "frameshift_variant",
-      "mutation_type": "indel",
-      "quality_score": 87.5,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "breast", "frequency": 4.5 },
-      "protein_change": "p.Met1563fs",
-      "functional_impact": "Premature termination",
-      "transformation": {
-        "original": "GATC",
-        "mutated": "G",
-        "amino_acid_change": "Met→frameshift",
-        "effect": "Truncated protein, complete loss of C-terminal domain"
-      }
-    },
-    {
-      "gene": "TP53",
-      "variant_id": "chr17:7577121:G>A",
-      "consequence": "missense_variant",
-      "mutation_type": "snv",
-      "quality_score": 92.1,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "lung", "frequency": 65.4 },
-      "protein_change": "p.Arg248Gln",
-      "functional_impact": "Loss of DNA binding",
-      "transformation": {
-        "original": "CGG",
-        "mutated": "CAG",
-        "amino_acid_change": "Arg→Gln",
-        "effect": "Disrupted p53-DNA interaction, loss of tumor suppressor function"
-      }
-    },
-    {
-      "gene": "APC",
-      "variant_id": "chr5:112173917:C>T",
-      "consequence": "nonsense_variant",
-      "mutation_type": "snv",
-      "quality_score": 65.2,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "colon", "frequency": 81.2 },
-      "protein_change": "p.Arg1450*",
-      "functional_impact": "Premature termination",
-      "transformation": {
-        "original": "CGA",
-        "mutated": "TGA",
-        "amino_acid_change": "Arg→Stop",
-        "effect": "Truncated APC protein, loss of β-catenin regulation"
-      }
-    },
-    {
-      "gene": "MLH1",
-      "variant_id": "chr3:37048590:CAGTC>C",
-      "consequence": "frameshift_variant",
-      "mutation_type": "indel",
-      "quality_score": 78.9,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "colon", "frequency": 23.1 },
-      "protein_change": "p.Ser456fs",
-      "functional_impact": "Loss of mismatch repair",
-      "transformation": {
-        "original": "CAGTC",
-        "mutated": "C",
-        "amino_acid_change": "Ser→frameshift",
-        "effect": "Disrupted DNA mismatch repair pathway"
-      }
-    },
-    {
-      "gene": "KRAS",
-      "variant_id": "chr12:25245350:G>A",
-      "consequence": "missense_variant",
-      "mutation_type": "snv",
-      "quality_score": 88.3,
-      "clinical_significance": "pathogenic",
-      "tcga_best_match": { "cancer_type": "pancreatic", "frequency": 90.2 },
-      "protein_change": "p.Gly12Asp",
-      "functional_impact": "Constitutive activation",
-      "transformation": {
-        "original": "GGT",
-        "mutated": "GAT",
-        "amino_acid_change": "Gly→Asp",
-        "effect": "Oncogenic activation, permanent 'on' signal"
-      }
-    }
-  ],
-  "structural_variants": [
-    {
-      "type": "deletion",
-      "chromosome": "chr17",
-      "start": 41196312,
-      "end": 41277500,
-      "size": 81188,
-      "genes_affected": ["BRCA1"],
-      "clinical_significance": "pathogenic",
-      "functional_impact": "Complete gene deletion",
-      "transformation": {
-        "original": "Full BRCA1 gene",
-        "mutated": "Deleted",
-        "effect": "Complete loss of BRCA1 function"
-      }
-    },
-    {
-      "type": "duplication",
-      "chromosome": "chr17",
-      "start": 7571720,
-      "end": 7590868,
-      "size": 19148,
-      "genes_affected": ["TP53"],
-      "clinical_significance": "uncertain_significance",
-      "functional_impact": "Gene dosage imbalance",
-      "transformation": {
-        "original": "2 copies TP53",
-        "mutated": "3 copies TP53",
-        "effect": "Potential dosage-sensitive effects"
-      }
-    }
-  ],
-  "copy_number_variants": [
-    {
-      "gene": "ERBB2",
-      "chromosome": "chr17",
-      "copy_number": 6,
-      "normal_copy_number": 2,
-      "fold_change": 3.0,
-      "clinical_significance": "pathogenic",
-      "cancer_relevance": "HER2 amplification in breast cancer",
-      "transformation": {
-        "original": "Normal expression",
-        "mutated": "3x overexpression",
-        "effect": "Oncogenic driver, targeted therapy candidate"
-      }
-    },
-    {
-      "gene": "CDKN2A",
-      "chromosome": "chr9",
-      "copy_number": 0,
-      "normal_copy_number": 2,
-      "fold_change": 0.0,
-      "clinical_significance": "pathogenic",
-      "cancer_relevance": "Tumor suppressor loss",
-      "transformation": {
-        "original": "Normal cell cycle control",
-        "mutated": "Complete loss",
-        "effect": "Loss of cell cycle checkpoint control"
-      }
-    }
-  ],
-  "mutation_signatures": [
-    {
-      "signature": "SBS1",
-      "name": "Spontaneous deamination",
-      "contribution": 0.35,
-      "description": "C>T transitions at CpG sites",
-      "etiology": "Aging-related mutations"
-    },
-    {
-      "signature": "SBS3",
-      "name": "BRCA1/BRCA2 deficiency",
-      "contribution": 0.28,
-      "description": "Homologous recombination deficiency",
-      "etiology": "Inherited DNA repair defects"
-    },
-    {
-      "signature": "SBS4",
-      "name": "Tobacco smoking",
-      "contribution": 0.22,
-      "description": "C>A mutations from tobacco carcinogens",
-      "etiology": "Environmental mutagen exposure"
-    },
-    {
-      "signature": "SBS13",
-      "name": "APOBEC cytidine deaminase",
-      "contribution": 0.15,
-      "description": "Cytidine deaminase activity",
-      "etiology": "Immune system enzymatic activity"
-    }
-  ]
-};
+// Mock genomic data removed - only real pipeline data is used
 
 // Helper function to get color based on risk level
 const getRiskColor = (riskLevel: string) => {
@@ -1413,17 +1027,42 @@ const ClinicalViewPage: React.FC = () => {
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
   
-  // Extract risk level from URL parameter
-  const riskLevel = searchParams.get('risk') || 'high';
-  
-  // Get the appropriate SHAP validation data
-  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
-  
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
   const fileName = location.state?.fileName as string | undefined;
   
-  // Get mock data for UI elements
+  // Extract risk level from URL parameter - use same default as dashboard for consistency
+  const riskLevel = searchParams.get('risk') || 'low';
+  
+  // Use real SHAP validation from pipeline results only
+  const getConfidenceCheckValidation = () => {
+    // Use real SHAP validation if available
+    if (pipelineResults?.structured_json?.shap_validation) {
+      return pipelineResults.structured_json.shap_validation;
+    }
+    
+    // If no pipeline results or no SHAP validation, return SKIPPED status
+    return {
+      status: 'SKIPPED' as const,
+      reasons: ['No pipeline results available'],
+      top_contributors: [],
+      feature_importance: {},
+      details: {
+        status: 'SKIPPED' as const,
+        risk_score: 0.0,
+        top_contributors: [],
+        validation_reasons: ['No pipeline results available'],
+        rule_results: {},
+        shap_values: [],
+        feature_names: [],
+        model_type: 'None'
+      }
+    };
+  };
+  
+  const confidenceCheckValidation = getConfidenceCheckValidation();
+  
+  // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
   // Function to convert pipeline results to the format expected by the clinical view
@@ -1433,16 +1072,16 @@ const ClinicalViewPage: React.FC = () => {
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const riskFindings = riskScores.map(([cancer_type, risk_percentage]) => ({
         cancer_type,
-        risk_percentage,
-        risk_level: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        risk_percentage: risk_percentage as number,
+        risk_level: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
         affected_genes: pipelineResults.variants?.map(v => v.gene) || [],
-        recommendation: risk_percentage > 50 
+        recommendation: (risk_percentage as number) > 50 
           ? `Enhanced ${cancer_type} cancer screening recommended`
-          : risk_percentage > 20
+          : (risk_percentage as number) > 20
           ? `Moderate ${cancer_type} cancer screening recommended`
           : 'Standard screening guidelines apply',
-        mutation_burden: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
-        pathway_disruption: risk_percentage > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
+        mutation_burden: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
+        pathway_disruption: (risk_percentage as number) > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
       }));
 
       const variantTable = pipelineResults.variants?.map((variant, index) => ({
@@ -1478,8 +1117,8 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: riskFindings,
         variant_table: variantTable,
-        structural_variants: [],
-        copy_number_variants: [],
+        structural_variants: [] as StructuralVariant[],
+        copy_number_variants: [] as CopyNumberVariant[],
         mutation_signatures: [
           {
             signature: "SBS1",
@@ -1498,8 +1137,26 @@ const ClinicalViewPage: React.FC = () => {
         ]
       };
     } else {
-      // Fall back to mock data for demo purposes
-      return mockGenomicData;
+      // No pipeline results - return empty state
+      return {
+        summary: {
+          total_variants_found: 0,
+          variants_passed_qc: 0,
+          high_risk_findings_count: 0,
+          processing_time_seconds: 0,
+          mutation_types: {
+            snv: 0,
+            indel: 0,
+            cnv: 0,
+            structural: 0
+          }
+        },
+        risk_findings: [],
+        variant_table: [],
+        structural_variants: [] as StructuralVariant[],
+        copy_number_variants: [] as CopyNumberVariant[],
+        mutation_signatures: []
+      };
     }
   };
 
@@ -3259,7 +2916,7 @@ const ClinicalViewPage: React.FC = () => {
                 
                 {/* Confidence Check */}
                 <ConfidenceCheck 
-                  validation={mockSHAPValidation} 
+                  validation={confidenceCheckValidation} 
                   isDetailed={true} 
                 />
               </div>

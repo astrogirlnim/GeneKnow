@@ -189,6 +189,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "ref": record.REF,
                         "alt": str(record.ALT[0]) if record.ALT else ".",
                         "qual": record.QUAL or 0,
+                        "quality": record.QUAL or 0,  # Map to field name expected by QC filter
                         "filter": record.FILTER or [],
                         "info": dict(record.INFO) if record.INFO else {},
                         "variant_id": f"{record.CHROM}:{record.POS}:{record.REF}>{record.ALT[0] if record.ALT else '.'}",
@@ -200,7 +201,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         if hasattr(sample.data, 'DP'):
                             variant_data["depth"] = sample.data.DP
                         if hasattr(sample.data, 'AF'):
-                            variant_data["allele_freq"] = sample.data.AF
+                            # Handle AF as list (take first value) or single value
+                            af_value = sample.data.AF
+                            if isinstance(af_value, list):
+                                variant_data["allele_freq"] = af_value[0] if af_value else 0.0
+                            else:
+                                variant_data["allele_freq"] = af_value or 0.0
 
                     variants.append(variant_data)
 

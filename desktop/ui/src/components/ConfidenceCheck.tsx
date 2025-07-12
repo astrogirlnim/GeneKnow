@@ -84,7 +84,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
               background: '#6B7280'
             }}></div>
           ),
-          title: 'Confidence Check: Not Applicable',
+          title: 'Confidence Check: Not Available',
           bgColor: '#F9FAFB',
           borderColor: '#E5E7EB',
           textColor: '#4B5563',
@@ -167,10 +167,16 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         );
       case 'SKIPPED':
         return (
-          <p style={{ fontSize: '0.875rem', color: config.textColor }}>
-            The confidence check was not designed for this type of analysis. No additional review 
-            is required from a validation standpoint.
-          </p>
+          <div>
+            <p style={{ fontSize: '0.875rem', color: config.textColor, marginBottom: '0.75rem' }}>
+              {validation.reasons.length > 0 ? validation.reasons[0] : 
+                'The AI model validation could not be performed due to technical limitations.'}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: config.textColor, fontStyle: 'italic' }}>
+              Your genetic analysis is still complete and accurate. The risk scores are based on 
+              established clinical databases and statistical models.
+            </p>
+          </div>
         );
       default:
         return (
