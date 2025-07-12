@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import AnalysisDisclaimer from '../components/AnalysisDisclaimer';
+import ModelPerformanceTab from '../components/ModelPerformanceTab';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -575,7 +576,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'performance' | 'reports'>('dashboard');
   const [markdownContent, setMarkdownContent] = React.useState<string>('');
   const [loadingMarkdown] = React.useState<boolean>(false);
   
@@ -1038,6 +1039,32 @@ ${content}`;
               Analysis Dashboard
             </button>
             <button
+              onClick={() => setActiveTab('performance')}
+              style={{
+                padding: '1rem 1.5rem',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'performance' ? '2px solid #2563EB' : '2px solid transparent',
+                color: activeTab === 'performance' ? '#2563EB' : '#6B7280',
+                fontWeight: activeTab === 'performance' ? '600' : '500',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'all 200ms ease'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== 'performance') {
+                  e.currentTarget.style.color = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== 'performance') {
+                  e.currentTarget.style.color = '#6B7280';
+                }
+              }}
+            >
+              Model Performance
+            </button>
+            <button
               onClick={() => setActiveTab('reports')}
               style={{
                 padding: '1rem 1.5rem',
@@ -1245,6 +1272,11 @@ ${content}`;
                 ))}
               </div>
             </>
+          )}
+
+          {/* Model Performance Tab Content */}
+          {activeTab === 'performance' && (
+            <ModelPerformanceTab pipelineResults={pipelineResults} />
           )}
 
           {/* Reports Tab Content */}
