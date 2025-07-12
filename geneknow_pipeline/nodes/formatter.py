@@ -327,7 +327,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "shap_validation": shap_validation,
             "metrics": state.get("metrics", {}),
             "metrics_summary": state.get("metrics_summary", {}),
-            "warnings": state["warnings"],
+            "warnings": state.get("warnings", []),
             # Add all new analysis results
             "mutation_signatures": state.get("mutational_signatures", []),
             "structural_variants": state.get("structural_variants", []),
