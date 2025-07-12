@@ -35,7 +35,6 @@ try:
         structural_variant_detector,
         cnv_detector,
         pathway_analyzer,
-        gene_interaction_network,
         survival_analyzer,
         clinical_recommendations,
     )
@@ -68,7 +67,6 @@ except ImportError:
         structural_variant_detector,
         cnv_detector,
         pathway_analyzer,
-        gene_interaction_network,
         survival_analyzer,
         clinical_recommendations,
     )
@@ -528,7 +526,6 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("structural_variant_detector", structural_variant_detector.process)
     workflow.add_node("cnv_detector", cnv_detector.process)
     # REMOVED: pathway_analyzer node - using pathway_burden results directly
-    workflow.add_node("gene_interaction_network", gene_interaction_network.process)
     workflow.add_node("survival_analyzer", survival_analyzer.process)
     workflow.add_node("clinical_recommendations", clinical_recommendations.process)
 
@@ -593,8 +590,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("cnv_detector", "merge_variant_analysis")
 
     # Continue with pathway analysis after merging
-    workflow.add_edge("merge_variant_analysis", "gene_interaction_network")
-    workflow.add_edge("gene_interaction_network", "survival_analyzer")
+    workflow.add_edge("merge_variant_analysis", "survival_analyzer")
     workflow.add_edge("survival_analyzer", "clinical_recommendations")
 
     # Clinical recommendations -> metrics calculator -> formatter -> report writer
@@ -675,8 +671,6 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "copy_number_variants": None,  # CNV detector
         "cnv_summary": None,
         "pathway_analysis": None,  # Pathway analyzer
-        "gene_interactions": None,  # Gene interaction network
-        "gene_network_analysis": None,
         "survival_analysis": None,  # Survival analyzer
         "clinical_recommendations": None,  # Clinical recommendations
         "genomic_alterations": None,  # From merge_variant_analysis

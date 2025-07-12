@@ -333,8 +333,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "structural_variants": state.get("structural_variants", []),
             "copy_number_variants": state.get("copy_number_variants", []),
             "pathway_analysis": final_pathway_analysis,
-            "gene_interactions": state.get("gene_interactions", []),
-            "gene_network_analysis": state.get("gene_network_analysis"),
             "survival_analysis": state.get("survival_analysis"),
             "clinical_recommendations": state.get("clinical_recommendations"),
         }

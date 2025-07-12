@@ -3555,7 +3555,7 @@ const ClinicalViewPage: React.FC = () => {
                     
                     {/* Pathway Disruption Analysis */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                      {pathwayData.disrupted_pathways.map((pathway, index) => (
+                      {pathwayData.disrupted_pathways.map((pathway: any, index: number) => (
                         <div key={index} style={{
                           background: '#FFFFFF',
                           padding: '1.5rem',
@@ -3601,7 +3601,7 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {pathway.mutations.map((mutation, mutIndex) => (
+                            {pathway.mutations.map((mutation: any, mutIndex: number) => (
                               <div key={mutIndex} style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -3686,7 +3686,7 @@ const ClinicalViewPage: React.FC = () => {
                                 {riskFinding.risk_percentage}%
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                {pathways.map((pathway, pathIndex) => (
+                                {(pathways as string[]).map((pathway: string, pathIndex: number) => (
                                   <div key={pathIndex} style={{
                                     background: '#FFFFFF',
                                     padding: '0.25rem 0.5rem',
@@ -3706,32 +3706,7 @@ const ClinicalViewPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Gene Interaction Network - show placeholder */}
-                  <div style={{
-                    background: '#FFFFFF',
-                    padding: '2rem',
-                    borderRadius: '0.75rem',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                    border: '1px solid #E5E7EB'
-                  }}>
-                    <h3 style={{ 
-                      color: '#111827',
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      marginBottom: '1rem'
-                    }}>
-                      Gene Interaction Network
-                    </h3>
-                    
-                    <div style={{ 
-                      padding: '2rem',
-                      textAlign: 'center',
-                      color: '#6B7280',
-                      fontSize: '0.875rem'
-                    }}>
-                      Gene interaction network visualization will be available in a future update.
-                    </div>
-                  </div>
+
                 </>
               );
             })()}
