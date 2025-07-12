@@ -225,16 +225,29 @@ img {
 }
 
 /* Large diagrams should fit well with text */
-img[src*="langgraph_pipeline"] {
-    max-width: 95%;
-    max-height: 18cm;
+img[src*="langgraph_pipeline"], img[src*="mermaid-07-12"] {
+    max-width: 90%;
+    max-height: 22cm;
     margin: 4pt auto 8pt auto;
     page-break-before: auto;
     page-break-after: avoid;
+    object-fit: contain;
+}
+
+/* Specific styling for the tall mermaid diagram */
+img[src*="mermaid-07-12"] {
+    max-width: 80%;
+    max-height: 26cm;
+    margin: 6pt auto 10pt auto;
+    page-break-before: auto;
+    page-break-after: avoid;
+    object-fit: contain;
+    width: auto;
+    height: auto;
 }
 
 /* Keep diagram caption with following content */
-img[src*="langgraph_pipeline"] + p {
+img[src*="langgraph_pipeline"] + p, img[src*="mermaid-07-12"] + p {
     page-break-after: avoid;
     margin-bottom: 8pt;
 }
