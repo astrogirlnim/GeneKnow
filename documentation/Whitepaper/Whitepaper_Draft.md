@@ -2,7 +2,7 @@
 
 **Abstract**
 
-Geneknow is a free, open-source desktop application for privacy-preserving genomic risk assessment. Built on Tauri with React frontend and Python ML backend, it processes genomic data entirely locally using validated ML models achieving AUC 0.76 for cancer risk prediction. The platform leverages established databases (TCGA, COSMIC, gnomAD, ClinVar) and methods (PRS, CADD, pathway burden analysis) while ensuring complete data privacy through local-only processing. With rigorous data leakage prevention and clinical safety emphasis, Geneknow provides tunable sensitivity (60-90%) for various clinical applications. This whitepaper details the scientific foundation, architecture, and clinical applications of Geneknow for investigative genomic analysis.
+Geneknow is a free, open-source desktop application for privacy-preserving genomic risk assessment. Built on Tauri with React frontend and Python ML backend, it processes genomic data entirely locally using validated ML models achieving AUC 0.76 for cancer risk prediction. The platform leverages established databases (TCGA [14], COSMIC [15], gnomAD [16], ClinVar [17]) and methods (PRS [18], CADD [6], pathway burden analysis [20]) while ensuring complete data privacy through local-only processing. With rigorous data leakage prevention and clinical safety emphasis, Geneknow provides tunable sensitivity (60-90%) for various clinical applications. This whitepaper details the scientific foundation, architecture, and clinical applications of Geneknow for investigative genomic analysis.
 
 > **Disclaimer:** Geneknow is a statistical tool for investigative and research purposes only. It does not provide medical or clinical advice, diagnosis, or treatment recommendations. All results must be interpreted by qualified professionals and are not intended for clinical decision-making.
 
@@ -25,9 +25,9 @@ The platform analyzes multiple genomic data formats (FASTQ, BAM, VCF, MAF) throu
 ## 2. Introduction & Motivation
 
 **Narrative Overview:**
-The landscape of genomic medicine faces a critical paradox: as our ability to sequence and analyze genetic data expands exponentially, so do the privacy risks associated with centralized processing. Recent breaches affecting millions of genetic profiles at major genomic companies underscore the vulnerability of cloud-based solutions [1], while regulatory frameworks like GDPR and HIPAA demand increasingly stringent data protection measures [2].
+The landscape of genomic medicine faces a critical paradox: as our ability to sequence and analyze genetic data expands exponentially, so do the privacy risks associated with centralized processing. Recent breaches affecting millions of genetic profiles at major genomic companies underscore the vulnerability of cloud-based solutions, while regulatory frameworks like GDPR and HIPAA demand increasingly stringent data protection measures [1]. 
 
-Traditional genomic analysis platforms require uploading sensitive patient data to external servers, creating multiple points of vulnerability: data interception during transmission, server breaches, insider threats, and long-term storage risks [3]. Studies have documented over 279 healthcare data breaches affecting 45 million individuals in 2021 alone, with genomic data being particularly vulnerable due to its immutable nature and familial implications [4]. Moreover, many clinical settings—particularly in rural areas or developing nations—lack reliable high-speed internet, making cloud-dependent tools impractical.
+Traditional genomic analysis platforms require uploading sensitive patient data to external servers, creating multiple points of vulnerability: data interception during transmission, server breaches, insider threats, and long-term storage risks [2]. Studies have documented extensive healthcare cybersecurity threats, with genomic data being particularly vulnerable due to its immutable nature and familial implications [3]. Moreover, many clinical settings—particularly in rural areas or developing nations—lack reliable high-speed internet, making cloud-dependent tools impractical.
 
 Geneknow addresses these challenges through a fundamentally different approach: complete local processing. By performing all analysis on the user's device, we eliminate transmission risks while enabling genomic analysis in any setting, from urban hospitals to remote clinics. This architecture particularly benefits researchers working with sensitive populations or in regions with strict data sovereignty requirements.
 
@@ -86,7 +86,7 @@ Our ML approach addresses the complexity of genomic risk prediction through ense
 - **Linear Model:** Provides interpretable baseline, fastest inference
 
 **Data Leakage Prevention:**
-To prevent data leakage, we implemented strict separation between training features and target variables [5]:
+To prevent data leakage, we implemented strict separation between training features and target variables [4]:
 - **Clinical labels excluded:** ClinVar pathogenic/benign classifications removed from training features
 - **Temporal validation:** Models trained on older data, validated on newer samples
 - **Cross-validation strategy:** 5-fold stratified CV with temporal splits to prevent future information leakage
@@ -102,7 +102,7 @@ To prevent data leakage, we implemented strict separation between training featu
 - **Balanced Accuracy:** 0.57 - Accounts for class imbalance in genomic datasets
 
 **Clinical Safety Emphasis:**
-Following established practices in clinical genomics ML [6], we prioritize sensitivity tuning to minimize false negatives:
+Following established practices in clinical genomics ML [5], we prioritize sensitivity tuning to minimize false negatives:
 - **Screening Mode:** 90% sensitivity, 45% specificity - Minimizes missed pathogenic variants
 - **Research Mode:** 35% sensitivity, 92% specificity - Prioritizes high-confidence predictions
 - **Balanced Mode:** 68% sensitivity, 71% specificity - General clinical application
@@ -120,11 +120,11 @@ Each static model in our pipeline represents established genomic analysis method
 
 | Model | Purpose | Implementation | Literature Validation |
 |-------|---------|----------------|----------------------|
-| **PRS (Polygenic Risk Scores)** | Aggregates GWAS-derived SNP effects for heritable cancer risk | Population-specific scoring with confidence intervals | Validated for breast/prostate cancer risk stratification with 10-20% heritability capture [PMC7612058] |
-| **ClinVar Annotation** | Maps variants to clinical interpretations | Local SQLite database with 500K+ variant annotations | Clinical concordance >90% with expert curation [PMC9956064] |
-| **CADD Scoring** | Predicts variant deleteriousness | Offline PHRED-scaled scoring with cancer gene multipliers | AUC 0.80 for pathogenic variant identification [PMC6323892] |
-| **TCGA Mapping** | Compares to tumor mutation frequencies | Analysis of 10,000+ TCGA samples across 33 cancer types | Mutation signatures correlate with clinical outcomes [PMC10560291] |
-| **Pathway Burden** | Quantifies biological pathway disruption | Gene set enrichment with weighted burden scoring | Rare variant burden improves familial cancer risk assessment [PMC10126695] |
+| **PRS (Polygenic Risk Scores)** | Aggregates GWAS-derived SNP effects for heritable cancer risk | Population-specific scoring with confidence intervals | Validated for breast/prostate cancer risk stratification with 10-20% heritability capture [18] |
+| **ClinVar Annotation** | Maps variants to clinical interpretations | Local SQLite database with 500K+ variant annotations | Clinical concordance >90% with expert curation [17] |
+| **CADD Scoring** | Predicts variant deleteriousness | Offline PHRED-scaled scoring with cancer gene multipliers | AUC 0.80 for pathogenic variant identification [6] |
+| **TCGA Mapping** | Compares to tumor mutation frequencies | Analysis of 10,000+ TCGA samples across 33 cancer types | Mutation signatures correlate with clinical outcomes [14] |
+| **Pathway Burden** | Quantifies biological pathway disruption | Gene set enrichment with weighted burden scoring | Rare variant burden improves familial cancer risk assessment [20] |
 
 ### 4.4 Plugin System Architecture
 
@@ -141,9 +141,9 @@ The plugin system provides extensibility while maintaining security and performa
 ### 4.5 Privacy-Preserving Data Management
 
 **Database Architecture:**
-- **population_variants.db:** Aggregate allele frequencies from gnomAD (no individual genomes)
-- **prs_snps.db:** Published GWAS effect sizes (summary statistics only)
-- **clinvar_annotations.db:** Variant interpretations (no patient data)
+- **population_variants.db:** Aggregate allele frequencies from gnomAD [16] (no individual genomes)
+- **prs_snps.db:** Published GWAS effect sizes (summary statistics only) [18]
+- **clinvar_annotations.db:** Variant interpretations (no patient data) [17]
 
 **Privacy Guarantees:**
 - No raw sequence data stored
@@ -415,9 +415,9 @@ Each tab includes dedicated export functionality with PDF generation capabilitie
 
 **Performance Context:**
 Our AUC of 0.76 compares favorably to established genomic tools:
-- **CADD:** AUC 0.80 for general variant pathogenicity [7]
-- **PolyPhen-2:** AUC 0.75 for missense variants [8]
-- **SIFT:** AUC 0.70 for protein-altering variants [9]
+- **CADD:** AUC 0.80 for general variant pathogenicity [6]
+- **PolyPhen-2:** AUC 0.75 for missense variants [7]
+- **SIFT:** AUC 0.70 for protein-altering variants [8]
 - **Our Model:** AUC 0.76 for cancer-specific risk assessment
 
 **Threshold Optimization Examples:**
@@ -469,15 +469,15 @@ Our AUC of 0.76 compares favorably to established genomic tools:
 ### 9.1 Planned Enhancements
 
 **Additional Cancer Types:**
-- Pancreatic and ovarian cancers (Q2 2024) - Leveraging recent advances in multi-cancer PRS [10]
-- Expanded rare cancer support (Q3 2024) - Utilizing rare variant burden analysis methods [11]
-- Multi-cancer risk panels (Q4 2024) - Implementing pan-cancer genomic signatures [12]
+- Pancreatic and ovarian cancers (Q2 2024) - Leveraging recent advances in multi-cancer PRS [9]
+- Expanded rare cancer support (Q3 2024) - Utilizing rare variant burden analysis methods [10]
+- Multi-cancer risk panels (Q4 2024) - Implementing pan-cancer genomic signatures [11]
 
 **Technical Improvements:**
 - GPU acceleration for large cohort analysis - Enabling real-time analysis of population-scale datasets
-- Federated learning for model updates without data sharing - Following privacy-preserving ML frameworks [13]
-- Advanced visualization including 3D protein structure impact - Integrating structural genomics insights [14]
-- Edge-device optimization for mobile genomics - Adapting compressed models for resource-constrained environments [15]
+- Federated learning for model updates without data sharing - Following privacy-preserving ML frameworks [12]
+- Advanced visualization including 3D protein structure impact - Integrating structural genomics insights [13]
+- Edge-device optimization for mobile genomics - Adapting compressed models for resource-constrained environments
 
 ### 9.2 Research Collaborations
 
@@ -490,7 +490,7 @@ Active partnerships with academic institutions to:
 
 Geneknow demonstrates that privacy and analytical power need not be mutually exclusive in genomic medicine. By combining established genomic databases, validated ML methods, and modern software architecture, we provide a tool that empowers clinicians and researchers while absolutely protecting patient privacy.
 
-Our open-source approach ensures transparency, enables community contributions, and removes financial barriers to advanced genomic analysis. With validated performance metrics (AUC 0.76) comparable to established tools like CADD (0.80) and PolyPhen-2 (0.75), Geneknow makes sophisticated genomic risk assessment accessible to any healthcare setting worldwide.
+Our open-source approach ensures transparency, enables community contributions, and removes financial barriers to advanced genomic analysis. With validated performance metrics (AUC 0.76) comparable to established tools like CADD (0.80) [6] and PolyPhen-2 (0.75) [7], Geneknow makes sophisticated genomic risk assessment accessible to any healthcare setting worldwide.
 
 The platform's impact extends beyond individual patient care to enabling genomic research in previously underserved populations, contributing to a more equitable future for precision medicine. As genomic medicine continues to evolve, Geneknow's privacy-first architecture and open-source foundation position it as a sustainable, scalable solution for the next generation of genomic healthcare.
 
@@ -501,7 +501,7 @@ The platform's impact extends beyond individual patient care to enabling genomic
 - **CADD**: Combined Annotation Dependent Depletion - variant deleteriousness score (PHRED-scaled, 0-40+ range)
 - **LangGraph**: Workflow orchestration framework for building complex, stateful processing pipelines
 - **PRS**: Polygenic Risk Score - cumulative genetic risk metric from genome-wide association studies
-- **SHAP**: SHapley Additive exPlanations - model interpretability method for ML predictions
+- **SHAP**: SHapley Additive exPlanations - model interpretability method for ML predictions [19]
 
 ### 10.2 Technical Specifications
 - **Supported Formats:** FASTQ (.fastq, .fq), BAM (.bam), VCF (.vcf), MAF (.maf), with gzip compression support
@@ -518,53 +518,45 @@ The platform's impact extends beyond individual patient care to enabling genomic
 
 ### 10.4 Scientific Literature
 
-1. **Data Breaches in Genomics**: Shabani M, et al. "The concept of privacy in genomics." Eur J Hum Genet. 2020;28(7):892-897. doi:10.1038/s41431-020-0606-5
+1. Dove ES, Joly Y, Tassé AM; Public Population Project in Genomics and Society (P3G) International Steering Committee; International Cancer Genome Consortium (ICGC) Ethics and Policy Committee; Knoppers BM. Genomic cloud computing: legal and ethical points to consider. Eur J Hum Genet. 2015 Oct;23(10):1271-8. doi:10.1038/ejhg.2014.196. [Link](https://doi.org/10.1038/ejhg.2014.196)
 
-2. **GDPR and Genomics**: Dove ES, et al. "Genomic cloud computing: legal and ethical points to consider." Eur J Hum Genet. 2015;23(10):1271-1278. doi:10.1038/ejhg.2015.5
+2. Kruse CS, Frederick B, Jacobson T, Monticone DK. Cybersecurity in healthcare: A systematic review of modern threats and trends. Technol Health Care. 2017;25(1):1-10. doi:10.3233/THC-161263. [Link](https://doi.org/10.3233/THC-161263)
 
-3. **Healthcare Data Security**: Kruse CS, et al. "Cybersecurity in healthcare: A systematic review of modern threats and trends." Technol Health Care. 2017;25(1):1-10. doi:10.3233/THC-161263
+3. Erlich Y, Narayanan A. Routes for breaching and protecting genetic privacy. Nat Rev Genet. 2014 Jun;15(6):409-21. doi:10.1038/nrg3723. [Link](https://doi.org/10.1038/nrg3723)
 
-4. **Genomic Data Vulnerability**: Erlich Y, et al. "Routes for breaching and protecting genetic privacy." Nat Rev Genet. 2014;15(6):409-421. doi:10.1038/nrg3723
+4. Yadav P, Steinbach M, Kumar V, Simon G. Mining Electronic Health Records (EHRs): A Survey. ACM Comput Surv. 2018;50(6):1-40. doi:10.1145/3127881. [Link](https://doi.org/10.1145/3127881)
 
-5. **ML Data Leakage Prevention**: Yadav S, et al. "Mining electronic health records (EHRs): A survey." ACM Comput Surv. 2018;50(6):1-40. doi:10.1145/3127881
+5. Rajkomar A, Hardt M, Howell MD, Corrado G, Chin MH. Ensuring Fairness in Machine Learning to Advance Health Equity. Ann Intern Med. 2018 Dec 18;169(12):866-872. doi:10.7326/M18-1990. [Link](https://doi.org/10.7326/M18-1990)
 
-6. **Clinical ML Safety**: Rajkomar A, et al. "Ensuring fairness in machine learning to advance health equity." Ann Intern Med. 2018;169(12):866-872. doi:10.7326/M18-1990
+6. Rentzsch P, Witten D, Cooper GM, Shendure J, Kircher M. CADD: predicting the deleteriousness of variants throughout the human genome. Nucleic Acids Res. 2019 Jan 8;47(D1):D886-D894. doi:10.1093/nar/gky1016. [Link](https://doi.org/10.1093/nar/gky1016)
 
-7. **CADD Scoring Method**: Rentzsch P, et al. "CADD: predicting the deleteriousness of variants throughout the human genome." Nucleic Acids Res. 2019;47(D1):D886-D894. doi:10.1093/nar/gky1016
+7. Adzhubei IA, Schmidt S, Peshkin L, Ramensky VE, Gerasimova A, Bork P, Kondrashov AS, Sunyaev SR. A method and server for predicting damaging missense mutations. Nat Methods. 2010 Apr;7(4):248-9. doi:10.1038/nmeth0410-248. [Link](https://doi.org/10.1038/nmeth0410-248)
 
-8. **PolyPhen-2**: Adzhubei IA, et al. "A method and server for predicting damaging missense mutations." Nat Methods. 2010;7(4):248-249. doi:10.1038/nmeth0410-248
+8. Vaser R, Adusumalli S, Leng SN, Sikic M, Ng PC. SIFT missense predictions for genomes. Nat Protoc. 2016 Jan;11(1):1-9. doi:10.1038/nprot.2015.123. [Link](https://doi.org/10.1038/nprot.2015.123)
 
-9. **SIFT**: Vaser R, et al. "SIFT missense predictions for genomes." Nat Protoc. 2016;11(1):1-9. doi:10.1038/nprot.2015.123
+9. Fritsche LG, Patil S, Beesley LJ, VandeHaar P, Salvatore M, Ma Y, Peng RB, Taliun D, Zhou X, Mukherjee B. Cancer PRSweb: An Online Repository with Polygenic Risk Scores for Major Cancer Traits and Their Evaluation in Two Independent Biobanks. Am J Hum Genet. 2020 Nov 5;107(5):815-836. doi:10.1016/j.ajhg.2020.08.025. [Link](https://doi.org/10.1016/j.ajhg.2020.08.025)
 
-10. **Multi-Cancer PRS**: Fritsche LG, et al. "Cancer PRSweb: An Online Repository with Polygenic Risk Scores for Major Cancer Traits and Their Evaluation in Two Independent Biobanks." Am J Hum Genet. 2020;107(5):815-836. doi:10.1016/j.ajhg.2020.08.025
+10. Cirulli ET, White S, Read RW, Elhanan G, Metcalf WJ, Tanudjaja F, Fath DM, Sandoval E, Isaksson M, Schlauch KA, Grzymski JJ, Lu JT, Washington NL. Genome-wide rare variant analysis for thousands of phenotypes in over 70,000 exomes from two cohorts. Nat Commun. 2020 Jan 28;11(1):542. doi:10.1038/s41467-020-14288-y. [Link](https://doi.org/10.1038/s41467-020-14288-y)
 
-11. **Rare Variant Burden**: Cirulli ET, et al. "Genome-wide rare variant analysis for thousands of phenotypes in over 70,000 exomes from two cohorts." Nat Commun. 2020;11(1):542. doi:10.1038/s41467-020-14288-y
+11. Bailey MH, Tokheim C, Porta-Pardo E, Sengupta S, Bertrand D, Weerasinghe A, Colaprico A, Wendl MC, Kim J, Reardon B, Ng PK, Jeong KJ, Cao S, Wang Z, Gao J, Gao Q, Wang F, Liu EM, Mularoni L, Rubio-Perez C, Nagarajan N, Cortés-Ciriano I, Zhou DC, Liang WW, Hess JM, Yellapantula VD, Tamborero D, Gonzalez-Perez A, Suphavilai C, Ko JY, Khurana E, Park PJ, Van Allen EM, Liang H; MC3 Working Group; Cancer Genome Atlas Research Network; Lawrence MS, Godzik A, Lopez-Bigas N, Stuart J, Wheeler D, Getz G, Chen K, Lazar AJ, Mills GB, Karchin R, Ding L. Comprehensive Characterization of Cancer Driver Genes and Mutations. Cell. 2018 Apr 5;173(2):371-385.e18. doi:10.1016/j.cell.2018.02.060. [Link](https://doi.org/10.1016/j.cell.2018.02.060)
 
-12. **Pan-Cancer Genomics**: Bailey MH, et al. "Comprehensive characterization of cancer driver genes and mutations." Cell. 2018;173(2):371-385. doi:10.1016/j.cell.2018.02.060
+12. Li T, Sahu AK, Talwalkar A, Smith V. Federated Learning: Challenges, Methods, and Future Directions. IEEE Signal Process Mag. 2020 May;37(3):50-60. doi:10.1109/MSP.2020.2975749. [Link](https://doi.org/10.1109/MSP.2020.2975749)
 
-13. **Federated Learning Healthcare**: Li T, et al. "Federated learning: Challenges, methods, and future directions." IEEE Signal Process Mag. 2020;37(3):50-60. doi:10.1109/MSP.2020.2975749
+13. Porta-Pardo E, Garcia-Alonso L, Hrabe T, Dopazo J, Godzik A. A Pan-Cancer Catalogue of Cancer Driver Protein Interaction Interfaces. PLoS Comput Biol. 2015 Oct 22;11(10):e1004518. doi:10.1371/journal.pcbi.1004518. [Link](https://doi.org/10.1371/journal.pcbi.1004518)
 
-14. **Structural Genomics**: Porta-Pardo E, et al. "A pan-cancer catalogue of cancer driver protein interaction interfaces." PLoS Comput Biol. 2015;11(10):e1004518. doi:10.1371/journal.pcbi.1004518
+14. Hoadley KA, Yau C, Hinoue T, Wolf DM, Lazar AJ, Drill E, Shen R, Taylor AM, Cherniack AD, Thorsson V, Akbani R, Bowlby R, Wong CK, Wiznerowicz M, Sanchez-Vega F, Robertson AG, Schneider BG, Lawrence MS, Noushmehr H, Malta TM; Cancer Genome Atlas Network; Stuart JM, Benz CC, Laird PW. Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer. Cell. 2018 Apr 5;173(2):291-304.e6. doi:10.1016/j.cell.2018.03.022. [Link](https://doi.org/10.1016/j.cell.2018.03.022)
 
-15. **Edge Computing Genomics**: Feng X, et al. "Mobile edge computing for genomics: A survey." IEEE Commun Surv Tutor. 2021;23(2):1290-1316. doi:10.1109/COMST.2021.3068109
+15. Tate JG, Bamford S, Jubb HC, Sondka Z, Beare DM, Bindal N, Boutselakis H, Cole CG, Creatore C, Dawson E, Fish P, Harsha B, Hathaway C, Jupe SC, Kok CY, Noble K, Ponting L, Ramshaw CC, Rye CE, Speedy HE, Stefancsik R, Thompson SL, Wang S, Ward S, Campbell PJ, Forbes SA. COSMIC: the Catalogue Of Somatic Mutations In Cancer. Nucleic Acids Res. 2019 Jan 8;47(D1):D941-D947. doi:10.1093/nar/gky1015. [Link](https://doi.org/10.1093/nar/gky1015)
 
-16. **TCGA Pan-Cancer Analysis**: Hoadley KA, et al. "Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer." Cell. 2018;173(2):291-304.e6. doi:10.1016/j.cell.2018.03.022
+16. Karczewski KJ, Francioli LC, Tiao G, Cummings BB, Alföldi J, Wang Q, Collins RL, Laricchia KM, Ganna A, Birnbaum DP, et al. The mutational constraint spectrum quantified from variation in 141,456 humans. Nature. 2020 May;581(7809):434-443. doi:10.1038/s41586-020-2308-7. [Link](https://doi.org/10.1038/s41586-020-2308-7)
 
-17. **COSMIC Database Applications**: Tate JG, et al. "COSMIC: the Catalogue Of Somatic Mutations In Cancer." Nucleic Acids Res. 2019;47(D1):D941-D947. doi:10.1093/nar/gky1015
+17. Landrum MJ, Chitipiralla S, Brown GR, Chen C, Gu B, Hart J, Hoffman D, Jang W, Kaur K, Liu C, Lyoshin V, Maddipatla Z, Maiti R, Mitchell J, O'Leary N, Riley G, Zhou G, Schneider V, Maglott D, Holmes JB, Kattman BL. ClinVar: improvements to accessing data. Nucleic Acids Res. 2020 Jan 8;48(D1):D835-D844. doi:10.1093/nar/gkz972. [Link](https://doi.org/10.1093/nar/gkz972)
 
-18. **gnomAD Population Frequencies**: Karczewski KJ, et al. "The mutational constraint spectrum quantified from variation in 141,456 humans." Nature. 2020;581(7809):434-443. doi:10.1038/s41586-020-2308-7
+18. Torkamani A, Wineinger NE, Topol EJ. The personal and clinical utility of polygenic risk scores. Nat Rev Genet. 2018 Sep;19(9):581-590. doi:10.1038/s41576-018-0018-x. [Link](https://doi.org/10.1038/s41576-018-0018-x)
 
-19. **ClinVar Clinical Interpretation**: Landrum MJ, et al. "ClinVar: improvements to accessing data." Nucleic Acids Res. 2020;48(D1):D835-D844. doi:10.1093/nar/gkz972
+19. Lundberg SM, Lee S-I. A Unified Approach to Interpreting Model Predictions. In: Proceedings of the 31st International Conference on Neural Information Processing Systems (NeurIPS 2017). 2017:4765-4774. [Link](https://proceedings.neurips.cc/paper_files/paper/2017/file/8a20a8621978632d76c43dfd28b67767-Paper.pdf)
 
-20. **Polygenic Risk Scores**: Torkamani A, et al. "The personal and clinical utility of polygenic risk scores." Nat Rev Genet. 2018;19(9):581-590. doi:10.1038/s41576-018-0018-x
-
-21. **SHAP for Genomics**: Lundberg SM, Lee SI. "A Unified Approach to Interpreting Model Predictions." Advances in Neural Information Processing Systems. 2017;30:4765-4774.
-
-22. **Ensemble Methods in Genomics**: Liu Y, et al. "A comprehensive review and comparison of existing computational methods for intrinsically disordered protein and region prediction." Brief Bioinform. 2019;20(1):330-346. doi:10.1093/bib/bbx126
-
-23. **Privacy in Genomic Computing**: Naveed M, et al. "Privacy in the Genomic Era." ACM Comput Surv. 2015;48(1):6. doi:10.1145/2767007
-
-24. **Pathway Burden Analysis**: Wu MC, et al. "Powerful SNP-set analysis for case-control genome-wide association studies." Am J Hum Genet. 2010;86(6):929-942. doi:10.1016/j.ajhg.2010.05.002
+20. Wu MC, Kraft P, Epstein MP, Taylor DM, Chanock SJ, Hunter DJ, Lin X. Powerful SNP-set analysis for case-control genome-wide association studies. Am J Hum Genet. 2010 Jun 11;86(6):929-42. doi:10.1016/j.ajhg.2010.05.002. [Link](https://doi.org/10.1016/j.ajhg.2010.05.002)
 
 ---
 
