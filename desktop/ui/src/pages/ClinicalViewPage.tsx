@@ -823,6 +823,45 @@ interface ClinicalRecommendation {
   prevention_options?: string[];
 }
 
+interface PathwayMutation {
+  gene: string;
+  type: string;
+  effect: string;
+}
+
+interface DisruptedPathway {
+  name: string;
+  pathway_id: string;
+  significance: number;
+  affected_genes: string[];
+  mutations: PathwayMutation[];
+  description?: string;
+  genes_affected_ratio?: string;
+}
+
+interface PathwayAnalysisSummary {
+  total_pathways_disrupted: number;
+  highly_disrupted_pathways: number;
+  total_genes_affected: number;
+  pathway_interaction_count: number;
+  overall_burden_score: number;
+  high_burden_pathways: string[];
+}
+
+interface PathwayAnalysisData {
+  disrupted_pathways: DisruptedPathway[];
+  cancer_pathway_associations: Record<string, string[]>;
+  summary?: PathwayAnalysisSummary;
+}
+
+interface PathwayBurdenResult {
+  burden_score: number;
+  damaging_genes?: string[];
+  genes_with_damaging?: number;
+  genes_in_pathway?: number;
+  description?: string;
+}
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -3386,9 +3425,104 @@ const ClinicalViewPage: React.FC = () => {
             
             {/* Check if pathway analysis data is available */}
             {(() => {
-              const pathwayData = pipelineResults?.structured_json?.pathway_analysis;
+                             // First check structured_json for pathway analysis
+               let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis || null;
               
-              if (!pathwayData) {
+              // If not found in structured_json, try to construct from pathway_burden_results
+              if (!pathwayData && pipelineResults?.pathway_burden_results) {
+                console.log('🔍 Constructing pathway data from pathway_burden_results:', pipelineResults.pathway_burden_results);
+                
+                const pathwayBurdenResults = pipelineResults.pathway_burden_results;
+                const pathwayBurdenSummary = pipelineResults.pathway_burden_summary;
+                
+                                 // Transform pathway burden results into the format expected by frontend
+                 const disrupted_pathways: DisruptedPathway[] = [];
+                 const cancer_pathway_associations: Record<string, string[]> = {};
+                 
+                 // Convert pathway burden results to disrupted pathways format
+                 for (const [pathway_name, burden_result] of Object.entries(pathwayBurdenResults)) {
+                   const typedBurdenResult = burden_result as PathwayBurdenResult;
+                   const burden_score = typedBurdenResult.burden_score || 0;
+                   if (burden_score > 0.1) {
+                     // Create mutations list from damaging genes
+                     const mutations: PathwayMutation[] = [];
+                     if (typedBurdenResult.damaging_genes) {
+                       typedBurdenResult.damaging_genes.forEach((gene: string) => {
+                         mutations.push({
+                           gene: gene,
+                           type: "missense",
+                           effect: `Damaging variant in ${gene}`
+                         });
+                       });
+                     }
+                     
+                     disrupted_pathways.push({
+                       name: pathway_name.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase()),
+                       pathway_id: pathway_name,
+                       significance: Math.round(burden_score * 100 * 10) / 10, // Convert to percentage
+                       affected_genes: typedBurdenResult.damaging_genes || [],
+                       mutations: mutations,
+                       description: typedBurdenResult.description || `${pathway_name} pathway`,
+                       genes_affected_ratio: `${typedBurdenResult.genes_with_damaging || 0}/${typedBurdenResult.genes_in_pathway || 0}`
+                     });
+                   }
+                 }
+                 
+                 // Create cancer pathway associations based on high burden pathways
+                 const high_burden_pathways = pathwayBurdenSummary?.high_burden_pathways || [];
+                 if (high_burden_pathways.length > 0) {
+                   // Map pathways to cancer types based on common associations
+                   const pathway_cancer_mapping: Record<string, string[]> = {
+                     "oncogenes": ["lung", "colon", "breast"],
+                     "tumor_suppressors": ["breast", "lung", "colon", "prostate"],
+                     "dna_repair": ["breast", "colon"],
+                     "chromatin_remodeling": ["blood", "lung"],
+                     "ras_mapk": ["lung", "colon", "prostate"],
+                     "cell_cycle": ["breast", "lung", "prostate"],
+                     "apoptosis": ["breast", "lung", "colon"],
+                     "mismatch_repair": ["colon"],
+                     "wnt_signaling": ["colon"],
+                     "pi3k_akt": ["breast", "prostate"]
+                   };
+                   
+                   high_burden_pathways.forEach((pathway: string) => {
+                     const associated_cancers = pathway_cancer_mapping[pathway] || [];
+                     associated_cancers.forEach((cancer: string) => {
+                       if (!cancer_pathway_associations[cancer]) {
+                         cancer_pathway_associations[cancer] = [];
+                       }
+                       cancer_pathway_associations[cancer].push(pathway);
+                     });
+                   });
+                 }
+                 
+                 // Create pathway analysis structure
+                 const constructedPathwayData: PathwayAnalysisData = {
+                   disrupted_pathways: disrupted_pathways,
+                   cancer_pathway_associations: cancer_pathway_associations,
+                   summary: {
+                     total_pathways_disrupted: disrupted_pathways.length,
+                     highly_disrupted_pathways: disrupted_pathways.filter((p: DisruptedPathway) => p.significance > 50).length,
+                     total_genes_affected: [...new Set(disrupted_pathways.flatMap((p: DisruptedPathway) => p.affected_genes))].length,
+                     pathway_interaction_count: 0,
+                     overall_burden_score: (pathwayBurdenSummary?.overall_burden_score ?? 0) as number,
+                     high_burden_pathways: high_burden_pathways as string[]
+                   }
+                 };
+                 pathwayData = constructedPathwayData;
+                
+                console.log('✅ Constructed pathway data:', pathwayData);
+              }
+              
+              // Debug logging
+              console.log('🔍 Final pathway data check:', {
+                hasStructuredJson: !!pipelineResults?.structured_json?.pathway_analysis,
+                hasPathwayBurdenResults: !!pipelineResults?.pathway_burden_results,
+                finalPathwayData: !!pathwayData,
+                disruptedPathways: pathwayData?.disrupted_pathways?.length || 0
+              });
+              
+              if (!pathwayData || !pathwayData.disrupted_pathways || pathwayData.disrupted_pathways.length === 0) {
                 // No pathway data available - show informative message
                 return (
                   <div style={{
@@ -3424,7 +3558,7 @@ const ClinicalViewPage: React.FC = () => {
                       fontWeight: '600',
                       marginBottom: '0.5rem'
                     }}>
-                      Pathway Analysis Coming Soon
+                      No Pathway Disruptions Found
                     </h3>
                     <p style={{ 
                       color: '#6B7280',
@@ -3432,9 +3566,8 @@ const ClinicalViewPage: React.FC = () => {
                       maxWidth: '600px',
                       margin: '0 auto'
                     }}>
-                      Biological pathway disruption analysis will be available in a future update. 
-                      This feature will analyze how genetic variants affect key cellular pathways 
-                      including DNA repair, cell cycle control, and apoptosis.
+                      The analysis did not identify any significant pathway disruptions in your genetic data.
+                      This suggests that your variants are not significantly affecting major cancer-related pathways.
                     </p>
                   </div>
                 );
@@ -3463,7 +3596,7 @@ const ClinicalViewPage: React.FC = () => {
                     
                     {/* Pathway Disruption Analysis */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                      {pathwayData.disrupted_pathways.map((pathway, index) => (
+                      {pathwayData.disrupted_pathways.map((pathway: DisruptedPathway, index: number) => (
                         <div key={index} style={{
                           background: '#FFFFFF',
                           padding: '1.5rem',
@@ -3509,7 +3642,7 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {pathway.mutations.map((mutation, mutIndex) => (
+                            {pathway.mutations.map((mutation: PathwayMutation, mutIndex: number) => (
                               <div key={mutIndex} style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -3594,7 +3727,7 @@ const ClinicalViewPage: React.FC = () => {
                                 {riskFinding.risk_percentage}%
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                {pathways.map((pathway, pathIndex) => (
+                                {(pathways as string[]).map((pathway: string, pathIndex: number) => (
                                   <div key={pathIndex} style={{
                                     background: '#FFFFFF',
                                     padding: '0.25rem 0.5rem',
@@ -3614,32 +3747,7 @@ const ClinicalViewPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Gene Interaction Network - show placeholder */}
-                  <div style={{
-                    background: '#FFFFFF',
-                    padding: '2rem',
-                    borderRadius: '0.75rem',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                    border: '1px solid #E5E7EB'
-                  }}>
-                    <h3 style={{ 
-                      color: '#111827',
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      marginBottom: '1rem'
-                    }}>
-                      Gene Interaction Network
-                    </h3>
-                    
-                    <div style={{ 
-                      padding: '2rem',
-                      textAlign: 'center',
-                      color: '#6B7280',
-                      fontSize: '0.875rem'
-                    }}>
-                      Gene interaction network visualization will be available in a future update.
-                    </div>
-                  </div>
+
                 </>
               );
             })()}

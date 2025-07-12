@@ -91,9 +91,6 @@ class GenomicState(TypedDict, total=False):
 
     pathway_analysis: Optional[Dict[str, Any]]
 
-    gene_interactions: Optional[Dict[str, Any]]
-    gene_network_analysis: Optional[Dict[str, Any]]
-
     survival_analysis: Optional[Dict[str, Any]]
 
     clinical_recommendations: Optional[Dict[str, Any]]

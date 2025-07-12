@@ -32,7 +32,6 @@ try:
     from . import structural_variant_detector
     from . import cnv_detector
     from . import pathway_analyzer
-    from . import gene_interaction_network
     from . import survival_analyzer
     from . import clinical_recommendations
 except ImportError:
@@ -63,7 +62,6 @@ except ImportError:
     import structural_variant_detector
     import cnv_detector
     import pathway_analyzer
-    import gene_interaction_network
     import survival_analyzer
     import clinical_recommendations
 
@@ -93,7 +91,6 @@ __all__ = [
     "structural_variant_detector",
     "cnv_detector",
     "pathway_analyzer",
-    "gene_interaction_network",
     "survival_analyzer",
     "clinical_recommendations",
 ]

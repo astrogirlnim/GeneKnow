@@ -35,7 +35,6 @@ try:
         structural_variant_detector,
         cnv_detector,
         pathway_analyzer,
-        gene_interaction_network,
         survival_analyzer,
         clinical_recommendations,
     )
@@ -68,7 +67,6 @@ except ImportError:
         structural_variant_detector,
         cnv_detector,
         pathway_analyzer,
-        gene_interaction_network,
         survival_analyzer,
         clinical_recommendations,
     )
@@ -354,6 +352,43 @@ def merge_static_model_results(state: dict) -> dict:
     return result
 
 
+def merge_variant_analysis_results(state: dict) -> dict:
+    """
+    Merge results from structural variant and CNV detection nodes.
+    """
+    logger.info("Merging variant analysis results")
+    
+    # Check if we have results from both nodes
+    structural_variants = state.get("structural_variants", [])
+    copy_number_variants = state.get("copy_number_variants", [])
+    
+    # Create summary statistics
+    variant_analysis_summary = {
+        "structural_variants_found": len(structural_variants),
+        "copy_number_variants_found": len(copy_number_variants),
+        "total_genomic_alterations": len(structural_variants) + len(copy_number_variants)
+    }
+    
+    # Combine into genomic alterations
+    genomic_alterations = {
+        "structural_variants": structural_variants,
+        "copy_number_variants": copy_number_variants,
+        "summary": variant_analysis_summary
+    }
+    
+    # Track completion
+    completed = state.get("completed_nodes", [])
+    if "merge_variant_analysis" not in completed:
+        completed.append("merge_variant_analysis")
+    
+    logger.info(f"Merged variant analysis: {len(structural_variants)} SVs, {len(copy_number_variants)} CNVs")
+    
+    return {
+        "genomic_alterations": genomic_alterations,
+        "completed_nodes": completed
+    }
+
+
 def route_after_preprocess(state: dict) -> list:
     """
     Determine which nodes to run after preprocessing.
@@ -490,8 +525,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("variant_transformer", variant_transformer.process)
     workflow.add_node("structural_variant_detector", structural_variant_detector.process)
     workflow.add_node("cnv_detector", cnv_detector.process)
-    workflow.add_node("pathway_analyzer", pathway_analyzer.process)
-    workflow.add_node("gene_interaction_network", gene_interaction_network.process)
+    # REMOVED: pathway_analyzer node - using pathway_burden results directly
     workflow.add_node("survival_analyzer", survival_analyzer.process)
     workflow.add_node("clinical_recommendations", clinical_recommendations.process)
 
@@ -556,9 +590,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("cnv_detector", "merge_variant_analysis")
 
     # Continue with pathway analysis after merging
-    workflow.add_edge("merge_variant_analysis", "pathway_analyzer")
-    workflow.add_edge("pathway_analyzer", "gene_interaction_network")
-    workflow.add_edge("gene_interaction_network", "survival_analyzer")
+    workflow.add_edge("merge_variant_analysis", "survival_analyzer")
     workflow.add_edge("survival_analyzer", "clinical_recommendations")
 
     # Clinical recommendations -> metrics calculator -> formatter -> report writer
@@ -639,8 +671,6 @@ def run_pipeline(file_path: str, user_preferences: dict = None) -> dict:
         "copy_number_variants": None,  # CNV detector
         "cnv_summary": None,
         "pathway_analysis": None,  # Pathway analyzer
-        "gene_interactions": None,  # Gene interaction network
-        "gene_network_analysis": None,
         "survival_analysis": None,  # Survival analyzer
         "clinical_recommendations": None,  # Clinical recommendations
         "genomic_alterations": None,  # From merge_variant_analysis

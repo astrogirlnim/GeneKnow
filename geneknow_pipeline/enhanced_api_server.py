@@ -216,7 +216,7 @@ def update_job(job_id: str, updates: Dict[str, Any]):
             )
 
 
-def cleanup_job_files(job_id: str):
+def cleanup_job_files(job_id: str, cleanup_results: bool = False):
     """Clean up temporary files associated with a job."""
     with job_lock:
         job = jobs.get(job_id)
@@ -235,16 +235,17 @@ def cleanup_job_files(job_id: str):
                 except Exception as e:
                     logger.error(f"Failed to clean up file {file_path}: {e}")
 
-        # Clean up result files
-        result = job.get("result", {})
-        if isinstance(result, dict):
-            result_file = result.get("result_file")
-            if result_file and os.path.exists(result_file):
-                try:
-                    os.remove(result_file)
-                    logger.info(f"Cleaned up result file: {result_file}")
-                except Exception as e:
-                    logger.error(f"Failed to clean up result file {result_file}: {e}")
+        # Only clean up result files if explicitly requested (e.g., on server shutdown)
+        if cleanup_results:
+            result = job.get("result", {})
+            if isinstance(result, dict):
+                result_file = result.get("result_file")
+                if result_file and os.path.exists(result_file):
+                    try:
+                        os.remove(result_file)
+                        logger.info(f"Cleaned up result file: {result_file}")
+                    except Exception as e:
+                        logger.error(f"Failed to clean up result file {result_file}: {e}")
 
 
 def process_file_async(job_id: str):
@@ -306,14 +307,14 @@ def process_file_async(job_id: str):
                     ),
                 },
             )
-            cleanup_job_files(job_id)  # Clean up files after successful completion
+            cleanup_job_files(job_id, cleanup_results=False)  # Clean up temp files but preserve results
         else:
             raise Exception(result.get("errors", ["Unknown error"])[0])
 
     except Exception as e:
         logger.error(f"Job {job_id} failed: {str(e)}")
         update_job(job_id, {"status": "failed", "completed_at": datetime.now().isoformat(), "error": str(e)})
-        cleanup_job_files(job_id)  # Clean up files on failure
+        cleanup_job_files(job_id, cleanup_results=True)  # Clean up all files on failure
 
 
 # API Routes
@@ -678,11 +679,17 @@ import atexit
 
 
 def cleanup_temp_files():
-    """Clean up temporary directories."""
+    """Clean up temporary directories and result files."""
     try:
+        # Clean up result files for all jobs
+        with job_lock:
+            for job_id in list(jobs.keys()):
+                cleanup_job_files(job_id, cleanup_results=True)
+        
+        # Clean up temporary directories
         shutil.rmtree(Config.UPLOAD_FOLDER, ignore_errors=True)
         shutil.rmtree(Config.RESULTS_FOLDER, ignore_errors=True)
-        logger.info("Cleaned up temporary files")
+        logger.info("Cleaned up temporary files and result files")
     except Exception as e:
         logger.error(f"Error cleaning up temp files: {e}")
 

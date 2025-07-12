@@ -359,7 +359,16 @@ def process(state: Dict) -> Dict:
         # Get all relevant data
         risk_scores = state.get("risk_scores", {})
         variants = state.get("variant_details", state.get("filtered_variants", []))
-        pathway_analysis = state.get("pathway_analysis", {})
+        
+        # First check direct state, then check structured_json
+        pathway_analysis = state.get("pathway_analysis")
+        if pathway_analysis is None:
+            structured_json = state.get("structured_json", {})
+            pathway_analysis = structured_json.get("pathway_analysis", {})
+        
+        if pathway_analysis is None:
+            pathway_analysis = {}
+        
         disrupted_pathways = pathway_analysis.get("disrupted_pathways", [])
         state.get("survival_analysis", {})
 
