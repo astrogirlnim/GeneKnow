@@ -36,7 +36,7 @@
       "cancer_related_variants": 0
     },
     "cadd_summary": {
-      "job_id": "cadd_offline_20250712_100353",
+      "job_id": "cadd_offline_20250712_101310",
       "total_variants": 0,
       "variants_scored": 0,
       "variants_in_cancer_genes": 0,
@@ -96,7 +96,7 @@
   },
   "cadd_enriched_variants": [],
   "cadd_stats": {
-    "job_id": "cadd_offline_20250712_100353",
+    "job_id": "cadd_offline_20250712_101310",
     "total_variants": 0,
     "variants_scored": 0,
     "variants_in_cancer_genes": 0,
@@ -479,261 +479,19 @@
     "pathogenic_svs": 0,
     "gene_fusions": []
   },
-  "copy_number_variants": [
-    {
-      "gene": "CDKN2A",
-      "chromosome": "chr9",
-      "start": 21967000,
-      "end": 21995000,
-      "size": 28000,
-      "copy_number": 0,
-      "normal_copy_number": 2,
-      "fold_change": 0.0,
-      "depth_ratio": 0.11630403299904653,
-      "genes_affected": [
-        "CDKN2A"
-      ],
-      "evidence": "depth_analysis",
-      "cancer_relevance": "CDKN2A deletion in melanoma",
-      "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
-      "cancer_type": "melanoma",
-      "clinical_significance": "pathogenic",
-      "type": "homozygous_deletion"
-    },
-    {
-      "gene": "PTEN",
-      "chromosome": "chr10",
-      "start": 89623000,
-      "end": 89728000,
-      "size": 105000,
-      "copy_number": 1,
-      "normal_copy_number": 2,
-      "fold_change": 0.5,
-      "depth_ratio": 0.5001926788505956,
-      "genes_affected": [
-        "PTEN"
-      ],
-      "evidence": "depth_analysis",
-      "cancer_relevance": "PTEN loss in multiple cancers",
-      "therapeutic_relevance": "PI3K/AKT pathway activation",
-      "cancer_type": "multiple",
-      "clinical_significance": "likely_pathogenic",
-      "type": "heterozygous_deletion"
-    },
-    {
-      "gene": "EGFR",
-      "chromosome": "chr7",
-      "start": 55086000,
-      "end": 55324000,
-      "size": 238000,
-      "copy_number": 5,
-      "normal_copy_number": 2,
-      "fold_change": 2.5,
-      "depth_ratio": 2.5065779866319433,
-      "genes_affected": [
-        "EGFR"
-      ],
-      "evidence": "depth_analysis",
-      "cancer_relevance": "EGFR amplification in GBM",
-      "therapeutic_relevance": "EGFR inhibitor target",
-      "cancer_type": "glioblastoma",
-      "clinical_significance": "likely_pathogenic",
-      "type": "amplification"
-    },
-    {
-      "gene": "AR",
-      "chromosome": "chrX",
-      "start": 66763000,
-      "end": 66950000,
-      "size": 187000,
-      "copy_number": 6,
-      "normal_copy_number": 2,
-      "fold_change": 3.0,
-      "depth_ratio": 3.0070222863445877,
-      "genes_affected": [
-        "AR"
-      ],
-      "evidence": "depth_analysis",
-      "cancer_relevance": "AR amplification in prostate cancer",
-      "therapeutic_relevance": "Androgen deprivation therapy resistance",
-      "cancer_type": "prostate",
-      "clinical_significance": "likely_pathogenic",
-      "type": "amplification"
-    },
-    {
-      "gene": "ERBB2",
-      "chromosome": "chr17",
-      "start": 37844000,
-      "end": 37886000,
-      "size": 42000,
-      "copy_number": 6,
-      "normal_copy_number": 2,
-      "fold_change": 3.0,
-      "depth_ratio": 3.004677814282323,
-      "genes_affected": [
-        "ERBB2"
-      ],
-      "evidence": "depth_analysis",
-      "cancer_relevance": "HER2 amplification in breast cancer",
-      "therapeutic_relevance": "Trastuzumab (Herceptin) target",
-      "cancer_type": "breast",
-      "clinical_significance": "likely_pathogenic",
-      "type": "amplification"
-    },
-    {
-      "gene": "MDM2",
-      "chromosome": "chr12",
-      "start": 69201000,
-      "end": 69239000,
-      "size": 38000,
-      "copy_number": 3,
-      "normal_copy_number": 2,
-      "fold_change": 1.5,
-      "depth_ratio": 1.4893425193596561,
-      "genes_affected": [
-        "MDM2"
-      ],
-      "evidence": "depth_analysis",
-      "clinical_significance": "uncertain_significance",
-      "type": "duplication"
-    }
-  ],
+  "copy_number_variants": [],
   "cnv_summary": {
-    "total_cnvs": 6,
-    "amplifications": 3,
-    "deletions": 2,
-    "pathogenic_cnvs": 5,
-    "cancer_associated": 5,
-    "therapeutic_targets": [
-      "CDKN2A",
-      "PTEN",
-      "EGFR",
-      "AR",
-      "ERBB2"
-    ]
+    "total_cnvs": 0,
+    "amplifications": 0,
+    "deletions": 0,
+    "pathogenic_cnvs": 0,
+    "cancer_associated": 0,
+    "therapeutic_targets": []
   },
   "genomic_alterations": {
     "structural_variants": [],
-    "copy_number_variants": [
-      {
-        "gene": "CDKN2A",
-        "chromosome": "chr9",
-        "start": 21967000,
-        "end": 21995000,
-        "size": 28000,
-        "copy_number": 0,
-        "normal_copy_number": 2,
-        "fold_change": 0.0,
-        "depth_ratio": 0.11630403299904653,
-        "genes_affected": [
-          "CDKN2A"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "CDKN2A deletion in melanoma",
-        "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
-        "cancer_type": "melanoma",
-        "clinical_significance": "pathogenic",
-        "type": "homozygous_deletion"
-      },
-      {
-        "gene": "PTEN",
-        "chromosome": "chr10",
-        "start": 89623000,
-        "end": 89728000,
-        "size": 105000,
-        "copy_number": 1,
-        "normal_copy_number": 2,
-        "fold_change": 0.5,
-        "depth_ratio": 0.5001926788505956,
-        "genes_affected": [
-          "PTEN"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "PTEN loss in multiple cancers",
-        "therapeutic_relevance": "PI3K/AKT pathway activation",
-        "cancer_type": "multiple",
-        "clinical_significance": "likely_pathogenic",
-        "type": "heterozygous_deletion"
-      },
-      {
-        "gene": "EGFR",
-        "chromosome": "chr7",
-        "start": 55086000,
-        "end": 55324000,
-        "size": 238000,
-        "copy_number": 5,
-        "normal_copy_number": 2,
-        "fold_change": 2.5,
-        "depth_ratio": 2.5065779866319433,
-        "genes_affected": [
-          "EGFR"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "EGFR amplification in GBM",
-        "therapeutic_relevance": "EGFR inhibitor target",
-        "cancer_type": "glioblastoma",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "AR",
-        "chromosome": "chrX",
-        "start": 66763000,
-        "end": 66950000,
-        "size": 187000,
-        "copy_number": 6,
-        "normal_copy_number": 2,
-        "fold_change": 3.0,
-        "depth_ratio": 3.0070222863445877,
-        "genes_affected": [
-          "AR"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "AR amplification in prostate cancer",
-        "therapeutic_relevance": "Androgen deprivation therapy resistance",
-        "cancer_type": "prostate",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "ERBB2",
-        "chromosome": "chr17",
-        "start": 37844000,
-        "end": 37886000,
-        "size": 42000,
-        "copy_number": 6,
-        "normal_copy_number": 2,
-        "fold_change": 3.0,
-        "depth_ratio": 3.004677814282323,
-        "genes_affected": [
-          "ERBB2"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "HER2 amplification in breast cancer",
-        "therapeutic_relevance": "Trastuzumab (Herceptin) target",
-        "cancer_type": "breast",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "MDM2",
-        "chromosome": "chr12",
-        "start": 69201000,
-        "end": 69239000,
-        "size": 38000,
-        "copy_number": 3,
-        "normal_copy_number": 2,
-        "fold_change": 1.5,
-        "depth_ratio": 1.4893425193596561,
-        "genes_affected": [
-          "MDM2"
-        ],
-        "evidence": "depth_analysis",
-        "clinical_significance": "uncertain_significance",
-        "type": "duplication"
-      }
-    ],
-    "total_alterations": 6
+    "copy_number_variants": [],
+    "total_alterations": 0
   },
   "pathway_analysis": null,
   "survival_analysis": {
@@ -810,7 +568,7 @@
   "risk_details": {},
   "ml_risk_assessment": {},
   "metrics": {
-    "timestamp": "2025-07-12T10:03:53.551473",
+    "timestamp": "2025-07-12T10:13:10.672241",
     "pipeline_version": "1.0.0",
     "confidence_metrics": {},
     "variant_metrics": {
@@ -876,8 +634,8 @@
   "structured_json": {
     "report_metadata": {
       "pipeline_version": "1.0.0",
-      "processing_time_seconds": 0.02346,
-      "generated_at": "2025-07-12T10:03:53.552226",
+      "processing_time_seconds": 0.009504,
+      "generated_at": "2025-07-12T10:13:10.673110",
       "language": "en"
     },
     "patient_data": {
@@ -917,7 +675,7 @@
           "cancer_related_variants": 0
         },
         "cadd_summary": {
-          "job_id": "cadd_offline_20250712_100353",
+          "job_id": "cadd_offline_20250712_101310",
           "total_variants": 0,
           "variants_scored": 0,
           "variants_in_cancer_genes": 0,
@@ -984,7 +742,7 @@
       "details": {}
     },
     "metrics": {
-      "timestamp": "2025-07-12T10:03:53.551473",
+      "timestamp": "2025-07-12T10:13:10.672241",
       "pipeline_version": "1.0.0",
       "confidence_metrics": {},
       "variant_metrics": {
@@ -1057,125 +815,7 @@
       }
     ],
     "structural_variants": [],
-    "copy_number_variants": [
-      {
-        "gene": "CDKN2A",
-        "chromosome": "chr9",
-        "start": 21967000,
-        "end": 21995000,
-        "size": 28000,
-        "copy_number": 0,
-        "normal_copy_number": 2,
-        "fold_change": 0.0,
-        "depth_ratio": 0.11630403299904653,
-        "genes_affected": [
-          "CDKN2A"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "CDKN2A deletion in melanoma",
-        "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
-        "cancer_type": "melanoma",
-        "clinical_significance": "pathogenic",
-        "type": "homozygous_deletion"
-      },
-      {
-        "gene": "PTEN",
-        "chromosome": "chr10",
-        "start": 89623000,
-        "end": 89728000,
-        "size": 105000,
-        "copy_number": 1,
-        "normal_copy_number": 2,
-        "fold_change": 0.5,
-        "depth_ratio": 0.5001926788505956,
-        "genes_affected": [
-          "PTEN"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "PTEN loss in multiple cancers",
-        "therapeutic_relevance": "PI3K/AKT pathway activation",
-        "cancer_type": "multiple",
-        "clinical_significance": "likely_pathogenic",
-        "type": "heterozygous_deletion"
-      },
-      {
-        "gene": "EGFR",
-        "chromosome": "chr7",
-        "start": 55086000,
-        "end": 55324000,
-        "size": 238000,
-        "copy_number": 5,
-        "normal_copy_number": 2,
-        "fold_change": 2.5,
-        "depth_ratio": 2.5065779866319433,
-        "genes_affected": [
-          "EGFR"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "EGFR amplification in GBM",
-        "therapeutic_relevance": "EGFR inhibitor target",
-        "cancer_type": "glioblastoma",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "AR",
-        "chromosome": "chrX",
-        "start": 66763000,
-        "end": 66950000,
-        "size": 187000,
-        "copy_number": 6,
-        "normal_copy_number": 2,
-        "fold_change": 3.0,
-        "depth_ratio": 3.0070222863445877,
-        "genes_affected": [
-          "AR"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "AR amplification in prostate cancer",
-        "therapeutic_relevance": "Androgen deprivation therapy resistance",
-        "cancer_type": "prostate",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "ERBB2",
-        "chromosome": "chr17",
-        "start": 37844000,
-        "end": 37886000,
-        "size": 42000,
-        "copy_number": 6,
-        "normal_copy_number": 2,
-        "fold_change": 3.0,
-        "depth_ratio": 3.004677814282323,
-        "genes_affected": [
-          "ERBB2"
-        ],
-        "evidence": "depth_analysis",
-        "cancer_relevance": "HER2 amplification in breast cancer",
-        "therapeutic_relevance": "Trastuzumab (Herceptin) target",
-        "cancer_type": "breast",
-        "clinical_significance": "likely_pathogenic",
-        "type": "amplification"
-      },
-      {
-        "gene": "MDM2",
-        "chromosome": "chr12",
-        "start": 69201000,
-        "end": 69239000,
-        "size": 38000,
-        "copy_number": 3,
-        "normal_copy_number": 2,
-        "fold_change": 1.5,
-        "depth_ratio": 1.4893425193596561,
-        "genes_affected": [
-          "MDM2"
-        ],
-        "evidence": "depth_analysis",
-        "clinical_significance": "uncertain_significance",
-        "type": "duplication"
-      }
-    ],
+    "copy_number_variants": [],
     "pathway_analysis": {
       "disrupted_pathways": [],
       "cancer_pathway_associations": {},
@@ -1277,11 +917,11 @@
     "markdown": "# Genomic Risk Assessment Report\n\n**Generated:** {datetime.now().strftime('%B %d, %Y at %H:%M')}\n**Analysis Type:** AI-Enhanced Clinical Report  \n\n---\n\n## Clinical Assessment\n\n**Summary**\n\nThis genomic risk assessment analyzed 0 genetic variants, with 0 variants passing quality control filters. The analysis completed successfully with results available for clinical review.\n\n**Key Variants**\n\nNo key pathogenic variants associated with elevated cancer risk were identified in this analysis.\n\n**Risk Summary**\n\n| Cancer Type | Risk (%) |\n|-------------|----------|\n| No data | N/A |\n\nRisk assessment data not available for this analysis.\n\n**Clinical Interpretation**\n\nThis genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment.\n\n**Recommendations**\n\n- Adhere to standard age-appropriate cancer screening protocols\n- Maintain healthy lifestyle including regular exercise and balanced diet\n- Continue routine preventive care and health maintenance\n- Consider genetic counseling if strong family history of cancer emerges\n- Consult a qualified healthcare provider for personalized guidance.\n\n## Technical Appendix\n\n### Analysis Methods\n\nThis report was generated using the GeneKnow genomic analysis pipeline, which includes:\n\n- **Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency\n- **Population Analysis:** Comparison with reference populations and allele frequencies\n- **TCGA Integration:** Matching variants against The Cancer Genome Atlas database\n- **CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction\n- **Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment\n- **Machine Learning:** Advanced risk models trained on cancer genomics data\n\n### Quality Metrics\n\n- **Total Variants Identified:** {total_variants}\n- **Variants Passing QC:** {qc_variants}\n- **QC Pass Rate:** {qc_rate:.1f}%\n\n### Database Coverage\n\n- **TCGA Cancer Types:** 5 (breast, colon, lung, prostate, blood)\n- **Variants with TCGA Data:** {tcga_summary.get('variants_with_tcga_data', 0)}\n\n### Limitations\n\n- This analysis is based on current scientific knowledge and databases\n- Risk estimates are population-based and may not apply to all individuals\n- Not all genetic variants associated with cancer risk are included\n- Results should be interpreted by qualified healthcare professionals\n- This analysis is for research purposes and not for clinical diagnosis\n\n## Glossary\n\n**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n**Pathogenic:** A genetic variant that is known to cause disease.\n\n---\n\n## Important Disclaimers\n\n- This report is for research and educational purposes only\n- Results should not be used for clinical decision-making without consultation with qualified healthcare providers\n- Genetic risk assessment is based on current scientific understanding and may change as research evolves\n- Not all genetic variants associated with disease risk are included in this analysis\n- Environmental and lifestyle factors also contribute significantly to cancer risk\n\n## Contact Information\n\nFor questions about this report or genetic counseling resources, please consult with your healthcare provider or a certified genetic counselor.\n\n*Report generated by GeneKnow Pipeline - Report ID: {report_id}*"
   },
   "report_generator_info": {
-    "report_id": "report_20250712_100353",
+    "report_id": "report_20250712_101310",
     "backend_used": "huggingface",
     "model_used": "microsoft/phi-2",
     "llm_enhanced": true,
-    "generation_time": "2025-07-12T10:03:53.567078",
+    "generation_time": "2025-07-12T10:13:10.682616",
     "high_risk_findings_count": 0,
     "available_formats": [
       "markdown"
@@ -1300,8 +940,8 @@
     "mutation_classifier",
     "mutational_signatures",
     "variant_transformer",
-    "structural_variant_detector",
     "cnv_detector",
+    "structural_variant_detector",
     "merge_variant_analysis",
     "survival_analyzer",
     "clinical_recommendations",
@@ -1311,7 +951,7 @@
     {
       "node": "variant_calling",
       "error": "'aligned_bam_path'",
-      "timestamp": "2025-07-12T10:03:53.533521"
+      "timestamp": "2025-07-12T10:13:10.665578"
     }
   ],
   "warnings": [],
@@ -1329,8 +969,8 @@
   },
   "include_technical_details": true,
   "language": "en",
-  "pipeline_start_time": "2025-07-12T10:03:53.528232",
+  "pipeline_start_time": "2025-07-12T10:13:10.663025",
   "_merge_call_count": 1,
-  "pipeline_end_time": "2025-07-12T10:03:53.568784",
-  "processing_time_seconds": 0.040552
+  "pipeline_end_time": "2025-07-12T10:13:10.683220",
+  "processing_time_seconds": 0.020195
 }
