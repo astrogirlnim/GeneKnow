@@ -100,7 +100,9 @@ def create_risk_models():
     config_path = os.path.join(models_dir, "model_config.json")
     config = {
         "cancer_genes": cancer_genes,
-        "feature_order": {cancer: genes + ["age", "sex"] for cancer, genes in cancer_genes.items()},
+        "feature_order": {
+            cancer: genes + ["age", "sex"] for cancer, genes in cancer_genes.items()
+        },
         "model_type": "logistic_regression",
         "version": "1.0.0",
     }

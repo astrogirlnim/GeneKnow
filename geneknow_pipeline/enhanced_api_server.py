@@ -66,7 +66,9 @@ class NumpyEncoder(json.JSONEncoder):
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],  # Explicitly use StreamHandler for console output
+    handlers=[
+        logging.StreamHandler()
+    ],  # Explicitly use StreamHandler for console output
 )
 logger = logging.getLogger(__name__)
 
@@ -86,14 +88,28 @@ print("Starting GeneKnow Enhanced API Server...", flush=True)
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
-CORS(app, origins=["tauri://localhost", "http://localhost:*"])  # Allow Tauri and local dev
-socketio = SocketIO(app, cors_allowed_origins="*")  # Let SocketIO choose the best available async mode
+CORS(
+    app, origins=["tauri://localhost", "http://localhost:*"]
+)  # Allow Tauri and local dev
+socketio = SocketIO(
+    app, cors_allowed_origins="*"
+)  # Let SocketIO choose the best available async mode
 
 
 # Configuration
 class Config:
     MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
-    ALLOWED_EXTENSIONS = {".fastq", ".fq", ".fastq.gz", ".fq.gz", ".bam", ".vc", ".vcf.gz", ".ma", ".maf.gz"}
+    ALLOWED_EXTENSIONS = {
+        ".fastq",
+        ".fq",
+        ".fastq.gz",
+        ".fq.gz",
+        ".bam",
+        ".vc",
+        ".vcf.gz",
+        ".ma",
+        ".maf.gz",
+    }
     UPLOAD_FOLDER = tempfile.mkdtemp(prefix="geneknow_uploads_")
     RESULTS_FOLDER = tempfile.mkdtemp(prefix="geneknow_results_")
     SESSION_TIMEOUT = 3600  # 1 hour
@@ -227,7 +243,12 @@ def cleanup_job_files(job_id: str, cleanup_results: bool = False):
         file_path = job.get("file_path")
         if file_path and os.path.exists(file_path):
             # Only delete if it's in a temp directory
-            temp_markers = ["/tmp/", "/var/folders/", Config.UPLOAD_FOLDER, "geneknow_temp"]
+            temp_markers = [
+                "/tmp/",
+                "/var/folders/",
+                Config.UPLOAD_FOLDER,
+                "geneknow_temp",
+            ]
             if any(marker in file_path for marker in temp_markers):
                 try:
                     os.remove(file_path)
@@ -245,14 +266,23 @@ def cleanup_job_files(job_id: str, cleanup_results: bool = False):
                         os.remove(result_file)
                         logger.info(f"Cleaned up result file: {result_file}")
                     except Exception as e:
-                        logger.error(f"Failed to clean up result file {result_file}: {e}")
+                        logger.error(
+                            f"Failed to clean up result file {result_file}: {e}"
+                        )
 
 
 def process_file_async(job_id: str):
     """Process file in background thread."""
     try:
         job = jobs[job_id]
-        update_job(job_id, {"status": "processing", "started_at": datetime.now().isoformat(), "progress": 5})
+        update_job(
+            job_id,
+            {
+                "status": "processing",
+                "started_at": datetime.now().isoformat(),
+                "progress": 5,
+            },
+        )
 
         # Create custom preferences with progress callback
         preferences = job["preferences"].copy()
@@ -260,7 +290,11 @@ def process_file_async(job_id: str):
         def progress_callback(node: str, progress: int):
             """Callback to update progress during pipeline execution."""
             update_job(
-                job_id, {"current_step": node, "progress": min(progress, 95)}  # Reserve last 5% for finalization
+                job_id,
+                {
+                    "current_step": node,
+                    "progress": min(progress, 95),
+                },  # Reserve last 5% for finalization
             )
 
         preferences["progress_callback"] = progress_callback
@@ -289,7 +323,9 @@ def process_file_async(job_id: str):
                             "variant_count": result.get("variant_count", 0),
                             "risk_scores": result.get("risk_scores", {}),
                             "report_sections": result.get("report_sections", {}),
-                            "processing_time_seconds": result.get("processing_time_seconds", 0),
+                            "processing_time_seconds": result.get(
+                                "processing_time_seconds", 0
+                            ),
                             "cadd_stats": result.get("cadd_stats", {}),
                             "tcga_matches": result.get("tcga_matches", {}),
                             "tcga_cohort_sizes": result.get("tcga_cohort_sizes", {}),
@@ -300,20 +336,33 @@ def process_file_async(job_id: str):
                             "ml_risk_assessment": result.get("ml_risk_assessment", {}),
                             "completed_nodes": result.get("completed_nodes", []),
                             "warnings": result.get("warnings", []),
-                            "enhanced_report_content": result.get("enhanced_report_content", {}),
-                            "report_generator_info": result.get("report_generator_info", {}),
+                            "enhanced_report_content": result.get(
+                                "enhanced_report_content", {}
+                            ),
+                            "report_generator_info": result.get(
+                                "report_generator_info", {}
+                            ),
                             "result_file": result_file,
                         }
                     ),
                 },
             )
-            cleanup_job_files(job_id, cleanup_results=False)  # Clean up temp files but preserve results
+            cleanup_job_files(
+                job_id, cleanup_results=False
+            )  # Clean up temp files but preserve results
         else:
             raise Exception(result.get("errors", ["Unknown error"])[0])
 
     except Exception as e:
         logger.error(f"Job {job_id} failed: {str(e)}")
-        update_job(job_id, {"status": "failed", "completed_at": datetime.now().isoformat(), "error": str(e)})
+        update_job(
+            job_id,
+            {
+                "status": "failed",
+                "completed_at": datetime.now().isoformat(),
+                "error": str(e),
+            },
+        )
         cleanup_job_files(job_id, cleanup_results=True)  # Clean up all files on failure
 
 
@@ -329,7 +378,9 @@ def health_check():
             "timestamp": datetime.now().isoformat(),
             "service": "GeneKnow Pipeline API",
             "version": "2.0.0",
-            "jobs_active": len([j for j in jobs.values() if j["status"] == "processing"]),
+            "jobs_active": len(
+                [j for j in jobs.values() if j["status"] == "processing"]
+            ),
         }
     )
 
@@ -345,10 +396,26 @@ def pipeline_info():
                 "supported_formats": list(Config.ALLOWED_EXTENSIONS),
                 "max_file_size_gb": Config.MAX_FILE_SIZE / (1024**3),
                 "pipeline_nodes": [
-                    {"id": "file_input", "name": "File Validation", "description": "Validates input file format"},
-                    {"id": "preprocess", "name": "Preprocessing", "description": "Aligns FASTQ or loads variants"},
-                    {"id": "variant_calling", "name": "Variant Calling", "description": "Identifies genetic variants"},
-                    {"id": "qc_filter", "name": "Quality Control", "description": "Filters low-quality variants"},
+                    {
+                        "id": "file_input",
+                        "name": "File Validation",
+                        "description": "Validates input file format",
+                    },
+                    {
+                        "id": "preprocess",
+                        "name": "Preprocessing",
+                        "description": "Aligns FASTQ or loads variants",
+                    },
+                    {
+                        "id": "variant_calling",
+                        "name": "Variant Calling",
+                        "description": "Identifies genetic variants",
+                    },
+                    {
+                        "id": "qc_filter",
+                        "name": "Quality Control",
+                        "description": "Filters low-quality variants",
+                    },
                     {
                         "id": "population_mapper",
                         "name": "Population Mapping",
@@ -374,8 +441,16 @@ def pipeline_info():
                         "name": "Risk Assessment",
                         "description": "ML-based risk prediction with multi-signal fusion",
                     },
-                    {"id": "formatter", "name": "Result Formatting", "description": "Formats results for frontend"},
-                    {"id": "report_writer", "name": "Report Generation", "description": "Creates final report"},
+                    {
+                        "id": "formatter",
+                        "name": "Result Formatting",
+                        "description": "Formats results for frontend",
+                    },
+                    {
+                        "id": "report_writer",
+                        "name": "Report Generation",
+                        "description": "Creates final report",
+                    },
                 ],
                 "cancer_types": ["breast", "colon", "lung", "prostate", "blood"],
                 "output_formats": ["json", "pd", "html"],
@@ -432,7 +507,14 @@ def upload_file():
             return jsonify({"error": "No file selected"}), 400
 
         if not allowed_file(file.filename):
-            return jsonify({"error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'}), 400
+            return (
+                jsonify(
+                    {
+                        "error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
+                    }
+                ),
+                400,
+            )
 
         # Save uploaded file
         filename = secure_filename(file.filename)
@@ -445,7 +527,14 @@ def upload_file():
         file_size = os.path.getsize(file_path)
         if file_size > Config.MAX_FILE_SIZE:
             os.remove(file_path)
-            return jsonify({"error": f"File too large. Maximum size: {Config.MAX_FILE_SIZE / (1024**3):.1f}GB"}), 413
+            return (
+                jsonify(
+                    {
+                        "error": f"File too large. Maximum size: {Config.MAX_FILE_SIZE / (1024**3):.1f}GB"
+                    }
+                ),
+                413,
+            )
 
         # Get preferences from form data or JSON
         preferences = {}
@@ -495,7 +584,14 @@ def process_file():
 
         # Validate file type
         if not allowed_file(file_path):
-            return jsonify({"error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'}), 400
+            return (
+                jsonify(
+                    {
+                        "error": f'Invalid file type. Allowed: {", ".join(Config.ALLOWED_EXTENSIONS)}'
+                    }
+                ),
+                400,
+            )
 
         # Get preferences
         preferences = data.get("preferences", {})
@@ -507,7 +603,16 @@ def process_file():
         thread = threading.Thread(target=process_file_async, args=(job_id,))
         thread.start()
 
-        return jsonify({"job_id": job_id, "status": "processing", "message": "Processing started"}), 202
+        return (
+            jsonify(
+                {
+                    "job_id": job_id,
+                    "status": "processing",
+                    "message": "Processing started",
+                }
+            ),
+            202,
+        )
 
     except Exception as e:
         logger.error(f"Process error: {str(e)}")
@@ -539,7 +644,12 @@ def job_results(job_id: str):
 
         job = jobs[job_id]
         if job["status"] != "completed":
-            return jsonify({"error": f'Job not completed. Current status: {job["status"]}'}), 400
+            return (
+                jsonify(
+                    {"error": f'Job not completed. Current status: {job["status"]}'}
+                ),
+                400,
+            )
 
         # Read full results from file
         result_file = job["result"].get("result_file")
@@ -564,7 +674,12 @@ def download_results(job_id: str):
 
         job = jobs[job_id]
         if job["status"] != "completed":
-            return jsonify({"error": f'Job not completed. Current status: {job["status"]}'}), 400
+            return (
+                jsonify(
+                    {"error": f'Job not completed. Current status: {job["status"]}'}
+                ),
+                400,
+            )
 
         result_file = job["result"].get("result_file")
         if result_file and os.path.exists(result_file):
@@ -587,7 +702,10 @@ def cancel_job(job_id: str):
 
         job = jobs[job_id]
         if job["status"] not in ["pending", "processing"]:
-            return jsonify({"error": f'Cannot cancel job with status: {job["status"]}'}), 400
+            return (
+                jsonify({"error": f'Cannot cancel job with status: {job["status"]}'}),
+                400,
+            )
 
         # Update job status
         job["status"] = "cancelled"
@@ -685,7 +803,7 @@ def cleanup_temp_files():
         with job_lock:
             for job_id in list(jobs.keys()):
                 cleanup_job_files(job_id, cleanup_results=True)
-        
+
         # Clean up temporary directories
         shutil.rmtree(Config.UPLOAD_FOLDER, ignore_errors=True)
         shutil.rmtree(Config.RESULTS_FOLDER, ignore_errors=True)
@@ -712,7 +830,9 @@ def find_available_port(start_port=5000, max_attempts=100):
             # Port is in use, try the next one
             continue
 
-    raise RuntimeError(f"No available ports found in range {start_port}-{start_port + max_attempts}")
+    raise RuntimeError(
+        f"No available ports found in range {start_port}-{start_port + max_attempts}"
+    )
 
 
 # Main entry point
@@ -741,7 +861,9 @@ if __name__ == "__main__":
 
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag
-    socketio.run(app, host="0.0.0.0", port=actual_port, debug=debug, allow_unsafe_werkzeug=True)
+    socketio.run(
+        app, host="0.0.0.0", port=actual_port, debug=debug, allow_unsafe_werkzeug=True
+    )
 
     print("Server stopped", flush=True)
 

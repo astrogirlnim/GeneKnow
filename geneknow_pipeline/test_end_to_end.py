@@ -43,7 +43,11 @@ def test_end_to_end():
     print(f"Created test VCF: {test_file}")
 
     # User preferences
-    user_preferences = {"language": "en", "include_technical": True, "patient_data": {"case_id": "E2E_TEST_001"}}
+    user_preferences = {
+        "language": "en",
+        "include_technical": True,
+        "patient_data": {"case_id": "E2E_TEST_001"},
+    }
 
     try:
         print("\n=== Running Full Pipeline ===")

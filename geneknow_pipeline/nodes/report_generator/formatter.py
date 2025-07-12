@@ -74,7 +74,10 @@ class ReportFormatter:
         os.makedirs(output_dir, exist_ok=True)
 
     def format_report(
-        self, data: Dict[str, Any], llm_content: Optional[str] = None, report_id: Optional[str] = None
+        self,
+        data: Dict[str, Any],
+        llm_content: Optional[str] = None,
+        report_id: Optional[str] = None,
     ) -> Dict[str, str]:
         """
         Format a complete report with LLM content or fallback templates.
@@ -119,7 +122,9 @@ class ReportFormatter:
 
         return result_content
 
-    def _format_llm_report(self, data: Dict[str, Any], llm_content: str, report_id: str) -> str:
+    def _format_llm_report(
+        self, data: Dict[str, Any], llm_content: str, report_id: str
+    ) -> str:
         """Format report using LLM-generated content."""
 
         # Extract metadata
@@ -183,7 +188,9 @@ class ReportFormatter:
 
         return markdown
 
-    def _build_header(self, data: Dict[str, Any], report_id: str, llm_enhanced: bool = False) -> str:
+    def _build_header(
+        self, data: Dict[str, Any], report_id: str, llm_enhanced: bool = False
+    ) -> str:
         """Build report header section."""
 
         header = """# Genomic Risk Assessment Report
@@ -211,7 +218,9 @@ class ReportFormatter:
 
         high_risk_count = 0
         if risk_assessment and "scores" in risk_assessment:
-            high_risk_count = sum(1 for score in risk_assessment["scores"].values() if score > 5.0)
+            high_risk_count = sum(
+                1 for score in risk_assessment["scores"].values() if score > 5.0
+            )
 
         content = "**Summary**\n\n"
         content += f"This genomic risk assessment analyzed {total_variants} genetic variants, with {qc_variants} variants passing quality control filters ({qc_rate:.1f}% pass rate). "
@@ -232,9 +241,7 @@ class ReportFormatter:
         content = "**Key Variants**\n\n"
 
         if not variant_details:
-            content += (
-                "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
-            )
+            content += "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
         else:
             # Show top 3 variants in simple format
             for i, variant in enumerate(variant_details[:3], 1):
@@ -262,7 +269,9 @@ class ReportFormatter:
         else:
             # Create table
             content += "| Cancer Type | Risk (%) |\n|-------------|----------|\n"
-            for cancer_type, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+            for cancer_type, score in sorted(
+                scores.items(), key=lambda x: x[1], reverse=True
+            ):
                 content += f"| {cancer_type.title()} | {score:.1f} |\n"
 
             high_risk_count = sum(1 for score in scores.values() if score > 5.0)
@@ -281,9 +290,7 @@ class ReportFormatter:
 
         content = "**Clinical Interpretation**\n\n"
         content += "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, "
-        content += (
-            f"TCGA tumor database comparison ({tcga_summary.get('variants_with_tcga_data', 0)} variants matched), "
-        )
+        content += f"TCGA tumor database comparison ({tcga_summary.get('variants_with_tcga_data', 0)} variants matched), "
         content += "pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. "
 
         if cadd_summary and cadd_summary.get("enabled", False):
@@ -298,7 +305,9 @@ class ReportFormatter:
         """Build template-based recommendations section."""
         risk_assessment = data.get("risk_assessment", {})
         scores = risk_assessment.get("scores", {}) if risk_assessment else {}
-        high_risk_count = sum(1 for score in scores.values() if score > 5.0) if scores else 0
+        high_risk_count = (
+            sum(1 for score in scores.values() if score > 5.0) if scores else 0
+        )
 
         content = "**Recommendations**\n\n"
 
@@ -308,12 +317,16 @@ class ReportFormatter:
             content += "- Consider consultation with oncology specialists for high-risk findings\n"
             content += "- Maintain regular follow-up care and health monitoring\n"
         else:
-            content += "- Adhere to standard age-appropriate cancer screening protocols\n"
+            content += (
+                "- Adhere to standard age-appropriate cancer screening protocols\n"
+            )
             content += "- Maintain healthy lifestyle including regular exercise and balanced diet\n"
             content += "- Continue routine preventive care and health maintenance\n"
             content += "- Consider genetic counseling if strong family history of cancer emerges\n"
 
-        content += "- Consult a qualified healthcare provider for personalized guidance."
+        content += (
+            "- Consult a qualified healthcare provider for personalized guidance."
+        )
 
         return content
 
@@ -324,7 +337,9 @@ class ReportFormatter:
 
         total_variants = summary.get("total_variants_found", 0)
         qc_variants = summary.get("variants_passed_qc", 0)
-        qc_rate = (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
+        qc_rate = (
+            (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
+        )
 
         appendix = """## Technical Appendix
 
@@ -366,7 +381,9 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
         # Always include these basic terms
         glossary += "**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n"
-        glossary += "**Pathogenic:** A genetic variant that is known to cause disease.\n\n"
+        glossary += (
+            "**Pathogenic:** A genetic variant that is known to cause disease.\n\n"
+        )
 
         # Add additional terms based on content
         if "frameshift" in content.lower():
@@ -398,7 +415,9 @@ For questions about this report or genetic counseling resources, please consult 
 
         return footer
 
-    def _convert_to_html_content(self, markdown_content: str, report_id: str) -> Optional[str]:
+    def _convert_to_html_content(
+        self, markdown_content: str, report_id: str
+    ) -> Optional[str]:
         """Convert markdown to HTML (placeholder implementation)."""
         try:
             # Basic markdown to HTML conversion
@@ -433,7 +452,9 @@ For questions about this report or genetic counseling resources, please consult 
         logger.info("PDF conversion not implemented in this version")
         return None
 
-    def _convert_to_txt_content(self, markdown_content: str, report_id: str) -> Optional[str]:
+    def _convert_to_txt_content(
+        self, markdown_content: str, report_id: str
+    ) -> Optional[str]:
         """Convert markdown to plain text."""
         try:
             # Simple markdown stripping

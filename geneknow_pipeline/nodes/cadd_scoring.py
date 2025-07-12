@@ -134,12 +134,17 @@ def compute_cadd_score(variant: Dict[str, Any]) -> Dict[str, float]:
 
     # Try multiple fields to find the consequence
     base_score = IMPACT_SCORES.get(
-        consequence, IMPACT_SCORES.get(impact, IMPACT_SCORES.get(variant_class, IMPACT_SCORES["unknown"]))
+        consequence,
+        IMPACT_SCORES.get(
+            impact, IMPACT_SCORES.get(variant_class, IMPACT_SCORES["unknown"])
+        ),
     )
 
     # Apply gene importance multiplier
     gene = variant.get("gene", "")
-    gene_multiplier = GENE_IMPORTANCE_MULTIPLIERS.get(gene, GENE_IMPORTANCE_MULTIPLIERS["default"])
+    gene_multiplier = GENE_IMPORTANCE_MULTIPLIERS.get(
+        gene, GENE_IMPORTANCE_MULTIPLIERS["default"]
+    )
 
     # Apply allele frequency penalty
     af = variant.get("allele_frequency", 0.5)
@@ -236,7 +241,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         cancer_gene_scores = []
 
         for i, variant in enumerate(filtered_variants):
-            variant_id = variant.get("variant_id", f"{variant['chrom']}:{variant['pos']}")
+            variant_id = variant.get(
+                "variant_id", f"{variant['chrom']}:{variant['pos']}"
+            )
             gene = variant.get("gene", "Unknown")
 
             # Track if this is a cancer gene
@@ -245,7 +252,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 stats["variants_in_cancer_genes"] += 1
 
             # Compute CADD score locally
-            logger.debug(f"Computing score for variant {i+1}/{len(filtered_variants)}: {variant_id}")
+            logger.debug(
+                f"Computing score for variant {i+1}/{len(filtered_variants)}: {variant_id}"
+            )
             cadd_result = compute_cadd_score(variant)
 
             # Create enriched variant
@@ -265,7 +274,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 logger.debug(
                     f"Variant {variant_id}: existing risk_weight={enriched_variant['risk_weight']}, CADD risk_weight={risk_weight}"
                 )
-                enriched_variant["risk_weight"] = max(enriched_variant["risk_weight"], risk_weight)
+                enriched_variant["risk_weight"] = max(
+                    enriched_variant["risk_weight"], risk_weight
+                )
             else:
                 enriched_variant["risk_weight"] = risk_weight
 
@@ -284,7 +295,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             if phred > 20:
                 stats["variants_gt20"] += 1
-                logger.warning(f"High CADD score (>20): {variant_id} in {gene} - PHRED={phred:.1f}")
+                logger.warning(
+                    f"High CADD score (>20): {variant_id} in {gene} - PHRED={phred:.1f}"
+                )
 
             enriched_variants.append(enriched_variant)
 
@@ -297,7 +310,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if cancer_gene_scores:
             mean_cancer_phred = sum(cancer_gene_scores) / len(cancer_gene_scores)
             max_cancer_phred = max(cancer_gene_scores)
-            logger.info(f"Cancer gene CADD scores: mean={mean_cancer_phred:.1f}, max={max_cancer_phred:.1f}")
+            logger.info(
+                f"Cancer gene CADD scores: mean={mean_cancer_phred:.1f}, max={max_cancer_phred:.1f}"
+            )
 
         # Log summary
         logger.info("=" * 60)
@@ -324,5 +339,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "cadd_enriched_variants": state["filtered_variants"],
             "cadd_stats": {"error": str(e)},
-            "errors": [{"node": "cadd_scoring", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "cadd_scoring", "error": str(e), "timestamp": datetime.now()}
+            ],
         }

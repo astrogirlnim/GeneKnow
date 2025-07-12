@@ -35,7 +35,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         # Load configuration
         config = load_config()
-        logger.info(f"Using report config: backend={config.backend.value}, style={config.style.value}")
+        logger.info(
+            f"Using report config: backend={config.backend.value}, style={config.style.value}"
+        )
 
         # Get or create structured JSON data
         structured_json = state.get("structured_json")
@@ -44,10 +46,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             structured_json = _create_basic_structured_json(state)
             state["structured_json"] = structured_json
 
-        logger.info(f"Structured JSON keys: {list(structured_json.keys()) if structured_json else 'None'}")
+        logger.info(
+            f"Structured JSON keys: {list(structured_json.keys()) if structured_json else 'None'}"
+        )
 
         # Filter for high-risk findings only (>5% risk)
-        filtered_data = _filter_high_risk_findings(structured_json, config.risk_threshold)
+        filtered_data = _filter_high_risk_findings(
+            structured_json, config.risk_threshold
+        )
 
         # Initialize components
         model_interface = ModelInterface(config)
@@ -71,7 +77,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "model_used": backend_info.get("model"),
             "llm_enhanced": backend_info["available"],
             "generation_time": datetime.now().isoformat(),
-            "high_risk_findings_count": _count_high_risk_findings(filtered_data, config.risk_threshold),
+            "high_risk_findings_count": _count_high_risk_findings(
+                filtered_data, config.risk_threshold
+            ),
         }
 
         # Generate report content
@@ -80,7 +88,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         if model_interface.is_available():
             logger.info("Generating LLM-enhanced report content")
-            llm_content = _generate_llm_content(filtered_data, model_interface, prompt_builder, stream_callback)
+            llm_content = _generate_llm_content(
+                filtered_data, model_interface, prompt_builder, stream_callback
+            )
         else:
             logger.info("LLM not available, using template-based generation")
             if stream_callback:
@@ -93,16 +103,22 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 )
 
         # Format report content (in-memory, no file storage for HIPAA compliance)
-        report_content = formatter.format_report(data=filtered_data, llm_content=llm_content, report_id=report_id)
+        report_content = formatter.format_report(
+            data=filtered_data, llm_content=llm_content, report_id=report_id
+        )
 
-        logger.info(f"Report generation complete. Formats: {list(report_content.keys())}")
+        logger.info(
+            f"Report generation complete. Formats: {list(report_content.keys())}"
+        )
 
         # Update report info with content metadata
         report_info["available_formats"] = list(report_content.keys())
         report_info["content_length"] = len(report_content.get("markdown", ""))
 
         # Create report_sections for dashboard compatibility
-        dashboard_report_sections = _create_dashboard_report_sections(filtered_data, report_info)
+        dashboard_report_sections = _create_dashboard_report_sections(
+            filtered_data, report_info
+        )
 
         # Return updated state with in-memory content
         return {
@@ -155,7 +171,9 @@ def _create_basic_structured_json(state: Dict[str, Any]) -> Dict[str, Any]:
         "summary": {
             "total_variants_found": state.get("variant_count", 0),
             "variants_passed_qc": len(state.get("filtered_variants", [])),
-            "high_risk_findings": len([s for s in state.get("risk_scores", {}).values() if s >= 5.0]),
+            "high_risk_findings": len(
+                [s for s in state.get("risk_scores", {}).values() if s >= 5.0]
+            ),
         },
         "risk_assessment": {
             "scores": state.get("risk_scores", {}),
@@ -183,7 +201,9 @@ def _format_variant_details(variants: list) -> list:
         formatted_variant = {
             "gene": variant.get("gene", "Unknown"),
             "variant": variant.get("variant_id", "Unknown"),
-            "consequence": variant.get("consequence", variant.get("variant_classification", "unknown")),
+            "consequence": variant.get(
+                "consequence", variant.get("variant_classification", "unknown")
+            ),
             "hgvs_c": variant.get("hgvs_c", ""),
             "hgvs_p": variant.get("hgvs_p", variant.get("protein_change", "")),
             "quality_metrics": {
@@ -197,18 +217,25 @@ def _format_variant_details(variants: list) -> list:
 
         # Add clinical significance if available
         if "clinical_significance" in variant:
-            formatted_variant["clinical_significance"] = variant["clinical_significance"]
+            formatted_variant["clinical_significance"] = variant[
+                "clinical_significance"
+            ]
 
         # Add CADD scores if available
         if "cadd_phred" in variant:
-            formatted_variant["cadd_scores"] = {"phred": variant.get("cadd_phred"), "raw": variant.get("cadd_raw")}
+            formatted_variant["cadd_scores"] = {
+                "phred": variant.get("cadd_phred"),
+                "raw": variant.get("cadd_raw"),
+            }
 
         formatted_variants.append(formatted_variant)
 
     return formatted_variants
 
 
-def _filter_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> Dict[str, Any]:
+def _filter_high_risk_findings(
+    data: Dict[str, Any], risk_threshold: float
+) -> Dict[str, Any]:
     """Filter data to focus on high-risk findings above threshold."""
 
     filtered_data = data.copy()
@@ -220,9 +247,15 @@ def _filter_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> D
         risk_genes = risk_assessment.get("risk_genes", {})
 
         # Keep only high-risk cancers
-        high_risk_scores = {cancer: score for cancer, score in scores.items() if score > risk_threshold}
+        high_risk_scores = {
+            cancer: score for cancer, score in scores.items() if score > risk_threshold
+        }
 
-        high_risk_genes = {cancer: genes for cancer, genes in risk_genes.items() if cancer in high_risk_scores}
+        high_risk_genes = {
+            cancer: genes
+            for cancer, genes in risk_genes.items()
+            if cancer in high_risk_scores
+        }
 
         # Update high_risk_findings
         high_risk_findings = []
@@ -251,13 +284,19 @@ def _count_high_risk_findings(data: Dict[str, Any], risk_threshold: float) -> in
     if not risk_assessment or "scores" not in risk_assessment:
         return 0
 
-    return sum(1 for score in risk_assessment["scores"].values() if score > risk_threshold)
+    return sum(
+        1 for score in risk_assessment["scores"].values() if score > risk_threshold
+    )
 
 
-def _create_dashboard_report_sections(data: Dict[str, Any], report_info: Dict[str, Any]) -> Dict[str, Any]:
+def _create_dashboard_report_sections(
+    data: Dict[str, Any], report_info: Dict[str, Any]
+) -> Dict[str, Any]:
     """Create report_sections structure for dashboard display."""
 
-    logger.info(f"Creating dashboard sections with data keys: {list(data.keys()) if data else 'None'}")
+    logger.info(
+        f"Creating dashboard sections with data keys: {list(data.keys()) if data else 'None'}"
+    )
     logger.info(f"Report info available: {report_info is not None}")
 
     sections = {}
@@ -286,12 +325,16 @@ def _create_dashboard_report_sections(data: Dict[str, Any], report_info: Dict[st
     if high_risk_findings:
         findings_content = []
         for finding in high_risk_findings[:3]:  # Top 3 findings
-            findings_content.append(f"{finding['cancer_type'].title()}: {finding['risk_percentage']:.1f}% risk")
+            findings_content.append(
+                f"{finding['cancer_type'].title()}: {finding['risk_percentage']:.1f}% risk"
+            )
 
         sections["key_findings"] = {
             "title": "Key Findings",
             "content": ". ".join(findings_content) + ".",
-            "severity": "high" if high_risk_findings[0]["risk_percentage"] >= 50 else "medium",
+            "severity": (
+                "high" if high_risk_findings[0]["risk_percentage"] >= 50 else "medium"
+            ),
             "technical_details": f"Analysis included {data.get('summary', {}).get('total_variants_found', 0)} variants with {data.get('summary', {}).get('variants_passed_qc', 0)} passing quality control.",
         }
 
@@ -337,7 +380,13 @@ def _generate_llm_content(
 
         # Generate each section separately for maximum consistency
         sections = {}
-        section_names = ["Summary", "Key Variants", "Risk Summary", "Clinical Interpretation", "Recommendations"]
+        section_names = [
+            "Summary",
+            "Key Variants",
+            "Risk Summary",
+            "Clinical Interpretation",
+            "Recommendations",
+        ]
 
         for section_name in section_names:
             if stream_callback:
@@ -358,32 +407,50 @@ def _generate_llm_content(
                 elif section_name == "Risk Summary":
                     prompt = prompt_builder.build_risk_summary_section_prompt(data)
                 elif section_name == "Clinical Interpretation":
-                    prompt = prompt_builder.build_clinical_interpretation_section_prompt(data)
+                    prompt = (
+                        prompt_builder.build_clinical_interpretation_section_prompt(
+                            data
+                        )
+                    )
                 elif section_name == "Recommendations":
                     prompt = prompt_builder.build_recommendations_section_prompt(data)
                 else:
                     continue
 
                 # Generate content for this section
-                section_content = model_interface.generate(prompt, None)  # No streaming per section
+                section_content = model_interface.generate(
+                    prompt, None
+                )  # No streaming per section
 
                 if section_content:
                     sections[section_name] = section_content.strip()
-                    logger.info(f"Generated {section_name} section: {len(section_content)} characters")
+                    logger.info(
+                        f"Generated {section_name} section: {len(section_content)} characters"
+                    )
                 else:
-                    logger.warning(f"Empty content generated for {section_name} section")
-                    sections[section_name] = _get_fallback_section_content(section_name, data)
+                    logger.warning(
+                        f"Empty content generated for {section_name} section"
+                    )
+                    sections[section_name] = _get_fallback_section_content(
+                        section_name, data
+                    )
 
             except Exception as e:
                 logger.error(f"Failed to generate {section_name} section: {e}")
-                sections[section_name] = _get_fallback_section_content(section_name, data)
+                sections[section_name] = _get_fallback_section_content(
+                    section_name, data
+                )
 
         # Combine all sections into the final report
         final_content = _combine_sections_into_report(sections)
 
         if stream_callback:
             stream_callback(
-                {"section": "complete", "content": "Report generation complete", "total_length": len(final_content)}
+                {
+                    "section": "complete",
+                    "content": "Report generation complete",
+                    "total_length": len(final_content),
+                }
             )
 
         logger.info(f"Generated complete report with {len(final_content)} characters")
@@ -417,10 +484,14 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
 
         # Create simple table
         table_rows = []
-        for cancer_type, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+        for cancer_type, score in sorted(
+            scores.items(), key=lambda x: x[1], reverse=True
+        ):
             table_rows.append(f"| {cancer_type.title()} | {score:.1f} |")
 
-        table = "| Cancer Type | Risk (%) |\n|-------------|----------|\n" + "\n".join(table_rows)
+        table = "| Cancer Type | Risk (%) |\n|-------------|----------|\n" + "\n".join(
+            table_rows
+        )
 
         high_risk_count = sum(1 for score in scores.values() if score > 5.0)
         if high_risk_count > 0:
@@ -436,7 +507,9 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
     elif section_name == "Recommendations":
         risk_assessment = data.get("risk_assessment", {})
         scores = risk_assessment.get("scores", {}) if risk_assessment else {}
-        high_risk_count = sum(1 for score in scores.values() if score > 5.0) if scores else 0
+        high_risk_count = (
+            sum(1 for score in scores.values() if score > 5.0) if scores else 0
+        )
 
         if high_risk_count > 0:
             return "- Genetic counseling is recommended to discuss these findings and develop a personalized risk management plan\n- Enhanced screening protocols may be appropriate for elevated cancer risks\n- Consider consultation with oncology specialists for high-risk findings\n- Maintain regular follow-up care and health monitoring\n- Consult a qualified healthcare provider for personalized guidance."
@@ -465,7 +538,9 @@ def _combine_sections_into_report(sections: Dict[str, str]) -> str:
 
     # Clinical Interpretation section
     if "Clinical Interpretation" in sections:
-        report_parts.append(f"**Clinical Interpretation**\n\n{sections['Clinical Interpretation']}")
+        report_parts.append(
+            f"**Clinical Interpretation**\n\n{sections['Clinical Interpretation']}"
+        )
 
     # Recommendations section
     if "Recommendations" in sections:
@@ -476,7 +551,9 @@ def _combine_sections_into_report(sections: Dict[str, str]) -> str:
 
 
 def generate_report_standalone(
-    json_file_path: str, config_path: Optional[str] = None, output_dir: Optional[str] = None
+    json_file_path: str,
+    config_path: Optional[str] = None,
+    output_dir: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Standalone function to generate reports from JSON files.
@@ -517,10 +594,14 @@ def generate_report_standalone(
     # Generate LLM content if available
     llm_content = None
     if model_interface.is_available():
-        llm_content = _generate_llm_content(filtered_data, model_interface, prompt_builder)
+        llm_content = _generate_llm_content(
+            filtered_data, model_interface, prompt_builder
+        )
 
     # Format and save
-    report_content = formatter.format_report(data=filtered_data, llm_content=llm_content, report_id=report_id)
+    report_content = formatter.format_report(
+        data=filtered_data, llm_content=llm_content, report_id=report_id
+    )
 
     logger.info(f"Standalone report generated: {report_content}")
     return report_content

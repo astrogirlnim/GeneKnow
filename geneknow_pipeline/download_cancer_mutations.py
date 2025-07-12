@@ -8,7 +8,9 @@ from gdc_api_client import GDCAPIClient
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 
 
@@ -25,19 +27,27 @@ def download_cancer_mutation_files():
 
     # Search for lung cancer files (KRAS, EGFR mutations common)
     logging.info("\n🫁 Searching for lung cancer files (KRAS, EGFR mutations)...")
-    lung_files = search_cancer_files(client, primary_sites=["Bronchus and lung"], cancer_name="Lung")
+    lung_files = search_cancer_files(
+        client, primary_sites=["Bronchus and lung"], cancer_name="Lung"
+    )
 
     # Search for colorectal cancer files (KRAS, BRAF mutations common)
     logging.info("\n🔴 Searching for colorectal cancer files (KRAS, BRAF mutations)...")
-    colon_files = search_cancer_files(client, primary_sites=["Colon", "Rectum"], cancer_name="Colorectal")
+    colon_files = search_cancer_files(
+        client, primary_sites=["Colon", "Rectum"], cancer_name="Colorectal"
+    )
 
     # Search for melanoma files (BRAF mutations common)
     logging.info("\n🟤 Searching for melanoma files (BRAF V600E mutations)...")
-    melanoma_files = search_cancer_files(client, primary_sites=["Skin"], cancer_name="Melanoma")
+    melanoma_files = search_cancer_files(
+        client, primary_sites=["Skin"], cancer_name="Melanoma"
+    )
 
     # Search for breast cancer files (PIK3CA, HER2 mutations common)
     logging.info("\n🎀 Searching for breast cancer files (PIK3CA, HER2 mutations)...")
-    breast_files = search_cancer_files(client, primary_sites=["Breast"], cancer_name="Breast")
+    breast_files = search_cancer_files(
+        client, primary_sites=["Breast"], cancer_name="Breast"
+    )
 
     # Combine all files
     all_files = lung_files + colon_files + melanoma_files + breast_files
@@ -69,10 +79,28 @@ def search_cancer_files(client, primary_sites, cancer_name, max_results=5):
     filters = {
         "op": "and",
         "content": [
-            {"op": "in", "content": {"field": "files.experimental_strategy", "value": ["WXS", "RNA-Seq", "WGS"]}},
-            {"op": "in", "content": {"field": "files.data_format", "value": ["MAF", "TSV", "TXT"]}},
-            {"op": "in", "content": {"field": "files.access", "value": ["open"]}},  # Only open access files
-            {"op": "in", "content": {"field": "cases.primary_site", "value": primary_sites}},
+            {
+                "op": "in",
+                "content": {
+                    "field": "files.experimental_strategy",
+                    "value": ["WXS", "RNA-Seq", "WGS"],
+                },
+            },
+            {
+                "op": "in",
+                "content": {
+                    "field": "files.data_format",
+                    "value": ["MAF", "TSV", "TXT"],
+                },
+            },
+            {
+                "op": "in",
+                "content": {"field": "files.access", "value": ["open"]},
+            },  # Only open access files
+            {
+                "op": "in",
+                "content": {"field": "cases.primary_site", "value": primary_sites},
+            },
         ],
     }
 
@@ -100,7 +128,10 @@ def search_cancer_files(client, primary_sites, cancer_name, max_results=5):
         for file_data in raw_files:
             try:
                 # Prioritize MAF files as they contain mutation data
-                if file_data["data_format"] == "MAF" or "mutation" in file_data["file_name"].lower():
+                if (
+                    file_data["data_format"] == "MAF"
+                    or "mutation" in file_data["file_name"].lower()
+                ):
                     tcga_file = TCGAFile(
                         file_id=file_data["id"],
                         file_name=file_data["file_name"],
@@ -115,7 +146,9 @@ def search_cancer_files(client, primary_sites, cancer_name, max_results=5):
 
                     # Log some details about the file
                     case_info = file_data.get("cases", [{}])[0]
-                    project_id = case_info.get("project", {}).get("project_id", "Unknown")
+                    project_id = case_info.get("project", {}).get(
+                        "project_id", "Unknown"
+                    )
                     logging.info(f"   ✓ {file_data['file_name']} - {project_id}")
 
             except Exception as e:

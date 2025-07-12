@@ -44,7 +44,13 @@ class TCGATestSuite:
             if result:
                 self.results["passed"] += 1
                 print(f"✅ PASSED ({end_time - start_time:.2f}s)")
-                self.results["tests"].append({"name": name, "status": "passed", "duration": end_time - start_time})
+                self.results["tests"].append(
+                    {
+                        "name": name,
+                        "status": "passed",
+                        "duration": end_time - start_time,
+                    }
+                )
             else:
                 self.results["failed"] += 1
                 print("❌ FAILED")
@@ -52,7 +58,9 @@ class TCGATestSuite:
         except Exception as e:
             self.results["failed"] += 1
             print(f"❌ ERROR: {str(e)}")
-            self.results["tests"].append({"name": name, "status": "error", "error": str(e)})
+            self.results["tests"].append(
+                {"name": name, "status": "error", "error": str(e)}
+            )
 
     def print_summary(self):
         """Print test summary."""
@@ -60,7 +68,9 @@ class TCGATestSuite:
         print("📊 TCGA TEST SUMMARY")
         print("=" * 60)
         print(f"Total tests: {self.results['total']}")
-        print(f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)")
+        print(
+            f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)"
+        )
         print(f"Failed: {self.results['failed']}")
 
         if self.results["failed"] > 0:
@@ -85,7 +95,9 @@ def test_database_structure():
 
     try:
         # Check tcga_variants table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tcga_variants'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='tcga_variants'"
+        )
         if not cursor.fetchone():
             print("TCGA table not found")
             return False
@@ -113,7 +125,9 @@ def test_database_structure():
             return False
 
         # Check indexes
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tcga_variants'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='tcga_variants'"
+        )
         indexes = [row[0] for row in cursor.fetchall()]
         print(f"Indexes: {', '.join(indexes)}")
 
@@ -179,11 +193,18 @@ def test_tcga_mapper_direct():
     print(f"Cohort sizes: {result.get('tcga_cohort_sizes', {})}")
 
     # Validate cohort sizes match expected values
-    expected_cohorts = {"breast": 1084, "colon": 461, "lung": 585, "prostate": 498, "blood": 200}
+    expected_cohorts = {
+        "breast": 1084,
+        "colon": 461,
+        "lung": 585,
+        "prostate": 498,
+        "blood": 200,
+    }
 
     actual_cohorts = result.get("tcga_cohort_sizes", {})
     cohorts_match = all(
-        actual_cohorts.get(cancer_type) == expected_size for cancer_type, expected_size in expected_cohorts.items()
+        actual_cohorts.get(cancer_type) == expected_size
+        for cancer_type, expected_size in expected_cohorts.items()
     )
 
     return has_matches and has_cohorts and cohorts_match
@@ -196,7 +217,14 @@ def test_tcga_frequency_analysis():
     # Test with known TP53 variant that exists in the database
     test_state = {
         "filtered_variants": [
-            {"chrom": "17", "pos": 7684799, "re": "C", "alt": "T", "gene": "TP53", "variant_id": "17:7684799:C>T"}
+            {
+                "chrom": "17",
+                "pos": 7684799,
+                "re": "C",
+                "alt": "T",
+                "gene": "TP53",
+                "variant_id": "17:7684799:C>T",
+            }
         ],
         "tcga_matches": {},
         "tcga_cohort_sizes": {},
@@ -218,7 +246,9 @@ def test_tcga_frequency_analysis():
                 if isinstance(match_data, dict):
                     freq = match_data.get("tumor_frequency", 0)
                     enrichment = match_data.get("enrichment_score", 0)
-                    print(f"{cancer_type}: freq={freq:.3f}, enrichment={enrichment:.1f}x")
+                    print(
+                        f"{cancer_type}: freq={freq:.3f}, enrichment={enrichment:.1f}x"
+                    )
 
     return found_matches
 
@@ -266,7 +296,14 @@ def test_performance():
         chrom = str((i % 22) + 1)
         pos = 1000000 + i * 1000
         test_variants.append(
-            {"chrom": chrom, "pos": pos, "re": "A", "alt": "G", "gene": f"GENE{i}", "variant_id": f"{chrom}:{pos}:A>G"}
+            {
+                "chrom": chrom,
+                "pos": pos,
+                "re": "A",
+                "alt": "G",
+                "gene": f"GENE{i}",
+                "variant_id": f"{chrom}:{pos}:A>G",
+            }
         )
 
     test_state = {
@@ -440,9 +477,23 @@ def test_cancer_type_analysis():
     test_state = {
         "filtered_variants": [
             # KRAS mutations common in lung/colon
-            {"chrom": "12", "pos": 25245350, "re": "C", "alt": "T", "gene": "KRAS", "variant_id": "12:25245350:C>T"},
+            {
+                "chrom": "12",
+                "pos": 25245350,
+                "re": "C",
+                "alt": "T",
+                "gene": "KRAS",
+                "variant_id": "12:25245350:C>T",
+            },
             # BRCA1 mutations in breast
-            {"chrom": "17", "pos": 43045677, "re": "G", "alt": "A", "gene": "BRCA1", "variant_id": "17:43045677:G>A"},
+            {
+                "chrom": "17",
+                "pos": 43045677,
+                "re": "G",
+                "alt": "A",
+                "gene": "BRCA1",
+                "variant_id": "17:43045677:G>A",
+            },
         ],
         "tcga_matches": {},
         "tcga_cohort_sizes": {},
@@ -461,7 +512,10 @@ def test_cancer_type_analysis():
         # matches is a dict where keys are variant_ids and values are match data
         for variant_id, match_data in matches.items():
             if isinstance(match_data, dict):
-                if match_data.get("gene") == "KRAS" and match_data.get("enrichment_score", 0) > 2:
+                if (
+                    match_data.get("gene") == "KRAS"
+                    and match_data.get("enrichment_score", 0) > 2
+                ):
                     kras_cancers.append(cancer_type)
 
     print(f"KRAS enriched in: {', '.join(kras_cancers)}")

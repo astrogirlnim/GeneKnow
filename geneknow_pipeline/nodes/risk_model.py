@@ -12,7 +12,9 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
-def extract_enhanced_features(variants: List[Dict[str, Any]], genes: List[str]) -> List[float]:
+def extract_enhanced_features(
+    variants: List[Dict[str, Any]], genes: List[str]
+) -> List[float]:
     """
     Extract comprehensive features for each gene instead of just binary presence.
 
@@ -73,7 +75,10 @@ def extract_enhanced_features(variants: List[Dict[str, Any]], genes: List[str]) 
             severe_consequences = {"frameshift", "nonsense", "stop_gained", "stop_lost"}
             has_severe = 0
             for v in variants_in_gene:
-                if any(sev in str(v.get("consequence", "")).lower() for sev in severe_consequences):
+                if any(
+                    sev in str(v.get("consequence", "")).lower()
+                    for sev in severe_consequences
+                ):
                     has_severe = 1
                     break
             features.append(has_severe)
@@ -123,7 +128,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         filtered_variants = state.get("filtered_variants", [])
         if not filtered_variants:
             logger.error("No filtered variants found in state")
-            return {"risk_scores": {}, "risk_genes": {}, "error": "No variants to analyze"}
+            return {
+                "risk_scores": {},
+                "risk_genes": {},
+                "error": "No variants to analyze",
+            }
 
         return _simple_risk_calculation(state, filtered_variants)
 
@@ -133,7 +142,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {"risk_scores": {}, "risk_genes": {}, "error": str(e)}
 
 
-def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[str, Any]) -> Dict[str, Any]:
+def _ml_fusion_risk_calculation(
+    state: Dict[str, Any], ml_fusion_results: Dict[str, Any]
+) -> Dict[str, Any]:
     """Calculate risk scores from ML fusion results."""
     try:
         # Get aggregate risk assessment
@@ -173,7 +184,14 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[s
 
         # Calculate cancer-specific risk scores based on ML fusion
         # Base risks adjusted by aggregate risk score
-        base_risks = {"breast": 15.0, "colon": 13.0, "lung": 14.0, "prostate": 12.0, "blood": 8.0, "bone": 6.0}
+        base_risks = {
+            "breast": 15.0,
+            "colon": 13.0,
+            "lung": 14.0,
+            "prostate": 12.0,
+            "blood": 8.0,
+            "bone": 6.0,
+        }
 
         # Scale risks based on ML fusion aggregate score
         risk_multiplier = 1.0 + (aggregate_risk_score * 2.0)  # 1.0 to 3.0 multiplier
@@ -186,26 +204,46 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[s
             adjusted_risk = base_risk * risk_multiplier
 
             # Further adjust based on specific contributing factors
-            if "cadd_score" in contributing_factors and contributing_factors["cadd_score"] > 0.5:
+            if (
+                "cadd_score" in contributing_factors
+                and contributing_factors["cadd_score"] > 0.5
+            ):
                 adjusted_risk *= 1.2
             if (
                 "clinvar_classification" in contributing_factors
                 and contributing_factors["clinvar_classification"] > 0.5
             ):
                 adjusted_risk *= 1.3
-            if "gene_burden_score" in contributing_factors and contributing_factors["gene_burden_score"] > 0.5:
+            if (
+                "gene_burden_score" in contributing_factors
+                and contributing_factors["gene_burden_score"] > 0.5
+            ):
                 adjusted_risk *= 1.25
 
             # Cap at 95%
             risk_scores[cancer_type] = min(round(adjusted_risk, 1), 95.0)
 
             # Assign genes based on cancer type relevance
-            if cancer_type == "breast" and any(g in ["BRCA1", "BRCA2", "PALB2", "ATM"] for g in high_risk_genes):
-                risk_genes[cancer_type] = [g for g in high_risk_genes if g in ["BRCA1", "BRCA2", "PALB2", "ATM"]]
-            elif cancer_type == "colon" and any(g in ["APC", "KRAS", "MLH1", "MSH2"] for g in high_risk_genes):
-                risk_genes[cancer_type] = [g for g in high_risk_genes if g in ["APC", "KRAS", "MLH1", "MSH2"]]
-            elif cancer_type == "lung" and any(g in ["EGFR", "KRAS", "ALK", "ROS1"] for g in high_risk_genes):
-                risk_genes[cancer_type] = [g for g in high_risk_genes if g in ["EGFR", "KRAS", "ALK", "ROS1"]]
+            if cancer_type == "breast" and any(
+                g in ["BRCA1", "BRCA2", "PALB2", "ATM"] for g in high_risk_genes
+            ):
+                risk_genes[cancer_type] = [
+                    g
+                    for g in high_risk_genes
+                    if g in ["BRCA1", "BRCA2", "PALB2", "ATM"]
+                ]
+            elif cancer_type == "colon" and any(
+                g in ["APC", "KRAS", "MLH1", "MSH2"] for g in high_risk_genes
+            ):
+                risk_genes[cancer_type] = [
+                    g for g in high_risk_genes if g in ["APC", "KRAS", "MLH1", "MSH2"]
+                ]
+            elif cancer_type == "lung" and any(
+                g in ["EGFR", "KRAS", "ALK", "ROS1"] for g in high_risk_genes
+            ):
+                risk_genes[cancer_type] = [
+                    g for g in high_risk_genes if g in ["EGFR", "KRAS", "ALK", "ROS1"]
+                ]
             else:
                 # For other cancers, include all high-risk genes
                 risk_genes[cancer_type] = high_risk_genes[:3]  # Top 3 genes
@@ -219,7 +257,9 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[s
         logger.info(f"  High-risk genes: {high_risk_genes}")
 
         for cancer_type, score in risk_scores.items():
-            logger.info(f"  {cancer_type}: {score}% (genes: {risk_genes.get(cancer_type, [])})")
+            logger.info(
+                f"  {cancer_type}: {score}% (genes: {risk_genes.get(cancer_type, [])})"
+            )
 
         logger.info("Risk model complete (ML fusion)")
 
@@ -246,7 +286,9 @@ def _ml_fusion_risk_calculation(state: Dict[str, Any], ml_fusion_results: Dict[s
         return _simple_risk_calculation(state, filtered_variants)
 
 
-def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _simple_risk_calculation(
+    state: Dict[str, Any], filtered_variants: List[Dict[str, Any]]
+) -> Dict[str, Any]:
     """Fallback simple risk calculation when ML models aren't available."""
     logger.warning("⚠️ Using simple risk calculation (ML fusion not available)")
     logger.info("This should only happen if ML fusion node failed or was skipped")
@@ -307,7 +349,14 @@ def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict
     }
 
     # Base risk scores
-    risk_scores = {"breast": 3.0, "colon": 1.7, "lung": 2.4, "prostate": 2.9, "blood": 1.7, "bone": 1.9}
+    risk_scores = {
+        "breast": 3.0,
+        "colon": 1.7,
+        "lung": 2.4,
+        "prostate": 2.9,
+        "blood": 1.7,
+        "bone": 1.9,
+    }
 
     # Map PRS cancer types to our risk score keys
     prs_to_risk_mapping = {
@@ -351,7 +400,9 @@ def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict
 
                 # Apply PRS contribution
                 if prs_contribution > 0:
-                    risk_scores[risk_type] = min(risk_scores[risk_type] + prs_contribution, 95.0)
+                    risk_scores[risk_type] = min(
+                        risk_scores[risk_type] + prs_contribution, 95.0
+                    )
                     logger.info(
                         f"PRS for {prs_cancer} adds {prs_contribution:.1f}% to {risk_type} risk "
                         f"(percentile: {percentile}, confidence: {confidence})"
@@ -425,15 +476,21 @@ def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict
 
                 if is_pathogenic:
                     pathogenic_genes[cancer].append(gene)
-                    logger.warning(f"Pathogenic variant in {gene} increases {cancer} risk by {adjusted_risk:.1f}%")
+                    logger.warning(
+                        f"Pathogenic variant in {gene} increases {cancer} risk by {adjusted_risk:.1f}%"
+                    )
                 else:
-                    logger.info(f"Uncertain variant in {gene} increases {cancer} risk by {adjusted_risk:.1f}%")
+                    logger.info(
+                        f"Uncertain variant in {gene} increases {cancer} risk by {adjusted_risk:.1f}%"
+                    )
 
     # Log summary
     total_benign = sum(len(genes) for genes in benign_genes.values())
     total_pathogenic = sum(len(genes) for genes in pathogenic_genes.values())
 
-    logger.info(f"Simple risk calculation: {len(genes_hit)} cancer genes affected out of {variant_count} variants")
+    logger.info(
+        f"Simple risk calculation: {len(genes_hit)} cancer genes affected out of {variant_count} variants"
+    )
     logger.info(f"  Benign variants: {total_benign} (excluded from risk)")
     logger.info(f"  Pathogenic variants: {total_pathogenic}")
 
@@ -465,6 +522,8 @@ def _simple_risk_calculation(state: Dict[str, Any], filtered_variants: List[Dict
             "prs_confidence": prs_summary.get("overall_confidence", "not_available"),
             "risk_calculation_method": "integrated_prs_and_variants",
         }
-        logger.info(f"Risk calculation integrated PRS data: {prs_summary.get('high_risk_cancers', [])}")
+        logger.info(
+            f"Risk calculation integrated PRS data: {prs_summary.get('high_risk_cancers', [])}"
+        )
 
     return result

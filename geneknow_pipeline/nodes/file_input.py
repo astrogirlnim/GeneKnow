@@ -73,7 +73,9 @@ def validate_fastq(file_path: str) -> Dict[str, Any]:
             sample_size = handle.tell() if hasattr(handle, "tell") else 0
             if sample_size > 0:
                 total_size = os.path.getsize(file_path)
-                metadata["estimated_read_count"] = int((total_size / sample_size) * read_count)
+                metadata["estimated_read_count"] = int(
+                    (total_size / sample_size) * read_count
+                )
             else:
                 metadata["estimated_read_count"] = read_count * 10  # Rough estimate
         else:
@@ -161,7 +163,9 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
                     total_estimate = sum(stat.total for stat in idx_stats)
                     if total_estimate > 0:
                         metadata["total_reads"] = total_estimate
-                        metadata["mapped_reads"] = sum(stat.mapped for stat in idx_stats)
+                        metadata["mapped_reads"] = sum(
+                            stat.mapped for stat in idx_stats
+                        )
                     else:
                         # Rough estimate
                         metadata["total_reads"] = total_reads * 10
@@ -180,7 +184,9 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
 
         # Calculate mapping rate
         if metadata["total_reads"] > 0:
-            metadata["mapping_rate"] = round(metadata["mapped_reads"] / metadata["total_reads"], 3)
+            metadata["mapping_rate"] = round(
+                metadata["mapped_reads"] / metadata["total_reads"], 3
+            )
         else:
             metadata["mapping_rate"] = 0.0
 
@@ -236,7 +242,13 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
 
             # Check for required MAF columns
             columns = header_line.split("\t")
-            required_columns = ["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]
+            required_columns = [
+                "Hugo_Symbol",
+                "Chromosome",
+                "Start_Position",
+                "Reference_Allele",
+                "Tumor_Seq_Allele2",
+            ]
 
             missing = [col for col in required_columns if col not in columns]
             if missing:
@@ -302,7 +314,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             metadata = validate_bam(file_path)
         elif file_type == "vcf":
             # Basic VCF metadata
-            metadata = {"format": "VCF", "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)}
+            metadata = {
+                "format": "VCF",
+                "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
+            }
         elif file_type == "maf":
             metadata = validate_maf(file_path)
         else:
@@ -318,7 +333,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"File validation failed: {str(e)}")
-        state["errors"].append({"node": "file_input", "error": str(e), "timestamp": datetime.now()})
+        state["errors"].append(
+            {"node": "file_input", "error": str(e), "timestamp": datetime.now()}
+        )
         state["pipeline_status"] = "failed"
 
     return state

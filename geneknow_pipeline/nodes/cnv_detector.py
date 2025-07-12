@@ -271,23 +271,43 @@ def process(state: Dict) -> Dict:
             annotated_cnvs.append(annotated_cnv)
 
         # Sort by clinical significance
-        significance_order = {"pathogenic": 0, "likely_pathogenic": 1, "uncertain_significance": 2, "benign": 3}
+        significance_order = {
+            "pathogenic": 0,
+            "likely_pathogenic": 1,
+            "uncertain_significance": 2,
+            "benign": 3,
+        }
         annotated_cnvs.sort(
-            key=lambda x: significance_order.get(x.get("clinical_significance", "uncertain_significance"), 2)
+            key=lambda x: significance_order.get(
+                x.get("clinical_significance", "uncertain_significance"), 2
+            )
         )
 
         # Summary statistics
         cnv_summary = {
             "total_cnvs": len(annotated_cnvs),
-            "amplifications": sum(1 for cnv in annotated_cnvs if cnv.get("type") == "amplification"),
+            "amplifications": sum(
+                1 for cnv in annotated_cnvs if cnv.get("type") == "amplification"
+            ),
             "deletions": sum(
-                1 for cnv in annotated_cnvs if cnv.get("type") in ["heterozygous_deletion", "homozygous_deletion"]
+                1
+                for cnv in annotated_cnvs
+                if cnv.get("type") in ["heterozygous_deletion", "homozygous_deletion"]
             ),
             "pathogenic_cnvs": sum(
-                1 for cnv in annotated_cnvs if cnv.get("clinical_significance") in ["pathogenic", "likely_pathogenic"]
+                1
+                for cnv in annotated_cnvs
+                if cnv.get("clinical_significance")
+                in ["pathogenic", "likely_pathogenic"]
             ),
-            "cancer_associated": sum(1 for cnv in annotated_cnvs if "cancer_relevance" in cnv),
-            "therapeutic_targets": [cnv["gene"] for cnv in annotated_cnvs if cnv.get("therapeutic_relevance")],
+            "cancer_associated": sum(
+                1 for cnv in annotated_cnvs if "cancer_relevance" in cnv
+            ),
+            "therapeutic_targets": [
+                cnv["gene"]
+                for cnv in annotated_cnvs
+                if cnv.get("therapeutic_relevance")
+            ],
         }
 
         # Add to completed nodes
@@ -298,12 +318,20 @@ def process(state: Dict) -> Dict:
         logger.info(f"Detected {len(annotated_cnvs)} CNVs")
 
         # Return only the keys this node updates
-        return {"copy_number_variants": annotated_cnvs, "cnv_summary": cnv_summary, "completed_nodes": completed}
+        return {
+            "copy_number_variants": annotated_cnvs,
+            "cnv_summary": cnv_summary,
+            "completed_nodes": completed,
+        }
 
     except Exception as e:
         logger.error(f"Error in CNV detection: {str(e)}")
         errors = state.get("errors", []) + [
-            {"node": "cnv_detector", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "cnv_detector",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Return only the keys this node updates
         return {"copy_number_variants": [], "errors": errors}

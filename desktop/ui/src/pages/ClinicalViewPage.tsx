@@ -1274,10 +1274,7 @@ const ClinicalViewPage: React.FC = () => {
       const riskCategory = overallRiskScore >= 30 ? 'High Risk' : 
                           overallRiskScore >= 15 ? 'Moderate Risk' : 'Low Risk';
       
-      // Get top genes from variant details
-      const structuredJson = pipelineResults.structured_json || {};
-      const variantDetails = Array.isArray(structuredJson.variant_details) ? structuredJson.variant_details : [];
-      const topGenes = variantDetails.slice(0, 3).map(v => v.gene).filter(Boolean);
+      // Note: variant details could be used here for enhanced sidebar data in the future
       
       return {
         riskLevel: riskCategory,

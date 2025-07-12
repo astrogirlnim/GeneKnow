@@ -58,19 +58,149 @@ def create_prs_database():
     # Add example PRS SNPs for different cancers
     example_snps = [
         # Breast cancer SNPs
-        ("17:43044295:G>A", "17", 43044295, "G", "A", "A", 2.3, "BRCA", 1e-20, "PMID:28108588", "EUR", 0.0001),
-        ("13:32911888:A>G", "13", 32911888, "A", "G", "G", 1.8, "BRCA", 1e-15, "PMID:28108588", "EUR", 0.0002),
-        ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.15, "BRCA", 5e-8, "PMID:28108588", "EUR", 0.23),
-        ("5:56031884:T>C", "5", 56031884, "T", "C", "C", 0.12, "BRCA", 3e-9, "PMID:28108588", "EUR", 0.31),
+        (
+            "17:43044295:G>A",
+            "17",
+            43044295,
+            "G",
+            "A",
+            "A",
+            2.3,
+            "BRCA",
+            1e-20,
+            "PMID:28108588",
+            "EUR",
+            0.0001,
+        ),
+        (
+            "13:32911888:A>G",
+            "13",
+            32911888,
+            "A",
+            "G",
+            "G",
+            1.8,
+            "BRCA",
+            1e-15,
+            "PMID:28108588",
+            "EUR",
+            0.0002,
+        ),
+        (
+            "10:123352317:C>T",
+            "10",
+            123352317,
+            "C",
+            "T",
+            "T",
+            0.15,
+            "BRCA",
+            5e-8,
+            "PMID:28108588",
+            "EUR",
+            0.23,
+        ),
+        (
+            "5:56031884:T>C",
+            "5",
+            56031884,
+            "T",
+            "C",
+            "C",
+            0.12,
+            "BRCA",
+            3e-9,
+            "PMID:28108588",
+            "EUR",
+            0.31,
+        ),
         # Ovarian cancer SNPs (some overlap with BRCA)
-        ("17:43044295:G>A", "17", 43044295, "G", "A", "A", 3.1, "OVCA", 1e-25, "PMID:28346442", "EUR", 0.0001),
-        ("9:22125503:G>C", "9", 22125503, "G", "C", "C", 0.25, "OVCA", 1e-10, "PMID:28346442", "EUR", 0.18),
+        (
+            "17:43044295:G>A",
+            "17",
+            43044295,
+            "G",
+            "A",
+            "A",
+            3.1,
+            "OVCA",
+            1e-25,
+            "PMID:28346442",
+            "EUR",
+            0.0001,
+        ),
+        (
+            "9:22125503:G>C",
+            "9",
+            22125503,
+            "G",
+            "C",
+            "C",
+            0.25,
+            "OVCA",
+            1e-10,
+            "PMID:28346442",
+            "EUR",
+            0.18,
+        ),
         # Prostate cancer SNPs
-        ("8:128081119:T>C", "8", 128081119, "T", "C", "C", 0.18, "PRAD", 2e-11, "PMID:29892016", "EUR", 0.42),
-        ("17:47440843:A>G", "17", 47440843, "A", "G", "G", 0.22, "PRAD", 8e-13, "PMID:29892016", "EUR", 0.35),
+        (
+            "8:128081119:T>C",
+            "8",
+            128081119,
+            "T",
+            "C",
+            "C",
+            0.18,
+            "PRAD",
+            2e-11,
+            "PMID:29892016",
+            "EUR",
+            0.42,
+        ),
+        (
+            "17:47440843:A>G",
+            "17",
+            47440843,
+            "A",
+            "G",
+            "G",
+            0.22,
+            "PRAD",
+            8e-13,
+            "PMID:29892016",
+            "EUR",
+            0.35,
+        ),
         # Population-specific effect sizes for same SNP
-        ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.08, "BRCA", 5e-6, "PMID:31427789", "AFR", 0.41),
-        ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.13, "BRCA", 2e-7, "PMID:31427789", "EAS", 0.19),
+        (
+            "10:123352317:C>T",
+            "10",
+            123352317,
+            "C",
+            "T",
+            "T",
+            0.08,
+            "BRCA",
+            5e-6,
+            "PMID:31427789",
+            "AFR",
+            0.41,
+        ),
+        (
+            "10:123352317:C>T",
+            "10",
+            123352317,
+            "C",
+            "T",
+            "T",
+            0.13,
+            "BRCA",
+            2e-7,
+            "PMID:31427789",
+            "EAS",
+            0.19,
+        ),
     ]
 
     cursor.executemany(
@@ -92,7 +222,9 @@ def normalize_chromosome(chrom: str) -> str:
     return chrom
 
 
-def infer_genotype(variant: Dict[str, Any], maf: Optional[float] = None) -> Tuple[int, str]:
+def infer_genotype(
+    variant: Dict[str, Any], maf: Optional[float] = None
+) -> Tuple[int, str]:
     """
     Infer genotype (number of risk alleles) when not directly observed.
 
@@ -136,7 +268,12 @@ def infer_genotype(variant: Dict[str, Any], maf: Optional[float] = None) -> Tupl
 
 
 def query_prs_database(
-    chrom: str, pos: int, ref: str, alt: str, cancer_type: Optional[str] = None, population: str = "EUR"
+    chrom: str,
+    pos: int,
+    ref: str,
+    alt: str,
+    cancer_type: Optional[str] = None,
+    population: str = "EUR",
 ) -> List[Dict[str, Any]]:
     """Query PRS database for effect sizes."""
     if not os.path.exists(PRS_DB_PATH):
@@ -167,7 +304,9 @@ def query_prs_database(
         for row in cursor.fetchall():
             # Check if ref/alt match (considering strand flips)
             db_ref, db_alt = row[2], row[3]
-            if (ref == db_ref and alt == db_alt) or (ref == db_alt and alt == db_ref):  # Strand flip
+            if (ref == db_ref and alt == db_alt) or (
+                ref == db_alt and alt == db_ref
+            ):  # Strand flip
 
                 results.append(
                     {
@@ -233,7 +372,12 @@ def calculate_cancer_specific_prs(
     for variant in variants:
         # Query for PRS effect
         prs_hits = query_prs_database(
-            variant["chrom"], variant["pos"], variant["re"], variant["alt"], cancer_type, population
+            variant["chrom"],
+            variant["pos"],
+            variant["re"],
+            variant["alt"],
+            cancer_type,
+            population,
         )
 
         for hit in prs_hits:
@@ -330,7 +474,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         for cancer_type in SUPPORTED_CANCERS:
             logger.info(f"Calculating PRS for {cancer_type}")
 
-            result = calculate_cancer_specific_prs(filtered_variants, cancer_type, patient_population)
+            result = calculate_cancer_specific_prs(
+                filtered_variants, cancer_type, patient_population
+            )
 
             prs_results[cancer_type] = result
 
@@ -353,7 +499,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "overall_confidence": (
                 "high"
                 if all(r["confidence"] == "high" for r in prs_results.values())
-                else "moderate" if any(r["confidence"] == "high" for r in prs_results.values()) else "low"
+                else (
+                    "moderate"
+                    if any(r["confidence"] == "high" for r in prs_results.values())
+                    else "low"
+                )
             ),
             "limitations": [],
         }
@@ -361,10 +511,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Add limitations
         for cancer_type, result in prs_results.items():
             if result["confidence"] == "low":
-                prs_summary["limitations"].append(f"Low SNP coverage for {cancer_type} PRS ({result['coverage']:.1%})")
+                prs_summary["limitations"].append(
+                    f"Low SNP coverage for {cancer_type} PRS ({result['coverage']:.1%})"
+                )
 
         if patient_population != "EUR":
-            prs_summary["limitations"].append(f"PRS may be less accurate for {patient_population} population")
+            prs_summary["limitations"].append(
+                f"PRS may be less accurate for {patient_population} population"
+            )
 
         # Log overall summary
         logger.info("PRS calculation complete:")
@@ -388,5 +542,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "prs_results": {},
             "prs_summary": {"error": str(e), "overall_confidence": "failed"},
-            "errors": [{"node": "prs_calculator", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "prs_calculator", "error": str(e), "timestamp": datetime.now()}
+            ],
         }

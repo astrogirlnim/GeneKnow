@@ -90,7 +90,11 @@ def create_test_state_high_risk_valid():
         "ml_fusion_feature_matrix": X_scaled,
         "risk_scores": {"aggregate_risk_score": 0.75},  # High risk
         "filtered_variants": [
-            {"variant_id": "chr1:12345", "gene": "BRCA1", "clinvar_clinical_significance": "Pathogenic"}
+            {
+                "variant_id": "chr1:12345",
+                "gene": "BRCA1",
+                "clinvar_clinical_significance": "Pathogenic",
+            }
         ],
     }
 
@@ -122,7 +126,11 @@ def create_test_state_high_risk_invalid():
     # Test with benign variant
     test_inputs = [
         StaticModelInputs(
-            prs_score=0.8, clinvar_classification="benign", cadd_score=10.0, tcga_enrichment=4.0, gene_burden_score=3.0
+            prs_score=0.8,
+            clinvar_classification="benign",
+            cadd_score=10.0,
+            tcga_enrichment=4.0,
+            gene_burden_score=3.0,
         )
     ]
 
@@ -134,7 +142,11 @@ def create_test_state_high_risk_invalid():
         "ml_fusion_feature_matrix": X_scaled,
         "risk_scores": {"aggregate_risk_score": 0.75},  # High risk
         "filtered_variants": [
-            {"variant_id": "chr2:67890", "gene": "TP53", "clinvar_clinical_significance": "Benign"},
+            {
+                "variant_id": "chr2:67890",
+                "gene": "TP53",
+                "clinvar_clinical_significance": "Benign",
+            },
             {
                 "variant_id": "chr17:41276045",
                 "gene": "BRCA1",
@@ -185,7 +197,11 @@ def create_test_state_low_risk_with_pathogenic():
         "ml_fusion_feature_matrix": X_scaled,
         "risk_scores": {"aggregate_risk_score": 0.05},  # Low risk
         "filtered_variants": [
-            {"variant_id": "chr3:11111", "gene": "MLH1", "clinvar_clinical_significance": "Pathogenic"}
+            {
+                "variant_id": "chr3:11111",
+                "gene": "MLH1",
+                "clinvar_clinical_significance": "Pathogenic",
+            }
         ],
     }
 
@@ -207,14 +223,18 @@ def test_shap_validator():
     print(f"   Reasons: {result1['shap_validation_reasons']}")
     print("   Top contributors:")
     for contrib in result1["shap_top_contributors"][:3]:
-        print(f"     - {contrib['display_name']}: {contrib['direction']} risk (SHAP: {contrib['shap_value']:.3f})")
+        print(
+            f"     - {contrib['display_name']}: {contrib['direction']} risk (SHAP: {contrib['shap_value']:.3f})"
+        )
 
     # Debug: Print all feature importances
     print("\n   All feature importances:")
     for feature, importance in result1["shap_feature_importance"].items():
         print(f"     - {feature}: {importance:.3f}")
 
-    assert result1["shap_validation_status"] == "PASS", "Should PASS for valid high risk"
+    assert (
+        result1["shap_validation_status"] == "PASS"
+    ), "Should PASS for valid high risk"
     print("   ✅ Test passed!")
 
     # Test 2: High risk without pathogenic variant (should FLAG)
@@ -228,7 +248,9 @@ def test_shap_validator():
     for contrib in result2["shap_top_contributors"][:3]:
         print(f"     - {contrib['display_name']}: {contrib['direction']} risk")
 
-    assert result2["shap_validation_status"] == "FLAG_FOR_REVIEW", "Should FLAG invalid high risk"
+    assert (
+        result2["shap_validation_status"] == "FLAG_FOR_REVIEW"
+    ), "Should FLAG invalid high risk"
     print("   ✅ Test passed!")
 
     # Test 3: Low risk with pathogenic variant (should FLAG)
@@ -242,7 +264,9 @@ def test_shap_validator():
     for contrib in result3["shap_top_contributors"][:3]:
         print(f"     - {contrib['display_name']}: {contrib['direction']} risk")
 
-    assert result3["shap_validation_status"] == "FLAG_FOR_REVIEW", "Should FLAG low risk with pathogenic"
+    assert (
+        result3["shap_validation_status"] == "FLAG_FOR_REVIEW"
+    ), "Should FLAG low risk with pathogenic"
     print("   ✅ Test passed!")
 
     # Test 4: Missing model (should handle gracefully)
@@ -253,7 +277,9 @@ def test_shap_validator():
     print(f"   Status: {result4['shap_validation_status']}")
     print(f"   Reasons: {result4['shap_validation_reasons']}")
 
-    assert result4["shap_validation_status"] == "SKIPPED", "Should SKIP when model missing"
+    assert (
+        result4["shap_validation_status"] == "SKIPPED"
+    ), "Should SKIP when model missing"
     print("   ✅ Test passed!")
 
     print("\n" + "=" * 60)

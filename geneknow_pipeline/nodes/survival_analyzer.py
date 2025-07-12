@@ -14,20 +14,48 @@ logger = logging.getLogger(__name__)
 # Survival impact of known mutations (hazard ratios)
 # HR > 1 = worse survival, HR < 1 = better survival
 MUTATION_HAZARD_RATIOS = {
-    "TP53": {"HR": 2.1, "confidence": 0.95, "cancer_types": ["breast", "lung", "colon"]},
-    "KRAS": {"HR": 1.8, "confidence": 0.9, "cancer_types": ["lung", "colon", "pancreatic"]},
+    "TP53": {
+        "HR": 2.1,
+        "confidence": 0.95,
+        "cancer_types": ["breast", "lung", "colon"],
+    },
+    "KRAS": {
+        "HR": 1.8,
+        "confidence": 0.9,
+        "cancer_types": ["lung", "colon", "pancreatic"],
+    },
     "BRAF": {"HR": 1.7, "confidence": 0.85, "cancer_types": ["melanoma", "colon"]},
-    "EGFR": {"HR": 0.6, "confidence": 0.9, "cancer_types": ["lung"]},  # Better with targeted therapy
+    "EGFR": {
+        "HR": 0.6,
+        "confidence": 0.9,
+        "cancer_types": ["lung"],
+    },  # Better with targeted therapy
     "BRCA1": {"HR": 1.4, "confidence": 0.85, "cancer_types": ["breast", "ovarian"]},
     "BRCA2": {"HR": 1.3, "confidence": 0.85, "cancer_types": ["breast", "ovarian"]},
     "PIK3CA": {"HR": 1.5, "confidence": 0.8, "cancer_types": ["breast", "colon"]},
     "PTEN": {"HR": 1.6, "confidence": 0.85, "cancer_types": ["prostate", "breast"]},
     "MYC": {"HR": 2.0, "confidence": 0.9, "cancer_types": ["blood", "breast"]},
-    "BCL2": {"HR": 0.8, "confidence": 0.75, "cancer_types": ["blood"]},  # Better in some blood cancers
+    "BCL2": {
+        "HR": 0.8,
+        "confidence": 0.75,
+        "cancer_types": ["blood"],
+    },  # Better in some blood cancers
     "APC": {"HR": 1.4, "confidence": 0.85, "cancer_types": ["colon"]},
-    "ERBB2": {"HR": 0.7, "confidence": 0.9, "cancer_types": ["breast"]},  # Better with HER2 therapy
-    "ALK": {"HR": 0.5, "confidence": 0.85, "cancer_types": ["lung"]},  # Better with ALK inhibitors
-    "ROS1": {"HR": 0.6, "confidence": 0.8, "cancer_types": ["lung"]},  # Better with targeted therapy
+    "ERBB2": {
+        "HR": 0.7,
+        "confidence": 0.9,
+        "cancer_types": ["breast"],
+    },  # Better with HER2 therapy
+    "ALK": {
+        "HR": 0.5,
+        "confidence": 0.85,
+        "cancer_types": ["lung"],
+    },  # Better with ALK inhibitors
+    "ROS1": {
+        "HR": 0.6,
+        "confidence": 0.8,
+        "cancer_types": ["lung"],
+    },  # Better with targeted therapy
     "MET": {"HR": 1.7, "confidence": 0.8, "cancer_types": ["lung", "gastric"]},
 }
 
@@ -78,7 +106,9 @@ def calculate_combined_hazard_ratio(mutations: List[str], pathways: List[str]) -
     return min(max(combined_hr, 0.1), 10.0)
 
 
-def generate_survival_curve(base_survival: float, hazard_ratio: float, time_points: np.ndarray) -> np.ndarray:
+def generate_survival_curve(
+    base_survival: float, hazard_ratio: float, time_points: np.ndarray
+) -> np.ndarray:
     """Generate survival curve using exponential model"""
     # Convert 5-year survival to annual hazard rate
     if base_survival > 0:
@@ -103,7 +133,9 @@ def generate_survival_curve(base_survival: float, hazard_ratio: float, time_poin
     return survival_probs
 
 
-def calculate_median_survival(survival_curve: np.ndarray, time_points: np.ndarray) -> float:
+def calculate_median_survival(
+    survival_curve: np.ndarray, time_points: np.ndarray
+) -> float:
     """Calculate median survival time from survival curve"""
     # Find where survival drops below 50%
     below_50 = np.where(survival_curve < 0.5)[0]
@@ -127,7 +159,9 @@ def calculate_median_survival(survival_curve: np.ndarray, time_points: np.ndarra
     return median_time
 
 
-def generate_confidence_bands(survival_curve: np.ndarray, sample_size: int = 100) -> Tuple[np.ndarray, np.ndarray]:
+def generate_confidence_bands(
+    survival_curve: np.ndarray, sample_size: int = 100
+) -> Tuple[np.ndarray, np.ndarray]:
     """Generate confidence bands for survival curve"""
     # Standard error using Greenwood's formula (simplified)
     se = np.sqrt(survival_curve * (1 - survival_curve) / sample_size)
@@ -189,7 +223,11 @@ def analyze_prognostic_factors(variants: List[Dict], pathways: List[Dict]) -> Di
         "factor_summary": {
             "positive_count": len(positive_factors),
             "negative_count": len(negative_factors),
-            "overall_prognosis": "favorable" if len(positive_factors) > len(negative_factors) else "unfavorable",
+            "overall_prognosis": (
+                "favorable"
+                if len(positive_factors) > len(negative_factors)
+                else "unfavorable"
+            ),
         },
     }
 
@@ -202,39 +240,49 @@ def process(state: Dict) -> Dict:
     try:
         # Get variants and pathways
         variants = state.get("variant_details", state.get("filtered_variants", []))
-        
+
         # Get pathway burden results directly (not pathway_analysis which hasn't been created yet)
         pathway_burden_results = state.get("pathway_burden_results", {})
-        pathway_burden_summary = state.get("pathway_burden_summary", {})
-        
+        # pathway_burden_summary = state.get("pathway_burden_summary", {})
+
         # Transform pathway burden results into disrupted pathways format
         disrupted_pathways = []
         if pathway_burden_results:
             for pathway_name, burden_result in pathway_burden_results.items():
                 burden_score = burden_result.get("burden_score", 0)
-                
+
                 if burden_score > 0.1:  # Only include pathways with significant burden
                     # Create mutations list from damaging genes
                     mutations = []
                     if burden_result.get("damaging_genes"):
                         for gene in burden_result["damaging_genes"]:
-                            mutations.append({
-                                "gene": gene,
-                                "type": "missense",  # Default type, could be enhanced
-                                "effect": f"Damaging variant in {gene}"
-                            })
-                    
-                    disrupted_pathways.append({
-                        "name": pathway_name.replace("_", " ").title(),
-                        "pathway_id": pathway_name.upper(),  # Convert to uppercase for matching
-                        "significance": round(burden_score * 100, 1),  # Convert to percentage
-                        "affected_genes": burden_result.get("damaging_genes", []),
-                        "mutations": mutations,
-                        "description": burden_result.get("description", f"{pathway_name} pathway"),
-                        "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}"
-                    })
-        
-        logger.info(f"Transformed {len(disrupted_pathways)} disrupted pathways from pathway burden results")
+                            mutations.append(
+                                {
+                                    "gene": gene,
+                                    "type": "missense",  # Default type, could be enhanced
+                                    "effect": f"Damaging variant in {gene}",
+                                }
+                            )
+
+                    disrupted_pathways.append(
+                        {
+                            "name": pathway_name.replace("_", " ").title(),
+                            "pathway_id": pathway_name.upper(),  # Convert to uppercase for matching
+                            "significance": round(
+                                burden_score * 100, 1
+                            ),  # Convert to percentage
+                            "affected_genes": burden_result.get("damaging_genes", []),
+                            "mutations": mutations,
+                            "description": burden_result.get(
+                                "description", f"{pathway_name} pathway"
+                            ),
+                            "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}",
+                        }
+                    )
+
+        logger.info(
+            f"Transformed {len(disrupted_pathways)} disrupted pathways from pathway burden results"
+        )
 
         # Get risk scores to determine relevant cancer types
         risk_scores = state.get("risk_scores", {})
@@ -243,10 +291,20 @@ def process(state: Dict) -> Dict:
         top_cancers = sorted(risk_scores.items(), key=lambda x: x[1], reverse=True)[:3]
 
         # Extract relevant mutations
-        mutations = list(set(v.get("gene") for v in variants if v.get("gene") in MUTATION_HAZARD_RATIOS))
+        mutations = list(
+            set(
+                v.get("gene")
+                for v in variants
+                if v.get("gene") in MUTATION_HAZARD_RATIOS
+            )
+        )
 
         # Extract disrupted pathway IDs
-        pathway_ids = [p.get("pathway_id") for p in disrupted_pathways if p.get("significance", 0) > 30]
+        pathway_ids = [
+            p.get("pathway_id")
+            for p in disrupted_pathways
+            if p.get("significance", 0) > 30
+        ]
 
         # Generate survival curves for each cancer type
         survival_curves = {}
@@ -261,23 +319,32 @@ def process(state: Dict) -> Dict:
                 base_survival = BASE_SURVIVAL_RATES[cancer_type]
 
                 # Population curve (no mutations)
-                population_curve = generate_survival_curve(base_survival, 1.0, time_points)
+                population_curve = generate_survival_curve(
+                    base_survival, 1.0, time_points
+                )
 
                 # Patient curve (with mutations)
-                patient_curve = generate_survival_curve(base_survival, combined_hr, time_points)
+                patient_curve = generate_survival_curve(
+                    base_survival, combined_hr, time_points
+                )
 
                 # Generate confidence bands
                 lower_ci, upper_ci = generate_confidence_bands(patient_curve)
 
                 # Calculate median survival
-                population_median = calculate_median_survival(population_curve, time_points)
+                population_median = calculate_median_survival(
+                    population_curve, time_points
+                )
                 patient_median = calculate_median_survival(patient_curve, time_points)
 
                 survival_curves[cancer_type] = {
                     "time_points": time_points.tolist(),
                     "population_survival": population_curve.tolist(),
                     "patient_survival": patient_curve.tolist(),
-                    "confidence_interval": {"lower": lower_ci.tolist(), "upper": upper_ci.tolist()},
+                    "confidence_interval": {
+                        "lower": lower_ci.tolist(),
+                        "upper": upper_ci.tolist(),
+                    },
                     "median_survival": {
                         "population": round(population_median, 1),
                         "patient": round(patient_median, 1),
@@ -285,7 +352,9 @@ def process(state: Dict) -> Dict:
                     },
                     "hazard_ratio": round(combined_hr, 2),
                     "five_year_survival": {
-                        "population": round(population_curve[25] * 100, 1),  # 5-year point
+                        "population": round(
+                            population_curve[25] * 100, 1
+                        ),  # 5-year point
                         "patient": round(patient_curve[25] * 100, 1),
                     },
                 }
@@ -300,44 +369,49 @@ def process(state: Dict) -> Dict:
             "clinical_interpretation": {
                 "mutations_analyzed": len(mutations),
                 "pathways_analyzed": len(pathway_ids),
-                "recommendation": generate_survival_recommendation(survival_curves, prognostic_analysis),
+                "recommendation": generate_survival_recommendation(
+                    survival_curves, prognostic_analysis
+                ),
             },
             "methodology_note": "Survival estimates based on genomic features and published hazard ratios",
         }
-        
+
         # Add frontend-compatible format
         # Convert the first (highest risk) cancer type's survival curve to the expected format
         if survival_curves and len(top_cancers) > 0:
             highest_risk_cancer = top_cancers[0][0]
             if highest_risk_cancer in survival_curves:
                 curve_data = survival_curves[highest_risk_cancer]
-                
+
                 # Create patient profile with estimated survival
                 patient_profile = {
                     "estimated_survival": [],
-                    "risk_category": "High Risk" if top_cancers[0][1] > 50 else "Moderate Risk"
+                    "risk_category": (
+                        "High Risk" if top_cancers[0][1] > 50 else "Moderate Risk"
+                    ),
                 }
-                
+
                 # Create population average array
                 population_average = []
-                
+
                 # Convert time points to age-based survival data
                 base_age = 40  # Starting age for visualization
                 for i, time_point in enumerate(curve_data["time_points"]):
                     age = base_age + int(time_point)
-                    
+
                     # Patient survival data point
-                    patient_profile["estimated_survival"].append({
-                        "age": age,
-                        "probability": curve_data["patient_survival"][i]
-                    })
-                    
+                    patient_profile["estimated_survival"].append(
+                        {"age": age, "probability": curve_data["patient_survival"][i]}
+                    )
+
                     # Population average data point
-                    population_average.append({
-                        "age": age,
-                        "probability": curve_data["population_survival"][i]
-                    })
-                
+                    population_average.append(
+                        {
+                            "age": age,
+                            "probability": curve_data["population_survival"][i],
+                        }
+                    )
+
                 # Add frontend-compatible fields
                 survival_analysis["patient_profile"] = patient_profile
                 survival_analysis["population_average"] = population_average
@@ -351,12 +425,18 @@ def process(state: Dict) -> Dict:
             completed.append("survival_analyzer")
         state["completed_nodes"] = completed
 
-        logger.info(f"Generated survival curves for {len(survival_curves)} cancer types")
+        logger.info(
+            f"Generated survival curves for {len(survival_curves)} cancer types"
+        )
 
     except Exception as e:
         logger.error(f"Error in survival analysis: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "survival_analyzer", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "survival_analyzer",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Set empty results on error
         state["survival_analysis"] = {}
@@ -364,7 +444,9 @@ def process(state: Dict) -> Dict:
     return state
 
 
-def generate_survival_recommendation(survival_curves: Dict, prognostic_analysis: Dict) -> str:
+def generate_survival_recommendation(
+    survival_curves: Dict, prognostic_analysis: Dict
+) -> str:
     """Generate clinical recommendation based on survival analysis"""
     recommendations = []
 
@@ -373,10 +455,13 @@ def generate_survival_recommendation(survival_curves: Dict, prognostic_analysis:
         hr = curve_data.get("hazard_ratio", 1.0)
         if hr > 1.5:
             recommendations.append(
-                f"Enhanced {cancer_type} cancer surveillance recommended due to " f"{hr:.1f}x increased risk"
+                f"Enhanced {cancer_type} cancer surveillance recommended due to "
+                f"{hr:.1f}x increased risk"
             )
         elif hr < 0.7:
-            recommendations.append(f"Favorable {cancer_type} cancer prognosis if targeted therapy available")
+            recommendations.append(
+                f"Favorable {cancer_type} cancer prognosis if targeted therapy available"
+            )
 
     # Check prognostic factors
     positive_count = prognostic_analysis["factor_summary"]["positive_count"]
@@ -393,4 +478,8 @@ def generate_survival_recommendation(survival_curves: Dict, prognostic_analysis:
             "better response to targeted therapies"
         )
 
-    return "; ".join(recommendations) if recommendations else "Standard surveillance recommended"
+    return (
+        "; ".join(recommendations)
+        if recommendations
+        else "Standard surveillance recommended"
+    )

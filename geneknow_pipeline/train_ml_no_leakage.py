@@ -19,7 +19,9 @@ def main():
     """Train ML models WITHOUT clinical significance features (no data leakage)."""
 
     # Setup logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
     logger = logging.getLogger(__name__)
 
     print("🧬 GeneKnow ML Training - NO DATA LEAKAGE VERSION")
@@ -44,9 +46,13 @@ def main():
 
         print("\n📊 Training Dataset Overview (NO LEAKAGE):")
         print(f"   Total variants: {len(X):,}")
-        print(f"   Features: {X.shape[1]} (reduced from ~25 to exclude clinical features)")
+        print(
+            f"   Features: {X.shape[1]} (reduced from ~25 to exclude clinical features)"
+        )
         print(f"   Pathogenic variants: {sum(y):,} ({sum(y)/len(y)*100:.1f}%)")
-        print(f"   Benign variants: {len(y)-sum(y):,} ({(len(y)-sum(y))/len(y)*100:.1f}%)")
+        print(
+            f"   Benign variants: {len(y)-sum(y):,} ({(len(y)-sum(y))/len(y)*100:.1f}%)"
+        )
 
         # Show features being used
         print("\n🔬 Features Used for Training:")
@@ -62,7 +68,9 @@ def main():
 
         # Prepare for training
         logger.info("Preparing data for ML training...")
-        X_train, X_test, y_train, y_test = trainer.feature_extractor.prepare_for_training(X, y)
+        X_train, X_test, y_train, y_test = (
+            trainer.feature_extractor.prepare_for_training(X, y)
+        )
 
         print("\n🎯 Training/Test Split:")
         print(f"   Training samples: {len(X_train):,}")
@@ -90,15 +98,22 @@ def main():
         best_performance = None
         for sampling_method, method_results in results.items():
             for model_name, metrics in method_results.items():
-                if best_performance is None or metrics["roc_auc"] > best_performance["roc_auc"]:
+                if (
+                    best_performance is None
+                    or metrics["roc_auc"] > best_performance["roc_auc"]
+                ):
                     best_performance = metrics
                     best_performance["full_name"] = f"{model_name}_{sampling_method}"
 
         if best_performance:
-            print(f"   ROC AUC: {best_performance['roc_auc']:.3f} (realistic genomic performance)")
+            print(
+                f"   ROC AUC: {best_performance['roc_auc']:.3f} (realistic genomic performance)"
+            )
             print(f"   Balanced Accuracy: {best_performance['balanced_accuracy']:.3f}")
             print(f"   F1 Score: {best_performance['f1_score']:.3f}")
-            print(f"   Matthews Correlation: {best_performance['matthews_corrcoef']:.3f}")
+            print(
+                f"   Matthews Correlation: {best_performance['matthews_corrcoef']:.3f}"
+            )
 
             # Interpret performance
             auc = best_performance["roc_auc"]
@@ -129,16 +144,22 @@ def main():
             feature_names = trainer.feature_extractor.feature_columns
 
             # Get top 10 features
-            indices = sorted(range(len(importances)), key=lambda i: importances[i], reverse=True)[:10]
+            indices = sorted(
+                range(len(importances)), key=lambda i: importances[i], reverse=True
+            )[:10]
 
             for i, idx in enumerate(indices, 1):
-                feat_name = feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                feat_name = (
+                    feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                )
                 importance = importances[idx]
                 print(f"   {i:2d}. {feat_name:<30} ({importance:.3f})")
 
         # Compare to expected performance
         print("\n📚 Performance Context:")
-        print("   - ROC AUC 0.60-0.70: Typical for genomic prediction without clinical data")
+        print(
+            "   - ROC AUC 0.60-0.70: Typical for genomic prediction without clinical data"
+        )
         print("   - ROC AUC 0.70-0.80: Good genomic prediction")
         print("   - ROC AUC 0.80+: Excellent genomic prediction")
         print(f"   - Your result: {best_performance['roc_auc']:.3f}")

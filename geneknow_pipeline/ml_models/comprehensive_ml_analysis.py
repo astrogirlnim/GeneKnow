@@ -59,7 +59,10 @@ class MLAnalysisSuite:
         print("\n📊 Analyzing Training Results...")
 
         # Try to load both result files
-        results_files = ["real_data_training_results_FIXED.json", "real_data_training_results.json"]
+        results_files = [
+            "real_data_training_results_FIXED.json",
+            "real_data_training_results.json",
+        ]
 
         for file in results_files:
             if Path(f"../{file}").exists():
@@ -105,7 +108,13 @@ class MLAnalysisSuite:
             # Add value labels
             for bar, val in zip(bars, values):
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2.0, height, f"{val:.3f}", ha="center", va="bottom")
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    height,
+                    f"{val:.3f}",
+                    ha="center",
+                    va="bottom",
+                )
 
             ax.set_title(f"{label}")
             ax.set_ylabel(label)
@@ -113,7 +122,11 @@ class MLAnalysisSuite:
 
         fig.suptitle(f"ML Fusion Layer Training Results - {name_suffix}", fontsize=16)
         plt.tight_layout()
-        plt.savefig(self.figures_dir / f"training_results_{name_suffix}.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            self.figures_dir / f"training_results_{name_suffix}.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.close()
 
     def analyze_model_performance(self):
@@ -155,7 +168,9 @@ class MLAnalysisSuite:
 
         ax.plot(thresholds, sensitivities, "g-", lw=2, marker="o", label="Sensitivity")
         ax.plot(thresholds, specificities, "r-", lw=2, marker="o", label="Specificity")
-        ax.axvline(0.5, color="gray", linestyle="--", alpha=0.5, label="Default threshold")
+        ax.axvline(
+            0.5, color="gray", linestyle="--", alpha=0.5, label="Default threshold"
+        )
         ax.set_xlabel("Decision Threshold")
         ax.set_ylabel("Performance")
         ax.set_title("Performance at Different Thresholds")
@@ -175,7 +190,9 @@ class MLAnalysisSuite:
         ax.set_ylim(0, 1)
 
         plt.tight_layout()
-        plt.savefig(self.figures_dir / "performance_analysis.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            self.figures_dir / "performance_analysis.png", dpi=300, bbox_inches="tight"
+        )
         plt.close()
 
         print("  ✅ Created performance analysis visualization")
@@ -191,47 +208,146 @@ class MLAnalysisSuite:
 
         # Define static models
         static_models = [
-            {"name": "PRS Score", "desc": "Polygenic Risk\n(Inherited)", "color": "#FF6B6B", "y": 8},
-            {"name": "ClinVar", "desc": "Known Variants\nDatabase", "color": "#4ECDC4", "y": 6.5},
-            {"name": "CADD Score", "desc": "Deleteriousness\nPrediction", "color": "#45B7D1", "y": 5},
-            {"name": "TCGA", "desc": "Tumor Frequency\nAnalysis", "color": "#F7DC6F", "y": 3.5},
-            {"name": "Gene Burden", "desc": "Pathway Damage\nScore", "color": "#BB8FCE", "y": 2},
+            {
+                "name": "PRS Score",
+                "desc": "Polygenic Risk\n(Inherited)",
+                "color": "#FF6B6B",
+                "y": 8,
+            },
+            {
+                "name": "ClinVar",
+                "desc": "Known Variants\nDatabase",
+                "color": "#4ECDC4",
+                "y": 6.5,
+            },
+            {
+                "name": "CADD Score",
+                "desc": "Deleteriousness\nPrediction",
+                "color": "#45B7D1",
+                "y": 5,
+            },
+            {
+                "name": "TCGA",
+                "desc": "Tumor Frequency\nAnalysis",
+                "color": "#F7DC6F",
+                "y": 3.5,
+            },
+            {
+                "name": "Gene Burden",
+                "desc": "Pathway Damage\nScore",
+                "color": "#BB8FCE",
+                "y": 2,
+            },
         ]
 
         # Draw static models
         for model in static_models:
             rect = plt.Rectangle(
-                (1, model["y"] - 0.4), 3, 0.8, facecolor=model["color"], edgecolor="black", linewidth=2
+                (1, model["y"] - 0.4),
+                3,
+                0.8,
+                facecolor=model["color"],
+                edgecolor="black",
+                linewidth=2,
             )
             ax.add_patch(rect)
-            ax.text(2.5, model["y"], model["name"], ha="center", va="center", fontweight="bold", fontsize=11)
-            ax.text(2.5, model["y"] - 0.25, model["desc"], ha="center", va="center", fontsize=8, style="italic")
+            ax.text(
+                2.5,
+                model["y"],
+                model["name"],
+                ha="center",
+                va="center",
+                fontweight="bold",
+                fontsize=11,
+            )
+            ax.text(
+                2.5,
+                model["y"] - 0.25,
+                model["desc"],
+                ha="center",
+                va="center",
+                fontsize=8,
+                style="italic",
+            )
 
             # Draw arrows to fusion layer
             ax.arrow(
-                4.2, model["y"], 2.6, 5 - model["y"], head_width=0.2, head_length=0.2, fc="gray", ec="gray", alpha=0.7
+                4.2,
+                model["y"],
+                2.6,
+                5 - model["y"],
+                head_width=0.2,
+                head_length=0.2,
+                fc="gray",
+                ec="gray",
+                alpha=0.7,
             )
 
         # Draw fusion layer
-        fusion_rect = plt.Rectangle((7, 4), 4, 2, facecolor="gold", edgecolor="black", linewidth=3)
+        fusion_rect = plt.Rectangle(
+            (7, 4), 4, 2, facecolor="gold", edgecolor="black", linewidth=3
+        )
         ax.add_patch(fusion_rect)
-        ax.text(9, 5, "ML Fusion Layer", ha="center", va="center", fontweight="bold", fontsize=14)
-        ax.text(9, 4.5, "Gradient Boosting", ha="center", va="center", fontsize=10, style="italic")
+        ax.text(
+            9,
+            5,
+            "ML Fusion Layer",
+            ha="center",
+            va="center",
+            fontweight="bold",
+            fontsize=14,
+        )
+        ax.text(
+            9,
+            4.5,
+            "Gradient Boosting",
+            ha="center",
+            va="center",
+            fontsize=10,
+            style="italic",
+        )
 
         # Draw output
-        ax.arrow(11.2, 5, 1.6, 0, head_width=0.3, head_length=0.2, fc="green", ec="green", linewidth=2)
+        ax.arrow(
+            11.2,
+            5,
+            1.6,
+            0,
+            head_width=0.3,
+            head_length=0.2,
+            fc="green",
+            ec="green",
+            linewidth=2,
+        )
 
-        risk_rect = plt.Rectangle((13, 4.5), 3, 1, facecolor="lightgreen", edgecolor="black", linewidth=2)
+        risk_rect = plt.Rectangle(
+            (13, 4.5), 3, 1, facecolor="lightgreen", edgecolor="black", linewidth=2
+        )
         ax.add_patch(risk_rect)
-        ax.text(14.5, 5, "Risk Score", ha="center", va="center", fontweight="bold", fontsize=12)
+        ax.text(
+            14.5,
+            5,
+            "Risk Score",
+            ha="center",
+            va="center",
+            fontweight="bold",
+            fontsize=12,
+        )
 
         ax.set_xlim(0, 17)
         ax.set_ylim(1, 9)
         ax.axis("off")
-        ax.set_title("GeneKnow ML Fusion Layer Architecture", fontsize=16, fontweight="bold", pad=20)
+        ax.set_title(
+            "GeneKnow ML Fusion Layer Architecture",
+            fontsize=16,
+            fontweight="bold",
+            pad=20,
+        )
 
         plt.tight_layout()
-        plt.savefig(self.figures_dir / "fusion_architecture.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            self.figures_dir / "fusion_architecture.png", dpi=300, bbox_inches="tight"
+        )
         plt.close()
 
         print("  ✅ Created architecture diagram")
@@ -258,25 +374,39 @@ class MLAnalysisSuite:
         axes = axes.ravel()
 
         # Plot distributions
-        features = ["prs_score", "cadd_score", "tcga_enrichment", "gene_burden_score", "risk_score"]
+        features = [
+            "prs_score",
+            "cadd_score",
+            "tcga_enrichment",
+            "gene_burden_score",
+            "risk_score",
+        ]
         colors = ["skyblue", "lightgreen", "orange", "purple", "red"]
 
         for i, (feature, color) in enumerate(zip(features, colors)):
-            axes[i].hist(df[feature], bins=30, alpha=0.7, color=color, edgecolor="black")
+            axes[i].hist(
+                df[feature], bins=30, alpha=0.7, color=color, edgecolor="black"
+            )
             axes[i].set_title(f'{feature.replace("_", " ").title()} Distribution')
             axes[i].set_xlabel("Value")
             axes[i].set_ylabel("Frequency")
 
         # ClinVar distribution
         clinvar_counts = df["clinvar_classification"].value_counts()
-        axes[5].bar(clinvar_counts.index, clinvar_counts.values, color="lightcoral", alpha=0.7)
+        axes[5].bar(
+            clinvar_counts.index, clinvar_counts.values, color="lightcoral", alpha=0.7
+        )
         axes[5].set_title("ClinVar Classification Distribution")
         axes[5].set_xlabel("Classification")
         axes[5].set_ylabel("Count")
         axes[5].tick_params(axis="x", rotation=45)
 
         plt.tight_layout()
-        plt.savefig(self.figures_dir / "static_outputs_distribution.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            self.figures_dir / "static_outputs_distribution.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.close()
 
         print("  ✅ Created static outputs distribution plot")
@@ -314,7 +444,12 @@ class MLAnalysisSuite:
 
         # Create pie chart
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        colors = {"Benign": "green", "Pathogenic": "red", "Uncertain": "gray", "Other": "yellow"}
+        colors = {
+            "Benign": "green",
+            "Pathogenic": "red",
+            "Uncertain": "gray",
+            "Other": "yellow",
+        }
 
         wedges, texts, autotexts = ax.pie(
             df["count"],
@@ -324,7 +459,11 @@ class MLAnalysisSuite:
             startangle=90,
         )
 
-        ax.set_title("ClinVar Database Composition\n(Training Data Ground Truth)", fontsize=14, fontweight="bold")
+        ax.set_title(
+            "ClinVar Database Composition\n(Training Data Ground Truth)",
+            fontsize=14,
+            fontweight="bold",
+        )
 
         # Add explanation text
         explanation = """
@@ -345,7 +484,9 @@ class MLAnalysisSuite:
         )
 
         plt.tight_layout()
-        plt.savefig(self.figures_dir / "clinvar_explanation.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            self.figures_dir / "clinvar_explanation.png", dpi=300, bbox_inches="tight"
+        )
         plt.close()
 
         print("  ✅ Created ClinVar explanation visualization")

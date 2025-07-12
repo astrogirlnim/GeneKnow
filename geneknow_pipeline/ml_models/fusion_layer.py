@@ -93,18 +93,32 @@ class FusionLayer:
         self.model = None
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
-        self.feature_names = ["prs_score", "cadd_score", "tcga_enrichment", "gene_burden_score"]
+        self.feature_names = [
+            "prs_score",
+            "cadd_score",
+            "tcga_enrichment",
+            "gene_burden_score",
+        ]
         self.clinvar_categories = ["pathogenic", "benign", "uncertain", "not_found"]
         self.is_trained = False
 
         # Risk thresholds for categorization
-        self.risk_thresholds = {"low": 0.25, "moderate": 0.5, "high": 0.75, "very_high": 1.0}
+        self.risk_thresholds = {
+            "low": 0.25,
+            "moderate": 0.5,
+            "high": 0.75,
+            "very_high": 1.0,
+        }
 
         # Initialize model based on type
         if model_type == "gradient_boosting":
-            self.model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
+            self.model = GradientBoostingRegressor(
+                n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42
+            )
         elif model_type == "random_forest":
-            self.model = RandomForestRegressor(n_estimators=100, max_depth=5, random_state=42)
+            self.model = RandomForestRegressor(
+                n_estimators=100, max_depth=5, random_state=42
+            )
         elif model_type == "linear":
             # Use LinearRegression for continuous targets
             self.model = LinearRegression()
@@ -144,7 +158,9 @@ class FusionLayer:
         return features.values
 
     def train(
-        self, training_data: List[Tuple[StaticModelInputs, float]], validation_split: float = 0.2
+        self,
+        training_data: List[Tuple[StaticModelInputs, float]],
+        validation_split: float = 0.2,
     ) -> Dict[str, Any]:
         """
         Train the fusion layer on static model outputs and risk labels.
@@ -189,13 +205,19 @@ class FusionLayer:
         val_mse = mean_squared_error(y_val, val_pred)
 
         # Cross-validation
-        cv_scores = cross_val_score(self.model, X_scaled, targets, cv=5, scoring="neg_mean_squared_error")
+        cv_scores = cross_val_score(
+            self.model, X_scaled, targets, cv=5, scoring="neg_mean_squared_error"
+        )
 
         # Feature importance (if available)
         feature_importance = None
         if hasattr(self.model, "feature_importances_"):
-            feature_names = self.feature_names + [f"clinvar_{cat}" for cat in self.clinvar_categories]
-            feature_importance = dict(zip(feature_names, self.model.feature_importances_))
+            feature_names = self.feature_names + [
+                f"clinvar_{cat}" for cat in self.clinvar_categories
+            ]
+            feature_importance = dict(
+                zip(feature_names, self.model.feature_importances_)
+            )
 
         results = {
             "train_mse": train_mse,
@@ -234,7 +256,9 @@ class FusionLayer:
         risk_score = np.clip(risk_score, 0.0, 1.0)
 
         # Calculate confidence (simplified - could be improved)
-        confidence = 0.8  # Placeholder - could use prediction interval or ensemble variance
+        confidence = (
+            0.8  # Placeholder - could use prediction interval or ensemble variance
+        )
 
         # Determine risk category
         risk_category = "low"
@@ -246,10 +270,14 @@ class FusionLayer:
         # Calculate contributing factors (feature importance weighted by input values)
         contributing_factors = {}
         if hasattr(self.model, "feature_importances_"):
-            feature_names = self.feature_names + [f"clinvar_{cat}" for cat in self.clinvar_categories]
+            feature_names = self.feature_names + [
+                f"clinvar_{cat}" for cat in self.clinvar_categories
+            ]
             feature_values = X_scaled[0]
 
-            for i, (name, importance) in enumerate(zip(feature_names, self.model.feature_importances_)):
+            for i, (name, importance) in enumerate(
+                zip(feature_names, self.model.feature_importances_)
+            ):
                 contributing_factors[name] = float(importance * abs(feature_values[i]))
 
         return FusionOutput(
@@ -295,7 +323,9 @@ class FusionLayer:
         logger.info(f"Model loaded from {filepath}")
 
 
-def create_synthetic_training_data(n_samples: int = 1000) -> List[Tuple[StaticModelInputs, float]]:
+def create_synthetic_training_data(
+    n_samples: int = 1000,
+) -> List[Tuple[StaticModelInputs, float]]:
     """
     Create synthetic training data for testing the fusion layer.
 
@@ -310,8 +340,15 @@ def create_synthetic_training_data(n_samples: int = 1000) -> List[Tuple[StaticMo
         prs_score = np.random.beta(2, 5)  # Most people have low PRS
 
         # ClinVar classification (weighted toward benign/uncertain)
-        clinvar_weights = [0.05, 0.7, 0.2, 0.05]  # pathogenic, benign, uncertain, not_found
-        clinvar_classification = np.random.choice(["pathogenic", "benign", "uncertain", "not_found"], p=clinvar_weights)
+        clinvar_weights = [
+            0.05,
+            0.7,
+            0.2,
+            0.05,
+        ]  # pathogenic, benign, uncertain, not_found
+        clinvar_classification = np.random.choice(
+            ["pathogenic", "benign", "uncertain", "not_found"], p=clinvar_weights
+        )
 
         # CADD score (0-50, higher = more deleterious)
         cadd_score = np.random.exponential(5)
@@ -390,13 +427,19 @@ if __name__ == "__main__":
 
     if results["feature_importance"]:
         print("📈 Feature Importance:")
-        for feature, importance in sorted(results["feature_importance"].items(), key=lambda x: x[1], reverse=True):
+        for feature, importance in sorted(
+            results["feature_importance"].items(), key=lambda x: x[1], reverse=True
+        ):
             print(f"  {feature}: {importance:.3f}")
 
     # Test prediction
     print("\n🧪 Testing prediction...")
     test_input = StaticModelInputs(
-        prs_score=0.8, clinvar_classification="pathogenic", cadd_score=25.0, tcga_enrichment=3.0, gene_burden_score=2.0
+        prs_score=0.8,
+        clinvar_classification="pathogenic",
+        cadd_score=25.0,
+        tcga_enrichment=3.0,
+        gene_burden_score=2.0,
     )
 
     prediction = fusion.predict(test_input)

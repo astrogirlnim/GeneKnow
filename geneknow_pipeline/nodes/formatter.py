@@ -44,18 +44,26 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         variant_summary = []
 
         # Use variant_details if available (from variant_transformer), otherwise use filtered_variants
-        variants_to_format = state.get("variant_details") or state.get("filtered_variants", [])
+        variants_to_format = state.get("variant_details") or state.get(
+            "filtered_variants", []
+        )
 
         for variant in variants_to_format:
             variant_info = {
                 "gene": variant.get("gene", "Unknown"),
                 "variant": variant.get("variant_id", "Unknown"),
                 "variant_id": variant.get("variant_id", "Unknown"),
-                "consequence": variant.get("consequence", variant.get("variant_classification", "unknown")),
-                "mutation_type": variant.get("mutation_type", "snv"),  # From mutation_classifier
+                "consequence": variant.get(
+                    "consequence", variant.get("variant_classification", "unknown")
+                ),
+                "mutation_type": variant.get(
+                    "mutation_type", "snv"
+                ),  # From mutation_classifier
                 "hgvs_c": variant.get("hgvs_c", ""),
                 "hgvs_p": variant.get("hgvs_p", variant.get("protein_change", "")),
-                "protein_change": variant.get("protein_change", ""),  # From variant_transformer
+                "protein_change": variant.get(
+                    "protein_change", ""
+                ),  # From variant_transformer
                 "functional_impact": variant.get("functional_impact", "Unknown"),
                 "quality_metrics": {
                     "quality": variant.get("quality", variant.get("qual", 0)),
@@ -98,14 +106,18 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Calculate processing time if not set
         processing_time = None
         if state.get("pipeline_start_time"):
-            processing_time = (datetime.now() - state["pipeline_start_time"]).total_seconds()
+            processing_time = (
+                datetime.now() - state["pipeline_start_time"]
+            ).total_seconds()
 
         # Build TCGA summary
         tcga_matches = state.get("tcga_matches", {})
         tcga_summary = {
             "cancer_types_analyzed": list(tcga_matches.keys()),
             "cohort_sizes": state.get("tcga_cohort_sizes", {}),
-            "variants_with_tcga_data": len([v for v in variant_summary if v["tcga_matches"]]),
+            "variants_with_tcga_data": len(
+                [v for v in variant_summary if v["tcga_matches"]]
+            ),
         }
 
         # Include CADD statistics if available
@@ -147,63 +159,87 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         pathway_analysis = None
         pathway_burden_results = state.get("pathway_burden_results", {})
         pathway_burden_summary = state.get("pathway_burden_summary", {})
-        
+
         # DEBUG: Write debug info to file
         with open("formatter_debug.log", "a") as f:
             f.write(f"\n=== FORMATTER DEBUG ===\n")
-            f.write(f"pathway_burden_results available: {bool(pathway_burden_results)}\n")
-            f.write(f"pathway_burden_summary available: {bool(pathway_burden_summary)}\n")
+            f.write(
+                f"pathway_burden_results available: {bool(pathway_burden_results)}\n"
+            )
+            f.write(
+                f"pathway_burden_summary available: {bool(pathway_burden_summary)}\n"
+            )
             if pathway_burden_results:
                 f.write(f"Number of pathways: {len(pathway_burden_results)}\n")
                 for name, result in pathway_burden_results.items():
                     burden_score = result.get("burden_score", 0)
                     f.write(f"  {name} = {burden_score}\n")
             f.write(f"About to start transformation...\n")
-        
+
         # DEBUG: Log what we're working with
-        logger.info(f"FORMATTER DEBUG: pathway_burden_results available: {bool(pathway_burden_results)}")
+        logger.info(
+            f"FORMATTER DEBUG: pathway_burden_results available: {bool(pathway_burden_results)}"
+        )
         if pathway_burden_results:
-            logger.info(f"FORMATTER DEBUG: Number of pathways: {len(pathway_burden_results)}")
+            logger.info(
+                f"FORMATTER DEBUG: Number of pathways: {len(pathway_burden_results)}"
+            )
             for name, result in pathway_burden_results.items():
                 burden_score = result.get("burden_score", 0)
                 logger.info(f"FORMATTER DEBUG: {name} = {burden_score}")
-        
+
         if pathway_burden_results:
             # Transform pathway burden results into the format expected by frontend
             disrupted_pathways = []
             cancer_pathway_associations = {}
-            
+
             # Convert pathway burden results to disrupted pathways format
             for pathway_name, burden_result in pathway_burden_results.items():
                 burden_score = burden_result.get("burden_score", 0)
-                logger.info(f"FORMATTER DEBUG: Processing {pathway_name} with burden_score {burden_score}")
-                
+                logger.info(
+                    f"FORMATTER DEBUG: Processing {pathway_name} with burden_score {burden_score}"
+                )
+
                 if burden_score > 0.1:  # Only include pathways with significant burden
-                    logger.info(f"FORMATTER DEBUG: Adding {pathway_name} to disrupted_pathways")
+                    logger.info(
+                        f"FORMATTER DEBUG: Adding {pathway_name} to disrupted_pathways"
+                    )
                     # Create mutations list from damaging genes
                     mutations = []
                     if burden_result.get("damaging_genes"):
                         for gene in burden_result["damaging_genes"]:
-                            mutations.append({
-                                "gene": gene,
-                                "type": "missense",  # Default type, could be enhanced
-                                "effect": f"Damaging variant in {gene}"
-                            })
-                    
-                    disrupted_pathways.append({
-                        "name": pathway_name.replace("_", " ").title(),
-                        "pathway_id": pathway_name,
-                        "significance": round(burden_score * 100, 1),  # Convert to percentage
-                        "affected_genes": burden_result.get("damaging_genes", []),
-                        "mutations": mutations,
-                        "description": burden_result.get("description", f"{pathway_name} pathway"),
-                        "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}"
-                    })
+                            mutations.append(
+                                {
+                                    "gene": gene,
+                                    "type": "missense",  # Default type, could be enhanced
+                                    "effect": f"Damaging variant in {gene}",
+                                }
+                            )
+
+                    disrupted_pathways.append(
+                        {
+                            "name": pathway_name.replace("_", " ").title(),
+                            "pathway_id": pathway_name,
+                            "significance": round(
+                                burden_score * 100, 1
+                            ),  # Convert to percentage
+                            "affected_genes": burden_result.get("damaging_genes", []),
+                            "mutations": mutations,
+                            "description": burden_result.get(
+                                "description", f"{pathway_name} pathway"
+                            ),
+                            "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}",
+                        }
+                    )
                 else:
-                    logger.info(f"FORMATTER DEBUG: Skipping {pathway_name} (burden_score {burden_score} <= 0.1)")
-            
+                    logger.info(
+                        f"FORMATTER DEBUG: Skipping {pathway_name} (burden_score {burden_score} <= 0.1)"
+                    )
+
             # Create cancer pathway associations based on high burden pathways
-            high_burden_pathways = pathway_burden_summary.get("high_burden_pathways", [])
+            high_burden_pathways = pathway_burden_summary.get(
+                "high_burden_pathways", []
+            )
             if high_burden_pathways:
                 # Map pathways to cancer types based on common associations
                 pathway_cancer_mapping = {
@@ -216,16 +252,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     "apoptosis": ["breast", "lung", "colon"],
                     "mismatch_repair": ["colon"],
                     "wnt_signaling": ["colon"],
-                    "pi3k_akt": ["breast", "prostate"]
+                    "pi3k_akt": ["breast", "prostate"],
                 }
-                
+
                 for pathway in high_burden_pathways:
                     associated_cancers = pathway_cancer_mapping.get(pathway, [])
                     for cancer in associated_cancers:
                         if cancer not in cancer_pathway_associations:
                             cancer_pathway_associations[cancer] = []
                         cancer_pathway_associations[cancer].append(pathway)
-            
+
             # Create pathway analysis structure
             pathway_analysis = {
                 "disrupted_pathways": disrupted_pathways,
@@ -234,77 +270,121 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "clinical_recommendations": [],  # Could be enhanced
                 "summary": {
                     "total_pathways_disrupted": len(disrupted_pathways),
-                    "highly_disrupted_pathways": len([p for p in disrupted_pathways if p["significance"] > 50]),
-                    "total_genes_affected": len(set([gene for p in disrupted_pathways for gene in p["affected_genes"]])),
+                    "highly_disrupted_pathways": len(
+                        [p for p in disrupted_pathways if p["significance"] > 50]
+                    ),
+                    "total_genes_affected": len(
+                        set(
+                            [
+                                gene
+                                for p in disrupted_pathways
+                                for gene in p["affected_genes"]
+                            ]
+                        )
+                    ),
                     "pathway_interaction_count": 0,
-                    "overall_burden_score": pathway_burden_summary.get("overall_burden_score", 0),
-                    "high_burden_pathways": high_burden_pathways
-                }
+                    "overall_burden_score": pathway_burden_summary.get(
+                        "overall_burden_score", 0
+                    ),
+                    "high_burden_pathways": high_burden_pathways,
+                },
             }
-            
+
             # DEBUG: Log the final transformation result
-            logger.info(f"FORMATTER DEBUG: Created pathway_analysis with {len(disrupted_pathways)} disrupted pathways")
+            logger.info(
+                f"FORMATTER DEBUG: Created pathway_analysis with {len(disrupted_pathways)} disrupted pathways"
+            )
             for pathway in disrupted_pathways:
-                logger.info(f"FORMATTER DEBUG: - {pathway['name']}: {pathway['significance']}%")
-            
+                logger.info(
+                    f"FORMATTER DEBUG: - {pathway['name']}: {pathway['significance']}%"
+                )
+
             # DEBUG: Write transformation result to file
             with open("formatter_debug.log", "a") as f:
-                f.write(f"Transformation complete: {len(disrupted_pathways)} disrupted pathways\n")
+                f.write(
+                    f"Transformation complete: {len(disrupted_pathways)} disrupted pathways\n"
+                )
                 for pathway in disrupted_pathways:
                     f.write(f"  - {pathway['name']}: {pathway['significance']}%\n")
                 f.write(f"pathway_analysis created: {pathway_analysis is not None}\n")
-        
+
         # SIMPLIFIED: Always use pathway_burden results since pathway_analyzer node is removed
         # The pathway_burden node already provides all the analysis we need
-        final_pathway_analysis = pathway_analysis  # This comes from pathway_burden transformation above
-        
+        final_pathway_analysis = (
+            pathway_analysis  # This comes from pathway_burden transformation above
+        )
+
         # DEBUG: Write final result to file
         with open("formatter_debug.log", "a") as f:
             f.write(f"final_pathway_analysis: {final_pathway_analysis is not None}\n")
             if final_pathway_analysis:
-                f.write(f"final disrupted_pathways: {len(final_pathway_analysis.get('disrupted_pathways', []))}\n")
+                f.write(
+                    f"final disrupted_pathways: {len(final_pathway_analysis.get('disrupted_pathways', []))}\n"
+                )
             f.write(f"=== END FORMATTER DEBUG ===\n")
-        
+
         # COMPREHENSIVE DEBUG: Log the complete pathway_analysis object
         logger.info(f"=== COMPREHENSIVE PATHWAY_ANALYSIS DEBUG ===")
         logger.info(f"pathway_analysis is None: {pathway_analysis is None}")
         logger.info(f"final_pathway_analysis is None: {final_pathway_analysis is None}")
-        
+
         if final_pathway_analysis:
-            logger.info(f"final_pathway_analysis keys: {list(final_pathway_analysis.keys())}")
-            
+            logger.info(
+                f"final_pathway_analysis keys: {list(final_pathway_analysis.keys())}"
+            )
+
             # Log disrupted_pathways in detail
-            disrupted_pathways = final_pathway_analysis.get('disrupted_pathways', [])
+            disrupted_pathways = final_pathway_analysis.get("disrupted_pathways", [])
             logger.info(f"disrupted_pathways count: {len(disrupted_pathways)}")
             for i, pathway in enumerate(disrupted_pathways):
                 logger.info(f"  Pathway {i+1}:")
                 logger.info(f"    name: {pathway.get('name', 'MISSING')}")
                 logger.info(f"    pathway_id: {pathway.get('pathway_id', 'MISSING')}")
-                logger.info(f"    significance: {pathway.get('significance', 'MISSING')}")
-                logger.info(f"    affected_genes: {pathway.get('affected_genes', 'MISSING')}")
+                logger.info(
+                    f"    significance: {pathway.get('significance', 'MISSING')}"
+                )
+                logger.info(
+                    f"    affected_genes: {pathway.get('affected_genes', 'MISSING')}"
+                )
                 logger.info(f"    mutations count: {len(pathway.get('mutations', []))}")
                 logger.info(f"    description: {pathway.get('description', 'MISSING')}")
-                logger.info(f"    genes_affected_ratio: {pathway.get('genes_affected_ratio', 'MISSING')}")
-            
+                logger.info(
+                    f"    genes_affected_ratio: {pathway.get('genes_affected_ratio', 'MISSING')}"
+                )
+
             # Log cancer pathway associations
-            cancer_associations = final_pathway_analysis.get('cancer_pathway_associations', {})
-            logger.info(f"cancer_pathway_associations count: {len(cancer_associations)}")
+            cancer_associations = final_pathway_analysis.get(
+                "cancer_pathway_associations", {}
+            )
+            logger.info(
+                f"cancer_pathway_associations count: {len(cancer_associations)}"
+            )
             for cancer, pathways in cancer_associations.items():
                 logger.info(f"  {cancer}: {pathways}")
-            
+
             # Log summary
-            summary = final_pathway_analysis.get('summary', {})
+            summary = final_pathway_analysis.get("summary", {})
             logger.info(f"summary keys: {list(summary.keys())}")
-            logger.info(f"  total_pathways_disrupted: {summary.get('total_pathways_disrupted', 'MISSING')}")
-            logger.info(f"  highly_disrupted_pathways: {summary.get('highly_disrupted_pathways', 'MISSING')}")
-            logger.info(f"  total_genes_affected: {summary.get('total_genes_affected', 'MISSING')}")
-            logger.info(f"  overall_burden_score: {summary.get('overall_burden_score', 'MISSING')}")
-            logger.info(f"  high_burden_pathways: {summary.get('high_burden_pathways', 'MISSING')}")
+            logger.info(
+                f"  total_pathways_disrupted: {summary.get('total_pathways_disrupted', 'MISSING')}"
+            )
+            logger.info(
+                f"  highly_disrupted_pathways: {summary.get('highly_disrupted_pathways', 'MISSING')}"
+            )
+            logger.info(
+                f"  total_genes_affected: {summary.get('total_genes_affected', 'MISSING')}"
+            )
+            logger.info(
+                f"  overall_burden_score: {summary.get('overall_burden_score', 'MISSING')}"
+            )
+            logger.info(
+                f"  high_burden_pathways: {summary.get('high_burden_pathways', 'MISSING')}"
+            )
         else:
             logger.info("final_pathway_analysis is None - no pathway data available")
-        
+
         logger.info(f"=== END COMPREHENSIVE DEBUG ===")
-        
+
         # Build the structured JSON output
         structured_json = {
             "report_metadata": {
@@ -313,10 +393,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "generated_at": datetime.now().isoformat(),
                 "language": state.get("language", "en"),
             },
-            "patient_data": {"file_type": state["file_type"], "file_metadata": state["file_metadata"]},
+            "patient_data": {
+                "file_type": state["file_type"],
+                "file_metadata": state["file_metadata"],
+            },
             "summary": summary,
             "risk_assessment": (
-                {"scores": risk_scores, "high_risk_findings": high_risk_findings, "risk_genes": risk_genes}
+                {
+                    "scores": risk_scores,
+                    "high_risk_findings": high_risk_findings,
+                    "risk_genes": risk_genes,
+                }
                 if risk_scores
                 else None
             ),
@@ -339,7 +426,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Log metrics status to help debug
         metrics_available = "metrics" in state and state["metrics"]
-        metrics_summary_available = "metrics_summary" in state and state["metrics_summary"]
+        metrics_summary_available = (
+            "metrics_summary" in state and state["metrics_summary"]
+        )
         logger.info(
             f"Formatting complete - Metrics available: {metrics_available}, Summary available: {metrics_summary_available}"
         )
@@ -354,5 +443,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Return error state updates
         return {
             "pipeline_status": "failed",
-            "errors": [{"node": "formatter", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "formatter", "error": str(e), "timestamp": datetime.now()}
+            ],
         }

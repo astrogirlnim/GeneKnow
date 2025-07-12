@@ -78,7 +78,9 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                     # MAF-specific fields
                     "variant_classification": row.get("Variant_Classification", ""),
                     "variant_type": row.get("Variant_Type", ""),
-                    "consequence": row.get("Consequence", row.get("Variant_Classification", "")),
+                    "consequence": row.get(
+                        "Consequence", row.get("Variant_Classification", "")
+                    ),
                     "protein_change": row.get("HGVSp", ""),
                     # Quality metrics (MAF files don't have QUAL like VCF)
                     "qual": 100.0,  # Default high quality for MAF variants
@@ -97,7 +99,11 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                 }
 
                 # Only include variants that pass basic filters
-                if variant["re"] not in ["N", "-", ""] and variant["alt"] not in ["N", "-", ""]:
+                if variant["re"] not in ["N", "-", ""] and variant["alt"] not in [
+                    "N",
+                    "-",
+                    "",
+                ]:
                     variants.append(variant)
 
             except Exception as e:
@@ -139,7 +145,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             file_metadata["maf_info"] = {
                 "unique_genes": df["gene"].nunique(),
                 "unique_samples": df["sample_id"].nunique() if "sample_id" in df else 1,
-                "variant_classifications": dict(df["variant_classification"].value_counts().head(10)),
+                "variant_classifications": dict(
+                    df["variant_classification"].value_counts().head(10)
+                ),
                 "top_mutated_genes": dict(df["gene"].value_counts().head(10)),
             }
 
@@ -157,5 +165,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"MAF processing failed: {str(e)}")
         return {
             "pipeline_status": "failed",
-            "errors": [{"node": "maf_parser", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "maf_parser", "error": str(e), "timestamp": datetime.now()}
+            ],
         }

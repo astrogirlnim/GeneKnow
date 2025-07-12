@@ -69,7 +69,10 @@ def download_1000g_sample_alternative():
 
         # Ensembl REST API
         url = f"https://rest.ensembl.org/variation/homo_sapiens/{gene}"
-        params = {"content-type": "application/json", "population_name": "1000GENOMES:phase_3:ALL"}
+        params = {
+            "content-type": "application/json",
+            "population_name": "1000GENOMES:phase_3:ALL",
+        }
 
         try:
             response = requests.get(url, params=params, timeout=30)
@@ -205,9 +208,7 @@ def save_as_simplified_vcf(variants):
             format_field = "GT"
             genotype = "0/1" if var["ma"] > 0.05 else "0/0"
 
-            line = (
-                f"{chrom}\t{pos}\t{var_id}\t{ref}\t{alt}\t{qual}\t{filter_field}\t{info}\t{format_field}\t{genotype}\n"
-            )
+            line = f"{chrom}\t{pos}\t{var_id}\t{ref}\t{alt}\t{qual}\t{filter_field}\t{info}\t{format_field}\t{genotype}\n"
             f.write(line)
 
     print(f"✅ Saved healthy sample VCF: {output_file}")
@@ -262,7 +263,9 @@ def convert_vcf_to_maf(vcf_file):
                 "Chromosome": chrom,
                 "Start_Position": pos,
                 "End_Position": pos,
-                "Variant_Classification": "Silent" if "synonymous" in consequence else "Missense_Mutation",
+                "Variant_Classification": (
+                    "Silent" if "synonymous" in consequence else "Missense_Mutation"
+                ),
                 "Variant_Type": "SNP",
                 "Reference_Allele": ref,
                 "Tumor_Seq_Allele1": ref,

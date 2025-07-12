@@ -40,49 +40,134 @@ CANCER_PATHWAYS = {
         "weight": 1.3,
     },
     "tumor_suppressors": {
-        "genes": ["TP53", "RB1", "APC", "PTEN", "VHL", "NF1", "NF2", "CDKN2A", "CDKN2B", "STK11"],
+        "genes": [
+            "TP53",
+            "RB1",
+            "APC",
+            "PTEN",
+            "VHL",
+            "NF1",
+            "NF2",
+            "CDKN2A",
+            "CDKN2B",
+            "STK11",
+        ],
         "description": "Classical tumor suppressor genes",
         "cancer_relevance": 0.95,
         "weight": 1.3,
     },
     "oncogenes": {
-        "genes": ["KRAS", "EGFR", "BRAF", "PIK3CA", "MYC", "ALK", "RET", "MET", "HER2", "ERBB2", "HRAS", "NRAS"],
+        "genes": [
+            "KRAS",
+            "EGFR",
+            "BRAF",
+            "PIK3CA",
+            "MYC",
+            "ALK",
+            "RET",
+            "MET",
+            "HER2",
+            "ERBB2",
+            "HRAS",
+            "NRAS",
+        ],
         "description": "Activated oncogenes",
         "cancer_relevance": 0.85,
         "weight": 1.1,
     },
     "cell_cycle": {
-        "genes": ["CDKN2A", "CDK4", "CCND1", "RB1", "CDKN1A", "CDKN1B", "E2F1", "MDM2", "MDM4"],
+        "genes": [
+            "CDKN2A",
+            "CDK4",
+            "CCND1",
+            "RB1",
+            "CDKN1A",
+            "CDKN1B",
+            "E2F1",
+            "MDM2",
+            "MDM4",
+        ],
         "description": "Cell cycle regulation",
         "cancer_relevance": 0.8,
         "weight": 1.1,
     },
     "chromatin_remodeling": {
-        "genes": ["ARID1A", "SMARCA4", "SMARCB1", "EZH2", "SETD2", "KMT2D", "CREBBP", "EP300", "ASXL1"],
+        "genes": [
+            "ARID1A",
+            "SMARCA4",
+            "SMARCB1",
+            "EZH2",
+            "SETD2",
+            "KMT2D",
+            "CREBBP",
+            "EP300",
+            "ASXL1",
+        ],
         "description": "Chromatin modification and remodeling",
         "cancer_relevance": 0.75,
         "weight": 1.0,
     },
     "apoptosis": {
-        "genes": ["TP53", "BCL2", "BAX", "APAF1", "CASP8", "CASP9", "PUMA", "BAK1", "BID", "NOXA"],
+        "genes": [
+            "TP53",
+            "BCL2",
+            "BAX",
+            "APAF1",
+            "CASP8",
+            "CASP9",
+            "PUMA",
+            "BAK1",
+            "BID",
+            "NOXA",
+        ],
         "description": "Programmed cell death pathway",
         "cancer_relevance": 0.8,
         "weight": 1.0,
     },
     "wnt_signaling": {
-        "genes": ["APC", "CTNNB1", "AXIN1", "AXIN2", "GSK3B", "WNT1", "FZD1", "LRP5", "LRP6"],
+        "genes": [
+            "APC",
+            "CTNNB1",
+            "AXIN1",
+            "AXIN2",
+            "GSK3B",
+            "WNT1",
+            "FZD1",
+            "LRP5",
+            "LRP6",
+        ],
         "description": "Wnt/beta-catenin signaling",
         "cancer_relevance": 0.7,
         "weight": 0.9,
     },
     "pi3k_akt": {
-        "genes": ["PIK3CA", "PIK3CB", "PIK3R1", "AKT1", "AKT2", "PTEN", "TSC1", "TSC2", "MTOR"],
+        "genes": [
+            "PIK3CA",
+            "PIK3CB",
+            "PIK3R1",
+            "AKT1",
+            "AKT2",
+            "PTEN",
+            "TSC1",
+            "TSC2",
+            "MTOR",
+        ],
         "description": "PI3K/AKT/mTOR signaling pathway",
         "cancer_relevance": 0.8,
         "weight": 1.0,
     },
     "ras_mapk": {
-        "genes": ["KRAS", "NRAS", "HRAS", "BRAF", "RAF1", "MAP2K1", "MAP2K2", "MAPK1", "MAPK3"],
+        "genes": [
+            "KRAS",
+            "NRAS",
+            "HRAS",
+            "BRAF",
+            "RAF1",
+            "MAP2K1",
+            "MAP2K2",
+            "MAPK1",
+            "MAPK3",
+        ],
         "description": "RAS/MAPK signaling pathway",
         "cancer_relevance": 0.85,
         "weight": 1.1,
@@ -110,7 +195,12 @@ DAMAGING_CONSEQUENCES = {
         "protein_altering_variant",
         "splice_region_variant",
     ],
-    "low_impact": ["synonymous_variant", "stop_retained_variant", "5_prime_utr_variant", "3_prime_utr_variant"],
+    "low_impact": [
+        "synonymous_variant",
+        "stop_retained_variant",
+        "5_prime_utr_variant",
+        "3_prime_utr_variant",
+    ],
 }
 
 
@@ -173,7 +263,9 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
         damage_reasons.append(f"Very rare variant (AF={pop_freq:.5f})")
     elif pop_freq > 0.01:  # Common variants less likely damaging
         damage_score *= 0.5
-        damage_reasons.append(f"Common variant reduces damage score (AF={pop_freq:.3f})")
+        damage_reasons.append(
+            f"Common variant reduces damage score (AF={pop_freq:.3f})"
+        )
 
     # Check if variant is in a cancer gene (from CADD scoring)
     gene = variant.get("gene", "")
@@ -185,9 +277,15 @@ def is_damaging_variant(variant: Dict[str, Any]) -> Dict[str, Any]:
     damage_score = min(damage_score, 1.0)
 
     # Consider damaging if score > 0.3 or has strong evidence
-    is_damaging = damage_score > 0.3 or any(reason.startswith("ClinVar pathogenic") for reason in damage_reasons)
+    is_damaging = damage_score > 0.3 or any(
+        reason.startswith("ClinVar pathogenic") for reason in damage_reasons
+    )
 
-    return {"is_damaging": is_damaging, "damage_score": damage_score, "damage_reasons": damage_reasons}
+    return {
+        "is_damaging": is_damaging,
+        "damage_score": damage_score,
+        "damage_reasons": damage_reasons,
+    }
 
 
 def calculate_pathway_burden(
@@ -253,7 +351,9 @@ def calculate_pathway_burden(
     top_variant = None
     max_damage_score = 0
     for variant in damaging_variants:
-        damage_score = variant.get("pathway_damage_assessment", {}).get("damage_score", 0)
+        damage_score = variant.get("pathway_damage_assessment", {}).get(
+            "damage_score", 0
+        )
         if damage_score > max_damage_score:
             max_damage_score = damage_score
             top_variant = {
@@ -266,7 +366,9 @@ def calculate_pathway_burden(
             }
 
     # Multi-hit genes (genes with multiple damaging variants)
-    multi_hit_genes = [gene for gene, count in gene_damaging_counts.items() if count > 1]
+    multi_hit_genes = [
+        gene for gene, count in gene_damaging_counts.items() if count > 1
+    ]
 
     return {
         "pathway_name": pathway_name,
@@ -312,7 +414,10 @@ def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[st
     # Calculate overall burden score (weighted average)
     if total_variants > 0:
         overall_burden_score = (
-            sum(results["burden_score"] * results["total_variants"] for results in pathway_results.values())
+            sum(
+                results["burden_score"] * results["total_variants"]
+                for results in pathway_results.values()
+            )
             / total_variants
         )
     else:
@@ -332,7 +437,11 @@ def assess_overall_burden(pathway_results: Dict[str, Dict[str, Any]]) -> Dict[st
         for gene in results["contributing_genes"]:
             gene_pathway_map[gene].add(pathway_name)
 
-    multi_pathway_genes = {gene: list(pathways) for gene, pathways in gene_pathway_map.items() if len(pathways) > 1}
+    multi_pathway_genes = {
+        gene: list(pathways)
+        for gene, pathways in gene_pathway_map.items()
+        if len(pathways) > 1
+    }
 
     return {
         "overall_burden_score": round(overall_burden_score, 3),
@@ -369,9 +478,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         pathway_results = {}
 
         for pathway_name, pathway_data in CANCER_PATHWAYS.items():
-            logger.info(f"Analyzing {pathway_name} pathway ({len(pathway_data['genes'])} genes)")
+            logger.info(
+                f"Analyzing {pathway_name} pathway ({len(pathway_data['genes'])} genes)"
+            )
 
-            burden_result = calculate_pathway_burden(pathway_name, pathway_data, filtered_variants)
+            burden_result = calculate_pathway_burden(
+                pathway_name, pathway_data, filtered_variants
+            )
             pathway_results[pathway_name] = burden_result
 
             # Log significant findings
@@ -383,7 +496,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 )
 
                 if burden_result["multi_hit_genes"]:
-                    logger.warning(f"  Multi-hit genes: {', '.join(burden_result['multi_hit_genes'])}")
+                    logger.warning(
+                        f"  Multi-hit genes: {', '.join(burden_result['multi_hit_genes'])}"
+                    )
 
                 if burden_result["top_variant"]:
                     top = burden_result["top_variant"]
@@ -404,15 +519,27 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Log comprehensive summary
         logger.info("=" * 60)
         logger.info("Pathway Burden Analysis Summary:")
-        logger.info(f"  Overall burden score: {burden_summary['overall_burden_score']:.3f}")
-        logger.info(f"  High burden pathways: {', '.join(burden_summary['high_burden_pathways']) or 'None'}")
-        logger.info(f"  Moderate burden pathways: {', '.join(burden_summary['moderate_burden_pathways']) or 'None'}")
+        logger.info(
+            f"  Overall burden score: {burden_summary['overall_burden_score']:.3f}"
+        )
+        logger.info(
+            f"  High burden pathways: {', '.join(burden_summary['high_burden_pathways']) or 'None'}"
+        )
+        logger.info(
+            f"  Moderate burden pathways: {', '.join(burden_summary['moderate_burden_pathways']) or 'None'}"
+        )
         logger.info(f"  Primary concern: {burden_summary['primary_concern'] or 'None'}")
-        logger.info(f"  Total damaging variants: {burden_summary['total_damaging_variants']}")
-        logger.info(f"  Pathway crosstalk detected: {burden_summary['pathway_crosstalk']}")
+        logger.info(
+            f"  Total damaging variants: {burden_summary['total_damaging_variants']}"
+        )
+        logger.info(
+            f"  Pathway crosstalk detected: {burden_summary['pathway_crosstalk']}"
+        )
 
         if burden_summary["multi_pathway_genes"]:
-            logger.info(f"  Multi-pathway genes: {len(burden_summary['multi_pathway_genes'])}")
+            logger.info(
+                f"  Multi-pathway genes: {len(burden_summary['multi_pathway_genes'])}"
+            )
             for gene, pathways in burden_summary["multi_pathway_genes"].items():
                 logger.info(f"    {gene}: {', '.join(pathways)}")
 
@@ -450,7 +577,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "multi_pathway_genes": {},
                 "pathway_crosstalk": False,
             },
-            "pathway_enriched_variants": state.get("filtered_variants", []),  # Return unchanged variants
+            "pathway_enriched_variants": state.get(
+                "filtered_variants", []
+            ),  # Return unchanged variants
             "errors": state.get("errors", [])
-            + [{"node": "pathway_burden", "error": str(e), "timestamp": datetime.now()}],
+            + [
+                {"node": "pathway_burden", "error": str(e), "timestamp": datetime.now()}
+            ],
         }

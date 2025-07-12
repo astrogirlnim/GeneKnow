@@ -35,7 +35,9 @@ class MLFusionIntegrator:
             if os.path.exists(best_model_path):
                 self.trainer.load_model(best_model_path)
                 self.models_loaded = True
-                logger.info(f"ML models loaded successfully: {self.trainer.best_model_name}")
+                logger.info(
+                    f"ML models loaded successfully: {self.trainer.best_model_name}"
+                )
                 return True
             else:
                 logger.warning(f"No trained models found at {best_model_path}")
@@ -44,7 +46,9 @@ class MLFusionIntegrator:
             logger.error(f"Failed to load ML models: {e}")
             return False
 
-    def extract_pipeline_features(self, variants: List[Dict], state: Dict[str, Any]) -> List[Dict]:
+    def extract_pipeline_features(
+        self, variants: List[Dict], state: Dict[str, Any]
+    ) -> List[Dict]:
         """
         Extract features from pipeline variants, incorporating all available annotations.
         """
@@ -64,8 +68,12 @@ class MLFusionIntegrator:
                 pop_data = population_matches[variant_id]
                 enriched_variant.update(
                     {
-                        "population_frequency": pop_data.get("population_frequency", 0.0),
-                        "clinical_significance": pop_data.get("clinical_significance", "Unknown"),
+                        "population_frequency": pop_data.get(
+                            "population_frequency", 0.0
+                        ),
+                        "clinical_significance": pop_data.get(
+                            "clinical_significance", "Unknown"
+                        ),
                         "is_pathogenic": pop_data.get("is_pathogenic", 0),
                         "review_status": pop_data.get("review_status", ""),
                     }
@@ -74,7 +82,10 @@ class MLFusionIntegrator:
             # Add CADD scores if available
             if "cadd_phred" in variant or "cadd_raw" in variant:
                 enriched_variant.update(
-                    {"cadd_phred": variant.get("cadd_phred", 0.0), "cadd_raw": variant.get("cadd_raw", 0.0)}
+                    {
+                        "cadd_phred": variant.get("cadd_phred", 0.0),
+                        "cadd_raw": variant.get("cadd_raw", 0.0),
+                    }
                 )
 
             # Add TCGA enrichment data
@@ -88,15 +99,21 @@ class MLFusionIntegrator:
             enriched_variant["tcga_enrichment_score"] = tcga_enrichment
 
             # Ensure required fields have defaults
-            enriched_variant.setdefault("gnomad_a", enriched_variant.get("population_frequency", 0.0))
-            enriched_variant.setdefault("consequence", enriched_variant.get("variant_classification", "unknown"))
+            enriched_variant.setdefault(
+                "gnomad_a", enriched_variant.get("population_frequency", 0.0)
+            )
+            enriched_variant.setdefault(
+                "consequence", enriched_variant.get("variant_classification", "unknown")
+            )
             enriched_variant.setdefault("gene", "Unknown")
 
             enriched_variants.append(enriched_variant)
 
         return enriched_variants
 
-    def predict_pathogenicity(self, variants: List[Dict], state: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_pathogenicity(
+        self, variants: List[Dict], state: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Use ML models to predict pathogenicity for variants.
         """
@@ -117,7 +134,9 @@ class MLFusionIntegrator:
                 "pathogenicity_scores": ml_results["risk_scores"],
                 "pathogenicity_predictions": ml_results["predictions"],
                 "model_used": ml_results["model_used"],
-                "prediction_confidence": self._calculate_confidence(ml_results["probabilities"]),
+                "prediction_confidence": self._calculate_confidence(
+                    ml_results["probabilities"]
+                ),
             }
 
             # Update variants with ML scores
@@ -146,7 +165,9 @@ class MLFusionIntegrator:
             confidences.append(confidence)
         return confidences
 
-    def _fallback_scoring(self, variants: List[Dict], state: Dict[str, Any]) -> Dict[str, Any]:
+    def _fallback_scoring(
+        self, variants: List[Dict], state: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Fallback scoring when ML models are not available.
         Uses rule-based approach combining available annotations.
@@ -189,7 +210,10 @@ class MLFusionIntegrator:
 
             # Consequence severity
             consequence = variant.get("consequence", "").lower()
-            if any(term in consequence for term in ["nonsense", "frameshift", "stop_gained"]):
+            if any(
+                term in consequence
+                for term in ["nonsense", "frameshift", "stop_gained"]
+            ):
                 score += 0.4
             elif "missense" in consequence:
                 score += 0.2
@@ -216,22 +240,50 @@ class MLFusionIntegrator:
         }
 
     def calculate_cancer_risk(
-        self, variants: List[Dict], patient_data: Dict[str, Any], ml_predictions: Dict[str, Any]
+        self,
+        variants: List[Dict],
+        patient_data: Dict[str, Any],
+        ml_predictions: Dict[str, Any],
     ) -> Dict[str, float]:
         """
         Calculate cancer-specific risk scores using ML pathogenicity predictions.
         """
         # Define cancer-specific gene sets
         cancer_gene_sets = {
-            "breast": ["BRCA1", "BRCA2", "PALB2", "ATM", "CHEK2", "TP53", "PTEN", "CDH1"],
-            "colon": ["APC", "KRAS", "TP53", "MLH1", "MSH2", "MSH6", "PMS2", "SMAD4", "BRAF"],
+            "breast": [
+                "BRCA1",
+                "BRCA2",
+                "PALB2",
+                "ATM",
+                "CHEK2",
+                "TP53",
+                "PTEN",
+                "CDH1",
+            ],
+            "colon": [
+                "APC",
+                "KRAS",
+                "TP53",
+                "MLH1",
+                "MSH2",
+                "MSH6",
+                "PMS2",
+                "SMAD4",
+                "BRAF",
+            ],
             "lung": ["TP53", "KRAS", "EGFR", "STK11", "KEAP1", "NF1", "RB1", "CDKN2A"],
             "prostate": ["AR", "PTEN", "TP53", "BRCA1", "BRCA2", "ATM", "HOXB13"],
             "blood": ["JAK2", "FLT3", "NPM1", "DNMT3A", "TET2", "IDH1", "IDH2", "TP53"],
         }
 
         # Base population risks (lifetime risk percentages)
-        base_risks = {"breast": 12.9, "colon": 4.3, "lung": 6.3, "prostate": 12.5, "blood": 1.8}
+        base_risks = {
+            "breast": 12.9,
+            "colon": 4.3,
+            "lung": 6.3,
+            "prostate": 12.5,
+            "blood": 1.8,
+        }
 
         cancer_risks = {}
         pathogenicity_scores = ml_predictions["pathogenicity_scores"]
@@ -313,7 +365,9 @@ def update_feature_vector_builder(state: Dict[str, Any]) -> Dict[str, Any]:
         ml_predictions = integrator.predict_pathogenicity(filtered_variants, state)
 
         # Calculate cancer-specific risks
-        cancer_risks = integrator.calculate_cancer_risk(filtered_variants, patient_data, ml_predictions)
+        cancer_risks = integrator.calculate_cancer_risk(
+            filtered_variants, patient_data, ml_predictions
+        )
 
         # Build comprehensive feature vector
         feature_vector = {
@@ -321,8 +375,12 @@ def update_feature_vector_builder(state: Dict[str, Any]) -> Dict[str, Any]:
             "ml_model_used": ml_predictions["model_used"],
             "total_variants": len(filtered_variants),
             "pathogenic_variants": sum(ml_predictions["pathogenicity_predictions"]),
-            "average_pathogenicity_score": np.mean(ml_predictions["pathogenicity_scores"]),
-            "high_confidence_predictions": sum(1 for c in ml_predictions["prediction_confidence"] if c > 0.8),
+            "average_pathogenicity_score": np.mean(
+                ml_predictions["pathogenicity_scores"]
+            ),
+            "high_confidence_predictions": sum(
+                1 for c in ml_predictions["prediction_confidence"] if c > 0.8
+            ),
             "cancer_risks": cancer_risks,
             "ml_predictions": ml_predictions,
             "processing_timestamp": datetime.now().isoformat(),
@@ -337,15 +395,25 @@ def update_feature_vector_builder(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("ML fusion completed:")
         logger.info(f"  Model used: {ml_predictions['model_used']}")
         logger.info(f"  Total variants: {len(filtered_variants)}")
-        logger.info(f"  Predicted pathogenic: {sum(ml_predictions['pathogenicity_predictions'])}")
-        logger.info(f"  Average pathogenicity score: {np.mean(ml_predictions['pathogenicity_scores']):.3f}")
+        logger.info(
+            f"  Predicted pathogenic: {sum(ml_predictions['pathogenicity_predictions'])}"
+        )
+        logger.info(
+            f"  Average pathogenicity score: {np.mean(ml_predictions['pathogenicity_scores']):.3f}"
+        )
         logger.info(f"  Cancer risks: {cancer_risks}")
 
         state["completed_nodes"].append("feature_vector_builder")
 
     except Exception as e:
         logger.error(f"ML fusion feature vector builder failed: {str(e)}")
-        state["errors"].append({"node": "feature_vector_builder", "error": str(e), "timestamp": datetime.now()})
+        state["errors"].append(
+            {
+                "node": "feature_vector_builder",
+                "error": str(e),
+                "timestamp": datetime.now(),
+            }
+        )
 
         # Fallback to basic feature vector
         state["feature_vector"] = {

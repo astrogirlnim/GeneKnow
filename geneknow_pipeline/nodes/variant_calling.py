@@ -13,7 +13,9 @@ import csv
 logger = logging.getLogger(__name__)
 
 
-def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: str = None) -> str:
+def run_simple_variant_caller(
+    bam_path: str, reference_path: str, output_dir: str = None
+) -> str:
     """
     Simple variant caller for testing.
     In production, this would run DeepVariant.
@@ -29,7 +31,9 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
     #   --output_vcf=variants.vcf
 
     # For testing, use pre-generated VCF
-    test_vcf = os.path.join(os.path.dirname(__file__), "..", "test_data", "test_variants.vc")
+    test_vcf = os.path.join(
+        os.path.dirname(__file__), "..", "test_data", "test_variants.vc"
+    )
     if os.path.exists(test_vcf):
         return test_vcf
 
@@ -58,7 +62,9 @@ def run_simple_variant_caller(bam_path: str, reference_path: str, output_dir: st
     with open(vcf_path, "w") as f:
         f.write(vcf_content)
 
-    logger.warning("Using simplified variant caller for testing. In production, use DeepVariant.")
+    logger.warning(
+        "Using simplified variant caller for testing. In production, use DeepVariant."
+    )
     return vcf_path
 
 
@@ -107,7 +113,9 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
     # Load annotations if available
     annotation_file = vcf_path.replace(".vc", "_annotations.tsv")
     if not os.path.exists(annotation_file):
-        annotation_file = os.path.join(os.path.dirname(vcf_path), "test_annotations.tsv")
+        annotation_file = os.path.join(
+            os.path.dirname(vcf_path), "test_annotations.tsv"
+        )
 
     annotations = load_variant_annotations(annotation_file)
 
@@ -161,7 +169,13 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
         else:
             # Default values if no annotation
             variant.update(
-                {"gene": "Unknown", "consequence": "unknown", "hgvs_c": "", "hgvs_p": "", "impact": "UNKNOWN"}
+                {
+                    "gene": "Unknown",
+                    "consequence": "unknown",
+                    "hgvs_c": "",
+                    "hgvs_p": "",
+                    "impact": "UNKNOWN",
+                }
             )
 
         variants.append(variant)
@@ -185,10 +199,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         bam_path = state["aligned_bam_path"]
 
         # Get reference genome path
-        reference_path = os.path.join(os.path.dirname(__file__), "..", "test_reference", "test_genome.fa")
+        reference_path = os.path.join(
+            os.path.dirname(__file__), "..", "test_reference", "test_genome.fa"
+        )
 
         # Run variant caller (simplified for testing)
-        vcf_path = run_simple_variant_caller(bam_path, reference_path, os.path.dirname(bam_path))
+        vcf_path = run_simple_variant_caller(
+            bam_path, reference_path, os.path.dirname(bam_path)
+        )
 
         # Parse VCF file
         variants = parse_vcf_file(vcf_path)
@@ -205,11 +223,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # The merge node will handle tracking completion
 
         # Return only the keys this node updates
-        return {"vcf_path": vcf_path, "raw_variants": variants, "variant_count": len(variants)}
+        return {
+            "vcf_path": vcf_path,
+            "raw_variants": variants,
+            "variant_count": len(variants),
+        }
 
     except Exception as e:
         logger.error(f"Variant calling failed: {str(e)}")
         return {
-            "errors": [{"node": "variant_calling", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {
+                    "node": "variant_calling",
+                    "error": str(e),
+                    "timestamp": datetime.now(),
+                }
+            ],
             "pipeline_status": "failed",
         }

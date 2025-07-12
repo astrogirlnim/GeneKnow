@@ -32,7 +32,9 @@ def test_detection():
 
         # Test generation
         print("\n=== Testing Generation ===")
-        result = interface.generate("Write a brief medical summary about BRCA1 mutations.")
+        result = interface.generate(
+            "Write a brief medical summary about BRCA1 mutations."
+        )
         print(f"Generated {len(result)} characters")
         if result:
             print(f"First 200 chars: {result[:200]}...")

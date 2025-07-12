@@ -22,11 +22,15 @@ def create_test_reference():
     # Add a few genes we're testing (simplified)
     # Chr17 for BRCA1 and TP53
     chr17_seq = "ATCGATCGATCG" * 1000  # 12kb mini chromosome
-    chromosomes.append(SeqRecord(Seq(chr17_seq), id="chr17", description="Test chromosome 17"))
+    chromosomes.append(
+        SeqRecord(Seq(chr17_seq), id="chr17", description="Test chromosome 17")
+    )
 
     # Chr5 for APC
     chr5_seq = "GCTAGCTAGCTA" * 1000  # 12kb mini chromosome
-    chromosomes.append(SeqRecord(Seq(chr5_seq), id="chr5", description="Test chromosome 5"))
+    chromosomes.append(
+        SeqRecord(Seq(chr5_seq), id="chr5", description="Test chromosome 5")
+    )
 
     # Write FASTA file
     ref_file = os.path.join(ref_dir, "test_genome.fa")

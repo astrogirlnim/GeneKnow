@@ -31,7 +31,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "report_metadata": {
                     "pipeline_version": "1.0.0",
                     "processing_time_seconds": (
-                        datetime.now() - state.get("pipeline_start_time", datetime.now())
+                        datetime.now()
+                        - state.get("pipeline_start_time", datetime.now())
                     ).total_seconds(),
                     "generated_at": datetime.now().isoformat(),
                     "language": state.get("language", "en"),
@@ -43,7 +44,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "summary": {
                     "total_variants_found": state.get("variant_count", 0),
                     "variants_passed_qc": len(state.get("filtered_variants", [])),
-                    "high_risk_findings": len([s for s in state.get("risk_scores", {}).values() if s >= 50]),
+                    "high_risk_findings": len(
+                        [s for s in state.get("risk_scores", {}).values() if s >= 50]
+                    ),
                 },
                 "risk_assessment": {
                     "scores": state.get("risk_scores", {}),
@@ -63,11 +66,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             # Build high risk findings
             for cancer_type, score in state.get("risk_scores", {}).items():
                 if score >= 50:
-                    state["structured_json"]["risk_assessment"]["high_risk_findings"].append(
+                    state["structured_json"]["risk_assessment"][
+                        "high_risk_findings"
+                    ].append(
                         {
                             "cancer_type": cancer_type,
                             "risk_percentage": score,
-                            "affected_genes": state.get("risk_genes", {}).get(cancer_type, []),
+                            "affected_genes": state.get("risk_genes", {}).get(
+                                cancer_type, []
+                            ),
                         }
                     )
 
@@ -81,18 +88,30 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "title": "Patient Genomic Risk Report",
                 "generated_date": datetime.now().strftime("%Y-%m-%d"),
                 "generated_time": datetime.now().strftime("%H:%M:%S"),
-                "pipeline_version": structured_data["report_metadata"]["pipeline_version"],
-                "processing_time_seconds": structured_data["report_metadata"].get("processing_time_seconds", 0),
+                "pipeline_version": structured_data["report_metadata"][
+                    "pipeline_version"
+                ],
+                "processing_time_seconds": structured_data["report_metadata"].get(
+                    "processing_time_seconds", 0
+                ),
                 "language": language,
             },
             "summary": {
                 "description": "This report details the genomic risk assessment based on provided genetic data. High-risk findings are highlighted.",
-                "total_variants_found": structured_data["summary"]["total_variants_found"],
+                "total_variants_found": structured_data["summary"][
+                    "total_variants_found"
+                ],
                 "variants_passed_qc": structured_data["summary"]["variants_passed_qc"],
-                "high_risk_findings_count": structured_data["summary"]["high_risk_findings"],
+                "high_risk_findings_count": structured_data["summary"][
+                    "high_risk_findings"
+                ],
                 "patient_info": state.get("patient_data", {}),
             },
-            "risk_findings": _format_risk_findings(structured_data) if structured_data.get("risk_assessment") else [],
+            "risk_findings": (
+                _format_risk_findings(structured_data)
+                if structured_data.get("risk_assessment")
+                else []
+            ),
             "variant_table": _format_variant_table(structured_data),
             "quality_control": {
                 "total_variants": structured_data["summary"]["total_variants_found"],
@@ -100,13 +119,23 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "filtered_variants": structured_data["summary"]["total_variants_found"]
                 - structured_data["summary"]["variants_passed_qc"],
                 "pass_rate_percent": _calculate_pass_rate(structured_data),
-                "filter_criteria": {"min_quality": 30, "min_depth": 10, "min_allele_frequency": 0.01},
+                "filter_criteria": {
+                    "min_quality": 30,
+                    "min_depth": 10,
+                    "min_allele_frequency": 0.01,
+                },
             },
-            "tcga_summary": _format_tcga_summary(state),  # Pass state instead of structured_data
-            "cadd_summary": _format_cadd_summary(state),  # Pass state instead of structured_data
+            "tcga_summary": _format_tcga_summary(
+                state
+            ),  # Pass state instead of structured_data
+            "cadd_summary": _format_cadd_summary(
+                state
+            ),  # Pass state instead of structured_data
             "shap_validation": _format_shap_validation(structured_data),
             "recommendations": _generate_recommendations(structured_data),
-            "technical_details": _format_technical_details(state) if include_technical else None,
+            "technical_details": (
+                _format_technical_details(state) if include_technical else None
+            ),
             "disclaimers": [
                 "This report is for research purposes only and should not be used for clinical decision-making without consultation with a qualified healthcare provider.",
                 "Genetic risk assessment is based on current scientific understanding and may change as new research emerges.",
@@ -115,7 +144,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "metadata": {
                 "report_id": f"GR-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
                 "model_version": state.get("model_version", "1.0.0"),
-                "warnings": [w.get("warning", str(w)) for w in state.get("warnings", []) if isinstance(w, dict)]
+                "warnings": [
+                    w.get("warning", str(w))
+                    for w in state.get("warnings", [])
+                    if isinstance(w, dict)
+                ]
                 + [str(w) for w in state.get("warnings", []) if isinstance(w, str)],
                 "file_analyzed": state.get("file_path", "Unknown"),
             },
@@ -125,13 +158,19 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         report_markdown = _generate_markdown_from_sections(report_sections)
 
         # Debug logging
-        logger.info(f"Report sections created with keys: {list(report_sections.keys())}")
+        logger.info(
+            f"Report sections created with keys: {list(report_sections.keys())}"
+        )
         logger.info(f"Report sections header: {report_sections.get('header', {})}")
 
         logger.info("Report generation complete")
 
         # Return only the keys this node updates
-        return {"report_sections": report_sections, "report_markdown": report_markdown, "pipeline_status": "completed"}
+        return {
+            "report_sections": report_sections,
+            "report_markdown": report_markdown,
+            "pipeline_status": "completed",
+        }
 
     except Exception as e:
         import traceback
@@ -141,7 +180,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Return error state updates
         return {
             "pipeline_status": "failed",
-            "errors": [{"node": "report_writer", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "report_writer", "error": str(e), "timestamp": datetime.now()}
+            ],
         }
 
 
@@ -161,7 +202,9 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "risk_level": _get_risk_level(finding["risk_percentage"]),
                 "affected_genes": finding["affected_genes"],
                 "gene_count": len(finding["affected_genes"]),
-                "recommendation": _get_risk_recommendation(finding["cancer_type"], finding["risk_percentage"]),
+                "recommendation": _get_risk_recommendation(
+                    finding["cancer_type"], finding["risk_percentage"]
+                ),
             }
         )
 
@@ -176,8 +219,12 @@ def _format_risk_findings(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "cancer_type": cancer_type,
                     "risk_percentage": score,
                     "risk_level": _get_risk_level(score),
-                    "affected_genes": risk_assessment.get("risk_genes", {}).get(cancer_type, []),
-                    "gene_count": len(risk_assessment.get("risk_genes", {}).get(cancer_type, [])),
+                    "affected_genes": risk_assessment.get("risk_genes", {}).get(
+                        cancer_type, []
+                    ),
+                    "gene_count": len(
+                        risk_assessment.get("risk_genes", {}).get(cancer_type, [])
+                    ),
                     "recommendation": _get_risk_recommendation(cancer_type, score),
                 }
             )
@@ -217,7 +264,11 @@ def _format_variant_table(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "depth": variant["quality_metrics"]["depth"],
                 "allele_frequency": variant["quality_metrics"]["allele_freq"],
                 "tcga_best_match": best_match,
-                "cadd_score": variant.get("cadd_scores", {}).get("phred") if "cadd_scores" in variant else None,
+                "cadd_score": (
+                    variant.get("cadd_scores", {}).get("phred")
+                    if "cadd_scores" in variant
+                    else None
+                ),
                 "cadd_interpretation": (
                     _interpret_cadd_score(variant.get("cadd_scores", {}).get("phred"))
                     if "cadd_scores" in variant
@@ -248,18 +299,30 @@ def _format_tcga_summary(state: Dict[str, Any]) -> Dict[str, Any]:
         variants_with_matches = len(all_variant_ids)
 
     total_variants = state.get("variant_count", 0)
-    match_rate = (variants_with_matches / total_variants * 100) if total_variants > 0 else 0
+    match_rate = (
+        (variants_with_matches / total_variants * 100) if total_variants > 0 else 0
+    )
 
     return {
         "cancer_types_analyzed": (
-            list(tcga_matches.keys()) if tcga_matches else tcga_summary.get("cancer_types_analyzed", [])
+            list(tcga_matches.keys())
+            if tcga_matches
+            else tcga_summary.get("cancer_types_analyzed", [])
         ),
         "total_cohort_size": (
-            sum(tcga_cohort_sizes.values()) if tcga_cohort_sizes else sum(tcga_summary.get("cohort_sizes", {}).values())
+            sum(tcga_cohort_sizes.values())
+            if tcga_cohort_sizes
+            else sum(tcga_summary.get("cohort_sizes", {}).values())
         ),
-        "cohort_sizes": tcga_cohort_sizes if tcga_cohort_sizes else tcga_summary.get("cohort_sizes", {}),
+        "cohort_sizes": (
+            tcga_cohort_sizes
+            if tcga_cohort_sizes
+            else tcga_summary.get("cohort_sizes", {})
+        ),
         "variants_with_matches": (
-            variants_with_matches if tcga_matches else tcga_summary.get("variants_with_tcga_data", 0)
+            variants_with_matches
+            if tcga_matches
+            else tcga_summary.get("variants_with_tcga_data", 0)
         ),
         "match_rate_percent": match_rate,
     }
@@ -297,7 +360,11 @@ def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
     shap_data = data.get("shap_validation")
 
     if not shap_data:
-        return {"enabled": False, "status": "NOT_PERFORMED", "message": "Model interpretability analysis not performed"}
+        return {
+            "enabled": False,
+            "status": "NOT_PERFORMED",
+            "message": "Model interpretability analysis not performed",
+        }
 
     status = shap_data.get("status", "SKIPPED")
 
@@ -306,7 +373,9 @@ def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
     for contrib in shap_data.get("top_contributors", []):
         top_contributors.append(
             {
-                "feature": contrib.get("display_name", contrib.get("feature", "Unknown")),
+                "feature": contrib.get(
+                    "display_name", contrib.get("feature", "Unknown")
+                ),
                 "contribution": contrib.get("abs_contribution", 0),
                 "direction": contrib.get("direction", "unknown"),
                 "description": f"{contrib.get('display_name', contrib.get('feature'))} {contrib.get('direction', 'affects')} risk",
@@ -315,7 +384,9 @@ def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Create appropriate message based on status
     if status == "PASS":
-        message = "The model's prediction is strongly supported by the genomic evidence."
+        message = (
+            "The model's prediction is strongly supported by the genomic evidence."
+        )
         title = "PASS"
         icon = "✅"
         alert_level = "success"
@@ -323,7 +394,11 @@ def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
         reasons = shap_data.get("reasons", [])
         if reasons:
             # Create a more structured message
-            message = reasons[0] if len(reasons) == 1 else "Multiple concerns detected: " + "; ".join(reasons)
+            message = (
+                reasons[0]
+                if len(reasons) == 1
+                else "Multiple concerns detected: " + "; ".join(reasons)
+            )
             title = "Review Needed"
         else:
             message = "The model's reasoning requires manual verification."
@@ -351,7 +426,8 @@ def _format_shap_validation(data: Dict[str, Any]) -> Dict[str, Any]:
         "top_contributors": top_contributors,
         "reasons": shap_data.get("reasons", []),
         "clinical_question": "Does this align with your clinical assessment?",
-        "explanation_needed": status == "FLAG_FOR_REVIEW",  # Flag for UI to show detailed explanation
+        "explanation_needed": status
+        == "FLAG_FOR_REVIEW",  # Flag for UI to show detailed explanation
     }
 
 
@@ -417,9 +493,15 @@ def _format_technical_details(state: Dict[str, Any]) -> Dict[str, Any]:
         "pipeline_nodes": state.get("completed_nodes", []),
         "file_metadata": state.get("file_metadata", {}),
         "alignment_stats": state.get("alignment_stats", {}),
-        "variant_calling_method": state.get("variant_calling_method", "Direct variant loading from file"),
+        "variant_calling_method": state.get(
+            "variant_calling_method", "Direct variant loading from file"
+        ),
         "reference_genome": "GRCh38",
-        "quality_thresholds": {"min_quality_score": 30, "min_read_depth": 10, "min_allele_frequency": 0.01},
+        "quality_thresholds": {
+            "min_quality_score": 30,
+            "min_read_depth": 10,
+            "min_allele_frequency": 0.01,
+        },
         "model_details": {
             "type": state.get("model_type", "logistic_regression"),
             "version": state.get("model_version", "1.0.0"),
@@ -507,7 +589,9 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
     if "risk_findings" in sections and sections["risk_findings"]:
         for finding in sections["risk_findings"]:
             level_emoji = (
-                "🔴" if finding["risk_level"] == "high" else "🟡" if finding["risk_level"] == "moderate" else "🟢"
+                "🔴"
+                if finding["risk_level"] == "high"
+                else "🟡" if finding["risk_level"] == "moderate" else "🟢"
             )
             md += f"### {level_emoji} {finding['cancer_type'].capitalize()} Cancer\n"
             md += f"- **Risk Score**: {finding['risk_percentage']}%\n"
@@ -529,12 +613,18 @@ def _generate_markdown_from_sections(sections: Dict[str, Any]) -> str:
 
         cadd_text = "Score not available"
         if variant["cadd_score"] is not None:
-            cadd_text = f"{variant['cadd_score']:.1f} ({variant['cadd_interpretation']})"
+            cadd_text = (
+                f"{variant['cadd_score']:.1f} ({variant['cadd_interpretation']})"
+            )
 
         md += f"| {variant['gene']} | {variant['variant_id'][:20]}... | {variant['consequence']} | {tcga_text} | {variant['clinical_significance']} | {cadd_text} |\n"
 
     # Add SHAP validation section
-    if "shap_validation" in sections and sections["shap_validation"] and sections["shap_validation"].get("enabled"):
+    if (
+        "shap_validation" in sections
+        and sections["shap_validation"]
+        and sections["shap_validation"].get("enabled")
+    ):
         shap = sections["shap_validation"]
         md += "\n## Model Validation\n\n"
         md += f"{shap['icon']} **Logic Check: {shap['status']}**\n\n"

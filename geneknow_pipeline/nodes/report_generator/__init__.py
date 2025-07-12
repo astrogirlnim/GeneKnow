@@ -11,4 +11,10 @@ from .prompt_builder import PromptBuilder
 from .formatter import ReportFormatter
 from .config import ReportConfig
 
-__all__ = ["process", "ModelInterface", "PromptBuilder", "ReportFormatter", "ReportConfig"]
+__all__ = [
+    "process",
+    "ModelInterface",
+    "PromptBuilder",
+    "ReportFormatter",
+    "ReportConfig",
+]

@@ -22,14 +22,20 @@ def simulate_threshold_performance(threshold, sensitivity_target=None):
     # Approximate performance curves based on AUC=0.76
     sensitivity = 1 - threshold**1.5 * 0.4  # Drops slowly at first
     specificity = threshold**0.7 * 0.85  # Rises with threshold
-    precision = specificity / (specificity + (1 - specificity) * 0.4)  # Depends on prevalence
+    precision = specificity / (
+        specificity + (1 - specificity) * 0.4
+    )  # Depends on prevalence
 
     return {
         "threshold": threshold,
         "sensitivity": sensitivity,
         "specificity": specificity,
         "precision": precision,
-        "f1_score": 2 * (precision * sensitivity) / (precision + sensitivity) if (precision + sensitivity) > 0 else 0,
+        "f1_score": (
+            2 * (precision * sensitivity) / (precision + sensitivity)
+            if (precision + sensitivity) > 0
+            else 0
+        ),
     }
 
 
@@ -53,10 +59,14 @@ def main():
     if best_thresh:
         perf = simulate_threshold_performance(best_thresh)
         print(f"\nThreshold: {best_thresh:.2f}")
-        print(f"✅ Sensitivity: {perf['sensitivity']:.1%} (catches 90% of cancer risks)")
+        print(
+            f"✅ Sensitivity: {perf['sensitivity']:.1%} (catches 90% of cancer risks)"
+        )
         print(f"⚠️  Specificity: {perf['specificity']:.1%} (many false positives)")
         print(f"📊 Precision: {perf['precision']:.1%}")
-        print("\nInterpretation: Better to be safe and test more people than miss cancer!")
+        print(
+            "\nInterpretation: Better to be safe and test more people than miss cancer!"
+        )
 
     # Scenario 2: Research Prioritization (High Precision)
     print("\n\n📋 Scenario 2: Research Variant Prioritization")
@@ -115,7 +125,9 @@ def main():
         accuracy = tp + tn + uncertain_correct
 
         print(f"\nThreshold {thresh:.1f}: Accuracy ≈ {accuracy:.1%}")
-        print(f"  But sensitivity: {perf['sensitivity']:.1%}, specificity: {perf['specificity']:.1%}")
+        print(
+            f"  But sensitivity: {perf['sensitivity']:.1%}, specificity: {perf['specificity']:.1%}"
+        )
 
     print("\n\n💡 CONCLUSION:")
     print("=" * 50)

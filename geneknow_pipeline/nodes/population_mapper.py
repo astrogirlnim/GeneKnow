@@ -22,7 +22,9 @@ def normalize_chromosome(chrom: str) -> str:
     return chrom
 
 
-def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str, Any]:
+def query_population_database(
+    chrom: str, pos: int, ref: str, alt: str
+) -> Dict[str, Any]:
     """Query population database for variant frequency."""
     if not os.path.exists(POP_DB_PATH):
         logger.warning(f"Population database not found at {POP_DB_PATH}")
@@ -115,7 +117,9 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
             }
 
         # Strategy 4: Not found - return default safe values
-        logger.info(f"Variant not found in population database: {chrom}:{pos}:{ref}>{alt}")
+        logger.info(
+            f"Variant not found in population database: {chrom}:{pos}:{ref}>{alt}"
+        )
         return {
             "population_frequency": 0.0,
             "clinical_significance": "Not_in_database",
@@ -128,7 +132,9 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
         conn.close()
 
 
-def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, Any]) -> Dict[str, Any]:
+def assess_clinical_significance(
+    variant: Dict[str, Any], pop_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """Assess clinical significance based on multiple factors."""
 
     # Start with population database info
@@ -214,7 +220,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Process each variant
         for variant in filtered_variants:
             # Query population database
-            pop_data = query_population_database(variant["chrom"], variant["pos"], variant["re"], variant["alt"])
+            pop_data = query_population_database(
+                variant["chrom"], variant["pos"], variant["re"], variant["alt"]
+            )
 
             # Assess clinical significance
             clinical_assessment = assess_clinical_significance(variant, pop_data)
@@ -225,7 +233,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Update variant with improved annotations
             variant["population_frequency"] = pop_data.get("population_frequency", 0.0)
-            variant["clinical_significance"] = clinical_assessment["final_clinical_significance"]
+            variant["clinical_significance"] = clinical_assessment[
+                "final_clinical_significance"
+            ]
             variant["is_pathogenic"] = clinical_assessment["is_pathogenic"]
             variant["risk_weight"] = clinical_assessment["risk_weight"]
             variant["assessment_rationale"] = clinical_assessment["rationale"]
@@ -233,14 +243,18 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             # Categorize variants
             if clinical_assessment["is_pathogenic"]:
                 pathogenic_variants.append(variant_id)
-                logger.warning(f"⚠️  Pathogenic variant: {variant_id} - {clinical_assessment['rationale']}")
+                logger.warning(
+                    f"⚠️  Pathogenic variant: {variant_id} - {clinical_assessment['rationale']}"
+                )
             elif clinical_assessment["final_clinical_significance"] in [
                 "Benign",
                 "Likely_benign_common",
                 "Likely_benign_synonymous",
             ]:
                 benign_variants.append(variant_id)
-                logger.info(f"✅ Benign variant: {variant_id} - {clinical_assessment['rationale']}")
+                logger.info(
+                    f"✅ Benign variant: {variant_id} - {clinical_assessment['rationale']}"
+                )
             elif pop_data.get("population_frequency", 0) < 0.001:
                 rare_variants.append(variant_id)
                 logger.info(
@@ -265,4 +279,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Population mapping failed: {str(e)}")
-        return {"errors": [{"node": "population_mapper", "error": str(e), "timestamp": datetime.now()}]}
+        return {
+            "errors": [
+                {
+                    "node": "population_mapper",
+                    "error": str(e),
+                    "timestamp": datetime.now(),
+                }
+            ]
+        }
