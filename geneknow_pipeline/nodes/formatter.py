@@ -143,6 +143,83 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if state.get("mutation_type_distribution"):
             summary["mutation_types"] = state["mutation_type_distribution"]
 
+        # Process pathway analysis data from pathway burden results
+        pathway_analysis = None
+        pathway_burden_results = state.get("pathway_burden_results", {})
+        pathway_burden_summary = state.get("pathway_burden_summary", {})
+        
+        if pathway_burden_results:
+            # Transform pathway burden results into the format expected by frontend
+            disrupted_pathways = []
+            cancer_pathway_associations = {}
+            
+            # Convert pathway burden results to disrupted pathways format
+            for pathway_name, burden_result in pathway_burden_results.items():
+                burden_score = burden_result.get("burden_score", 0)
+                if burden_score > 0.1:  # Only include pathways with significant burden
+                    # Create mutations list from damaging genes
+                    mutations = []
+                    if burden_result.get("damaging_genes"):
+                        for gene in burden_result["damaging_genes"]:
+                            mutations.append({
+                                "gene": gene,
+                                "type": "missense",  # Default type, could be enhanced
+                                "effect": f"Damaging variant in {gene}"
+                            })
+                    
+                    disrupted_pathways.append({
+                        "name": pathway_name.replace("_", " ").title(),
+                        "pathway_id": pathway_name,
+                        "significance": round(burden_score * 100, 1),  # Convert to percentage
+                        "affected_genes": burden_result.get("damaging_genes", []),
+                        "mutations": mutations,
+                        "description": burden_result.get("description", f"{pathway_name} pathway"),
+                        "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}"
+                    })
+            
+            # Create cancer pathway associations based on high burden pathways
+            high_burden_pathways = pathway_burden_summary.get("high_burden_pathways", [])
+            if high_burden_pathways:
+                # Map pathways to cancer types based on common associations
+                pathway_cancer_mapping = {
+                    "oncogenes": ["lung", "colon", "breast"],
+                    "tumor_suppressors": ["breast", "lung", "colon", "prostate"],
+                    "dna_repair": ["breast", "colon"],
+                    "chromatin_remodeling": ["blood", "lung"],
+                    "ras_mapk": ["lung", "colon", "prostate"],
+                    "cell_cycle": ["breast", "lung", "prostate"],
+                    "apoptosis": ["breast", "lung", "colon"],
+                    "mismatch_repair": ["colon"],
+                    "wnt_signaling": ["colon"],
+                    "pi3k_akt": ["breast", "prostate"]
+                }
+                
+                for pathway in high_burden_pathways:
+                    associated_cancers = pathway_cancer_mapping.get(pathway, [])
+                    for cancer in associated_cancers:
+                        if cancer not in cancer_pathway_associations:
+                            cancer_pathway_associations[cancer] = []
+                        cancer_pathway_associations[cancer].append(pathway)
+            
+            # Create pathway analysis structure
+            pathway_analysis = {
+                "disrupted_pathways": disrupted_pathways,
+                "cancer_pathway_associations": cancer_pathway_associations,
+                "pathway_interactions": [],  # Could be enhanced
+                "clinical_recommendations": [],  # Could be enhanced
+                "summary": {
+                    "total_pathways_disrupted": len(disrupted_pathways),
+                    "highly_disrupted_pathways": len([p for p in disrupted_pathways if p["significance"] > 50]),
+                    "total_genes_affected": len(set([gene for p in disrupted_pathways for gene in p["affected_genes"]])),
+                    "pathway_interaction_count": 0,
+                    "overall_burden_score": pathway_burden_summary.get("overall_burden_score", 0),
+                    "high_burden_pathways": high_burden_pathways
+                }
+            }
+        
+        # Use pathway_analysis from state if available (from pathway_analyzer node), otherwise use transformed data
+        final_pathway_analysis = state.get("pathway_analysis") or pathway_analysis
+
         structured_json = {
             "report_metadata": {
                 "pipeline_version": "1.0.0",
@@ -169,7 +246,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "mutation_signatures": state.get("mutational_signatures", []),
             "structural_variants": state.get("structural_variants", []),
             "copy_number_variants": state.get("copy_number_variants", []),
-            "pathway_analysis": state.get("pathway_analysis"),
+            "pathway_analysis": final_pathway_analysis,
             "gene_interactions": state.get("gene_interactions", []),
             "gene_network_analysis": state.get("gene_network_analysis"),
             "survival_analysis": state.get("survival_analysis"),
