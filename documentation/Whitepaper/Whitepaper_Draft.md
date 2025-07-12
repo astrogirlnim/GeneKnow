@@ -57,7 +57,7 @@ Geneknow uses SQLite databases containing aggregate statistics from public sourc
 
 ## 5. Privacy & Security Design
 
-Geneknow's HIPAA-friendly architecture processes all data locally, eliminating transmission risks. Features include encrypted temporary storage and automatic data cleanup post-analysis. While not formally HIPAA-certified, the design aligns with HIPAA technical safeguards including access controls and audit logs [11]. The application bundles a complete Python runtime and dependencies to ensure no external dependencies are required during analysis.
+Geneknow's HIPAA-friendly architecture processes all data locally, eliminating transmission risks and ensuring zero PHI storage. Features include encrypted temporary storage and automatic data cleanup post-analysis. While not formally HIPAA-certified, the design aligns with HIPAA technical safeguards including access controls and audit logs [11]. The application bundles a complete Python runtime and dependencies to ensure no external dependencies are required during analysis. As a completely free and open-source solution, Geneknow removes cost barriers to genomic analysis while maintaining the highest privacy standards.
 
 ## 6. User Interface and Experience
 
@@ -105,7 +105,7 @@ Planned expansions include additional cancer types beyond the current five suppo
 
 ## 10. Conclusion
 
-Geneknow democratizes genomic analysis with privacy at its core, bridging accessibility and scientific rigor through local-first processing, comprehensive risk assessment, and clinician-friendly reporting.
+Geneknow democratizes genomic analysis with privacy at its core, bridging accessibility and scientific rigor through local-first processing, comprehensive risk assessment, and clinician-friendly reporting. As a completely free and open-source platform that stores no PHI, Geneknow removes both cost and privacy barriers to genomic analysis, enabling equitable access to advanced genomic risk assessment tools for clinicians and researchers worldwide.
 
 ## References
 
