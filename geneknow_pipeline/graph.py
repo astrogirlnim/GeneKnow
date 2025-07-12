@@ -527,7 +527,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_node("variant_transformer", variant_transformer.process)
     workflow.add_node("structural_variant_detector", structural_variant_detector.process)
     workflow.add_node("cnv_detector", cnv_detector.process)
-    workflow.add_node("pathway_analyzer", pathway_analyzer.process)
+    # REMOVED: pathway_analyzer node - using pathway_burden results directly
     workflow.add_node("gene_interaction_network", gene_interaction_network.process)
     workflow.add_node("survival_analyzer", survival_analyzer.process)
     workflow.add_node("clinical_recommendations", clinical_recommendations.process)
@@ -593,8 +593,7 @@ def create_genomic_pipeline() -> StateGraph:
     workflow.add_edge("cnv_detector", "merge_variant_analysis")
 
     # Continue with pathway analysis after merging
-    workflow.add_edge("merge_variant_analysis", "pathway_analyzer")
-    workflow.add_edge("pathway_analyzer", "gene_interaction_network")
+    workflow.add_edge("merge_variant_analysis", "gene_interaction_network")
     workflow.add_edge("gene_interaction_network", "survival_analyzer")
     workflow.add_edge("survival_analyzer", "clinical_recommendations")
 
