@@ -281,13 +281,15 @@ Geneknow's core analysis pipeline is orchestrated using LangGraph, a modular, no
 - **Phase 1: Offline Model Training & Validation** (performed before shipping the app)
 - **Phase 2: Online Real-Time Inference Pipeline** (runs locally in the app)
 
-Below is the complete pipeline diagram showing all components and their interactions, followed by a detailed explanation of each node and its implementation in the codebase.
+The complete pipeline diagram below shows all components and their interactions:
 
 ![LangGraph Pipeline Architecture](langgraph_pipeline.png)
 
 *Figure 6: Complete LangGraph Pipeline Architecture showing the two-phase approach: Phase 1 (Offline Model Training & Validation) performed before shipping the app, and Phase 2 (Online Real-Time Inference Pipeline) running locally in the app. The diagram shows the complete workflow from data ingestion through genomic feature extraction, machine learning validation, and report generation with all technical details and component relationships.*
 
 ### Node-by-Node Explanation
+
+The following table provides detailed implementation information for each node in the pipeline:
 
 | Node | Diagram Reference | Implementation File/Function                  | Purpose/Role                                                                                   |
 |------|-------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------|

@@ -47,6 +47,7 @@ h3 {
     font-weight: bold;
     margin: 14pt 0 8pt 0;
     page-break-after: avoid;
+    page-break-before: avoid;
     color: #000;
     font-family: 'Computer Modern', 'Times New Roman', serif;
 }
@@ -194,9 +195,24 @@ img {
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 12pt auto;
+    margin: 8pt auto;
     page-break-inside: avoid;
-    page-break-before: avoid;
+    page-break-before: auto;
+}
+
+/* Large diagrams should fit well with text */
+img[src*="langgraph_pipeline"] {
+    max-width: 95%;
+    max-height: 18cm;
+    margin: 4pt auto 8pt auto;
+    page-break-before: auto;
+    page-break-after: avoid;
+}
+
+/* Keep diagram caption with following content */
+img[src*="langgraph_pipeline"] + p {
+    page-break-after: avoid;
+    margin-bottom: 8pt;
 }
 
 /* Figure captions - keep with images */
