@@ -3797,8 +3797,18 @@ const ClinicalViewPage: React.FC = () => {
               {(() => {
                 const survivalData = pipelineResults?.structured_json?.survival_analysis;
                 
-                if (!survivalData) {
-                  // No survival data - show informative message
+                console.log('🔍 SURVIVAL DEBUG: survivalData exists:', !!survivalData);
+                console.log('🔍 SURVIVAL DEBUG: patient_profile exists:', !!survivalData?.patient_profile);
+                console.log('🔍 SURVIVAL DEBUG: estimated_survival exists:', !!survivalData?.patient_profile?.estimated_survival);
+                console.log('🔍 SURVIVAL DEBUG: population_average exists:', !!survivalData?.population_average);
+                
+                if (!survivalData || 
+                    !survivalData.patient_profile || 
+                    !survivalData.patient_profile.estimated_survival || 
+                    !Array.isArray(survivalData.patient_profile.estimated_survival) ||
+                    !survivalData.population_average ||
+                    !Array.isArray(survivalData.population_average)) {
+                  // No proper survival data - show informative message
                   return (
                     <div style={{ 
                       padding: '3rem',
@@ -3812,11 +3822,40 @@ const ClinicalViewPage: React.FC = () => {
                       <p style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
                         This feature will provide personalized survival curves based on your genetic risk profile.
                       </p>
+                      <div style={{ 
+                        marginTop: '2rem',
+                        padding: '1rem',
+                        background: '#F3F4F6',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.7rem',
+                        color: '#6B7280'
+                      }}>
+                        <p style={{ marginBottom: '0.5rem' }}>
+                          <strong>Expected Data Structure:</strong>
+                        </p>
+                        <ul style={{ 
+                          textAlign: 'left',
+                          margin: 0,
+                          paddingLeft: '1.5rem',
+                          fontSize: '0.65rem'
+                        }}>
+                          <li>survival_analysis.patient_profile.estimated_survival (array)</li>
+                          <li>survival_analysis.population_average (array)</li>
+                          <li>survival_analysis.patient_profile.risk_category (string)</li>
+                        </ul>
+                        <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
+                          Backend implementation pending
+                        </p>
+                      </div>
                     </div>
                   );
                 }
                 
-                // Use real survival data
+                // Use real survival data - with additional safety checks
+                const patientSurvival = survivalData.patient_profile.estimated_survival || [];
+                const populationAverage = survivalData.population_average || [];
+                const riskCategory = survivalData.patient_profile.risk_category || 'Unknown';
+                
                 return (
                   <svg width="100%" height="300" viewBox="0 0 800 300">
                     {/* Background */}
@@ -3831,40 +3870,44 @@ const ClinicalViewPage: React.FC = () => {
                     ))}
                     
                     {/* Age axis */}
-                    {survivalData.patient_profile.estimated_survival.map((point, i) => (
+                    {patientSurvival.map((point, i) => (
                       <g key={i}>
                         <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
-                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age}</text>
+                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age || `Age ${i}`}</text>
                       </g>
                     ))}
                     
                     {/* Population average survival curve */}
-                    <path 
-                      d={`M ${survivalData.population_average.map((point, i) => 
-                        `${80 + i * 80} ${250 - (point.probability * 200)}`
-                      ).join(' L ')}`}
-                      stroke="#2563EB" 
-                      strokeWidth="3" 
-                      fill="none"
-                      strokeDasharray="5,5"
-                    />
+                    {populationAverage.length > 0 && (
+                      <path 
+                        d={`M ${populationAverage.map((point, i) => 
+                          `${80 + i * 80} ${250 - ((point.probability || 0) * 200)}`
+                        ).join(' L ')}`}
+                        stroke="#2563EB" 
+                        strokeWidth="3" 
+                        fill="none"
+                        strokeDasharray="5,5"
+                      />
+                    )}
                     
                     {/* Patient risk profile survival curve */}
-                    <path 
-                      d={`M ${survivalData.patient_profile.estimated_survival.map((point, i) => 
-                        `${80 + i * 80} ${250 - (point.probability * 200)}`
-                      ).join(' L ')}`}
-                      stroke="#EF4444" 
-                      strokeWidth="3" 
-                      fill="none"
-                    />
+                    {patientSurvival.length > 0 && (
+                      <path 
+                        d={`M ${patientSurvival.map((point, i) => 
+                          `${80 + i * 80} ${250 - ((point.probability || 0) * 200)}`
+                        ).join(' L ')}`}
+                        stroke="#EF4444" 
+                        strokeWidth="3" 
+                        fill="none"
+                      />
+                    )}
                     
                     {/* Legend */}
                     <g transform="translate(500, 80)">
                       <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
                       <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
                       <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
-                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{survivalData.patient_profile.risk_category} Risk Profile</text>
+                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{riskCategory} Risk Profile</text>
                     </g>
                     
                     {/* Axis labels */}
