@@ -1,9 +1,9 @@
 report_generator:
   backend: none
-  dev_mode_indicator: NON-LLM MODE
+  dev_mode_indicator: TEMPLATE-BASED REPORT
   enable_parallel_generation: true
   enable_streaming: true
-  fallback_mode_indicator: Generated without LLM assistance
+  fallback_mode_indicator: Generated using standard templates - for enhanced AI analysis, configure your models in settings
   include_glossary: true
   include_technical_appendix: true
   max_parallel_workers: 5

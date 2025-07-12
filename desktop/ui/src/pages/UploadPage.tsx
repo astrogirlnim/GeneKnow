@@ -504,11 +504,11 @@ const UploadPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span style={{ fontWeight: '600', color: '#92400E', fontSize: '0.875rem' }}>
-                    Template-Based Reports Enabled
+                    Template-Based Reports
                   </span>
                 </div>
                 <p style={{ fontSize: '0.75rem', color: '#92400E', margin: '0 0 0.75rem' }}>
-                  Your reports will be generated using templates without AI assistance. For enhanced AI-generated reports, configure your preferred model in settings.
+                  Your reports will use standard templates without AI enhancement. For more comprehensive and personalized reports, please configure your AI models.
                 </p>
                 <button
                   onClick={() => navigate('/settings')}
