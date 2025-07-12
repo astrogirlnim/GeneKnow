@@ -19,6 +19,8 @@ body {
     hyphens: auto;
     text-rendering: optimizeLegibility;
     font-feature-settings: "liga", "kern";
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* LaTeX-style headings */
@@ -66,6 +68,8 @@ p {
     orphans: 3;
     widows: 3;
     text-align: justify;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* First paragraph after headings - no indent */
@@ -83,15 +87,20 @@ li {
     margin: 3pt 0;
     orphans: 2;
     widows: 2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Code styling */
+/* Code styling with proper wrapping */
 code {
     font-family: 'Computer Modern Typewriter', 'Courier New', monospace;
     font-size: 9.5pt;
     background-color: #f5f5f5;
     padding: 1pt 3pt;
     border-radius: 1pt;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
 }
 
 pre {
@@ -103,6 +112,19 @@ pre {
     margin: 12pt 0;
     line-height: 1.3;
     page-break-inside: avoid;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: inherit;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 /* LaTeX-style tables */
@@ -112,6 +134,8 @@ table {
     margin: 12pt 0;
     font-size: 10pt;
     page-break-inside: avoid;
+    word-wrap: break-word;
+    table-layout: fixed;
 }
 
 th, td {
@@ -121,6 +145,9 @@ th, td {
     padding: 4pt 8pt;
     text-align: left;
     vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
 
 th {
@@ -159,6 +186,8 @@ blockquote {
     font-style: italic;
     font-size: 10pt;
     line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Figure and image styling - prevent page breaks */
@@ -211,6 +240,8 @@ em {
 a {
     color: #0066cc;
     text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 a:hover {
@@ -222,6 +253,8 @@ ol li {
     margin: 4pt 0;
     font-size: 10pt;
     line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Prevent orphaned headers */
@@ -270,10 +303,9 @@ h2:contains("References") ~ * {
     line-height: 1.3;
 }
 
-/* Ensure mathematical expressions and code don't break */
-code, 
-.math {
-    white-space: nowrap;
+/* Ensure mathematical expressions and code don't break unnecessarily */
+code {
+    hyphens: none;
 }
 
 /* Professional title page styling */
@@ -306,4 +338,37 @@ figcaption {
     text-align: center;
     margin-top: 6pt;
     color: #333;
+}
+
+/* Special handling for file paths and long technical terms */
+td code, li code {
+    word-break: break-all;
+    hyphens: none;
+}
+
+/* Bullet point styling for long technical lists */
+li strong {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Better table column distribution */
+table th:first-child,
+table td:first-child {
+    width: 25%;
+}
+
+table th:nth-child(2),
+table td:nth-child(2) {
+    width: 30%;
+}
+
+table th:nth-child(3),
+table td:nth-child(3) {
+    width: 25%;
+}
+
+table th:last-child,
+table td:last-child {
+    width: 20%;
 } 
