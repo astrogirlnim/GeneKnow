@@ -17,7 +17,6 @@ body {
     color: #000;
     text-align: justify;
     hyphens: auto;
-    text-rendering: optimizeLegibility;
     font-feature-settings: "liga", "kern";
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -288,19 +287,6 @@ h2 {
 
 h3 {
     margin-top: 18pt;
-}
-
-/* Technical specifications in monospace */
-h3:contains("Technical Specifications") ~ ul,
-h3:contains("API Documentation") ~ ul {
-    font-family: 'Computer Modern Typewriter', 'Courier New', monospace;
-    font-size: 9.5pt;
-}
-
-/* Bibliography styling */
-h2:contains("References") ~ * {
-    font-size: 10pt;
-    line-height: 1.3;
 }
 
 /* Ensure mathematical expressions and code don't break unnecessarily */
