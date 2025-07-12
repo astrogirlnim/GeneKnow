@@ -341,7 +341,7 @@ class ReportFormatter:
             (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
         )
 
-        appendix = f"""## Technical Appendix
+        appendix = f"""**Technical Appendix**
 
 ### Analysis Methods
 
@@ -377,7 +377,7 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
     def _build_standardized_glossary(self, content: str) -> str:
         """Build standardized glossary with terms relevant to the report content."""
-        glossary = "## Glossary\n\n"
+        glossary = "**Glossary**\n\n"
 
         # Always include these basic terms
         glossary += "**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n"
@@ -437,44 +437,11 @@ For questions about this report or genetic counseling resources, please consult 
         /* Print-specific styles */
         @media print {{
             @page {{
-                margin: 1in;
-                @top-left {{
-                    content: "";
-                }}
-                @top-center {{
-                    content: "GENOMIC RISK ASSESSMENT REPORT";
-                    font-size: 12pt;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    color: #333;
-                }}
-                @top-right {{
-                    content: "";
-                }}
-                @bottom-left {{
-                    content: "";
-                }}
                 @bottom-center {{
                     content: "Page " counter(page);
                     font-size: 10pt;
                     color: #666;
                 }}
-                @bottom-right {{
-                    content: "Report ID: {report_id}";
-                    font-size: 8pt;
-                    color: #666;
-                }}
-            }}
-            
-            /* Completely disable all string-set functionality */
-            * {{
-                string-set: none !important;
-            }}
-            
-            /* Explicitly override any heading string-set */
-            h1, h2, h3, h4, h5, h6 {{
-                string-set: none !important;
-            }}
             
             /* Page break controls */
             h1 {{
