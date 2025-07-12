@@ -7,7 +7,7 @@
 **Narrative Overview:**
 Geneknow is a completely free and open-source desktop application designed for privacy-preserving genomic risk assessment, enabling clinicians and researchers to analyze genetic data entirely on local hardware without external data transmission. Built on a Tauri-based architecture with React frontend, Rust integration, and Python ML backend, it processes formats such as FASTQ, BAM, VCF, and MAF to generate interpretable risk reports for specific cancers including blood, breast, colon, lung, and prostate, with potential for future expansion.
 
-Key differentiators include its HIPAA-friendly design (not formally HIPAA-compliant), cross-platform support (Windows, macOS, Ubuntu, macOS Intel), and use of LangGraph for orchestrating accurate, reproducible genomic predictions. By leveraging aggregate statistics databases without storing actual patient data, FASTQs, or any Protected Health Information (PHI), Geneknow ensures complete data privacy while providing clinically relevant insights. The application is entirely free to use with no licensing fees, subscription costs, or commercial restrictions.
+Key differentiators include its cross-platform support (Windows, macOS, Ubuntu, macOS Intel), and use of LangGraph for orchestrating accurate, reproducible genomic predictions. By leveraging aggregate statistics databases without storing actual patient data, FASTQs, or any Protected Health Information (PHI), Geneknow ensures complete data privacy while providing clinically relevant insights. The application is entirely free to use with no licensing fees, subscription costs, or commercial restrictions.
 
 This whitepaper outlines Geneknow's architecture, scientific foundation, and value in clinical and research settings.
 
@@ -22,7 +22,7 @@ This whitepaper outlines Geneknow's architecture, scientific foundation, and val
 ## 2. Introduction & Motivation
 
 **Narrative Overview:**
-Genomic data analysis has revolutionized personalized medicine, but traditional cloud-based tools raise significant privacy concerns, with data breaches affecting millions. Regulatory frameworks like HIPAA and GDPR demand stringent data protection, yet many solutions require internet connectivity and external servers, limiting accessibility in low-resource or secure environments.
+Genomic data analysis has revolutionized personalized medicine, but traditional cloud-based tools raise significant privacy concerns, with data breaches affecting millions. Regulatory frameworks like GDPR demand stringent data protection, yet many solutions require internet connectivity and external servers, limiting accessibility in low-resource or secure environments.
 
 Geneknow addresses these challenges with a fully local, offline-capable platform that performs end-to-end genomic risk assessment on the user's device. Motivated by the need for accessible, compliant tools, Geneknow empowers users to analyze genetic variants for cancer risk without compromising privacy.
 
@@ -266,14 +266,13 @@ This architecture ensures robust, private, and fully local operation, with no ex
 ## 5. Privacy & Security Design
 
 **Narrative Overview:**
-Geneknow's HIPAA-friendly architecture processes all data locally, eliminating transmission risks and ensuring zero PHI storage. Features include encrypted temporary storage and automatic data cleanup post-analysis. While not formally HIPAA-certified, the design aligns with HIPAA technical safeguards including access controls and audit logs. The application bundles a complete Python runtime and dependencies to ensure no external dependencies are required during analysis. As a completely free and open-source solution, Geneknow removes cost barriers to genomic analysis while maintaining the highest privacy standards.
+Geneknow's architecture processes all data locally, eliminating transmission risks and ensuring zero PHI storage. Features include encrypted temporary storage and automatic data cleanup post-analysis. The application bundles a complete Python runtime and dependencies to ensure no external dependencies are required during analysis. As a completely free and open-source solution, Geneknow removes cost barriers to genomic analysis while maintaining the highest privacy standards.
 
 **Technical/Implementation Details:**
 - **Local-Only Processing:** All analysis is performed on-device; no data leaves the user's machine (`enhanced_api_server.py`, `README.md`)
 - **No PHI Storage:** Only aggregate statistics and annotations are stored; no raw sequences or patient identifiers
 - **Encrypted Temp Storage & Cleanup:** Temporary files are encrypted and deleted post-analysis (`enhanced_api_server.py`, `UploadPage.tsx`)
 - **No External Dependencies Post-Install:** All required resources are bundled; no internet required after setup
-- **HIPAA-Friendly:** Designed to align with HIPAA technical safeguards, but not formally certified
 - **Open Source:** Transparent, auditable codebase
 
 ## 6. User Interface and Experience
