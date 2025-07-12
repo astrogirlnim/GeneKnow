@@ -835,8 +835,8 @@ interface DisruptedPathway {
   significance: number;
   affected_genes: string[];
   mutations: PathwayMutation[];
-  description: string;
-  genes_affected_ratio: string;
+  description?: string;
+  genes_affected_ratio?: string;
 }
 
 interface PathwayAnalysisSummary {
@@ -851,7 +851,7 @@ interface PathwayAnalysisSummary {
 interface PathwayAnalysisData {
   disrupted_pathways: DisruptedPathway[];
   cancer_pathway_associations: Record<string, string[]>;
-  summary: PathwayAnalysisSummary;
+  summary?: PathwayAnalysisSummary;
 }
 
 interface PathwayBurdenResult {
@@ -3426,7 +3426,7 @@ const ClinicalViewPage: React.FC = () => {
             {/* Check if pathway analysis data is available */}
             {(() => {
                              // First check structured_json for pathway analysis
-               let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis;
+               let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis || null;
               
               // If not found in structured_json, try to construct from pathway_burden_results
               if (!pathwayData && pipelineResults?.pathway_burden_results) {
@@ -3497,7 +3497,7 @@ const ClinicalViewPage: React.FC = () => {
                  }
                  
                  // Create pathway analysis structure
-                 pathwayData = {
+                 const constructedPathwayData: PathwayAnalysisData = {
                    disrupted_pathways: disrupted_pathways,
                    cancer_pathway_associations: cancer_pathway_associations,
                    summary: {
@@ -3509,6 +3509,7 @@ const ClinicalViewPage: React.FC = () => {
                      high_burden_pathways: high_burden_pathways as string[]
                    }
                  };
+                 pathwayData = constructedPathwayData;
                 
                 console.log('✅ Constructed pathway data:', pathwayData);
               }
