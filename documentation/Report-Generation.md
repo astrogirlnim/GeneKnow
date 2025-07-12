@@ -2,11 +2,11 @@ GeneKnow Report Generator Module
 
 Purpose
 
-The GeneKnow Report Generator module transforms structured variant-level JSON output from the local genomics pipeline into a professional, readable clinical report tailored for clinicians, researchers, and medically trained users. It leverages locally available LLMs (via Ollama or HuggingFace) to craft a well-structured scientific narrative that remains understandable.
+The GeneKnow Report Generator module transforms structured variant-level JSON output from the local genomics pipeline into a professional, readable clinical report tailored for clinicians, researchers, and medically trained users. It leverages locally available LLMs (via Ollama) to craft a well-structured scientific narrative that remains understandable.
 
 Design Goals
 	•	Fully offline: All operations must work without an internet connection.
-	•	Modular LLM Backend: Use local models from Ollama or HuggingFace as the LLM writing assistant.
+	•	Modular LLM Backend: Use local models from Ollama as the LLM writing assistant.
 	•	Scientific Language: Use appropriate medical/genomic terminology.
 	•	Readable & Trustworthy: Prioritize clarity, accuracy, and structure.
 
@@ -36,7 +36,6 @@ Major Components
 
 Supports:
 	•	ollama backend (e.g., llama3, mistral, codellama)
-	•	transformers HuggingFace models (e.g., phi, tiny-llama)
 	•	Selects backend from config
 
 3. Formatter (formatter.py)
@@ -91,7 +90,7 @@ We'll break this into iterative phases to keep things manageable. Each phase inc
 
 - **Phase 1: Module Setup and LLM Interface (Backend Foundation)**
   - Create the new `report_generator` directory under `geneknow_pipeline/nodes/` with core files: `model_interface.py` (for LLM detection/backends/fallback), `prompt_builder.py` (for assembling prompts from JSON), `formatter.py` (for Markdown output with glossary), and a main `report_generator.py` (entry point to replace `report_writer.process`).
-  - Implement LLM auto-detection: Check for Ollama (e.g., via API ping) or HuggingFace (e.g., if `transformers` is importable and models are available). Default to fallback if none found, with a clear dev indicator in the output.
+  - Implement LLM auto-detection: Check for Ollama (e.g., via API ping). Default to fallback if none found, with a clear dev indicator in the output.
   - Add basic config handling (e.g., read from a `config.yaml` in the project root, with defaults for style="clinician", output_formats=["markdown"]).
   - Deliverable: Working module that can take sample JSON, detect LLM, and generate a basic templated report (non-LLM fallback) with a glossary stub.
 

@@ -6,10 +6,13 @@ import type { JobProgress } from '../api/geneknowPipeline';
 import { invoke } from '@tauri-apps/api/core';
 import { apiConfig } from '../api/apiConfig';
 
-interface ReportConfig {
-  backend: 'ollama' | 'huggingface' | 'none'
-  model_name: string | null
-  style: 'clinician' | 'technical' | 'patient'
+interface ReportGeneratorConfig {
+  backend: 'ollama' | 'none'
+  model_name: string
+  temperature: number
+  style: 'clinical' | 'technical' | 'patient'
+  include_recommendations: boolean
+  include_glossary: boolean
 }
 
 // Icon components
@@ -151,10 +154,13 @@ const UploadPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<JobProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reportConfig, setReportConfig] = useState<ReportConfig>({
+  const [reportConfig, setReportConfig] = useState<ReportGeneratorConfig>({
     backend: 'ollama',
-    model_name: null,
-    style: 'clinician'
+    model_name: '',
+    temperature: 0.7,
+    style: 'clinical',
+    include_recommendations: true,
+    include_glossary: true
   });
   const [showGuidance, setShowGuidance] = useState(false);
   
@@ -168,8 +174,11 @@ const UploadPage: React.FC = () => {
           const config = await response.json();
           setReportConfig({
             backend: config.backend || 'ollama',
-            model_name: config.model_name,
-            style: config.style || 'clinician'
+            model_name: config.model_name || '',
+            temperature: config.temperature || 0.7,
+            style: config.style || 'clinical',
+            include_recommendations: config.include_recommendations || true,
+            include_glossary: config.include_glossary || true
           });
           setShowGuidance(config.backend === 'none');
         } else {

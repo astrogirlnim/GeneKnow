@@ -169,7 +169,7 @@ LiteratureGapper/ (root)
 
 ### 🧾 LLM Report Generation
 
-- **Tool**: Llama 3.1 (HuggingFace/GGUF local runner)
+- **Tool**: Llama 3.1 (Ollama/GGUF local runner)
 - **Prompt**: Includes demographics, variants, risk predictions, and TCGA match
 - **Output**: Markdown → PDF (multi-language: English, Hindi, Spanish)
 

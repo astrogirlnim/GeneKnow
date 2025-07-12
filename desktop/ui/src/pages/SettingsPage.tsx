@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiConfig } from '../api/apiConfig'
 
-interface ModelConfig {
-  backend: 'ollama' | 'huggingface' | 'none'
+interface ReportGeneratorConfig {
+  backend: 'ollama' | 'none'
   model_name: string | null
   temperature: number
-  max_tokens: number
-  style: 'clinician' | 'technical' | 'patient'
+  style: 'clinical' | 'technical' | 'patient'
+  include_recommendations: boolean
+  include_glossary: boolean
 }
 
 interface AvailableModels {
   ollama: string[]
-  huggingface: string[]
 }
 
 // Add CSS animation for loading spinner
@@ -191,28 +191,26 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   )
 }
 
-const SettingsPage: React.FC = () => {
+export const SettingsPage: React.FC = () => {
   const navigate = useNavigate()
-  const [config, setConfig] = useState<ModelConfig>({
+  const [config, setConfig] = useState<ReportGeneratorConfig>({
     backend: 'ollama',
     model_name: null,
     temperature: 0.3,
-    max_tokens: 2000,
-    style: 'clinician'
+    style: 'clinical',
+    include_recommendations: true,
+    include_glossary: true
   })
   const [availableModels, setAvailableModels] = useState<AvailableModels>({
-    ollama: [],
-    huggingface: []
+    ollama: []
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [backendStatus, setBackendStatus] = useState<{
     ollama: boolean
-    huggingface: boolean
   }>({
-    ollama: false,
-    huggingface: false
+    ollama: false
   })
   const [modelWarmingStatus, setModelWarmingStatus] = useState<{
     isWarming: boolean
@@ -244,8 +242,9 @@ const SettingsPage: React.FC = () => {
           backend: data.backend || 'ollama',
           model_name: data.model_name,
           temperature: data.temperature || 0.3,
-          max_tokens: data.max_tokens || 2000,
-          style: data.style || 'clinician'
+          style: data.style || 'clinical',
+          include_recommendations: data.include_recommendations || true,
+          include_glossary: data.include_glossary || true
         })
       }
 
@@ -253,8 +252,8 @@ const SettingsPage: React.FC = () => {
       const modelsResponse = await fetch(`${apiConfig.getBaseUrl()}/api/report-generator/available-models`)
       if (modelsResponse.ok) {
         const modelsData = await modelsResponse.json()
-        setAvailableModels(modelsData.models || { ollama: [], huggingface: [] })
-        setBackendStatus(modelsData.status || { ollama: false, huggingface: false })
+        setAvailableModels(modelsData.models || { ollama: [] })
+        setBackendStatus(modelsData.status || { ollama: false })
       }
     } catch (error) {
       console.error('Failed to load configuration:', error)
@@ -279,7 +278,7 @@ const SettingsPage: React.FC = () => {
   }
 
   const warmUpModel = async (modelName: string, backend: string) => {
-    if (backend !== 'huggingface' || !modelName || modelName === 'auto') {
+    if (backend !== 'ollama' || !modelName || modelName === 'auto') {
       return
     }
 
@@ -382,7 +381,7 @@ const SettingsPage: React.FC = () => {
     }
   }
 
-  const handleBackendChange = (backend: 'ollama' | 'huggingface' | 'none') => {
+  const handleBackendChange = (backend: 'ollama' | 'none') => {
     const previousBackend = config.backend
     const previousModel = config.model_name
     
@@ -392,7 +391,7 @@ const SettingsPage: React.FC = () => {
       model_name: null // Reset model selection when backend changes
     }))
     
-    // If switching to HuggingFace and there was a previously selected model, 
+    // If switching to Ollama and there was a previously selected model, 
     // we could potentially warm it up, but since we're resetting model_name,
     // the user will need to select a new model which will trigger warming
   }
@@ -405,7 +404,7 @@ const SettingsPage: React.FC = () => {
     }))
 
     // Request notification permission for background loading updates
-    if (config.backend === 'huggingface' && actualModelName && 'Notification' in window) {
+    if (config.backend === 'ollama' && actualModelName && 'Notification' in window) {
       if (Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
@@ -415,57 +414,50 @@ const SettingsPage: React.FC = () => {
       }
     }
 
-    // Trigger model warming for HuggingFace models
-    if (config.backend === 'huggingface' && actualModelName) {
+    // Trigger model warming for Ollama models
+    if (config.backend === 'ollama' && actualModelName) {
       warmUpModel(actualModelName, config.backend)
     }
   }
 
-  const getRecommendedModels = (backend: 'ollama' | 'huggingface') => {
-    const recommendations = {
-      ollama: ['llama3.1:8b', 'llama3', 'mistral', 'phi3'],
-      huggingface: ['microsoft/phi-2', 'google/flan-t5-base', 'microsoft/DialoGPT-medium']
+  const getRecommendedModels = (backend: 'ollama' | 'none') => {
+    const models = {
+      ollama: ['llama3', 'mistral', 'codellama', 'phi', 'neural-chat']
     }
-    return recommendations[backend] || []
+    return backend === 'none' ? [] : models[backend] || []
+  }
+
+  const getModelDescription = (modelName: string) => {
+    const descriptions: Record<string, string> = {
+      // Ollama models
+      'llama3': 'Latest Llama model, excellent for medical reports',
+      'mistral': 'Fast and efficient, good balance of speed and quality',
+      'codellama': 'Specialized for technical content',
+      'phi': 'Smaller model, faster generation',
+      'neural-chat': 'Optimized for conversational style',
+      'llama2': 'Previous generation, still very capable',
+      'vicuna': 'Good general-purpose model',
+      'orca-mini': 'Compact model for quick generation'
+    }
+    
+    return descriptions[modelName] || 'General purpose model'
   }
 
   const getModelOptions = () => {
     if (config.backend === 'none') return []
     
-    const models = availableModels[config.backend] || []
+    const models = availableModels.ollama || []
     const recommended = getRecommendedModels(config.backend)
     
     return [
       { value: 'auto', label: 'Auto-detect best model', description: 'Automatically select the best available model' },
       ...models.map(model => {
-        let description = recommended.includes(model) ? 'Optimized for medical/scientific writing' : undefined
-        
-        // Add specific descriptions for HuggingFace models
-        if (config.backend === 'huggingface') {
-          const isCached = modelWarmingStatus.cachedModels.includes(model)
-          const isWarming = modelWarmingStatus.isWarming && modelWarmingStatus.warmingModel === model
-          
-          if (model === 'microsoft/phi-2') {
-            description = 'Fast and efficient - Good balance of speed and capability'
-          } else if (model === 'distilgpt2') {
-            description = 'Fastest loading - Lightweight and quick to initialize'
-          } else if (model === 'microsoft/DialoGPT-medium') {
-            description = 'Most capable - Longer loading time but better results'
-          } else if (model === 'google/flan-t5-base') {
-            description = 'Instruction-tuned - Good for following prompts'
-          }
-          
-          // Add caching status to description
-          if (isCached) {
-            description += ' • ✅ Ready (Cached)'
-          } else if (isWarming) {
-            description += ' • 🔄 Loading...'
-          }
-        }
+        const isRecommended = recommended.includes(model)
+        const description = getModelDescription(model)
         
         return {
           value: model,
-          label: model + (recommended.includes(model) ? ' (Recommended)' : ''),
+          label: model + (isRecommended ? ' (Recommended)' : ''),
           description: description
         }
       })
@@ -474,8 +466,8 @@ const SettingsPage: React.FC = () => {
 
   const getStyleOptions = () => [
     { 
-      value: 'clinician', 
-      label: 'Clinician', 
+      value: 'clinical', 
+      label: 'Clinical', 
       description: 'Medical professionals - detailed clinical language' 
     },
     { 
@@ -701,104 +693,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Hugging Face Option */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '16px',
-                border: `2px solid ${config.backend === 'huggingface' ? '#2563EB' : '#E5E7EB'}`,
-                borderRadius: '8px',
-                background: config.backend === 'huggingface' ? '#F0F9FF' : '#FFFFFF',
-                cursor: 'pointer',
-                transition: 'all 200ms ease'
-              }}
-              onClick={() => handleBackendChange('huggingface')}
-              onMouseEnter={(e) => {
-                if (config.backend !== 'huggingface') {
-                  e.currentTarget.style.borderColor = '#D1D5DB';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (config.backend !== 'huggingface') {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }
-              }}>
-                <input
-                  type="radio"
-                  name="backend"
-                  value="huggingface"
-                  checked={config.backend === 'huggingface'}
-                  onChange={() => handleBackendChange('huggingface')}
-                  style={{ 
-                    marginRight: '12px',
-                    width: '16px',
-                    height: '16px',
-                    accentColor: '#2563EB'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    marginBottom: '4px'
-                  }}>
-                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
-                      Hugging Face Transformers
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      borderRadius: '12px',
-                      background: backendStatus.huggingface ? '#DCFCE7' : '#FEF2F2',
-                      color: backendStatus.huggingface ? '#166534' : '#991B1B'
-                    }}>
-                      {backendStatus.huggingface ? 'Available' : 'Not Available'}
-                    </span>
-                    {backendStatus.huggingface && (
-                      <span style={{
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        borderRadius: '12px',
-                        background: '#FEF3C7',
-                        color: '#92400E'
-                      }}>
-                        Initial load: ~60-90s
-                      </span>
-                    )}
-                    <a
-                      href="https://huggingface.co/docs/transformers/installation"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        borderRadius: '12px',
-                        background: '#E0E7FF',
-                        color: '#3730A3',
-                        textDecoration: 'none',
-                        transition: 'all 200ms ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#C7D2FE';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#E0E7FF';
-                      }}
-                    >
-                      Install Guide
-                    </a>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
-                    Use Hugging Face models directly. First-time model loading takes 1-2 minutes, then cached for future use.
-                  </div>
-                </div>
-              </div>
-
               {/* Template-Based Option */}
               <div style={{
                 display: 'flex',
@@ -884,21 +778,12 @@ const SettingsPage: React.FC = () => {
                 🚀 Quick Setup Guide
               </h3>
               <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.4' }}>
-                <p style={{ margin: '0 0 8px' }}>
+                <p style={{ margin: '0' }}>
                   <strong>Ollama:</strong> Download and install from{' '}
                   <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB' }}>
                     ollama.com
                   </a>
                   , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull llama3</code> in terminal.
-                </p>
-                <p style={{ margin: '0' }}>
-                  <strong>Hugging Face:</strong> Install transformers with{' '}
-                  <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>pip install transformers torch</code>
-                  . See{' '}
-                  <a href="https://huggingface.co/docs/transformers/installation" target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB' }}>
-                    installation guide
-                  </a>
-                  {' '}for details.
                 </p>
               </div>
             </div>
@@ -917,11 +802,6 @@ const SettingsPage: React.FC = () => {
               </h2>
               <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
                 Choose which specific model to use for report generation.
-                {config.backend === 'huggingface' && (
-                  <span style={{ display: 'block', marginTop: '4px', fontWeight: '500', color: '#D97706' }}>
-                    ⚠️ First-time model loading may take 1-2 minutes. Subsequent uses will be much faster.
-                  </span>
-                )}
               </p>
               
               <CustomDropdown
@@ -929,7 +809,7 @@ const SettingsPage: React.FC = () => {
                 onChange={handleModelChange}
                 options={getModelOptions()}
                 placeholder="Select a model"
-                disabled={!backendStatus[config.backend]}
+                disabled={!backendStatus.ollama}
               />
               
               <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
@@ -940,81 +820,50 @@ const SettingsPage: React.FC = () => {
               </div>
               
               {/* Model Warming Status */}
-              {config.backend === 'huggingface' && (
+              {config.backend === 'ollama' && modelWarmingStatus.isWarming && (
                 <div style={{ marginTop: '12px' }}>
-                  {modelWarmingStatus.isWarming && (
-                    <div style={{ 
-                      padding: '8px 12px', 
-                      background: '#F0F9FF', 
-                      borderRadius: '6px',
-                      border: '1px solid #BFDBFE',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <div style={{
-                        width: '12px',
-                        height: '12px',
-                        border: '2px solid #3B82F6',
-                        borderTop: '2px solid transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                      }}></div>
-                      <div style={{ fontSize: '12px', color: '#1E40AF', fontWeight: '500' }}>
-                        Preparing {modelWarmingStatus.warmingModel} in background...
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', fontStyle: 'italic' }}>
-                        (You can navigate away - this continues loading)
-                      </div>
+                  <div style={{
+                    padding: '12px',
+                    background: '#FEF3C7',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    color: '#92400E'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🔄</span>
+                      <span>Loading model: {modelWarmingStatus.warmingModel}</span>
                     </div>
-                  )}
-                  
-                  {modelWarmingStatus.warmingProgress && !modelWarmingStatus.isWarming && (
-                    <div style={{ 
-                      padding: '8px 12px', 
-                      background: modelWarmingStatus.warmingProgress.includes('ready') ? '#F0FDF4' : '#FEF2F2', 
-                      borderRadius: '6px',
-                      border: `1px solid ${modelWarmingStatus.warmingProgress.includes('ready') ? '#BBF7D0' : '#FECACA'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <div style={{ fontSize: '12px', color: modelWarmingStatus.warmingProgress.includes('ready') ? '#166534' : '#991B1B', fontWeight: '500' }}>
-                        {modelWarmingStatus.warmingProgress}
-                      </div>
+                    <div style={{ fontSize: '12px', marginTop: '4px', color: '#B45309' }}>
+                      This may take 1-2 minutes for first-time loading...
                     </div>
-                  )}
-                  
-                  {modelWarmingStatus.cachedModels.length > 0 && (
-                    <div style={{ 
-                      marginTop: '6px',
-                      fontSize: '11px', 
-                      color: '#059669',
-                      fontWeight: '500'
-                    }}>
-                      ✅ Ready models: {modelWarmingStatus.cachedModels.join(', ')}
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
               
-              {config.backend === 'huggingface' && (
+              {modelWarmingStatus.warmingProgress && !modelWarmingStatus.isWarming && (
                 <div style={{ 
-                  marginTop: '12px', 
-                  padding: '12px', 
-                  background: '#FEF3C7', 
+                  padding: '8px 12px', 
+                  background: modelWarmingStatus.warmingProgress.includes('ready') ? '#F0FDF4' : '#FEF2F2', 
                   borderRadius: '6px',
-                  border: '1px solid #F59E0B'
+                  border: `1px solid ${modelWarmingStatus.warmingProgress.includes('ready') ? '#BBF7D0' : '#FECACA'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}>
-                  <div style={{ fontSize: '14px', color: '#92400E', fontWeight: '500', marginBottom: '4px' }}>
-                    💡 Performance Tips:
+                  <div style={{ fontSize: '12px', color: modelWarmingStatus.warmingProgress.includes('ready') ? '#166534' : '#991B1B', fontWeight: '500' }}>
+                    {modelWarmingStatus.warmingProgress}
                   </div>
-                  <ul style={{ fontSize: '12px', color: '#92400E', margin: '0', paddingLeft: '16px' }}>
-                    <li><strong>Models load automatically in background</strong> - you can navigate away while they prepare</li>
-                    <li>Once loaded, models are cached for instant report generation</li>
-                    <li>Choose "distilgpt2" for fastest loading (~30s)</li>
-                    <li>Choose "microsoft/phi-2" for best balance of speed and quality (~60s)</li>
-                  </ul>
+                </div>
+              )}
+              
+              {modelWarmingStatus.cachedModels.length > 0 && (
+                <div style={{ 
+                  marginTop: '6px',
+                  fontSize: '11px', 
+                  color: '#059669',
+                  fontWeight: '500'
+                }}>
+                  ✅ Ready models: {modelWarmingStatus.cachedModels.join(', ')}
                 </div>
               )}
             </div>
@@ -1036,102 +885,100 @@ const SettingsPage: React.FC = () => {
             
             <CustomDropdown
               value={config.style}
-              onChange={(value) => setConfig(prev => ({ ...prev, style: value as 'clinician' | 'technical' | 'patient' }))}
+              onChange={(value) => setConfig(prev => ({ ...prev, style: value as 'clinical' | 'technical' | 'patient' }))}
               options={getStyleOptions()}
               placeholder="Select report style"
             />
           </div>
 
-          {/* Advanced Settings */}
-          {config.backend !== 'none' && (
-            <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
-              <h2 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#111827',
-                marginBottom: '8px'
-              }}>
-                Advanced Settings
-              </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px' }}>
-                Fine-tune the AI model parameters for optimal results.
-              </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                {/* Temperature */}
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#111827',
-                    marginBottom: '8px'
+          {/* Advanced Settings Section */}
+          <div style={{ 
+            padding: '20px',
+            background: '#F9FAFB',
+            borderRadius: '8px',
+            marginTop: '24px'
+          }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+              Advanced Settings
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Temperature Slider */}
+              <div>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Temperature
+                  <span style={{ 
+                    marginLeft: '8px',
+                    padding: '2px 8px',
+                    fontSize: '12px',
+                    background: '#E5E7EB',
+                    borderRadius: '12px',
+                    color: '#6B7280'
                   }}>
-                    Temperature: {config.temperature}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={config.temperature}
-                    onChange={(e) => setConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
-                    style={{ 
-                      width: '100%',
-                      height: '6px',
-                      borderRadius: '3px',
-                      background: '#E5E7EB',
-                      outline: 'none',
-                      accentColor: '#2563EB'
-                    }}
-                  />
-                  <div style={{ 
-                    fontSize: '12px', 
-                    color: '#6B7280', 
-                    marginTop: '4px'
-                  }}>
-                    Lower = more focused, Higher = more creative
-                  </div>
-                </div>
-
-                {/* Max Tokens */}
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#111827',
-                    marginBottom: '8px'
-                  }}>
-                    Max Tokens: {config.max_tokens}
-                  </label>
-                  <input
-                    type="range"
-                    min="500"
-                    max="4000"
-                    step="100"
-                    value={config.max_tokens}
-                    onChange={(e) => setConfig(prev => ({ ...prev, max_tokens: parseInt(e.target.value) }))}
-                    style={{ 
-                      width: '100%',
-                      height: '6px',
-                      borderRadius: '3px',
-                      background: '#E5E7EB',
-                      outline: 'none',
-                      accentColor: '#2563EB'
-                    }}
-                  />
-                  <div style={{ 
-                    fontSize: '12px', 
-                    color: '#6B7280', 
-                    marginTop: '4px'
-                  }}>
-                    Maximum length of generated text
-                  </div>
+                    {config.temperature}
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.1"
+                  value={config.temperature}
+                  onChange={(e) => setConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                  style={{ width: '100%' }}
+                />
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  fontSize: '12px',
+                  color: '#9CA3AF',
+                  marginTop: '4px'
+                }}>
+                  <span>More Focused</span>
+                  <span>More Creative</span>
                 </div>
               </div>
+
+              {/* Include Recommendations */}
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={config.include_recommendations}
+                  onChange={(e) => setConfig(prev => ({ ...prev, include_recommendations: e.target.checked }))}
+                  style={{ marginRight: '8px' }}
+                />
+                <span style={{ color: '#374151', fontWeight: '500' }}>Include Clinical Recommendations</span>
+              </label>
+
+              {/* Include Glossary */}
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={config.include_glossary}
+                  onChange={(e) => setConfig(prev => ({ ...prev, include_glossary: e.target.checked }))}
+                  style={{ marginRight: '8px' }}
+                />
+                <span style={{ color: '#374151', fontWeight: '500' }}>Include Medical Glossary</span>
+              </label>
             </div>
-          )}
+          </div>
 
           {/* Save Section */}
           <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

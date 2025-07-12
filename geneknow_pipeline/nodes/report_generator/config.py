@@ -13,11 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class LLMBackend(Enum):
-    """Supported LLM backends."""
+    """Available LLM backends."""
 
     OLLAMA = "ollama"
-    HUGGINGFACE = "huggingface"
-    NONE = "none"  # Fallback mode
+    NONE = "none"
 
 
 class ReportStyle(Enum):
@@ -163,7 +162,7 @@ def save_config(config: ReportConfig, config_path: Optional[str] = None) -> None
 # Example config.yaml structure for reference
 EXAMPLE_CONFIG = """
 report_generator:
-  backend: "ollama"  # ollama, huggingface, or none
+  backend: "ollama"  # ollama or none
   model_name: "llama3"  # null for auto-detect
   temperature: 0.3
   max_tokens: 2000

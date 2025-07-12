@@ -193,7 +193,7 @@ class ReportFormatter:
     ) -> str:
         """Build report header section."""
 
-        header = """# Genomic Risk Assessment Report
+        header = f"""# Genomic Risk Assessment Report
 
 **Generated:** {datetime.now().strftime('%B %d, %Y at %H:%M')}
 """
@@ -341,7 +341,7 @@ class ReportFormatter:
             (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
         )
 
-        appendix = """## Technical Appendix
+        appendix = f"""## Technical Appendix
 
 ### Analysis Methods
 
@@ -397,7 +397,7 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
     def _build_standardized_footer(self, data: Dict[str, Any], report_id: str) -> str:
         """Build standardized footer that's the same for every report."""
-        footer = """---
+        footer = f"""---
 
 ## Important Disclaimers
 
@@ -422,7 +422,7 @@ For questions about this report or genetic counseling resources, please consult 
         try:
             # Basic markdown to HTML conversion
             # In a real implementation, you might use a library like markdown or mistune
-            html_content = """<!DOCTYPE html>
+            html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <title>Genomic Risk Assessment Report - {report_id}</title>

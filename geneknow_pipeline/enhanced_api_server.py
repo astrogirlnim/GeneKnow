@@ -830,93 +830,66 @@ def save_report_config():
 
 @app.route('/api/report-generator/available-models', methods=['GET'])
 def get_available_models():
-    """Get available models and backend status."""
+    """Get available LLM models for report generation."""
     try:
-        from nodes.report_generator.model_interface import OllamaBackend, HuggingFaceBackend
+        from nodes.report_generator.model_interface import OllamaBackend
         
         # Check Ollama
         ollama = OllamaBackend()
         ollama_available = ollama.is_available()
         ollama_models = ollama.available_models if ollama_available else []
         
-        # Check Hugging Face
-        hf = HuggingFaceBackend()
-        hf_available = hf.is_available()
-        hf_models = hf.available_models if hf_available else []
-        
         return jsonify({
             'status': {
-                'ollama': ollama_available,
-                'huggingface': hf_available
+                'ollama': ollama_available
             },
             'models': {
-                'ollama': ollama_models,
-                'huggingface': hf_models
+                'ollama': ollama_models
+            },
+            'recommended': {
+                'ollama': ['llama3', 'mistral', 'codellama']
             }
         })
-    
     except Exception as e:
-        logger.error(f"Error checking available models: {e}")
+        logger.error(f"Error getting available models: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/report-generator/warm-model', methods=['POST'])
 def warm_model():
-    """Warm up a HuggingFace model by loading it into memory."""
+    """Warm up a model by loading it into memory (not needed for Ollama)."""
     try:
         data = request.get_json()
-        if not data or 'model_name' not in data:
-            return jsonify({'error': 'model_name is required'}), 400
+        model_name = data.get('model_name', 'auto')
+        backend = data.get('backend', 'ollama')
         
-        model_name = data['model_name']
-        backend = data.get('backend', 'huggingface')
+        if backend != 'ollama':
+            return jsonify({'message': 'Model warming only supported for Ollama models'}), 200
         
-        if backend != 'huggingface':
-            return jsonify({'message': 'Model warming only supported for HuggingFace models'}), 200
+        # Ollama models are loaded on-demand, no warming needed
+        return jsonify({
+            'success': True,
+            'message': 'Ollama models are loaded on-demand',
+            'model': model_name,
+            'backend': backend
+        })
         
-        logger.info(f"Starting model warming for: {model_name}")
-        
-        # Import and initialize the HuggingFace backend
-        from nodes.report_generator.model_interface import HuggingFaceBackend
-        
-        hf_backend = HuggingFaceBackend()
-        if not hf_backend.is_available():
-            return jsonify({'error': 'HuggingFace backend not available'}), 400
-        
-        # Load the model (this will cache it)
-        success = hf_backend._load_pipeline(model_name)
-        
-        if success:
-            logger.info(f"Successfully warmed up model: {model_name}")
-            return jsonify({
-                'message': f'Model {model_name} warmed up successfully',
-                'model_name': model_name,
-                'cached': True
-            })
-        else:
-            logger.error(f"Failed to warm up model: {model_name}")
-            return jsonify({'error': f'Failed to warm up model: {model_name}'}), 500
-            
     except Exception as e:
-        logger.error(f"Error warming up model: {e}")
+        logger.error(f"Error warming model: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/report-generator/model-status', methods=['GET'])
 def get_model_status():
     """Get the current status of loaded models."""
     try:
-        from nodes.report_generator.model_interface import HuggingFaceBackend
+        from nodes.report_generator.model_interface import OllamaBackend
         
-        hf_backend = HuggingFaceBackend()
-        
-        # Check which models are currently cached
-        cached_models = list(hf_backend._model_cache.keys()) if hasattr(hf_backend, '_model_cache') else []
+        ollama = OllamaBackend()
         
         return jsonify({
-            'cached_models': cached_models,
-            'current_model': getattr(hf_backend, 'current_model', None),
-            'cache_size': len(cached_models)
+            'ollama': {
+                'available': ollama.is_available(),
+                'models': ollama.available_models if ollama.is_available() else []
+            }
         })
         
     except Exception as e:
