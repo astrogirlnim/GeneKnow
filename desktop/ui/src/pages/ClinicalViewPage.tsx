@@ -1,40 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions for genomic data structures
-interface StructuralVariant {
-  type: string;
-  chromosome: string;
-  start: number;
-  end: number;
-  size: number;
-  genes_affected: string[];
-  clinical_significance: string;
-  functional_impact: string;
-  transformation: {
-    original: string;
-    mutated: string;
-    effect: string;
-  };
-}
-
-interface CopyNumberVariant {
-  gene: string;
-  chromosome: string;
-  copy_number: number;
-  normal_copy_number: number;
-  fold_change: number;
-  clinical_significance: string;
-  cancer_relevance: string;
-  transformation: {
-    original: string;
-    mutated: string;
-    effect: string;
-  };
-}
+// (Structural and Copy Number variant interfaces removed as they're not currently used)
 
 // Type definitions for external libraries
 interface JsPDFConstructor {
@@ -809,6 +780,49 @@ interface Alert {
   };
 }
 
+interface QualityMetrics {
+  quality?: number;
+  depth?: number;
+  allele_freq?: number;
+}
+
+interface PathwayResult {
+  burden_score?: number;
+  contributing_genes?: string[];
+  damaging_genes?: string[];
+  gene_damaging_counts?: Record<string, number>;
+}
+
+interface VariantTransformation {
+  original?: string;
+  mutated?: string;
+  amino_acid_change?: string;
+  effect?: string;
+}
+
+interface ExtendedVariant {
+  transformation?: VariantTransformation;
+  functional_impact?: string;
+  [key: string]: unknown;
+}
+
+interface ClinicalRecommendation {
+  title: string;
+  description: string;
+  priority: string;
+  category: string;
+  cancer_type: string;
+  risk_level: string;
+  risk_percentage: number;
+  recommendation: string;
+  screening_protocol?: {
+    test: string;
+    frequency: string;
+    start_age: string;
+  };
+  prevention_options?: string[];
+}
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -840,90 +854,146 @@ const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: {
   </div>
 );
 
-// Tooltip component for detailed alert information
-const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }) => (
-  <div style={{
-    position: 'absolute',
-    left: 'calc(100% + 0.5rem)', // Position to the right of the icon
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '20rem',
-    padding: '1rem',
-    background: '#1F2937',
-    color: '#FFFFFF',
-    fontSize: '0.75rem',
-    borderRadius: '0.5rem',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-    opacity: isVisible ? 1 : 0,
-    visibility: isVisible ? 'visible' : 'hidden',
-    transition: 'opacity 300ms ease, visibility 300ms ease',
-    zIndex: 1000,
-    pointerEvents: 'none',
-    lineHeight: '1.4',
-    border: '1px solid #374151'
-  }}>
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        What it means:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whatItMeans}</p>
-    </div>
+// Enhanced tooltip component with smart positioning
+const SmartTooltip = ({ content, isVisible, triggerRef }: { 
+  content: string; 
+  isVisible: boolean; 
+  triggerRef?: React.RefObject<HTMLDivElement> | null;
+}) => {
+  const [position, setPosition] = useState<'right' | 'above' | 'below'>('right');
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (isVisible && triggerRef?.current && tooltipRef.current) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      // const tooltipRect = tooltipRef.current.getBoundingClientRect(); // Removed: unused variable
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Check if there's enough space to the right
+      const spaceToRight = viewportWidth - triggerRect.right;
+      const tooltipWidth = 288; // 18rem = 288px
+      
+      // Check if there's enough space above/below
+      const spaceAbove = triggerRect.top;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const tooltipHeight = 100; // Approximate height
+      
+      // Determine best position
+      if (spaceToRight >= tooltipWidth + 16) {
+        // Enough space to the right
+        setPosition('right');
+      } else if (spaceAbove >= tooltipHeight + 16) {
+        // Not enough space to right, but enough space above
+        setPosition('above');
+      } else if (spaceBelow >= tooltipHeight + 16) {
+        // Not enough space to right or above, try below
+        setPosition('below');
+      } else {
+        // Default to right if no good position found
+        setPosition('right');
+      }
+    }
+  }, [isVisible, triggerRef]);
+  
+  const getTooltipStyles = () => {
+    const baseStyles = {
+      position: 'absolute' as const,
+      width: '18rem',
+      padding: '0.75rem',
+      background: '#1F2937',
+      color: '#FFFFFF',
+      fontSize: '0.75rem',
+      borderRadius: '0.5rem',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+      opacity: isVisible ? 1 : 0,
+      visibility: isVisible ? 'visible' as const : 'hidden' as const,
+      transition: 'opacity 300ms ease, visibility 300ms ease',
+      zIndex: 1000,
+      pointerEvents: 'none' as const,
+      lineHeight: '1.4',
+      border: '1px solid #374151'
+    };
     
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Why it's important:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whyImportant}</p>
-    </div>
-    
-    <div style={{ marginBottom: '0.75rem' }}>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Clinical significance:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.clinicalSignificance}</p>
-    </div>
-    
-    <div>
-      <h4 style={{ 
-        fontWeight: '600', 
-        color: '#F3F4F6', 
-        marginBottom: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Next steps:
-      </h4>
-      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.nextSteps}</p>
-    </div>
-    
-    {/* Tooltip arrow pointing to the left towards the "i" icon */}
-    <div style={{
-      position: 'absolute',
-      left: '-0.5rem',
-      top: '50%',
-      transform: 'translateY(-50%)',
+    switch (position) {
+      case 'right':
+        return {
+          ...baseStyles,
+          left: 'calc(100% + 0.5rem)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        };
+      case 'above':
+        return {
+          ...baseStyles,
+          left: '50%',
+          bottom: 'calc(100% + 0.5rem)',
+          transform: 'translateX(-50%)',
+        };
+      case 'below':
+        return {
+          ...baseStyles,
+          left: '50%',
+          top: 'calc(100% + 0.5rem)',
+          transform: 'translateX(-50%)',
+        };
+      default:
+        return baseStyles;
+    }
+  };
+  
+  const getArrowStyles = () => {
+    const baseArrowStyles = {
+      position: 'absolute' as const,
       width: '0',
       height: '0',
-      borderTop: '0.5rem solid transparent',
-      borderBottom: '0.5rem solid transparent',
-      borderRight: '0.5rem solid #1F2937'
-    }}></div>
-  </div>
-);
+    };
+    
+    switch (position) {
+      case 'right':
+        return {
+          ...baseArrowStyles,
+          left: '-0.5rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          borderTop: '0.5rem solid transparent',
+          borderBottom: '0.5rem solid transparent',
+          borderRight: '0.5rem solid #1F2937'
+        };
+      case 'above':
+        return {
+          ...baseArrowStyles,
+          left: '50%',
+          bottom: '-0.5rem',
+          transform: 'translateX(-50%)',
+          borderLeft: '0.5rem solid transparent',
+          borderRight: '0.5rem solid transparent',
+          borderTop: '0.5rem solid #1F2937'
+        };
+      case 'below':
+        return {
+          ...baseArrowStyles,
+          left: '50%',
+          top: '-0.5rem',
+          transform: 'translateX(-50%)',
+          borderLeft: '0.5rem solid transparent',
+          borderRight: '0.5rem solid transparent',
+          borderBottom: '0.5rem solid #1F2937'
+        };
+      default:
+        return baseArrowStyles;
+    }
+  };
+  
+  return (
+    <div ref={tooltipRef} style={getTooltipStyles()}>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
+      <div style={getArrowStyles()}></div>
+    </div>
+  );
+};
+
+// Legacy SectionTooltip component removed - was unused
 
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
@@ -1019,6 +1089,91 @@ const mockDataSets = {
   }
 };
 
+// Tooltip component for detailed alert information
+const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }) => (
+  <div style={{
+    position: 'absolute',
+    left: 'calc(100% + 0.5rem)', // Position to the right of the icon
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '20rem',
+    padding: '1rem',
+    background: '#1F2937',
+    color: '#FFFFFF',
+    fontSize: '0.75rem',
+    borderRadius: '0.5rem',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    opacity: isVisible ? 1 : 0,
+    visibility: isVisible ? 'visible' as const : 'hidden' as const,
+    transition: 'opacity 300ms ease, visibility 300ms ease',
+    zIndex: 1000,
+    pointerEvents: 'none' as const,
+    lineHeight: '1.4',
+    border: '1px solid #374151'
+  }}>
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        What it means:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whatItMeans}</p>
+    </div>
+    
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Why it's important:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.whyImportant}</p>
+    </div>
+    
+    <div style={{ marginBottom: '0.75rem' }}>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Clinical significance:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.clinicalSignificance}</p>
+    </div>
+    
+    <div>
+      <h4 style={{ 
+        fontWeight: '600', 
+        color: '#F3F4F6', 
+        marginBottom: '0.25rem',
+        fontSize: '0.8rem'
+      }}>
+        Next steps:
+      </h4>
+      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.nextSteps}</p>
+    </div>
+    
+    {/* Tooltip arrow pointing to the left towards the "i" icon */}
+    <div style={{
+      position: 'absolute',
+      left: '-0.5rem',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: '0',
+      height: '0',
+      borderTop: '0.5rem solid transparent',
+      borderBottom: '0.5rem solid transparent',
+      borderRight: '0.5rem solid #1F2937'
+    }}></div>
+  </div>
+);
+
 const ClinicalViewPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1026,6 +1181,7 @@ const ClinicalViewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analysis');
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
+  const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
   
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
@@ -1068,47 +1224,192 @@ const ClinicalViewPage: React.FC = () => {
   // Function to convert pipeline results to the format expected by the clinical view
   const getGenomicData = () => {
     if (pipelineResults) {
-      // Convert real pipeline results to the format expected by the clinical view
+      console.log('🔍 Using real pipeline results:', pipelineResults);
+      
+      // Extract risk scores and findings
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
+      const pathwayBurdenResults = pipelineResults.pathway_burden_results || {};
+      
+      // Build cancer-gene associations from pathway burden data
+      const cancerGeneMapping: Record<string, string[]> = {
+        'breast': [],
+        'lung': [],
+        'colon': [],
+        'prostate': [],
+        'blood': []
+      };
+      
+      // Map pathways to cancer types and collect genes
+      const pathwayCancerMapping: Record<string, string[]> = {
+        'dna_repair': ['breast', 'colon'],
+        'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
+        'oncogenes': ['lung', 'colon', 'breast'],
+        'ras_mapk': ['lung', 'colon', 'prostate'],
+        'cell_cycle': ['breast', 'lung', 'prostate'],
+        'apoptosis': ['breast', 'lung', 'colon'],
+        'chromatin_remodeling': ['blood', 'lung'],
+        'mismatch_repair': ['colon'],
+        'wnt_signaling': ['colon'],
+        'pi3k_akt': ['breast', 'prostate']
+      };
+      
+      // Populate cancer-gene associations from pathway burden results
+      Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]) => {
+        const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+        const burdenScore = pathwayResult.burden_score || 0;
+        
+        // Only include genes from high-burden pathways
+        if (burdenScore > 0.5 && pathwayResult.damaging_genes) {
+          pathwayResult.damaging_genes.forEach(gene => {
+            associatedCancers.forEach(cancer => {
+              if (cancerGeneMapping[cancer] && !cancerGeneMapping[cancer].includes(gene)) {
+                cancerGeneMapping[cancer].push(gene);
+              }
+            });
+          });
+        }
+      });
+      
+      // Also add genes from multi-pathway associations
+      const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
+      Object.entries(multiPathwayGenes).forEach(([gene, pathways]) => {
+        if (pathways.length > 1) {
+          // Gene appears in multiple pathways, add to all relevant cancer types
+          pathways.forEach(pathwayName => {
+            const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+            associatedCancers.forEach(cancer => {
+              if (cancerGeneMapping[cancer] && !cancerGeneMapping[cancer].includes(gene)) {
+                cancerGeneMapping[cancer].push(gene);
+              }
+            });
+          });
+        }
+      });
+      
+      console.log('🧬 Built cancer-gene associations:', cancerGeneMapping);
+      
       const riskFindings = riskScores.map(([cancer_type, risk_percentage]) => ({
         cancer_type,
-        risk_percentage: risk_percentage as number,
-        risk_level: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
-        affected_genes: pipelineResults.variants?.map(v => v.gene) || [],
-        recommendation: (risk_percentage as number) > 50 
+        risk_percentage,
+        risk_level: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        affected_genes: cancerGeneMapping[cancer_type] || [], // Use pathway-derived genes
+        recommendation: risk_percentage > 50 
           ? `Enhanced ${cancer_type} cancer screening recommended`
-          : (risk_percentage as number) > 20
+          : risk_percentage > 20
           ? `Moderate ${cancer_type} cancer screening recommended`
           : 'Standard screening guidelines apply',
-        mutation_burden: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
-        pathway_disruption: (risk_percentage as number) > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
+        mutation_burden: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        pathway_disruption: [] // Backend doesn't provide this yet
       }));
 
-      const variantTable = pipelineResults.variants?.map((variant, index) => ({
-        gene: variant.gene,
-        variant_id: `${variant.position}:${variant.type}`,
-        consequence: variant.impact,
-        mutation_type: variant.type,
-        quality_score: 85 + index * 5, // Estimated quality score
-        clinical_significance: variant.impact === 'HIGH' ? 'pathogenic' : 'benign',
-        tcga_best_match: { cancer_type: riskScores[0]?.[0] || 'breast', frequency: 6.3 },
-        protein_change: `p.${variant.gene}Variant`,
-        functional_impact: variant.impact === 'HIGH' ? 'Loss of function' : 'Uncertain',
-        transformation: {
-          original: 'ATT',
-          mutated: 'GTT',
-          amino_acid_change: 'Unknown',
-          effect: variant.impact === 'HIGH' ? 'Structural disruption' : 'Uncertain significance'
+      // Extract variant details from structured_json if available
+      const structuredJson = pipelineResults.structured_json || {};
+      const variantDetails = Array.isArray(structuredJson.variant_details) ? structuredJson.variant_details : [];
+      
+      // Transform variants to expected format
+      const variantTable = variantDetails.map((variant, index) => {
+        // Log missing data
+        if (!variant.transformation) {
+          console.warn(`⚠️ Missing transformation data for variant ${variant.gene}`);
         }
-      })) || [];
+        if (!variant.protein_change) {
+          console.warn(`⚠️ Missing protein change for variant ${variant.gene}`);
+        }
+        
+        // Calculate more detailed quality score
+        const qualityMetrics = variant.quality_metrics || {} as QualityMetrics;
+        const baseQuality = qualityMetrics.quality || 85;
+        const depth = qualityMetrics.depth || 0;
+        const alleleFreq = qualityMetrics.allele_freq || 0;
+        
+        // Adjust quality score based on multiple factors
+        let adjustedQuality = baseQuality;
+        
+        // Penalize low depth
+        if (depth < 10) {
+          adjustedQuality = Math.max(adjustedQuality - 20, 0);
+        } else if (depth < 20) {
+          adjustedQuality = Math.max(adjustedQuality - 10, 0);
+        }
+        
+        // Penalize extreme allele frequencies
+        if (alleleFreq < 0.1 || alleleFreq > 0.9) {
+          adjustedQuality = Math.max(adjustedQuality - 15, 0);
+        }
+        
+        // Boost quality for high-confidence clinical significance
+        if (variant.clinical_significance === 'pathogenic') {
+          adjustedQuality = Math.min(adjustedQuality + 5, 100);
+        } else if (variant.clinical_significance === 'likely_pathogenic') {
+          adjustedQuality = Math.min(adjustedQuality + 3, 100);
+        }
+        
+        // Add quality details for tooltip
+        const qualityDetails = {
+          base_quality: baseQuality,
+          depth: depth,
+          allele_frequency: alleleFreq,
+          adjusted_quality: Math.round(adjustedQuality),
+          quality_factors: [] as string[]
+        };
+        
+        if (depth < 10) qualityDetails.quality_factors.push('Low read depth');
+        if (alleleFreq < 0.1) qualityDetails.quality_factors.push('Low allele frequency');
+        if (alleleFreq > 0.9) qualityDetails.quality_factors.push('High allele frequency');
+        if (variant.clinical_significance === 'pathogenic') qualityDetails.quality_factors.push('Pathogenic variant');
 
+        return {
+          gene: variant.gene || 'Unknown',
+          variant_id: variant.variant || variant.variant_id || `Unknown_${index}`,
+          consequence: variant.consequence || 'unknown',
+          mutation_type: variant.mutation_type || 'snv', // Default to SNV if not specified
+          quality_score: Math.round(adjustedQuality),
+          quality_details: qualityDetails,
+          clinical_significance: variant.clinical_significance || 'uncertain_significance',
+          tcga_best_match: variant.tcga_matches ? 
+            Object.entries(variant.tcga_matches)[0]?.[1] || { cancer_type: 'unknown', frequency: 0 } :
+            { cancer_type: 'unknown', frequency: 0 },
+          protein_change: variant.protein_change || variant.hgvs_p || `p.Unknown${index}`,
+          functional_impact: variant.functional_impact || 'Unknown',
+          // Use real transformation data if available, otherwise provide placeholder
+          transformation: variant.transformation || {
+            original: 'N/A',
+            mutated: 'N/A',
+            amino_acid_change: 'Unknown',
+            effect: 'Effect not determined'
+          }
+        };
+      });
+
+      // Log what backend data we're missing
+      console.log('📊 Backend data analysis:');
+      console.log('✅ Available:', {
+        riskScores: !!pipelineResults.risk_scores,
+        variantCount: !!pipelineResults.variant_count,
+        processingTime: !!pipelineResults.processing_time_seconds,
+        variantDetails: variantDetails.length > 0,
+        tcgaData: !!pipelineResults.tcga_matches,
+        caddStats: !!pipelineResults.cadd_stats
+      });
+      
+      console.log('❌ Missing:', {
+        mutationTypes: !structuredJson.summary?.mutation_types,
+        mutationSignatures: !structuredJson.mutation_signatures,
+        structuralVariants: !structuredJson.structural_variants,
+        copyNumberVariants: !structuredJson.copy_number_variants,
+        pathwayAnalysis: !structuredJson.pathway_analysis,
+        survivalAnalysis: !structuredJson.survival_analysis
+      });
+
+      // Build the genomic data object using real data where available
       return {
         summary: {
-          total_variants_found: pipelineResults.variant_count || 0,
-          variants_passed_qc: Math.floor((pipelineResults.variant_count || 0) * 0.9),
-          high_risk_findings_count: riskFindings.filter(r => r.risk_level === 'high').length,
+          total_variants_found: pipelineResults.variant_count || structuredJson.summary?.total_variants_found || 0,
+          variants_passed_qc: structuredJson.summary?.variants_passed_qc || Math.floor((pipelineResults.variant_count || 0) * 0.9),
+          high_risk_findings_count: structuredJson.summary?.high_risk_findings || riskFindings.filter(r => r.risk_level === 'high').length,
           processing_time_seconds: pipelineResults.processing_time_seconds || 0,
-          mutation_types: {
+          // Use real mutation types if available, otherwise estimate
+          mutation_types: structuredJson.summary?.mutation_types || {
             snv: Math.floor((pipelineResults.variant_count || 0) * 0.5),
             indel: Math.floor((pipelineResults.variant_count || 0) * 0.3),
             cnv: Math.floor((pipelineResults.variant_count || 0) * 0.15),
@@ -1117,22 +1418,17 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: riskFindings,
         variant_table: variantTable,
-        structural_variants: [] as StructuralVariant[],
-        copy_number_variants: [] as CopyNumberVariant[],
-        mutation_signatures: [
+        // Use real data if available, otherwise empty arrays (not mock data)
+        structural_variants: structuredJson.structural_variants || [],
+        copy_number_variants: structuredJson.copy_number_variants || [],
+        // Use real mutation signatures if available, otherwise show message
+        mutation_signatures: structuredJson.mutation_signatures || [
           {
-            signature: "SBS1",
-            name: "Spontaneous deamination",
-            contribution: 0.35,
-            description: "C>T transitions at CpG sites",
-            etiology: "Aging-related mutations"
-          },
-          {
-            signature: "SBS3",
-            name: "BRCA1/BRCA2 deficiency",
-            contribution: 0.28,
-            description: "Homologous recombination deficiency",
-            etiology: "Inherited DNA repair defects"
+            signature: "Analysis Pending",
+            name: "Mutation signature analysis not yet available",
+            contribution: 0,
+            description: "This feature requires additional backend implementation",
+            etiology: "Coming soon"
           }
         ]
       };
@@ -1153,8 +1449,8 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: [],
         variant_table: [],
-        structural_variants: [] as StructuralVariant[],
-        copy_number_variants: [] as CopyNumberVariant[],
+        structural_variants: [],
+        copy_number_variants: [],
         mutation_signatures: []
       };
     }
@@ -1200,14 +1496,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Cancer Risk Assessment
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Cancer Risk Assessment
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('risk-assessment')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Shows calculated cancer risk percentages based on genetic variants and pathway analysis. Each cancer type is assessed individually using machine learning models trained on population data and clinical outcomes." isVisible={hoveredTooltip === 'risk-assessment'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="cancer-risk-assessment"
                   title="Cancer Risk Assessment"
@@ -1284,14 +1605,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Gene Significance Analysis
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Gene Significance Analysis
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('gene-significance')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Manhattan plot showing statistical significance of genetic variants. Higher points indicate stronger associations with cancer risk. Red dots represent pathogenic variants, blue dots show variants under investigation." isVisible={hoveredTooltip === 'gene-significance'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="gene-significance-analysis"
                   title="Gene Significance Analysis"
@@ -1335,7 +1681,7 @@ const ClinicalViewPage: React.FC = () => {
                         {variant.gene}
                       </text>
                       <text x={x} y={y + 25} fill="#4B5563" fontSize="10" textAnchor="middle">
-                        {variant.tcga_best_match.cancer_type}
+                        {(variant.tcga_best_match as { cancer_type?: string })?.cancer_type || 'Unknown'}
                       </text>
                     </g>
                   );
@@ -1370,14 +1716,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Mutation Type Distribution
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Mutation Type Distribution
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('mutation-types')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Breakdown of mutation types found in the genetic analysis. SNVs (single nucleotide variants) are point mutations, INDELs are insertions/deletions, CNVs are copy number variations, and structural variants are large chromosomal rearrangements." isVisible={hoveredTooltip === 'mutation-types'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="mutation-type-distribution"
                   title="Mutation Type Distribution"
@@ -1441,14 +1812,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Mutational Signature Analysis
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Mutational Signature Analysis
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('mutational-signatures')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Mutational signatures reveal the underlying biological processes that caused DNA damage. Each signature represents a specific pattern of mutations caused by factors like aging, smoking, UV exposure, DNA repair defects, or chemotherapy. The percentage shows each signature's contribution to the overall mutational profile." isVisible={hoveredTooltip === 'mutational-signatures'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="mutational-signatures"
                   title="Mutational Signature Analysis"
@@ -1459,65 +1855,96 @@ const ClinicalViewPage: React.FC = () => {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {genomicData.mutation_signatures.map((signature, index) => (
-                  <div key={index} style={{
-            display: 'flex',
-            alignItems: 'center',
-                    padding: '1rem',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '0.5rem',
-                    background: '#F9FAFB'
+                {genomicData.mutation_signatures.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '3rem',
+                    color: '#6B7280'
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <h4 style={{ 
-                          color: '#111827',
-                          fontSize: '1rem',
-                          fontWeight: '600',
+                    <div style={{ 
+                      fontSize: '3rem',
+                      marginBottom: '1rem'
+                    }}>
+                      🔬
+                    </div>
+                    <h4 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
+                    }}>
+                      No Mutational Signatures Found
+                    </h4>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '400px',
+                      margin: '0 auto'
+                    }}>
+                      The analysis did not detect any significant mutational signatures in the provided genomic data. This could indicate insufficient data or variants not matching known signature patterns.
+                    </p>
+                  </div>
+                ) : (
+                  genomicData.mutation_signatures.map((signature, index) => (
+                    <div key={index} style={{
+              display: 'flex',
+              alignItems: 'center',
+                      padding: '1rem',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '0.5rem',
+                      background: '#F9FAFB'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                          <h4 style={{ 
+                            color: '#111827',
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            margin: 0
+                          }}>
+                            {signature.signature}
+                          </h4>
+                          <span style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem'
+                          }}>
+                            {signature.name}
+                          </span>
+                        </div>
+                        <p style={{ 
+                          color: '#6B7280',
+                          fontSize: '0.875rem',
+                          marginBottom: '0.5rem',
                           margin: 0
                         }}>
-                          {signature.signature}
-                        </h4>
-                        <span style={{ 
-                          color: '#4B5563',
-                          fontSize: '0.875rem'
-                        }}>
-                          {signature.name}
-                        </span>
-                      </div>
-                      <p style={{ 
-                        color: '#6B7280',
-                        fontSize: '0.875rem',
-                        marginBottom: '0.5rem',
-                        margin: 0
-                      }}>
-                        {signature.description} • {signature.etiology}
-                      </p>
-                      <div style={{
-                        background: '#E5E7EB',
-                        borderRadius: '0.25rem',
-                        height: '0.5rem',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}>
+                          {signature.description} • {signature.etiology}
+                        </p>
                         <div style={{
-                          background: '#3B82F6',
-                          height: '100%',
-                          width: `${signature.contribution * 100}%`,
-                          transition: 'width 0.3s ease'
-                        }}/>
+                          background: '#E5E7EB',
+                          borderRadius: '0.25rem',
+                          height: '0.5rem',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            background: '#3B82F6',
+                            height: '100%',
+                            width: `${signature.contribution * 100}%`,
+                            transition: 'width 0.3s ease'
+                          }}/>
+                        </div>
+                      </div>
+                      <div style={{
+                        marginLeft: '1rem',
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold',
+                        color: '#3B82F6'
+                      }}>
+                        {(signature.contribution * 100).toFixed(1)}%
                       </div>
                     </div>
-                    <div style={{
-                      marginLeft: '1rem',
-                      fontSize: '1.25rem',
-                      fontWeight: 'bold',
-                      color: '#3B82F6'
-                    }}>
-                      {(signature.contribution * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -1530,14 +1957,39 @@ const ClinicalViewPage: React.FC = () => {
               border: '1px solid #E5E7EB'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Analysis Quality Metrics
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Analysis Quality Metrics
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('quality-metrics')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Quality control metrics for the genomic analysis. Shows total variants found, those passing quality filters, high-risk findings requiring clinical attention, and processing time for the analysis pipeline." isVisible={hoveredTooltip === 'quality-metrics'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="quality-metrics"
                   title="Analysis Quality Metrics"
@@ -1581,17 +2033,47 @@ const ClinicalViewPage: React.FC = () => {
         );
       case 'variants':
         return (
-          <div style={{ padding: '2rem' }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
+          <div style={{ 
+            padding: '2rem',
+            maxWidth: '100%', // Ensure content doesn't exceed container width
+            overflow: 'hidden' // Prevent horizontal overflow
+          }}>
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               marginBottom: '1.5rem'
             }}>
-              Variant Heatmap Analysis
-            </h2>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
+              }}>
+                Variant Heatmap Analysis
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('variant-heatmap')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns." isVisible={hoveredTooltip === 'variant-heatmap'} triggerRef={null} />
+              </div>
+            </div>
             
-                        {/* Gene-Cancer Type Heatmap */}
+            {/* Gene-Cancer Type Heatmap */}
             <div id="gene-cancer-matrix" style={{
               background: '#FFFFFF',
               padding: '2rem',
@@ -1601,14 +2083,76 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Gene-Cancer Type Association Matrix
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Gene-Cancer Type Association Matrix
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('gene-cancer-matrix')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: 'calc(100% + 0.5rem)',
+                      transform: 'translateX(-50%)',
+                      width: '20rem',
+                      padding: '0.75rem',
+                      background: '#1F2937',
+                      color: '#FFFFFF',
+                      fontSize: '0.75rem',
+                      borderRadius: '0.5rem',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      opacity: hoveredTooltip === 'gene-cancer-matrix' ? 1 : 0,
+                      visibility: hoveredTooltip === 'gene-cancer-matrix' ? 'visible' as const : 'hidden' as const,
+                      transition: 'opacity 300ms ease, visibility 300ms ease',
+                      zIndex: 1000,
+                      pointerEvents: 'none' as const,
+                      lineHeight: '1.4',
+                      border: '1px solid #374151'
+                    }}>
+                      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>
+                        Color-coded heatmap showing the strength of association between specific genes and cancer types. 
+                        Red indicates high association (≥80%), orange medium (60-80%), blue low (30-60%), light blue very low (1-30%), 
+                        and gray no association. Based on pathway burden analysis and clinical literature. 
+                        Use this to understand which genes are most relevant for specific cancer screening protocols.
+                      </p>
+                      <div style={{
+                        position: 'absolute',
+                        left: '50%',
+                        bottom: '100%',
+                        transform: 'translateX(-50%)',
+                        width: '0',
+                        height: '0',
+                        borderLeft: '0.5rem solid transparent',
+                        borderRight: '0.5rem solid transparent',
+                        borderBottom: '0.5rem solid #1F2937'
+                      }}></div>
+                    </div>
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="gene-cancer-matrix"
                   title="Gene-Cancer Association Matrix"
@@ -1618,100 +2162,371 @@ const ClinicalViewPage: React.FC = () => {
                 />
               </div>
               
-              <svg width="100%" height="400" viewBox="0 0 800 400">
-                {/* Background */}
-                <rect width="800" height="400" fill="#F9FAFB"/>
+              {/* Build gene-cancer associations from real data */}
+              {(() => {
+                console.log('🔍 Building heatmap with pathway burden data:', pipelineResults?.pathway_burden_results);
+                console.log('🔍 Available genomic data:', genomicData);
                 
-                {/* Heatmap grid */}
-                {['BRCA1', 'TP53', 'APC', 'MLH1', 'MSH2'].map((gene, geneIndex) => {
-                  return ['breast', 'lung', 'colon', 'prostate', 'blood'].map((cancer, cancerIndex) => {
-                    const x = 150 + cancerIndex * 80;
-                    const y = 80 + geneIndex * 50;
-                    
-                    // Calculate intensity based on gene-cancer association
-                    let intensity = 0;
-                    if (gene === 'BRCA1' && cancer === 'breast') intensity = 1.0;
-                    if (gene === 'TP53' && ['breast', 'lung', 'colon', 'prostate'].includes(cancer)) intensity = 0.8;
-                    if (gene === 'APC' && cancer === 'colon') intensity = 0.9;
-                    if (gene === 'MLH1' && cancer === 'colon') intensity = 0.7;
-                    if (gene === 'MSH2' && cancer === 'colon') intensity = 0.6;
-                    
-                    const color = intensity > 0.8 ? '#EF4444' : 
-                                 intensity > 0.6 ? '#F59E0B' : 
-                                 intensity > 0.3 ? '#3B82F6' : '#E5E7EB';
-                    
-                    return (
-                      <g key={`${gene}-${cancer}`}>
-                        <rect 
-                          x={x} 
-                          y={y} 
-                          width="70" 
-                          height="40" 
-                          fill={color}
-                          stroke="#FFFFFF"
-                          strokeWidth="2"
-                          opacity="0.8"
-                        />
-                        {intensity > 0 && (
-                          <text 
-                            x={x + 35} 
-                            y={y + 25} 
-                            fill="#FFFFFF" 
-                            fontSize="12" 
-                            textAnchor="middle"
-                            fontWeight="600"
-                          >
-                            {(intensity * 100).toFixed(0)}%
-                          </text>
-                        )}
-                      </g>
-                    );
+                // Extract genes from pathway burden results instead of variant table
+                const pathwayBurdenResults = pipelineResults?.pathway_burden_results || {};
+                const allGenes = new Set<string>();
+                
+                // Collect all genes from pathway burden analysis
+                Object.values(pathwayBurdenResults).forEach((pathwayResult: PathwayResult) => {
+                  if (pathwayResult.contributing_genes) {
+                    pathwayResult.contributing_genes.forEach((gene: string) => allGenes.add(gene));
+                  }
+                  if (pathwayResult.damaging_genes) {
+                    pathwayResult.damaging_genes.forEach((gene: string) => allGenes.add(gene));
+                  }
+                });
+                
+                console.log('🧬 Genes from pathway burden:', Array.from(allGenes));
+                
+                // If no pathway data, fall back to variant table but prioritize known cancer genes
+                if (allGenes.size === 0) {
+                  console.log('⚠️ No pathway burden genes found, using variant table');
+                  
+                  // Known cancer genes to prioritize
+                  const knownCancerGenes = ['BRCA1', 'BRCA2', 'TP53', 'KRAS', 'NRAS', 'HRAS', 'BRAF', 'PIK3CA', 'APC', 'PTEN', 'ATM', 'CHEK2', 'PALB2', 'RAD51C', 'RAD51D', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'SMARCA4', 'ARID1A'];
+                  
+                  // First, try to find known cancer genes in the variant table
+                  genomicData.variant_table.forEach(v => {
+                    if (v.gene && v.gene !== 'Unknown' && knownCancerGenes.includes(v.gene)) {
+                      allGenes.add(v.gene);
+                    }
                   });
-                })}
+                  
+                  // If we still don't have enough, add other genes from variant table
+                  if (allGenes.size < 5) {
+                    genomicData.variant_table.forEach(v => {
+                      if (v.gene && v.gene !== 'Unknown' && !allGenes.has(v.gene)) {
+                        allGenes.add(v.gene);
+                      }
+                    });
+                  }
+                  
+                  console.log('📊 Final gene set from variant table:', Array.from(allGenes));
+                }
                 
-                {/* Gene labels */}
-                {['BRCA1', 'TP53', 'APC', 'MLH1', 'MSH2'].map((gene, index) => (
-                  <text 
-                    key={gene}
-                    x="140" 
-                    y={105 + index * 50} 
-                    fill="#111827" 
-                    fontSize="14" 
-                    textAnchor="end"
-                    fontWeight="600"
-                  >
-                    {gene}
-                  </text>
-                ))}
+                const uniqueGenes = Array.from(allGenes).slice(0, 5); // Limit to 5 for display
+                const cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'];
                 
-                {/* Cancer type labels */}
-                {['Breast', 'Lung', 'Colon', 'Prostate', 'Blood'].map((cancer, index) => (
-                  <text 
-                    key={cancer}
-                    x={185 + index * 80} 
-                    y="70" 
-                    fill="#111827" 
-                    fontSize="14" 
-                    textAnchor="middle"
-                    fontWeight="600"
-                  >
-                    {cancer}
-                  </text>
-                ))}
+                // Build association matrix from pathway burden data
+                const geneAssociations: Record<string, Record<string, number>> = {};
                 
-                {/* Legend */}
-                <g transform="translate(580, 300)">
-                  <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Risk Level</text>
-                  <rect x="0" y="10" width="15" height="15" fill="#EF4444"/>
-                  <text x="20" y="22" fill="#4B5563" fontSize="11">High (≥80%)</text>
-                  <rect x="0" y="30" width="15" height="15" fill="#F59E0B"/>
-                  <text x="20" y="42" fill="#4B5563" fontSize="11">Medium (60-80%)</text>
-                  <rect x="0" y="50" width="15" height="15" fill="#3B82F6"/>
-                  <text x="20" y="62" fill="#4B5563" fontSize="11">Low (30-60%)</text>
-                  <rect x="0" y="70" width="15" height="15" fill="#E5E7EB"/>
-                  <text x="20" y="82" fill="#4B5563" fontSize="11">No Association</text>
-                </g>
-              </svg>
+                // Initialize with zeros
+                uniqueGenes.forEach(gene => {
+                  geneAssociations[gene] = {};
+                  cancerTypes.forEach(cancer => {
+                    geneAssociations[gene][cancer] = 0;
+                  });
+                });
+                
+                // Use pathway burden results to build gene-cancer associations
+                if (pipelineResults && Object.keys(pathwayBurdenResults).length > 0) {
+                  console.log('🔬 Using pathway burden results for associations');
+                  
+                  // Map pathways to cancer types based on literature
+                  const pathwayCancerMapping: Record<string, string[]> = {
+                    'dna_repair': ['breast', 'colon'],
+                    'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
+                    'oncogenes': ['lung', 'colon', 'breast'],
+                    'ras_mapk': ['lung', 'colon', 'prostate'],
+                    'cell_cycle': ['breast', 'lung', 'prostate'],
+                    'apoptosis': ['breast', 'lung', 'colon'],
+                    'chromatin_remodeling': ['blood', 'lung'],
+                    'mismatch_repair': ['colon'],
+                    'wnt_signaling': ['colon'],
+                    'pi3k_akt': ['breast', 'prostate']
+                  };
+                  
+                  // Build associations based on pathway burden scores
+                  Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, PathwayResult]) => {
+                    const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+                    const burdenScore = pathwayResult.burden_score || 0;
+                    
+                    console.log(`📋 Processing pathway ${pathwayName}:`, { burdenScore, associatedCancers, damagingGenes: pathwayResult.damaging_genes });
+                    
+                    // Map genes in this pathway to associated cancer types
+                    if (pathwayResult.damaging_genes) {
+                      pathwayResult.damaging_genes.forEach((gene: string) => {
+                        if (geneAssociations[gene]) {
+                          associatedCancers.forEach(cancer => {
+                            // Use burden score as base, multiply by gene-specific factors
+                            const geneVariantCount = pathwayResult.gene_damaging_counts?.[gene] || 1;
+                            const associationScore = burdenScore * 100 * Math.min(geneVariantCount, 2); // Cap at 2x
+                            geneAssociations[gene][cancer] = Math.max(
+                              geneAssociations[gene][cancer] || 0,
+                              Math.min(associationScore, 100) // Cap at 100%
+                            );
+                          });
+                        }
+                      });
+                    }
+                  });
+                  
+                  // Also incorporate risk scores for additional cancer associations
+                  const riskScores = pipelineResults.risk_scores || {};
+                  Object.entries(riskScores).forEach(([cancer, riskScore]) => {
+                    if (cancerTypes.includes(cancer)) {
+                      // For genes that appear in multiple pathways, boost their association
+                      const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
+                      Object.entries(multiPathwayGenes).forEach(([gene, pathways]: [string, string[]]) => {
+                        if (geneAssociations[gene] && pathways.length > 1) {
+                          geneAssociations[gene][cancer] = Math.max(
+                            geneAssociations[gene][cancer] || 0,
+                            (riskScore as number) * 0.8 // 80% of risk score for multi-pathway genes
+                          );
+                        }
+                      });
+                    }
+                  });
+                  
+                  console.log('📊 Built gene associations from pathway burden:', geneAssociations);
+                } else {
+                  console.log('⚠️ No pathway burden results, using fallback gene-cancer associations');
+                  
+                  // Fallback: Use known gene-cancer associations based on literature
+                  const knownGeneAssociations: Record<string, Record<string, number>> = {
+                    'BRCA1': { breast: 85, colon: 20 },
+                    'BRCA2': { breast: 80, colon: 15 },
+                    'TP53': { breast: 40, lung: 70, colon: 60, prostate: 45 },
+                    'KRAS': { lung: 85, colon: 90, prostate: 25 },
+                    'NRAS': { lung: 30, colon: 40 },
+                    'HRAS': { lung: 25, colon: 20 },
+                    'BRAF': { lung: 15, colon: 25 },
+                    'PIK3CA': { breast: 70, prostate: 60 },
+                    'APC': { colon: 95 },
+                    'PTEN': { breast: 35, prostate: 75 },
+                    'ATM': { breast: 45, lung: 30 },
+                    'CHEK2': { breast: 60 },
+                    'PALB2': { breast: 65 },
+                    'RAD51C': { breast: 55 },
+                    'RAD51D': { breast: 50 },
+                    'MLH1': { colon: 85 },
+                    'MSH2': { colon: 80 },
+                    'MSH6': { colon: 75 },
+                    'PMS2': { colon: 70 },
+                    'SMARCA4': { lung: 25, blood: 40 },
+                    'ARID1A': { lung: 20, blood: 30 }
+                  };
+                  
+                  // Apply known associations for genes we have
+                  uniqueGenes.forEach(gene => {
+                    if (knownGeneAssociations[gene]) {
+                      Object.entries(knownGeneAssociations[gene]).forEach(([cancer, score]) => {
+                        if (geneAssociations[gene] && cancerTypes.includes(cancer)) {
+                          geneAssociations[gene][cancer] = score;
+                        }
+                      });
+                    }
+                  });
+                  
+                  // For genes not in known associations, use risk scores if available
+                  const riskScores = pipelineResults?.risk_scores || {};
+                  uniqueGenes.forEach(gene => {
+                    Object.entries(riskScores).forEach(([cancer, riskScore]) => {
+                      if (cancerTypes.includes(cancer) && geneAssociations[gene]) {
+                        // If no specific association, use a fraction of the risk score
+                        if (geneAssociations[gene][cancer] === 0) {
+                          geneAssociations[gene][cancer] = Math.min((riskScore as number) * 0.3, 30);
+                        }
+                      }
+                    });
+                  });
+                  
+                  console.log('📊 Built gene associations from fallback:', geneAssociations);
+                }
+                
+                // If no genes found, show message
+                if (uniqueGenes.length === 0) {
+                  return (
+                    <div style={{ 
+                      padding: '2rem', 
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      No variant data available for gene-cancer association matrix
+                    </div>
+                  );
+                }
+
+                // Calculate summary statistics
+                const totalAssociations = uniqueGenes.reduce((sum, gene) => {
+                  return sum + cancerTypes.reduce((geneSum, cancer) => {
+                    return geneSum + (geneAssociations[gene]?.[cancer] > 0 ? 1 : 0);
+                  }, 0);
+                }, 0);
+
+                const highRiskAssociations = uniqueGenes.reduce((sum, gene) => {
+                  return sum + cancerTypes.reduce((geneSum, cancer) => {
+                    return geneSum + (geneAssociations[gene]?.[cancer] > 80 ? 1 : 0);
+                  }, 0);
+                }, 0);
+
+                const pathwayBurdenSummary = pipelineResults?.pathway_burden_summary;
+                
+                return (
+                  <div>
+                    {/* Summary Statistics */}
+                    <div style={{ 
+                      marginBottom: '1.5rem',
+                      padding: '1rem',
+                      background: '#F9FAFB',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #E5E7EB'
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3B82F6' }}>
+                            {uniqueGenes.length}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            Genes Analyzed
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10B981' }}>
+                            {totalAssociations}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            Total Associations
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#EF4444' }}>
+                            {highRiskAssociations}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                            High Risk (&gt;80%)
+                          </div>
+                        </div>
+                        {pathwayBurdenSummary && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8B5CF6' }}>
+                              {pathwayBurdenSummary.high_burden_pathways.length}
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                              High-Burden Pathways
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {pathwayBurdenSummary && pathwayBurdenSummary.primary_concern && (
+                        <div style={{ 
+                          marginTop: '0.75rem', 
+                          padding: '0.5rem',
+                          background: '#FEF2F2',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #FECACA'
+                        }}>
+                          <div style={{ fontSize: '0.875rem', color: '#EF4444', fontWeight: '600' }}>
+                            Primary Concern: {pathwayBurdenSummary.primary_concern.replace('_', ' ').toUpperCase()}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#7F1D1D', marginTop: '0.25rem' }}>
+                            Overall burden score: {pathwayBurdenSummary.overall_burden_score.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <svg width="100%" height="400" viewBox="0 0 700 400" style={{ overflow: 'visible' }}>
+                    {/* Background */}
+                    <rect width="700" height="400" fill="#F9FAFB"/>
+                    
+                    {/* Heatmap grid */}
+                    {uniqueGenes.map((gene, geneIndex) => {
+                      return cancerTypes.map((cancer, cancerIndex) => {
+                        const x = 120 + cancerIndex * 70;
+                        const y = 80 + geneIndex * 50;
+                        
+                        // Get intensity from real data
+                        const intensity = (geneAssociations[gene]?.[cancer] || 0) / 100;
+                        
+                        const color = intensity > 0.8 ? '#EF4444' : 
+                                     intensity > 0.6 ? '#F59E0B' : 
+                                     intensity > 0.3 ? '#3B82F6' : 
+                                     intensity > 0 ? '#93C5FD' : '#E5E7EB';
+                        
+                        return (
+                          <g key={`${gene}-${cancer}`}>
+                            <rect 
+                              x={x} 
+                              y={y} 
+                              width="60" 
+                              height="40" 
+                              fill={color}
+                              stroke="#FFFFFF"
+                              strokeWidth="2"
+                              opacity="0.8"
+                            />
+                            {intensity > 0 && (
+                              <text 
+                                x={x + 30} 
+                                y={y + 25} 
+                                fill="#FFFFFF" 
+                                fontSize="11" 
+                                textAnchor="middle"
+                                fontWeight="600"
+                              >
+                                {(intensity * 100).toFixed(0)}%
+                              </text>
+                            )}
+                          </g>
+                        );
+                      });
+                    })}
+                    
+                    {/* Gene labels */}
+                    {uniqueGenes.map((gene, index) => (
+                      <text 
+                        key={gene}
+                        x="110" 
+                        y={105 + index * 50} 
+                        fill="#111827" 
+                        fontSize="13" 
+                        textAnchor="end"
+                        fontWeight="600"
+                      >
+                        {gene}
+                      </text>
+                    ))}
+                    
+                    {/* Cancer type labels */}
+                    {cancerTypes.map((cancer, index) => (
+                      <text 
+                        key={cancer}
+                        x={150 + index * 70} 
+                        y="70" 
+                        fill="#111827" 
+                        fontSize="13" 
+                        textAnchor="middle"
+                        fontWeight="600"
+                      >
+                        {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
+                      </text>
+                    ))}
+                    
+                    {/* Legend */}
+                    <g transform="translate(480, 300)">
+                      <text x="0" y="0" fill="#111827" fontSize="11" fontWeight="600">Risk Level</text>
+                      <rect x="0" y="10" width="12" height="12" fill="#EF4444"/>
+                      <text x="16" y="21" fill="#4B5563" fontSize="10">High (≥80%)</text>
+                      <rect x="0" y="26" width="12" height="12" fill="#F59E0B"/>
+                      <text x="16" y="37" fill="#4B5563" fontSize="10">Medium (60-80%)</text>
+                      <rect x="0" y="42" width="12" height="12" fill="#3B82F6"/>
+                      <text x="16" y="53" fill="#4B5563" fontSize="10">Low (30-60%)</text>
+                      <rect x="0" y="58" width="12" height="12" fill="#93C5FD"/>
+                      <text x="16" y="69" fill="#4B5563" fontSize="10">Very Low (1-30%)</text>
+                      <rect x="0" y="74" width="12" height="12" fill="#E5E7EB"/>
+                      <text x="16" y="85" fill="#4B5563" fontSize="10">No Association</text>
+                    </g>
+                  </svg>
+                </div>
+                );
+              })()}
             </div>
             
             {/* Variant Table */}
@@ -1723,14 +2538,39 @@ const ClinicalViewPage: React.FC = () => {
               border: '1px solid #E5E7EB'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Detected Variants
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Detected Variants
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('detected-variants')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="detected-variants"
                   title="Detected Variants"
@@ -1740,27 +2580,491 @@ const ClinicalViewPage: React.FC = () => {
                 />
               </div>
               
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#F9FAFB' }}>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Gene</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Variant</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Type</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Transformation</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Quality</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Significance</th>
-                      <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>Impact</th>
+              <div style={{ overflowX: 'auto', minHeight: '400px' }}>
+                <table style={{ 
+                  width: '100%', 
+                  borderCollapse: 'collapse', 
+                  tableLayout: 'fixed', // Fixed table layout for consistent widths
+                  minWidth: '800px' // Reduced minimum width
+                }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '10%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Gene
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-gene')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '0',
+                              top: 'calc(100% + 0.5rem)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              opacity: hoveredTooltip === 'header-gene' ? 1 : 0,
+                              visibility: hoveredTooltip === 'header-gene' ? 'visible' as const : 'hidden' as const,
+                              transition: 'opacity 300ms ease, visibility 300ms ease',
+                              zIndex: 1000,
+                              pointerEvents: 'none' as const,
+                              lineHeight: '1.4',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment.</p>
+                              <div style={{
+                                position: 'absolute',
+                                left: '0.75rem',
+                                bottom: '100%',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '0.5rem solid transparent',
+                                borderRight: '0.5rem solid transparent',
+                                borderBottom: '0.5rem solid #1F2937'
+                              }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '15%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Variant
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-variant')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '0',
+                              top: 'calc(100% + 0.5rem)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
+                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
+                              transition: 'opacity 300ms ease, visibility 300ms ease',
+                              zIndex: 1000,
+                              pointerEvents: 'none' as const,
+                              lineHeight: '1.4',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference→alternate (e.g., 17:41223094:A→G). This uniquely identifies the DNA change.</p>
+                              <div style={{
+                                position: 'absolute',
+                                left: '0.75rem',
+                                bottom: '100%',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '0.5rem solid transparent',
+                                borderRight: '0.5rem solid transparent',
+                                borderBottom: '0.5rem solid #1F2937'
+                              }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '8%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Type
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-type')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-type' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-type' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '18%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Transformation
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-transformation')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-transformation' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-transformation' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Protein-level change caused by the DNA variant. Shows original codon → mutated codon and resulting amino acid change (e.g., Arg→His). Critical for understanding functional impact.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '10%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Quality
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-quality')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-quality' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-quality' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Variant call quality score (0-100). Green (&gt;90) = high confidence, Yellow (70-90) = moderate confidence, Red (&lt;70) = low confidence. Score of 100 indicates variants that passed all quality filters.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '15%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Significance
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-significance')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-significance' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-significance' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      </th>
+                      <th style={{ 
+                        padding: '0.75rem', 
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #E5E7EB', 
+                        fontWeight: '600',
+                        color: '#111827',
+                        fontSize: '0.875rem',
+                        width: '24%' // Fixed percentage width
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          Impact
+                          <div 
+                            style={{ position: 'relative', display: 'inline-flex' }}
+                            onMouseEnter={() => setHoveredTooltip('header-impact')}
+                            onMouseLeave={() => setHoveredTooltip(null)}
+                          >
+                            <InformationCircleIcon 
+                              style={{ width: '14px', height: '14px' }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#9CA3AF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                e.currentTarget.style.color = '#6B7280';
+                                e.currentTarget.style.borderColor = '#D1D5DB';
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: 'calc(100% + 0.5rem)',
+                              transform: 'translateX(-50%)',
+                              width: '18rem',
+                              padding: '0.75rem',
+                              background: '#1F2937',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.5rem',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              zIndex: 1000,
+                              visibility: hoveredTooltip === 'header-impact' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-impact' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
+                              border: '1px solid #374151'
+                            }}>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Predicted functional impact of the variant on protein function. Includes details about amino acid property changes, charge effects, and potential disruption to protein structure or function.</p>
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '6px solid transparent',
+                                borderRight: '6px solid transparent',
+                                borderBottom: '6px solid #1F2937'
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {genomicData.variant_table.map((variant, index) => (
                       <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                        <td style={{ padding: '0.75rem', fontWeight: '600', color: '#111827' }}>{variant.gene}</td>
-                        <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', color: '#4B5563' }}>
+                        <td style={{ 
+                          padding: '0.75rem', 
+                          fontWeight: '600', 
+                          color: '#111827',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          width: '10%'
+                        }}>
+                          {variant.gene}
+                        </td>
+                        <td style={{ 
+                          padding: '0.75rem', 
+                          fontFamily: 'monospace', 
+                          fontSize: '0.875rem', 
+                          color: '#4B5563',
+                          wordWrap: 'break-word',
+                          overflowWrap: 'break-word',
+                          width: '15%'
+                        }}>
                           {variant.variant_id.split(':').slice(1).join(':')}
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ 
+                          padding: '0.75rem',
+                          width: '8%'
+                        }}>
                           <div style={{
                             background: variant.mutation_type === 'snv' ? '#3B82F6' : 
                                        variant.mutation_type === 'indel' ? '#EF4444' : '#F59E0B',
@@ -1775,17 +3079,39 @@ const ClinicalViewPage: React.FC = () => {
                             {variant.mutation_type}
                           </div>
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <div style={{ fontSize: '0.875rem', color: '#4B5563' }}>
-                            <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                        <td style={{ 
+                          padding: '0.75rem',
+                          width: '18%'
+                        }}>
+                          <div style={{ 
+                            fontSize: '0.875rem', 
+                            color: '#4B5563',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}>
+                            <div style={{ 
+                              fontFamily: 'monospace', 
+                              fontSize: '0.75rem', 
+                              marginBottom: '0.25rem',
+                              wordWrap: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}>
                               {variant.transformation.original} → {variant.transformation.mutated}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                            <div style={{ 
+                              fontSize: '0.75rem', 
+                              color: '#6B7280',
+                              wordWrap: 'break-word',
+                              overflowWrap: 'break-word'
+                            }}>
                               {variant.transformation.amino_acid_change}
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ 
+                          padding: '0.75rem',
+                          width: '10%'
+                        }}>
                           <div style={{
                             background: variant.quality_score > 90 ? '#22C55E' : 
                                        variant.quality_score > 70 ? '#F59E0B' : '#EF4444',
@@ -1800,7 +3126,10 @@ const ClinicalViewPage: React.FC = () => {
                             {variant.quality_score}
                           </div>
                         </td>
-                        <td style={{ padding: '0.75rem' }}>
+                        <td style={{ 
+                          padding: '0.75rem',
+                          width: '15%'
+                        }}>
                           <div style={{
                             background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#F0FDF4',
                             color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#22C55E',
@@ -1808,17 +3137,33 @@ const ClinicalViewPage: React.FC = () => {
                             borderRadius: '0.375rem',
                             fontSize: '0.75rem',
                             fontWeight: '600',
-            textAlign: 'center'
-          }}>
+                            textAlign: 'center',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}>
                             {variant.clinical_significance}
                           </div>
                         </td>
-                        <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#4B5563' }}>
-                          <div style={{ marginBottom: '0.25rem' }}>
+                        <td style={{ 
+                          padding: '0.75rem', 
+                          fontSize: '0.875rem', 
+                          color: '#4B5563',
+                          width: '24%'
+                        }}>
+                          <div style={{ 
+                            marginBottom: '0.25rem',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}>
                             <strong>{variant.functional_impact}</strong>
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                            {variant.transformation.effect}
+                          <div style={{ 
+                            fontSize: '0.75rem', 
+                            color: '#6B7280',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}>
+                            {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
                           </div>
                         </td>
                       </tr>
@@ -1845,53 +3190,84 @@ const ClinicalViewPage: React.FC = () => {
                 </h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.structural_variants.map((variant, index) => (
-                    <div key={index} style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                  {genomicData.structural_variants.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      color: '#6B7280'
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <div style={{
-                            background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            textTransform: 'uppercase'
-                          }}>
-                            {variant.type}
-                          </div>
-                          <span style={{ fontWeight: '600', color: '#111827' }}>
-                            {variant.genes_affected.join(', ')}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                          {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                          {variant.transformation.effect}
-                        </div>
-                      </div>
-                      <div style={{
-                        background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
-                        color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textAlign: 'center'
+                      <div style={{ 
+                        fontSize: '2rem',
+                        marginBottom: '0.5rem'
                       }}>
-                        {variant.clinical_significance.replace('_', ' ')}
+                        🧬
                       </div>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        No Structural Variants Detected
+                      </h4>
+                      <p style={{ 
+                        color: '#6B7280',
+                        fontSize: '0.875rem',
+                        maxWidth: '350px',
+                        margin: '0 auto'
+                      }}>
+                        No large-scale genomic rearrangements were found in the analysis.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    genomicData.structural_variants.map((variant, index) => (
+                      <div key={index} style={{
+                        background: '#FFFFFF',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <div style={{
+                              background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              textTransform: 'uppercase'
+                            }}>
+                              {variant.type}
+                            </div>
+                            <span style={{ fontWeight: '600', color: '#111827' }}>
+                              {variant.genes_affected.join(', ')}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                            {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                            {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
+                          </div>
+                        </div>
+                        <div style={{
+                          background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
+                          color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {variant.clinical_significance.replace('_', ' ')}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
               
@@ -1913,52 +3289,83 @@ const ClinicalViewPage: React.FC = () => {
                 </h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.copy_number_variants.map((variant, index) => (
-                    <div key={index} style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: '2px solid #F59E0B',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                  {genomicData.copy_number_variants.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '2rem',
+                      color: '#6B7280'
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: '600', color: '#111827' }}>
-                            {variant.gene}
-                          </span>
-                          <div style={{
-                            background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600'
-                          }}>
-                            {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
+                      <div style={{ 
+                        fontSize: '2rem',
+                        marginBottom: '0.5rem'
+                      }}>
+                        📊
+                      </div>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        No Copy Number Variants Detected
+                      </h4>
+                      <p style={{ 
+                        color: '#6B7280',
+                        fontSize: '0.875rem',
+                        maxWidth: '350px',
+                        margin: '0 auto'
+                      }}>
+                        No significant gene amplifications or deletions were detected in the analysis.
+                      </p>
+                    </div>
+                  ) : (
+                    genomicData.copy_number_variants.map((variant, index) => (
+                      <div key={index} style={{
+                        background: '#FFFFFF',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: '2px solid #F59E0B',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <span style={{ fontWeight: '600', color: '#111827' }}>
+                              {variant.gene}
+                            </span>
+                            <div style={{
+                              background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                            {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                            {variant.cancer_relevance}
                           </div>
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                          {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                          {variant.cancer_relevance}
+                        <div style={{
+                          background: '#FFFBEB',
+                          color: '#F59E0B',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {variant.clinical_significance}
                         </div>
                       </div>
-                      <div style={{
-                        background: '#FFFBEB',
-                        color: '#F59E0B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textAlign: 'center'
-                      }}>
-                        {variant.clinical_significance}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -1977,278 +3384,265 @@ const ClinicalViewPage: React.FC = () => {
               Pathway Analysis
             </h2>
             
-            {/* Pathway Enrichment */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-              fontWeight: '600',
-              marginBottom: '1rem'
-            }}>
-                Affected Biological Pathways
-              </h3>
+            {/* Check if pathway analysis data is available */}
+            {(() => {
+              const pathwayData = pipelineResults?.structured_json?.pathway_analysis;
               
-                            {/* Pathway Disruption Analysis */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                {[
-                  { 
-                    name: 'DNA Repair', 
-                    pathway_id: 'DNA_REPAIR',
-                    genes: ['BRCA1', 'TP53'], 
-                    significance: 95, 
-                    color: '#EF4444',
-                    mutations: [
-                      { gene: 'BRCA1', type: 'frameshift', effect: 'Complete loss of homologous recombination' },
-                      { gene: 'TP53', type: 'missense', effect: 'Impaired DNA damage response' }
-                    ]
-                  },
-                  { 
-                    name: 'Cell Cycle Control', 
-                    pathway_id: 'CELL_CYCLE',
-                    genes: ['TP53'], 
-                    significance: 87, 
-                    color: '#F59E0B',
-                    mutations: [
-                      { gene: 'TP53', type: 'missense', effect: 'Loss of G1/S checkpoint control' }
-                    ]
-                  },
-                  { 
-                    name: 'Apoptosis', 
-                    pathway_id: 'APOPTOSIS',
-                    genes: ['TP53'], 
-                    significance: 82, 
-                    color: '#F59E0B',
-                    mutations: [
-                      { gene: 'TP53', type: 'missense', effect: 'Reduced pro-apoptotic signaling' }
-                    ]
-                  },
-                  { 
-                    name: 'Wnt Signaling', 
-                    pathway_id: 'WNT_SIGNALING',
-                    genes: ['APC'], 
-                    significance: 78, 
-                    color: '#3B82F6',
-                    mutations: [
-                      { gene: 'APC', type: 'nonsense', effect: 'Constitutive β-catenin activation' }
-                    ]
-                  },
-                  { 
-                    name: 'Tumor Suppression', 
-                    pathway_id: 'TUMOR_SUPPRESSION',
-                    genes: ['BRCA1', 'TP53', 'APC'], 
-                    significance: 92, 
-                    color: '#EF4444',
-                    mutations: [
-                      { gene: 'BRCA1', type: 'frameshift', effect: 'Loss of tumor suppressor function' },
-                      { gene: 'TP53', type: 'missense', effect: 'Guardian of genome compromised' },
-                      { gene: 'APC', type: 'nonsense', effect: 'Gatekeeper function lost' }
-                    ]
-                  }
-                ].map((pathway, index) => (
-                  <div key={index} style={{
+              if (!pathwayData) {
+                // No pathway data available - show informative message
+                return (
+                  <div style={{
                     background: '#FFFFFF',
-                    padding: '1.5rem',
-                    border: `2px solid ${pathway.color}`,
+                    padding: '3rem',
                     borderRadius: '0.75rem',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    textAlign: 'center'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h4 style={{ 
-                        color: '#111827',
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
-                        margin: 0
-                      }}>
-                        {pathway.name} Pathway
-                      </h4>
-                      <div style={{
-                        background: pathway.color,
-                        color: '#FFFFFF',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '1rem',
-                        fontWeight: 'bold'
-                      }}>
-                        {pathway.significance}% Disrupted
-                      </div>
-                    </div>
-                    
-                    <div style={{
-                      background: '#E5E7EB',
-                      borderRadius: '0.25rem',
-                      height: '0.75rem',
-                      position: 'relative',
-                      overflow: 'hidden',
+                    <div style={{ 
+                      color: '#6B7280',
+                      fontSize: '1.125rem',
                       marginBottom: '1rem'
                     }}>
-                      <div style={{
-                        background: pathway.color,
-                        height: '100%',
-                        width: `${pathway.significance}%`,
-                        transition: 'width 0.3s ease'
-                      }}/>
+                      <svg 
+                        style={{ width: '3rem', height: '3rem', marginBottom: '1rem' }}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={1.5} 
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                        />
+                      </svg>
                     </div>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Pathway Analysis Coming Soon
+                    </h3>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '600px',
+                      margin: '0 auto'
+                    }}>
+                      Biological pathway disruption analysis will be available in a future update. 
+                      This feature will analyze how genetic variants affect key cellular pathways 
+                      including DNA repair, cell cycle control, and apoptosis.
+                    </p>
+                  </div>
+                );
+              }
+              
+              // If pathway data exists, use it
+              return (
+                <>
+                  {/* Pathway Enrichment */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '2rem'
+                  }}>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '1rem'
+                    }}>
+                      Affected Biological Pathways
+                    </h3>
                     
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {pathway.mutations.map((mutation, mutIndex) => (
-                        <div key={mutIndex} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '0.75rem',
-                          background: '#F9FAFB',
-                          borderRadius: '0.5rem',
-                          border: '1px solid #E5E7EB'
+                    {/* Pathway Disruption Analysis */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                      {pathwayData.disrupted_pathways.map((pathway, index) => (
+                        <div key={index} style={{
+                          background: '#FFFFFF',
+                          padding: '1.5rem',
+                          border: `2px solid ${pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6'}`,
+                          borderRadius: '0.75rem',
+                          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
                         }}>
-                          <div style={{
-                            background: mutation.type === 'frameshift' ? '#EF4444' : 
-                                       mutation.type === 'missense' ? '#F59E0B' : '#3B82F6',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            marginRight: '0.75rem'
-                          }}>
-                            {mutation.type}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1.125rem',
+                              fontWeight: '600',
+                              margin: 0
+                            }}>
+                              {pathway.name} Pathway
+                            </h4>
+                            <div style={{
+                              background: pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6',
+                              color: '#FFFFFF',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '1rem',
+                              fontWeight: 'bold'
+                            }}>
+                              {pathway.significance}% Disrupted
+                            </div>
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>
-                              {mutation.gene}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                              {mutation.effect}
-                            </div>
+                          
+                          <div style={{
+                            background: '#E5E7EB',
+                            borderRadius: '0.25rem',
+                            height: '0.75rem',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            marginBottom: '1rem'
+                          }}>
+                            <div style={{
+                              background: pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6',
+                              height: '100%',
+                              width: `${pathway.significance}%`,
+                              transition: 'width 0.3s ease'
+                            }}/>
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {pathway.mutations.map((mutation, mutIndex) => (
+                              <div key={mutIndex} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0.75rem',
+                                background: '#F9FAFB',
+                                borderRadius: '0.5rem',
+                                border: '1px solid #E5E7EB'
+                              }}>
+                                <div style={{
+                                  background: mutation.type === 'frameshift' ? '#EF4444' : 
+                                             mutation.type === 'missense' ? '#F59E0B' : '#3B82F6',
+                                  color: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  marginRight: '0.75rem'
+                                }}>
+                                  {mutation.type}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#111827', marginBottom: '0.25rem' }}>
+                                    {mutation.gene}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                                    {mutation.effect}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Cancer Risk by Pathway */}
-              <div style={{
-                background: '#FFFFFF',
-                padding: '2rem',
-                borderRadius: '0.75rem',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                border: '1px solid #E5E7EB',
-                marginBottom: '2rem'
-              }}>
-                <h4 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  marginBottom: '1rem'
-                }}>
-                  Cancer Risk by Pathway Disruption
-                </h4>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                  {genomicData.risk_findings.filter(r => r.pathway_disruption.length > 0).map((risk, index) => (
-                    <div key={index} style={{
-                      padding: '1rem',
-                      border: `2px solid ${getRiskColor(risk.risk_level)}`,
-                      borderRadius: '0.5rem',
-                      background: `${getRiskColor(risk.risk_level)}10`
+                    
+                    {/* Cancer Risk by Pathway */}
+                    <div style={{
+                      background: '#FFFFFF',
+                      padding: '2rem',
+                      borderRadius: '0.75rem',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #E5E7EB',
+                      marginBottom: '2rem'
                     }}>
-                      <h5 style={{ 
+                      <h4 style={{ 
                         color: '#111827',
-                        fontSize: '1rem',
+                        fontSize: '1.125rem',
                         fontWeight: '600',
-                        marginBottom: '0.5rem',
-                        textTransform: 'capitalize'
+                        marginBottom: '1rem'
                       }}>
-                        {risk.cancer_type} Cancer
-                      </h5>
-                      <div style={{ 
-                        fontSize: '1.5rem',
-                        fontWeight: 'bold',
-                        color: getRiskColor(risk.risk_level),
-                        marginBottom: '0.5rem'
-                      }}>
-                        {risk.risk_percentage}%
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        {risk.pathway_disruption.map((pathway, pathIndex) => (
-                          <div key={pathIndex} style={{
-                            background: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '500',
-                            color: '#4B5563'
-                          }}>
-                            {pathway.replace('_', ' ')}
-                          </div>
-                        ))}
+                        Cancer Risk by Pathway Disruption
+                      </h4>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                        {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
+                          const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
+                          if (!riskFinding) return null;
+                          
+                          return (
+                            <div key={cancer} style={{
+                              padding: '1rem',
+                              border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
+                              borderRadius: '0.5rem',
+                              background: `${getRiskColor(riskFinding.risk_level)}10`
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                textTransform: 'capitalize'
+                              }}>
+                                {cancer} Cancer
+                              </h5>
+                              <div style={{ 
+                                fontSize: '1.5rem',
+                                fontWeight: 'bold',
+                                color: getRiskColor(riskFinding.risk_level),
+                                marginBottom: '0.5rem'
+                              }}>
+                                {riskFinding.risk_percentage}%
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                {pathways.map((pathway, pathIndex) => (
+                                  <div key={pathIndex} style={{
+                                    background: '#FFFFFF',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '0.25rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    color: '#4B5563'
+                                  }}>
+                                    {pathway.replace('_', ' ')}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Pathway Network */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                marginBottom: '1rem'
-              }}>
-                Gene Interaction Network
-              </h3>
-              
-              <svg width="100%" height="300" viewBox="0 0 600 300">
-                {/* Background */}
-                <rect width="600" height="300" fill="#F9FAFB"/>
-                
-                {/* Network connections */}
-                <line x1="150" y1="150" x2="300" y2="100" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="150" y1="150" x2="300" y2="200" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="300" y1="100" x2="450" y2="150" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="300" y1="200" x2="450" y2="150" stroke="#94A3B8" strokeWidth="2"/>
-                
-                {/* Gene nodes */}
-                <g>
-                  <circle cx="150" cy="150" r="30" fill="#EF4444" opacity="0.8"/>
-                  <text x="150" y="155" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">BRCA1</text>
-                </g>
-                <g>
-                  <circle cx="300" cy="100" r="30" fill="#EF4444" opacity="0.8"/>
-                  <text x="300" y="105" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">TP53</text>
-                </g>
-                <g>
-                  <circle cx="300" cy="200" r="30" fill="#F59E0B" opacity="0.8"/>
-                  <text x="300" y="205" fill="#FFFFFF" fontSize="12" textAnchor="middle" fontWeight="600">APC</text>
-                </g>
-                <g>
-                  <circle cx="450" cy="150" r="25" fill="#3B82F6" opacity="0.8"/>
-                  <text x="450" y="155" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">MLH1</text>
-                </g>
-                
-                {/* Labels */}
-                <text x="50" y="155" fill="#111827" fontSize="12" fontWeight="600">DNA Repair</text>
-                <text x="350" y="50" fill="#111827" fontSize="12" fontWeight="600">Cell Cycle</text>
-                <text x="350" y="250" fill="#111827" fontSize="12" fontWeight="600">Wnt Signaling</text>
-                <text x="500" y="155" fill="#111827" fontSize="12" fontWeight="600">Mismatch Repair</text>
-              </svg>
-            </div>
+                  </div>
+                  
+                  {/* Gene Interaction Network - show placeholder */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB'
+                  }}>
+                    <h3 style={{ 
+                      color: '#111827',
+                      fontSize: '1.125rem',
+                      fontWeight: '600',
+                      marginBottom: '1rem'
+                    }}>
+                      Gene Interaction Network
+                    </h3>
+                    
+                    <div style={{ 
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      Gene interaction network visualization will be available in a future update.
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         );
       
@@ -2291,55 +3685,86 @@ const ClinicalViewPage: React.FC = () => {
                 />
               </div>
               
-              <svg width="100%" height="300" viewBox="0 0 800 300">
-                {/* Background */}
-                <rect width="800" height="300" fill="#F9FAFB"/>
+              {/* Check if survival analysis data is available */}
+              {(() => {
+                const survivalData = pipelineResults?.structured_json?.survival_analysis;
                 
-                {/* Grid lines */}
-                {[0, 1, 2, 3, 4, 5].map(i => (
-                  <g key={i}>
-                    <line x1="80" y1={50 + i * 40} x2="700" y2={50 + i * 40} stroke="#E5E7EB" strokeWidth="1"/>
-                    <text x="70" y={55 + i * 40} fill="#6B7280" fontSize="12" textAnchor="end">{100 - i * 20}%</text>
-                  </g>
-                ))}
+                if (!survivalData) {
+                  // No survival data - show informative message
+                  return (
+                    <div style={{ 
+                      padding: '3rem',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      <p style={{ marginBottom: '1rem' }}>
+                        Survival analysis visualization is not yet available from the backend.
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                        This feature will provide personalized survival curves based on your genetic risk profile.
+                      </p>
+                    </div>
+                  );
+                }
                 
-                {/* Age axis */}
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                  <g key={i}>
-                    <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
-                    <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{30 + i * 10}</text>
-                  </g>
-                ))}
-                
-                {/* Population average survival curve */}
-                <path 
-                  d="M 80 60 L 160 70 L 240 85 L 320 105 L 400 130 L 480 160 L 560 200 L 640 240 L 720 250" 
-                  stroke="#2563EB" 
-                  strokeWidth="3" 
-                  fill="none"
-                  strokeDasharray="5,5"
-                />
-                
-                {/* High-risk patient survival curve */}
-                <path 
-                  d="M 80 60 L 160 80 L 240 110 L 320 140 L 400 170 L 480 200 L 560 225 L 640 245 L 720 250" 
-                  stroke="#EF4444" 
-                  strokeWidth="3" 
-                  fill="none"
-                />
-                
-                {/* Legend */}
-                <g transform="translate(500, 80)">
-                  <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
-                  <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
-                  <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
-                  <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">High-Risk Profile</text>
-                </g>
-                
-                {/* Axis labels */}
-                <text x="400" y="290" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600">Age</text>
-                <text x="30" y="150" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600" transform="rotate(-90 30 150)">Survival Probability</text>
-              </svg>
+                // Use real survival data
+                return (
+                  <svg width="100%" height="300" viewBox="0 0 800 300">
+                    {/* Background */}
+                    <rect width="800" height="300" fill="#F9FAFB"/>
+                    
+                    {/* Grid lines */}
+                    {[0, 1, 2, 3, 4, 5].map(i => (
+                      <g key={i}>
+                        <line x1="80" y1={50 + i * 40} x2="700" y2={50 + i * 40} stroke="#E5E7EB" strokeWidth="1"/>
+                        <text x="70" y={55 + i * 40} fill="#6B7280" fontSize="12" textAnchor="end">{100 - i * 20}%</text>
+                      </g>
+                    ))}
+                    
+                    {/* Age axis */}
+                    {survivalData.patient_profile.estimated_survival.map((point, i) => (
+                      <g key={i}>
+                        <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
+                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age}</text>
+                      </g>
+                    ))}
+                    
+                    {/* Population average survival curve */}
+                    <path 
+                      d={`M ${survivalData.population_average.map((point, i) => 
+                        `${80 + i * 80} ${250 - (point.probability * 200)}`
+                      ).join(' L ')}`}
+                      stroke="#2563EB" 
+                      strokeWidth="3" 
+                      fill="none"
+                      strokeDasharray="5,5"
+                    />
+                    
+                    {/* Patient risk profile survival curve */}
+                    <path 
+                      d={`M ${survivalData.patient_profile.estimated_survival.map((point, i) => 
+                        `${80 + i * 80} ${250 - (point.probability * 200)}`
+                      ).join(' L ')}`}
+                      stroke="#EF4444" 
+                      strokeWidth="3" 
+                      fill="none"
+                    />
+                    
+                    {/* Legend */}
+                    <g transform="translate(500, 80)">
+                      <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
+                      <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
+                      <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
+                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{survivalData.patient_profile.risk_category} Risk Profile</text>
+                    </g>
+                    
+                    {/* Axis labels */}
+                    <text x="400" y="290" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600">Age</text>
+                    <text x="30" y="150" fill="#111827" fontSize="14" textAnchor="middle" fontWeight="600" transform="rotate(-90 30 150)">Survival Probability</text>
+                  </svg>
+                );
+              })()}
             </div>
             
             {/* Clinical Recommendations */}
@@ -2359,297 +3784,195 @@ const ClinicalViewPage: React.FC = () => {
                 Clinical Recommendations
               </h3>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {genomicData.risk_findings.filter(r => r.risk_level === 'high').map((risk, index) => (
-                  <div key={index} style={{
-                    padding: '1.5rem',
-                    border: '2px solid #EF4444',
-                    borderRadius: '0.75rem',
-                    background: '#FEF2F2'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                      <h4 style={{ 
-                        color: '#111827',
-              fontSize: '1rem',
-                        fontWeight: '600',
-                        textTransform: 'capitalize'
-                      }}>
-                        {risk.cancer_type} Cancer Screening
-                      </h4>
-                      <div style={{
-                        background: '#EF4444',
-                        color: '#FFFFFF',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600'
-                      }}>
-                        {risk.risk_percentage}% Risk
-                      </div>
-                    </div>
-            <p style={{ 
-              color: '#4B5563',
-                      fontSize: '0.875rem',
-                      marginBottom: '1rem'
-            }}>
-                      {risk.recommendation}
-            </p>
-            <div style={{
-                      background: '#FFFFFF',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #FECACA'
-                    }}>
-                      <h5 style={{ 
-                        color: '#111827',
-                        fontSize: '0.875rem',
-                        fontWeight: '600',
-                        marginBottom: '0.5rem'
-                      }}>
-                        Affected Genes:
-                      </h5>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {risk.affected_genes.map((gene, geneIndex) => (
-                          <span key={geneIndex} style={{
-                            background: '#EF4444',
-                            color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600'
+              {/* Check if clinical recommendations are available from backend */}
+              {(() => {
+                const clinicalRecs = pipelineResults?.structured_json?.clinical_recommendations;
+                
+                if (clinicalRecs && Array.isArray(clinicalRecs) && clinicalRecs.length > 0) {
+                  // Use real clinical recommendations
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {clinicalRecs.map((rec: ClinicalRecommendation, index: number) => (
+                        <div key={index} style={{
+                          padding: '1.5rem',
+                          border: `2px solid ${getRiskColor(rec.risk_level)}`,
+                          borderRadius: '0.75rem',
+                          background: rec.risk_level === 'high' ? '#FEF2F2' : 
+                                      rec.risk_level === 'medium' ? '#FFFBEB' : '#F0FDF4'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              textTransform: 'capitalize'
+                            }}>
+                              {rec.cancer_type} Cancer Screening
+                            </h4>
+                            <div style={{
+                              background: getRiskColor(rec.risk_level),
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {rec.risk_percentage}% Risk
+                            </div>
+                          </div>
+                          <p style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem',
+                            marginBottom: '1rem'
                           }}>
-                            {gene}
-                          </span>
-                        ))}
-                      </div>
+                            {rec.recommendation}
+                          </p>
+                          {rec.screening_protocol && (
+                            <div style={{
+                              background: '#FFFFFF',
+                              padding: '1rem',
+                              borderRadius: '0.5rem',
+                              border: '1px solid #E5E7EB',
+                              marginBottom: '1rem'
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem'
+                              }}>
+                                Screening Protocol:
+                              </h5>
+                              <ul style={{ 
+                                margin: 0,
+                                paddingLeft: '1.5rem',
+                                fontSize: '0.75rem',
+                                color: '#4B5563'
+                              }}>
+                                <li>Test: {rec.screening_protocol.test}</li>
+                                <li>Frequency: {rec.screening_protocol.frequency}</li>
+                                <li>Start: {rec.screening_protocol.start_age}</li>
+                              </ul>
+                            </div>
+                          )}
+                          {rec.prevention_options && rec.prevention_options.length > 0 && (
+                            <div style={{
+                              background: '#F9FAFB',
+                              padding: '1rem',
+                              borderRadius: '0.5rem'
+                            }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                marginBottom: '0.5rem'
+                              }}>
+                                Prevention Options:
+                              </h5>
+                              <ul style={{ 
+                                margin: 0,
+                                paddingLeft: '1.5rem',
+                                fontSize: '0.75rem',
+                                color: '#4B5563'
+                              }}>
+                                {rec.prevention_options.map((option: string, i: number) => (
+                                  <li key={i}>{option}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'family':
-        return (
-          <div style={{ padding: '2rem' }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              marginBottom: '1.5rem'
-            }}>
-              Family Analysis & Hereditary Risk
-            </h2>
-            
-            {/* Family Pedigree */}
-            <div id="family-pedigree" style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
-                }}>
-                  Family Pedigree Analysis
-                </h3>
-                <DownloadButton 
-                  elementId="family-pedigree"
-                  title="Family Pedigree Analysis"
-                  summary="Comprehensive family pedigree showing BRCA1 inheritance pattern with strong maternal line history. Analysis reveals 50% sister carrier risk, autosomal dominant pattern, and provides cascade testing recommendations for at-risk family members."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
-              </div>
-              
-              <svg width="100%" height="300" viewBox="0 0 600 300">
-                {/* Background */}
-                <rect width="600" height="300" fill="#F9FAFB"/>
-                
-                {/* Family connections */}
-                <line x1="150" y1="80" x2="200" y2="80" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="175" y1="80" x2="175" y2="120" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="150" y1="120" x2="200" y2="120" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="175" y1="120" x2="175" y2="160" stroke="#4B5563" strokeWidth="2"/>
-                <line x1="150" y1="160" x2="200" y2="160" stroke="#4B5563" strokeWidth="2"/>
-                
-                {/* Family members */}
-                {/* Grandparents */}
-                <g>
-                  <rect x="120" y="50" width="30" height="30" fill="#F59E0B" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="135" y="70" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">GM</text>
-                  <text x="135" y="45" fill="#4B5563" fontSize="10" textAnchor="middle">Breast Cancer</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="65" r="15" fill="#E5E7EB" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="70" fill="#4B5563" fontSize="10" textAnchor="middle" fontWeight="600">GF</text>
-                </g>
-                
-                {/* Parents */}
-                <g>
-                  <rect x="120" y="105" width="30" height="30" fill="#EF4444" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="135" y="125" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">M</text>
-                  <text x="135" y="100" fill="#4B5563" fontSize="10" textAnchor="middle">BRCA1+</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="120" r="15" fill="#E5E7EB" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="125" fill="#4B5563" fontSize="10" textAnchor="middle" fontWeight="600">F</text>
-                </g>
-                
-                {/* Current generation */}
-                <g>
-                  <rect x="120" y="145" width="30" height="30" fill="#EF4444" opacity="0.8" stroke="#4B5563" strokeWidth="4"/>
-                  <text x="135" y="165" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">P</text>
-                  <text x="135" y="140" fill="#4B5563" fontSize="10" textAnchor="middle">Patient</text>
-                </g>
-                <g>
-                  <circle cx="220" cy="160" r="15" fill="#F59E0B" opacity="0.8" stroke="#4B5563" strokeWidth="2"/>
-                  <text x="220" y="165" fill="#FFFFFF" fontSize="10" textAnchor="middle" fontWeight="600">S</text>
-                  <text x="220" y="190" fill="#4B5563" fontSize="10" textAnchor="middle">Sister</text>
-                </g>
-                
-                {/* Legend */}
-                <g transform="translate(350, 50)">
-                  <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Legend</text>
-                  <rect x="0" y="15" width="15" height="15" fill="#EF4444" opacity="0.8"/>
-                  <text x="20" y="27" fill="#4B5563" fontSize="11">High Risk / Affected</text>
-                  <rect x="0" y="35" width="15" height="15" fill="#F59E0B" opacity="0.8"/>
-                  <text x="20" y="47" fill="#4B5563" fontSize="11">Medium Risk</text>
-                  <rect x="0" y="55" width="15" height="15" fill="#E5E7EB"/>
-                  <text x="20" y="67" fill="#4B5563" fontSize="11">Unknown / Low Risk</text>
-                  <rect x="0" y="80" width="15" height="15" fill="none" stroke="#4B5563" strokeWidth="4"/>
-                  <text x="20" y="92" fill="#4B5563" fontSize="11">Current Patient</text>
-                </g>
-              </svg>
-            </div>
-            
-            {/* Hereditary Risk Assessment */}
-            <div style={{
-              background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                marginBottom: '1rem'
-              }}>
-                Hereditary Risk Assessment
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #EF4444',
-                  borderRadius: '0.75rem',
-                  background: '#FEF2F2'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Maternal Inheritance
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Strong family history of breast cancer with confirmed BRCA1 mutation in maternal line.
-                  </p>
-                  <div style={{
-                    background: '#EF4444',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    High Risk (85%)
-                  </div>
-                </div>
-                
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #F59E0B',
-                  borderRadius: '0.75rem',
-                  background: '#FFFBEB'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Sibling Risk
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Sister has 50% chance of inheriting the same BRCA1 mutation. Testing recommended.
-                  </p>
-                  <div style={{
-                    background: '#F59E0B',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    Testing Recommended
-                  </div>
-              </div>
-              
-                <div style={{
-                  padding: '1.5rem',
-                  border: '2px solid #3B82F6',
-                  borderRadius: '0.75rem',
-                  background: '#EFF6FF'
-                }}>
-                  <h4 style={{ 
-                    color: '#111827',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Future Generations
-                  </h4>
-                  <p style={{ 
-                    color: '#4B5563',
-                    fontSize: '0.875rem',
-                    marginBottom: '1rem'
-                  }}>
-                    Each child has 50% chance of inheriting the mutation. Genetic counseling recommended.
-                  </p>
-                  <div style={{
-                    background: '#3B82F6',
-                    color: '#FFFFFF',
-                    padding: '0.5rem',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
-                  }}>
-                    Counseling Advised
-                  </div>
-                </div>
-              </div>
+                  );
+                } else {
+                  // Use basic recommendations based on risk scores
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {genomicData.risk_findings.filter(r => r.risk_level === 'high' || r.risk_level === 'medium').map((risk, index) => (
+                        <div key={index} style={{
+                          padding: '1.5rem',
+                          border: `2px solid ${getRiskColor(risk.risk_level)}`,
+                          borderRadius: '0.75rem',
+                          background: risk.risk_level === 'high' ? '#FEF2F2' : '#FFFBEB'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <h4 style={{ 
+                              color: '#111827',
+                              fontSize: '1rem',
+                              fontWeight: '600',
+                              textTransform: 'capitalize'
+                            }}>
+                              {risk.cancer_type} Cancer Screening
+                            </h4>
+                            <div style={{
+                              background: getRiskColor(risk.risk_level),
+                              color: '#FFFFFF',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '600'
+                            }}>
+                              {risk.risk_percentage}% Risk
+                            </div>
+                          </div>
+                          <p style={{ 
+                            color: '#4B5563',
+                            fontSize: '0.875rem',
+                            marginBottom: '1rem'
+                          }}>
+                            {risk.recommendation}
+                          </p>
+                          <div style={{
+                            background: '#FFFFFF',
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            border: '1px solid #E5E7EB'
+                          }}>
+                            <h5 style={{ 
+                              color: '#111827',
+                              fontSize: '0.875rem',
+                              fontWeight: '600',
+                              marginBottom: '0.5rem'
+                            }}>
+                              Affected Genes:
+                            </h5>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              {risk.affected_genes.length > 0 ? risk.affected_genes.map((gene, geneIndex) => (
+                                <span key={geneIndex} style={{
+                                  background: getRiskColor(risk.risk_level),
+                                  color: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600'
+                                }}>
+                                  {gene}
+                                </span>
+                              )) : (
+                                <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                  No specific genes identified
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {genomicData.risk_findings.filter(r => r.risk_level === 'high' || r.risk_level === 'medium').length === 0 && (
+                        <div style={{ 
+                          padding: '2rem',
+                          textAlign: 'center',
+                          color: '#6B7280',
+                          fontSize: '0.875rem'
+                        }}>
+                          No high or medium risk findings requiring special screening recommendations.
+                          Standard population screening guidelines apply.
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         );
@@ -2737,7 +4060,9 @@ const ClinicalViewPage: React.FC = () => {
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'minmax(280px, 320px) 1fr', 
-            gap: '1.5rem' 
+            gap: '1.5rem',
+            maxWidth: '100%', // Ensure grid doesn't exceed container width
+            overflow: 'hidden' // Prevent grid from causing horizontal overflow
           }}>
             {/* Sidebar */}
             <div style={{
@@ -2799,8 +4124,7 @@ const ClinicalViewPage: React.FC = () => {
                   { id: 'analysis', label: 'Genomic Analysis' },
                   { id: 'variants', label: 'Variant Heatmap' },
                   { id: 'pathways', label: 'Pathway Analysis' },
-                  { id: 'clinical', label: 'Clinical Report' },
-                  { id: 'family', label: 'Family Analysis' }
+                  { id: 'clinical', label: 'Clinical Report' }
                 ].map(item => (
                   <div 
                     key={item.id}
@@ -2907,7 +4231,7 @@ const ClinicalViewPage: React.FC = () => {
                             e.currentTarget.style.borderColor = '#D1D5DB';
                           }}
                         />
-                        <AlertTooltip alert={alert} isVisible={hoveredAlert === index} />
+                                                 <AlertTooltip alert={alert} isVisible={hoveredAlert === index} />
                       </div>
                     </div>
                     <p style={{ fontSize: '0.75rem', opacity: 0.8, color: '#4B5563' }}>{alert.desc}</p>
@@ -2928,7 +4252,9 @@ const ClinicalViewPage: React.FC = () => {
               borderRadius: '0.75rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               border: '1px solid #E5E7EB',
-              minHeight: '600px'
+              minHeight: '600px',
+              overflow: 'hidden', // Prevent horizontal overflow
+              width: '100%' // Ensure it doesn't exceed available width
             }}>
               {renderTabContent()}
             </div>

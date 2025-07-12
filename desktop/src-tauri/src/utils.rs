@@ -17,6 +17,8 @@ use log::{info, error, debug};
 /// 
 /// # Example
 /// ```rust
+/// use app_lib::utils::execute_python;
+/// 
 /// let result = execute_python("fastq_to_vcf_pipeline", &["--help"]);
 /// match result {
 ///     Ok(output) => println!("Success: {}", String::from_utf8_lossy(&output.stdout)),

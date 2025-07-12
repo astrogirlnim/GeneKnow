@@ -2,12 +2,12 @@
 File input validation node.
 Validates uploaded FASTQ/BAM/VCF/MAF files and extracts metadata.
 """
+
 import os
 import gzip
 import logging
 from datetime import datetime
 from typing import Dict, Any
-from Bio import SeqIO
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
 import pysam
 
@@ -26,8 +26,8 @@ def validate_fastq(file_path: str) -> Dict[str, Any]:
     """
     metadata = {
         "format": "FASTQ",
-        "compression": "gzip" if file_path.endswith('.gz') else "none",
-        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+        "compression": "gzip" if file_path.endswith(".gz") else "none",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
     }
 
     # Sample the file to get read statistics
@@ -37,10 +37,10 @@ def validate_fastq(file_path: str) -> Dict[str, Any]:
 
     try:
         # Open file with appropriate handler
-        if file_path.endswith('.gz'):
-            handle = gzip.open(file_path, 'rt')
+        if file_path.endswith(".gz"):
+            handle = gzip.open(file_path, "rt")
         else:
-            handle = open(file_path, 'r')
+            handle = open(file_path, "r")
 
         # Use FastqGeneralIterator for efficient parsing
         for title, seq, qual in FastqGeneralIterator(handle):
@@ -70,7 +70,7 @@ def validate_fastq(file_path: str) -> Dict[str, Any]:
         # Estimate total reads if we sampled
         if read_count >= 10000:
             # Estimate based on file size
-            sample_size = handle.tell() if hasattr(handle, 'tell') else 0
+            sample_size = handle.tell() if hasattr(handle, "tell") else 0
             if sample_size > 0:
                 total_size = os.path.getsize(file_path)
                 metadata["estimated_read_count"] = int((total_size / sample_size) * read_count)
@@ -111,8 +111,8 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
         Dictionary with file metadata
     """
     metadata = {
-        "format": "BAM" if file_path.endswith('.bam') else "SAM",
-        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+        "format": "BAM" if file_path.endswith(".bam") else "SAM",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
     }
 
     try:
@@ -121,15 +121,15 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
 
         # Extract header information
         header = bamfile.header
-        if 'SQ' in header:
+        if "SQ" in header:
             # Get reference information
-            ref_sequences = header['SQ']
+            ref_sequences = header["SQ"]
             metadata["reference_sequences"] = len(ref_sequences)
 
             # Try to identify reference genome
             if ref_sequences:
-                first_seq = ref_sequences[0]['SN']
-                if first_seq.startswith('chr'):
+                first_seq = ref_sequences[0]["SN"]
+                if first_seq.startswith("chr"):
                     metadata["reference_genome"] = "hg38"  # Assumption based on naming
                 else:
                     metadata["reference_genome"] = "unknown"
@@ -155,7 +155,7 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
         # Estimate total if we only sampled
         if total_reads >= 100000:
             # Use index if available for better estimate
-            if os.path.exists(file_path + '.bai'):
+            if os.path.exists(file_path + ".bai"):
                 try:
                     idx_stats = bamfile.get_index_statistics()
                     total_estimate = sum(stat.total for stat in idx_stats)
@@ -166,7 +166,7 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
                         # Rough estimate
                         metadata["total_reads"] = total_reads * 10
                         metadata["mapped_reads"] = mapped_reads * 10
-                except:
+                except Exception:
                     metadata["total_reads"] = total_reads * 10
                     metadata["mapped_reads"] = mapped_reads * 10
             else:
@@ -176,7 +176,7 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
         else:
             metadata["total_reads"] = total_reads
             metadata["mapped_reads"] = mapped_reads
-            metadata["has_index"] = os.path.exists(file_path + '.bai')
+            metadata["has_index"] = os.path.exists(file_path + ".bai")
 
         # Calculate mapping rate
         if metadata["total_reads"] > 0:
@@ -185,8 +185,8 @@ def validate_bam(file_path: str) -> Dict[str, Any]:
             metadata["mapping_rate"] = 0.0
 
         # Check for read groups
-        if 'RG' in header:
-            metadata["read_groups"] = len(header['RG'])
+        if "RG" in header:
+            metadata["read_groups"] = len(header["RG"])
 
         bamfile.close()
 
@@ -208,16 +208,16 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
     """
     metadata = {
         "format": "MAF",
-        "compression": "gzip" if file_path.endswith('.gz') else "none",
-        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+        "compression": "gzip" if file_path.endswith(".gz") else "none",
+        "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
     }
 
     try:
         # Open file with appropriate handler
-        if file_path.endswith('.gz'):
-            f = gzip.open(file_path, 'rt')
+        if file_path.endswith(".gz"):
+            f = gzip.open(file_path, "rt")
         else:
-            f = open(file_path, 'r')
+            f = open(file_path, "r")
 
         with f:
             # Skip comment lines
@@ -225,7 +225,7 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
             line_count = 0
             for line in f:
                 line_count += 1
-                if not line.startswith('#'):
+                if not line.startswith("#"):
                     header_line = line.strip()
                     break
                 if line_count > 100:  # Safety check
@@ -235,9 +235,8 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
                 raise ValueError("No header found in MAF file")
 
             # Check for required MAF columns
-            columns = header_line.split('\t')
-            required_columns = ['Hugo_Symbol', 'Chromosome', 'Start_Position',
-                              'Reference_Allele', 'Tumor_Seq_Allele2']
+            columns = header_line.split("\t")
+            required_columns = ["Hugo_Symbol", "Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"]
 
             missing = [col for col in required_columns if col not in columns]
             if missing:
@@ -249,7 +248,7 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
             # Count total lines (variants)
             variant_count = 0
             for line in f:
-                if not line.startswith('#') and line.strip():
+                if not line.startswith("#") and line.strip():
                     variant_count += 1
 
             metadata["variant_count"] = variant_count
@@ -260,15 +259,12 @@ def validate_maf(file_path: str) -> Dict[str, Any]:
     return metadata
 
 
-
-
-
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate input file and extract metadata.
 
     Updates state with:
-    - file_type: 'fastq', 'bam', 'vcf', or 'maf'
+    - file_type: 'fastq', 'bam', 'vc', or 'maf'
     - file_metadata: size, format validation, read count estimate
     - errors: any validation failures
     """
@@ -288,29 +284,26 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Determine file type from extension
         file_lower = file_path.lower()
-        if file_lower.endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz')):
-            file_type = 'fastq'
-        elif file_lower.endswith(('.bam', '.sam')):
-            file_type = 'bam'
-        elif file_lower.endswith(('.vcf', '.vcf.gz')):
-            file_type = 'vcf'
-        elif file_lower.endswith(('.maf', '.maf.gz')):
-            file_type = 'maf'
+        if file_lower.endswith((".fastq", ".fq", ".fastq.gz", ".fq.gz")):
+            file_type = "fastq"
+        elif file_lower.endswith((".bam", ".sam")):
+            file_type = "bam"
+        elif file_lower.endswith((".vc", ".vcf.gz")):
+            file_type = "vc"
+        elif file_lower.endswith((".ma", ".maf.gz")):
+            file_type = "ma"
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
         # Validate based on file type
-        if file_type == 'fastq':
+        if file_type == "fastq":
             metadata = validate_fastq(file_path)
-        elif file_type == 'bam':
+        elif file_type == "bam":
             metadata = validate_bam(file_path)
-        elif file_type == 'vcf':
+        elif file_type == "vcf":
             # Basic VCF metadata
-            metadata = {
-                "format": "VCF",
-                "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
-            }
-        elif file_type == 'maf':
+            metadata = {"format": "VCF", "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)}
+        elif file_type == "ma":
             metadata = validate_maf(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
@@ -325,11 +318,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"File validation failed: {str(e)}")
-        state["errors"].append({
-            "node": "file_input",
-            "error": str(e),
-            "timestamp": datetime.now()
-        })
+        state["errors"].append({"node": "file_input", "error": str(e), "timestamp": datetime.now()})
         state["pipeline_status"] = "failed"
 
     return state

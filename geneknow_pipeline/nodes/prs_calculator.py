@@ -2,13 +2,13 @@
 Polygenic Risk Score (PRS) calculator node.
 Calculates weighted sum of small-effect SNPs associated with cancer risk.
 """
+
 import os
 import sqlite3
 import logging
 import math
 from datetime import datetime
 from typing import Dict, Any, List, Tuple, Optional
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,8 @@ def create_prs_database():
     cursor = conn.cursor()
 
     # Create table
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS prs_snps (
         snp_id TEXT PRIMARY KEY,
         chrom TEXT,
@@ -51,7 +52,8 @@ def create_prs_database():
         population TEXT,
         maf REAL
     )
-    """)
+    """
+    )
 
     # Add example PRS SNPs for different cancers
     example_snps = [
@@ -60,23 +62,23 @@ def create_prs_database():
         ("13:32911888:A>G", "13", 32911888, "A", "G", "G", 1.8, "BRCA", 1e-15, "PMID:28108588", "EUR", 0.0002),
         ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.15, "BRCA", 5e-8, "PMID:28108588", "EUR", 0.23),
         ("5:56031884:T>C", "5", 56031884, "T", "C", "C", 0.12, "BRCA", 3e-9, "PMID:28108588", "EUR", 0.31),
-
         # Ovarian cancer SNPs (some overlap with BRCA)
         ("17:43044295:G>A", "17", 43044295, "G", "A", "A", 3.1, "OVCA", 1e-25, "PMID:28346442", "EUR", 0.0001),
         ("9:22125503:G>C", "9", 22125503, "G", "C", "C", 0.25, "OVCA", 1e-10, "PMID:28346442", "EUR", 0.18),
-
         # Prostate cancer SNPs
         ("8:128081119:T>C", "8", 128081119, "T", "C", "C", 0.18, "PRAD", 2e-11, "PMID:29892016", "EUR", 0.42),
         ("17:47440843:A>G", "17", 47440843, "A", "G", "G", 0.22, "PRAD", 8e-13, "PMID:29892016", "EUR", 0.35),
-
         # Population-specific effect sizes for same SNP
         ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.08, "BRCA", 5e-6, "PMID:31427789", "AFR", 0.41),
         ("10:123352317:C>T", "10", 123352317, "C", "T", "T", 0.13, "BRCA", 2e-7, "PMID:31427789", "EAS", 0.19),
     ]
 
-    cursor.executemany("""
+    cursor.executemany(
+        """
     INSERT OR REPLACE INTO prs_snps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, example_snps)
+    """,
+        example_snps,
+    )
 
     conn.commit()
     conn.close()
@@ -85,7 +87,7 @@ def create_prs_database():
 
 def normalize_chromosome(chrom: str) -> str:
     """Normalize chromosome format."""
-    if chrom.startswith('chr'):
+    if chrom.startswith("chr"):
         return chrom[3:]
     return chrom
 
@@ -133,8 +135,9 @@ def infer_genotype(variant: Dict[str, Any], maf: Optional[float] = None) -> Tupl
     return (1, "default_heterozygous")
 
 
-def query_prs_database(chrom: str, pos: int, ref: str, alt: str,
-                      cancer_type: Optional[str] = None, population: str = "EUR") -> List[Dict[str, Any]]:
+def query_prs_database(
+    chrom: str, pos: int, ref: str, alt: str, cancer_type: Optional[str] = None, population: str = "EUR"
+) -> List[Dict[str, Any]]:
     """Query PRS database for effect sizes."""
     if not os.path.exists(PRS_DB_PATH):
         create_prs_database()
@@ -164,22 +167,23 @@ def query_prs_database(chrom: str, pos: int, ref: str, alt: str,
         for row in cursor.fetchall():
             # Check if ref/alt match (considering strand flips)
             db_ref, db_alt = row[2], row[3]
-            if (ref == db_ref and alt == db_alt) or \
-               (ref == db_alt and alt == db_ref):  # Strand flip
+            if (ref == db_ref and alt == db_alt) or (ref == db_alt and alt == db_ref):  # Strand flip
 
-                results.append({
-                    "chrom": row[0],
-                    "pos": row[1],
-                    "ref": row[2],
-                    "alt": row[3],
-                    "risk_allele": row[4],
-                    "effect_size": row[5],
-                    "cancer_type": row[6],
-                    "p_value": row[7],
-                    "source_study": row[8],
-                    "population": row[9],
-                    "maf": row[10]
-                })
+                results.append(
+                    {
+                        "chrom": row[0],
+                        "pos": row[1],
+                        "re": row[2],
+                        "alt": row[3],
+                        "risk_allele": row[4],
+                        "effect_size": row[5],
+                        "cancer_type": row[6],
+                        "p_value": row[7],
+                        "source_study": row[8],
+                        "population": row[9],
+                        "maf": row[10],
+                    }
+                )
 
     finally:
         conn.close()
@@ -187,19 +191,22 @@ def query_prs_database(chrom: str, pos: int, ref: str, alt: str,
     return results
 
 
-def calculate_cancer_specific_prs(variants: List[Dict[str, Any]],
-                                 cancer_type: str,
-                                 population: str = "EUR") -> Dict[str, Any]:
+def calculate_cancer_specific_prs(
+    variants: List[Dict[str, Any]], cancer_type: str, population: str = "EUR"
+) -> Dict[str, Any]:
     """Calculate PRS for a specific cancer type."""
 
     # Get all PRS SNPs for this cancer type
     conn = sqlite3.connect(PRS_DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
     SELECT COUNT(*) FROM prs_snps
     WHERE cancer_type = ? AND population = ?
-    """, (cancer_type, population))
+    """,
+        (cancer_type, population),
+    )
 
     total_snps = cursor.fetchone()[0]
 
@@ -207,10 +214,13 @@ def calculate_cancer_specific_prs(variants: List[Dict[str, Any]],
     if total_snps == 0 and population != "EUR":
         logger.warning(f"No PRS data for {cancer_type} in {population}, using EUR")
         population = "EUR"
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT COUNT(*) FROM prs_snps
         WHERE cancer_type = ? AND population = ?
-        """, (cancer_type, population))
+        """,
+            (cancer_type, population),
+        )
         total_snps = cursor.fetchone()[0]
 
     conn.close()
@@ -223,32 +233,29 @@ def calculate_cancer_specific_prs(variants: List[Dict[str, Any]],
     for variant in variants:
         # Query for PRS effect
         prs_hits = query_prs_database(
-            variant["chrom"],
-            variant["pos"],
-            variant["ref"],
-            variant["alt"],
-            cancer_type,
-            population
+            variant["chrom"], variant["pos"], variant["re"], variant["alt"], cancer_type, population
         )
 
         for hit in prs_hits:
             # Determine number of risk alleles
-            num_risk_alleles, inference_method = infer_genotype(variant, hit["maf"])
+            num_risk_alleles, inference_method = infer_genotype(variant, hit["ma"])
 
             # Calculate contribution
             contribution = hit["effect_size"] * num_risk_alleles
             prs_sum += contribution
             matched_snps += 1
 
-            contributing_snps.append({
-                "variant_id": variant["variant_id"],
-                "effect_size": hit["effect_size"],
-                "risk_alleles": num_risk_alleles,
-                "contribution": contribution,
-                "inference_method": inference_method,
-                "p_value": hit["p_value"],
-                "source": hit["source_study"]
-            })
+            contributing_snps.append(
+                {
+                    "variant_id": variant["variant_id"],
+                    "effect_size": hit["effect_size"],
+                    "risk_alleles": num_risk_alleles,
+                    "contribution": contribution,
+                    "inference_method": inference_method,
+                    "p_value": hit["p_value"],
+                    "source": hit["source_study"],
+                }
+            )
 
     # Calculate coverage
     coverage = matched_snps / max(total_snps, 1)
@@ -292,7 +299,7 @@ def calculate_cancer_specific_prs(variants: List[Dict[str, Any]],
         "percentile": percentile,
         "risk_category": risk_category,
         "population": population,
-        "contributing_snps": contributing_snps
+        "contributing_snps": contributing_snps,
     }
 
 
@@ -323,11 +330,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         for cancer_type in SUPPORTED_CANCERS:
             logger.info(f"Calculating PRS for {cancer_type}")
 
-            result = calculate_cancer_specific_prs(
-                filtered_variants,
-                cancer_type,
-                patient_population
-            )
+            result = calculate_cancer_specific_prs(filtered_variants, cancer_type, patient_population)
 
             prs_results[cancer_type] = result
 
@@ -347,28 +350,24 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         prs_summary = {
             "high_risk_cancers": high_risk_cancers,
             "primary_concern": high_risk_cancers[0] if high_risk_cancers else None,
-            "overall_confidence": "high" if all(
-                r["confidence"] == "high" for r in prs_results.values()
-            ) else "moderate" if any(
-                r["confidence"] == "high" for r in prs_results.values()
-            ) else "low",
-            "limitations": []
+            "overall_confidence": (
+                "high"
+                if all(r["confidence"] == "high" for r in prs_results.values())
+                else "moderate" if any(r["confidence"] == "high" for r in prs_results.values()) else "low"
+            ),
+            "limitations": [],
         }
 
         # Add limitations
         for cancer_type, result in prs_results.items():
             if result["confidence"] == "low":
-                prs_summary["limitations"].append(
-                    f"Low SNP coverage for {cancer_type} PRS ({result['coverage']:.1%})"
-                )
+                prs_summary["limitations"].append(f"Low SNP coverage for {cancer_type} PRS ({result['coverage']:.1%})")
 
         if patient_population != "EUR":
-            prs_summary["limitations"].append(
-                f"PRS may be less accurate for {patient_population} population"
-            )
+            prs_summary["limitations"].append(f"PRS may be less accurate for {patient_population} population")
 
         # Log overall summary
-        logger.info(f"PRS calculation complete:")
+        logger.info("PRS calculation complete:")
         logger.info(f"  High-risk cancers: {', '.join(high_risk_cancers) or 'None'}")
         logger.info(f"  Overall confidence: {prs_summary['overall_confidence']}")
 
@@ -380,10 +379,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Note: completed_nodes is updated by the merge function for parallel nodes
 
         # Return only the keys this node updates
-        return {
-            "prs_results": prs_results,
-            "prs_summary": prs_summary
-        }
+        return {"prs_results": prs_results, "prs_summary": prs_summary}
 
     except Exception as e:
         logger.error(f"PRS calculation failed: {str(e)}")
@@ -391,13 +387,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Return error state updates
         return {
             "prs_results": {},
-            "prs_summary": {
-                "error": str(e),
-                "overall_confidence": "failed"
-            },
-            "errors": [{
-                "node": "prs_calculator",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
+            "prs_summary": {"error": str(e), "overall_confidence": "failed"},
+            "errors": [{"node": "prs_calculator", "error": str(e), "timestamp": datetime.now()}],
         }

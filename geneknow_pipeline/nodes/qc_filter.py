@@ -2,6 +2,7 @@
 Quality control filtering node.
 Filters variants based on quality metrics.
 """
+
 import logging
 from datetime import datetime
 from typing import Dict, Any, List
@@ -83,29 +84,18 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "passed_qc": passed_variants,
             "failed_qc": total_variants - passed_variants,
             "filter_rate_percent": filter_rate,
-            "thresholds": {
-                "qual": QUAL_THRESHOLD,
-                "depth": DEPTH_THRESHOLD,
-                "allele_freq": ALLELE_FREQ_THRESHOLD
-            }
+            "thresholds": {"qual": QUAL_THRESHOLD, "depth": DEPTH_THRESHOLD, "allele_freq": ALLELE_FREQ_THRESHOLD},
         }
 
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion
 
         # Return only the keys this node updates
-        return {
-            "filtered_variants": filtered_variants,
-            "file_metadata": file_metadata
-        }
+        return {"filtered_variants": filtered_variants, "file_metadata": file_metadata}
 
     except Exception as e:
         logger.error(f"QC filtering failed: {str(e)}")
         return {
-            "errors": [{
-                "node": "qc_filter",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }],
-            "pipeline_status": "failed"
+            "errors": [{"node": "qc_filter", "error": str(e), "timestamp": datetime.now()}],
+            "pipeline_status": "failed",
         }

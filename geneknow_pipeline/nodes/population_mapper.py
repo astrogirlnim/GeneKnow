@@ -2,6 +2,7 @@
 Population frequency mapper node.
 Compares variants against gnomAD/ClinVar population frequencies.
 """
+
 import os
 import sqlite3
 import logging
@@ -16,7 +17,7 @@ POP_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "population_variants
 
 def normalize_chromosome(chrom: str) -> str:
     """Normalize chromosome format (remove 'chr' prefix)."""
-    if chrom.startswith('chr'):
+    if chrom.startswith("chr"):
         return chrom[3:]
     return chrom
 
@@ -37,11 +38,14 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
         # Try multiple lookup strategies due to data inconsistencies
 
         # Strategy 1: Exact match with normalized chromosome
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT gene, gnomad_af, clinical_significance, is_pathogenic, consequence
         FROM population_variants
         WHERE chrom = ? AND pos = ? AND ref = ? AND alt = ?
-        """, (norm_chrom, pos, ref, alt))
+        """,
+            (norm_chrom, pos, ref, alt),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -52,16 +56,19 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
                 "is_pathogenic": row[3],
                 "consequence": row[4],
                 "in_population": True,
-                "lookup_method": "exact_match"
+                "lookup_method": "exact_match",
             }
 
         # Strategy 2: Position and gene match (since ref/alt might be 'na')
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT gene, gnomad_af, clinical_significance, is_pathogenic, consequence
         FROM population_variants
         WHERE chrom = ? AND pos = ? AND gene IS NOT NULL
         LIMIT 1
-        """, (norm_chrom, pos))
+        """,
+            (norm_chrom, pos),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -73,12 +80,13 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
                 "is_pathogenic": row[3],
                 "consequence": row[4],
                 "in_population": True,
-                "lookup_method": "position_match"
+                "lookup_method": "position_match",
             }
 
         # Strategy 3: Gene-based lookup for known cancer genes
         # Look for any variant in the same gene at nearby positions
-        cursor.execute("""
+        cursor.execute(
+            """
         SELECT gene, AVG(gnomad_af) as avg_af, clinical_significance, AVG(is_pathogenic) as avg_pathogenic, consequence
         FROM population_variants
         WHERE gene IN (
@@ -89,7 +97,9 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
         AND clinical_significance LIKE '%benign%'
         GROUP BY gene
         LIMIT 1
-        """, (norm_chrom, pos))
+        """,
+            (norm_chrom, pos),
+        )
 
         row = cursor.fetchone()
         if row:
@@ -101,7 +111,7 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
                 "is_pathogenic": int(row[3] > 0.5) if row[3] is not None else 0,
                 "consequence": row[4],
                 "in_population": True,
-                "lookup_method": "gene_vicinity_match"
+                "lookup_method": "gene_vicinity_match",
             }
 
         # Strategy 4: Not found - return default safe values
@@ -111,7 +121,7 @@ def query_population_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[
             "clinical_significance": "Not_in_database",
             "is_pathogenic": 0,
             "in_population": False,
-            "lookup_method": "not_found"
+            "lookup_method": "not_found",
         }
 
     finally:
@@ -123,7 +133,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
 
     # Start with population database info
     clinical_sig = pop_data.get("clinical_significance", "Unknown").lower()
-    is_pathogenic = pop_data.get("is_pathogenic", 0)
+    pop_data.get("is_pathogenic", 0)
     pop_freq = pop_data.get("population_frequency", 0)
 
     # Override based on variant characteristics
@@ -135,7 +145,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
             "final_clinical_significance": "Benign",
             "is_pathogenic": 0,
             "risk_weight": 0.1,  # Very low impact
-            "rationale": "Annotated as benign in population database"
+            "rationale": "Annotated as benign in population database",
         }
 
     # High frequency = likely benign
@@ -144,7 +154,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
             "final_clinical_significance": "Likely_benign_common",
             "is_pathogenic": 0,
             "risk_weight": 0.1,
-            "rationale": f"Common variant (AF={pop_freq:.3f})"
+            "rationale": f"Common variant (AF={pop_freq:.3f})",
         }
 
     # Synonymous variants are usually benign
@@ -153,7 +163,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
             "final_clinical_significance": "Likely_benign_synonymous",
             "is_pathogenic": 0,
             "risk_weight": 0.2,
-            "rationale": "Synonymous variant"
+            "rationale": "Synonymous variant",
         }
 
     # Pathogenic criteria
@@ -162,7 +172,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
             "final_clinical_significance": "Pathogenic",
             "is_pathogenic": 1,
             "risk_weight": 1.0,
-            "rationale": "Annotated as pathogenic"
+            "rationale": "Annotated as pathogenic",
         }
 
     # Rare missense variants
@@ -171,7 +181,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
             "final_clinical_significance": "Uncertain_significance",
             "is_pathogenic": 0,
             "risk_weight": 0.3,
-            "rationale": "Rare missense variant"
+            "rationale": "Rare missense variant",
         }
 
     # Default for unknown
@@ -179,7 +189,7 @@ def assess_clinical_significance(variant: Dict[str, Any], pop_data: Dict[str, An
         "final_clinical_significance": "Uncertain_significance",
         "is_pathogenic": 0,
         "risk_weight": 0.2,
-        "rationale": "Insufficient evidence"
+        "rationale": "Insufficient evidence",
     }
 
 
@@ -204,12 +214,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Process each variant
         for variant in filtered_variants:
             # Query population database
-            pop_data = query_population_database(
-                variant["chrom"],
-                variant["pos"],
-                variant["ref"],
-                variant["alt"]
-            )
+            pop_data = query_population_database(variant["chrom"], variant["pos"], variant["re"], variant["alt"])
 
             # Assess clinical significance
             clinical_assessment = assess_clinical_significance(variant, pop_data)
@@ -229,15 +234,21 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             if clinical_assessment["is_pathogenic"]:
                 pathogenic_variants.append(variant_id)
                 logger.warning(f"⚠️  Pathogenic variant: {variant_id} - {clinical_assessment['rationale']}")
-            elif clinical_assessment["final_clinical_significance"] in ["Benign", "Likely_benign_common", "Likely_benign_synonymous"]:
+            elif clinical_assessment["final_clinical_significance"] in [
+                "Benign",
+                "Likely_benign_common",
+                "Likely_benign_synonymous",
+            ]:
                 benign_variants.append(variant_id)
                 logger.info(f"✅ Benign variant: {variant_id} - {clinical_assessment['rationale']}")
             elif pop_data.get("population_frequency", 0) < 0.001:
                 rare_variants.append(variant_id)
-                logger.info(f"🔬 Rare variant: {variant_id} (AF: {pop_data.get('population_frequency', 0):.5f}) - {clinical_assessment['rationale']}")
+                logger.info(
+                    f"🔬 Rare variant: {variant_id} (AF: {pop_data.get('population_frequency', 0):.5f}) - {clinical_assessment['rationale']}"
+                )
 
         # Log summary
-        logger.info(f"Population mapping complete:")
+        logger.info("Population mapping complete:")
         logger.info(f"  Total variants: {len(filtered_variants)}")
         logger.info(f"  Benign variants: {len(benign_variants)}")
         logger.info(f"  Rare variants: {len(rare_variants)}")
@@ -249,15 +260,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "rare_variants": rare_variants,
             "pathogenic_variants": pathogenic_variants,
             "benign_variants": benign_variants,
-            "filtered_variants": filtered_variants  # Return updated variants
+            "filtered_variants": filtered_variants,  # Return updated variants
         }
 
     except Exception as e:
         logger.error(f"Population mapping failed: {str(e)}")
-        return {
-            "errors": [{
-                "node": "population_mapper",
-                "error": str(e),
-                "timestamp": datetime.now()
-            }]
-        }
+        return {"errors": [{"node": "population_mapper", "error": str(e), "timestamp": datetime.now()}]}
