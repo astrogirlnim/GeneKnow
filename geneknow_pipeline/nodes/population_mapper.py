@@ -221,7 +221,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         for variant in filtered_variants:
             # Query population database
             pop_data = query_population_database(
-                variant["chrom"], variant["pos"], variant["re"], variant["alt"]
+                variant["chrom"], variant["pos"], variant["ref"], variant["alt"]
             )
 
             # Assess clinical significance

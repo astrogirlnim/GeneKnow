@@ -71,7 +71,7 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                 variant = {
                     "chrom": chrom,
                     "pos": int(row.get("Start_Position", 0)),
-                    "re": str(row.get("Reference_Allele", "N")),
+                    "ref": str(row.get("Reference_Allele", "N")),
                     "alt": str(row.get("Tumor_Seq_Allele2", "N")),
                     "gene": str(row.get("Hugo_Symbol", "Unknown")),
                     "variant_id": f"{chrom}:{row.get('Start_Position')}:{row.get('Reference_Allele')}>{row.get('Tumor_Seq_Allele2')}",
@@ -99,7 +99,7 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                 }
 
                 # Only include variants that pass basic filters
-                if variant["re"] not in ["N", "-", ""] and variant["alt"] not in [
+                if variant["ref"] not in ["N", "-", ""] and variant["alt"] not in [
                     "N",
                     "-",
                     "",

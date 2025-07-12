@@ -265,7 +265,7 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
                 variant = {
                     "chrom": chrom.replace("chr", ""),  # Normalize chromosome format
                     "pos": pos,
-                    "re": ref if ref != "." else "na",
+                    "ref": ref if ref != "." else "na",
                     "alt": alt if alt != "." else "na",
                     "gene": gene_symbol,
                     "gnomad_a": gnomad_af,

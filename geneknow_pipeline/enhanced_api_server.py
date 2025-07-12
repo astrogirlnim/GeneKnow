@@ -87,6 +87,12 @@ print("Starting GeneKnow Enhanced API Server...", flush=True)
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
+
+# Configure Flask for large file uploads
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB
+app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp(prefix="geneknow_uploads_")
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 CORS(
     app, origins=["tauri://localhost", "http://localhost:*"]
 )  # Allow Tauri and local dev
@@ -115,9 +121,9 @@ class Config:
         ".fastq.gz",
         ".fq.gz",
         ".bam",
-        ".vc",
+        ".vcf",
         ".vcf.gz",
-        ".ma",
+        ".maf",
         ".maf.gz",
     }
     UPLOAD_FOLDER = tempfile.mkdtemp(prefix="geneknow_uploads_")
@@ -146,10 +152,10 @@ def get_file_type(filename: str) -> str:
         return "fastq"
     elif filename_lower.endswith(".bam"):
         return "bam"
-    elif filename_lower.endswith((".vc", ".vcf.gz")):
-        return "vc"
-    elif filename_lower.endswith((".ma", ".maf.gz")):
-        return "ma"
+    elif filename_lower.endswith((".vcf", ".vcf.gz")):
+        return "vcf"
+    elif filename_lower.endswith((".maf", ".maf.gz")):
+        return "maf"
     return "unknown"
 
 
@@ -489,13 +495,13 @@ def supported_formats():
                     "paired_end_support": False,
                 },
                 {
-                    "extension": ".vc",
+                    "extension": ".vcf",
                     "description": "Variant Call Format",
                     "compressed": [".vcf.gz"],
                     "paired_end_support": False,
                 },
                 {
-                    "extension": ".ma",
+                    "extension": ".maf",
                     "description": "Mutation Annotation Format",
                     "compressed": [".maf.gz"],
                     "paired_end_support": False,
@@ -507,7 +513,7 @@ def supported_formats():
 
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
-    """Upload a file for processing."""
+    """Upload a file for processing with streaming support for large files."""
     try:
         if "file" not in request.files:
             return jsonify({"error": "No file provided"}), 400
@@ -526,12 +532,37 @@ def upload_file():
                 400,
             )
 
-        # Save uploaded file
+        # Save uploaded file with streaming to handle large files
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_filename = f"{timestamp}_{filename}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
+        
+        # Stream the file to disk instead of loading into memory
+        logger.info(f"Starting streaming upload for {filename}")
+        bytes_written = 0
+        chunk_size = 64 * 1024  # 64KB chunks for better performance
+        
+        try:
+            with open(file_path, 'wb') as f:
+                while True:
+                    chunk = file.stream.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    bytes_written += len(chunk)
+                    
+                    # Log progress for very large files
+                    if bytes_written % (100 * 1024 * 1024) == 0:  # Every 100MB
+                        logger.info(f"Uploaded {bytes_written / (1024*1024):.1f}MB of {filename}")
+            
+            logger.info(f"Upload completed: {filename} ({bytes_written / (1024*1024):.1f}MB)")
+            
+        except Exception as e:
+            # Clean up partial file on error
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise e
 
         # Check file size
         file_size = os.path.getsize(file_path)

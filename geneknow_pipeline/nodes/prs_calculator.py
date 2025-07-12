@@ -312,7 +312,7 @@ def query_prs_database(
                     {
                         "chrom": row[0],
                         "pos": row[1],
-                        "re": row[2],
+                        "ref": row[2],
                         "alt": row[3],
                         "risk_allele": row[4],
                         "effect_size": row[5],
@@ -374,7 +374,7 @@ def calculate_cancer_specific_prs(
         prs_hits = query_prs_database(
             variant["chrom"],
             variant["pos"],
-            variant["re"],
+                            variant["ref"],
             variant["alt"],
             cancer_type,
             population,

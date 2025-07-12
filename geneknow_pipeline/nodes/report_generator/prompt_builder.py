@@ -100,12 +100,7 @@ Write exactly 2-3 detailed paragraphs for the Summary section that:
 OUTPUT FORMAT:
 Return ONLY the paragraph text. ABSOLUTELY NO section headers, bullets, markdown, or extra formatting. Start directly with the content text.
 
-EXAMPLE OUTPUT (high-risk case):
-This genomic risk assessment employed advanced variant calling algorithms followed by rigorous quality control filters, analyzing a total of {total_variants} genetic variants from {file_type} data. Of these, {qc_variants} variants passed QC thresholds including minimum read depth and allele frequency requirements, achieving a {qc_pass_rate:.1f}% pass rate. The complete analysis, incorporating TCGA database matching and machine learning risk modeling, was executed in {processing_time:.1f} seconds.
-
-The genetic profile reveals significantly elevated risks for {top_risks_text if high_risk_count > 0 else 'multiple cancer types'}, primarily driven by pathogenic variants in key oncogenes and high polygenic risk scores. Additional contributing factors include population-specific allele frequencies and functional impact predictions. These findings suggest {'a strong genetic predisposition' if high_risk_count > 0 else 'baseline risk levels'} that may influence management.
-
-Given these results, {'immediate genetic counseling is recommended' if high_risk_count > 0 else 'routine screening protocols are appropriate'} to discuss {'preventive strategies, enhanced screening protocols, and potential family implications' if high_risk_count > 0 else 'standard care recommendations and lifestyle factors'}.
+GENERATE YOUR OWN TEXT based on the actual input data provided above. Do not use template language or placeholders.
 """
 
         return prompt
@@ -182,10 +177,7 @@ OUTPUT FORMAT:
 Return ONLY the numbered list. Do not include section headers or extra formatting.
 Start directly with "1." for the first variant.
 
-EXAMPLE OUTPUT:
-1. TP53 c.742C>T (p.Arg248Trp) - Pathogenic missense variant in tumor suppressor gene TP53, associated with Li-Fraumeni syndrome and increased risk for multiple cancer types including breast (up to 85% lifetime risk) and sarcoma (up to 15% by age 45). This variant disrupts the DNA-binding domain and is well-established in ClinVar with strong evidence for pathogenicity.
-
-2. BRCA1 c.68_69delAG (p.Glu23Valfs*17) - Pathogenic frameshift variant causing premature truncation of BRCA1 protein. Associated with hereditary breast and ovarian cancer syndrome, conferring 70-80% lifetime breast cancer risk and 40-60% ovarian cancer risk. Variant frequency of 0.3% in tumor samples from TCGA database.
+GENERATE YOUR OWN NUMBERED LIST based on the actual variant data provided. Each entry should describe a real variant from the analysis, not example variants.
 """
 
         return prompt
@@ -343,11 +335,7 @@ Focus on:
 OUTPUT FORMAT:
 Return ONLY the bulleted list. Use "- " for bullets. Do not include section headers or extra formatting.
 
-EXAMPLE OUTPUT (high-risk case):
-- Genetic counseling is strongly recommended within 3-6 months to discuss these findings, review family history, and develop a personalized risk management plan. A certified genetic counselor can help interpret results and coordinate appropriate care.
-- Enhanced cancer screening protocols should be considered, including earlier initiation and increased frequency of mammography and colonoscopy based on identified risks. Discuss specific screening timelines with your healthcare provider.
-- Consider cascade testing for family members, particularly first-degree relatives, given the hereditary nature of some identified variants. This may help identify at-risk family members who could benefit from preventive measures.
-- Maintain comprehensive documentation of this genetic analysis for future healthcare decisions and ensure all providers have access to these results for informed care planning.
+GENERATE YOUR OWN RECOMMENDATIONS based on the actual risk levels and findings in the data. Do not use example recommendations.
 """
 
         return prompt
