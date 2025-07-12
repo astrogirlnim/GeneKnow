@@ -135,6 +135,7 @@ def merge_static_model_results(state: dict) -> dict:
     """
     # Track how many times this has been called
     call_count = state.get("_merge_call_count", 0) + 1
+    logger.info(f"🔍 MERGE DEBUG: merge_static_model_results called (call #{call_count})")
     logger.info(f"Merge static models called (call #{call_count})")
 
     # Check which nodes have completed by checking for their data
@@ -219,6 +220,7 @@ def merge_static_model_results(state: dict) -> dict:
     if state.get("pathway_enriched_variants"):
         base_variants = state["pathway_enriched_variants"]
         logger.info("Using pathway enriched variants as base")
+        logger.info("🚨 DEBUG: This message should appear immediately after pathway enriched variants as base")
     elif state.get("cadd_enriched_variants"):
         base_variants = state["cadd_enriched_variants"]
         logger.info("Using CADD enriched variants as base")
@@ -252,6 +254,29 @@ def merge_static_model_results(state: dict) -> dict:
         logger.info(
             f"Merged pathway_damage_assessment for {pathway_merged_count} variants"
         )
+
+    # If we used pathway_enriched_variants as base, we need to merge in CADD scores
+    # from cadd_enriched_variants since pathway variants don't have CADD scores
+    logger.info(f"🔍 CADD MERGE DEBUG: pathway_enriched_variants exists: {bool(state.get('pathway_enriched_variants'))}")
+    logger.info(f"🔍 CADD MERGE DEBUG: cadd_enriched_variants exists: {bool(state.get('cadd_enriched_variants'))}")
+    if state.get("pathway_enriched_variants") and state.get("cadd_enriched_variants"):
+        logger.info("🔍 CADD MERGE DEBUG: Starting CADD merge process")
+        cadd_merged_count = 0
+        cadd_enriched_variants = state["cadd_enriched_variants"]
+        logger.info(f"🔍 CADD MERGE DEBUG: Found {len(cadd_enriched_variants)} CADD enriched variants")
+        for cadd_variant in cadd_enriched_variants:
+            variant_id = cadd_variant.get(
+                "variant_id", f"{cadd_variant['chrom']}:{cadd_variant['pos']}"
+            )
+            if variant_id in variant_map:
+                # Merge CADD scores from cadd_enriched_variants
+                for cadd_field in ["cadd_phred", "cadd_raw", "cadd_risk_weight", "cadd_source"]:
+                    if cadd_field in cadd_variant:
+                        variant_map[variant_id][cadd_field] = cadd_variant[cadd_field]
+                        cadd_merged_count += 1
+        logger.info(f"Merged CADD scores for {cadd_merged_count // 4} variants")  # Divide by 4 since we merge 4 fields per variant
+    else:
+        logger.info("🔍 CADD MERGE DEBUG: Skipping CADD merge - conditions not met")
 
     # Check for pathway_damage_assessment presence after merge
     variants_with_pathway_damage = sum(

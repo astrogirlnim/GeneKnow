@@ -293,6 +293,12 @@ def _simple_risk_calculation(
     logger.warning("⚠️ Using simple risk calculation (ML fusion not available)")
     logger.info("This should only happen if ML fusion node failed or was skipped")
 
+    # DEBUG: Check what we received
+    logger.info(f"🔍 RISK DEBUG: Received {len(filtered_variants)} filtered variants")
+    if filtered_variants:
+        logger.info(f"🔍 RISK DEBUG: First variant keys: {list(filtered_variants[0].keys())}")
+        logger.info(f"🔍 RISK DEBUG: First variant: {filtered_variants[0]}")
+
     # Get PRS results to incorporate polygenic risk
     prs_results = state.get("prs_results", {})
     prs_summary = state.get("prs_summary", {})
@@ -322,6 +328,11 @@ def _simple_risk_calculation(
         "CBL": {"blood": 15},
         "EZH2": {"blood": 15},
         "STAT5B": {"blood": 20},  # Important for your test case
+        # Paraganglioma/Pheochromocytoma genes
+        "SDHB": {"blood": 40},  # Succinate dehydrogenase - paraganglioma/pheochromocytoma
+        "SDHD": {"blood": 35},  # Succinate dehydrogenase - paraganglioma/pheochromocytoma
+        "SDHC": {"blood": 30},  # Succinate dehydrogenase - paraganglioma/pheochromocytoma
+        "SDHA": {"blood": 25},  # Succinate dehydrogenase - paraganglioma/pheochromocytoma
         # Bone cancer genes
         "RB1": {"bone": 50},
         "EWSR1": {"bone": 45},
@@ -422,11 +433,28 @@ def _simple_risk_calculation(
         gene = variant.get("gene")
         if gene:
             gene_variants[gene].append(variant)
+    
+    logger.info(f"🔍 RISK DEBUG: Found {len(gene_variants)} unique genes in variants")
+    logger.info(f"🔍 RISK DEBUG: Genes found: {list(gene_variants.keys())}")
+    logger.info(f"🔍 RISK DEBUG: SDHB in gene_risks: {'SDHB' in gene_risks}")
+    logger.info(f"🔍 RISK DEBUG: gene_risks keys: {list(gene_risks.keys())[:10]}...")
+    
+    # Debug: Show structure of first variant
+    if filtered_variants:
+        first_variant = filtered_variants[0]
+        logger.info(f"🔍 RISK DEBUG: First variant keys: {list(first_variant.keys())}")
+        logger.info(f"🔍 RISK DEBUG: First variant gene: {first_variant.get('gene', 'NOT_FOUND')}")
+        logger.info(f"🔍 RISK DEBUG: First variant clinical_significance: {first_variant.get('clinical_significance', 'NOT_FOUND')}")
+        logger.info(f"🔍 RISK DEBUG: First variant is_pathogenic: {first_variant.get('is_pathogenic', 'NOT_FOUND')}")
+        logger.info(f"🔍 RISK DEBUG: First variant risk_weight: {first_variant.get('risk_weight', 'NOT_FOUND')}")
 
     for gene, variants in gene_variants.items():
+        logger.info(f"🔍 Checking gene: {gene} (variants: {len(variants)})")
         if gene not in gene_risks:
+            logger.info(f"⚠️ Gene {gene} not found in gene_risks dictionary")
             continue
 
+        logger.info(f"✅ Gene {gene} found in gene_risks: {gene_risks[gene]}")
         genes_hit.add(gene)
 
         # Find the most severe variant in this gene
@@ -461,11 +489,6 @@ def _simple_risk_calculation(
         for cancer, base_risk_increase in gene_risks[gene].items():
             # Apply clinical significance weighting
             adjusted_risk = base_risk_increase * risk_weight
-
-            # Additional dampening for high variant counts (tumor samples)
-            if variant_count > 100:
-                dampening = min(100 / variant_count, 1.0)
-                adjusted_risk *= dampening
 
             # Apply the risk increase
             risk_scores[cancer] = min(risk_scores[cancer] + adjusted_risk, 95.0)

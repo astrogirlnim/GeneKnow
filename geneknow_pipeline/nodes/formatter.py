@@ -145,33 +145,24 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         # Build comprehensive summary including mutation types
-        # Get variant counts from best available source
-        file_metadata = state.get("file_metadata", {})
-        qc_stats = file_metadata.get("qc_stats", {})
+        # SIMPLIFIED: Use filtered_variants as the source of truth
+        filtered_variants = state.get("filtered_variants", [])
+        variant_count = len(filtered_variants)
+        
+        # Get mutation type distribution if available
         mutation_type_dist = state.get("mutation_type_distribution")
         
         # Add debug logging to track data flow
         print(f"\n=== FORMATTER DEBUG ===")
         print(f"State keys: {list(state.keys())}")
-        print(f"file_metadata keys: {list(file_metadata.keys())}")
-        print(f"qc_stats: {qc_stats}")
+        print(f"filtered_variants length: {variant_count}")
         print(f"mutation_type_distribution: {mutation_type_dist}")
-        print(f"variant_count: {state.get('variant_count', 0)}")
-        print(f"filtered_variants length: {len(state.get('filtered_variants', []))}")
+        print(f"variant_count from state: {state.get('variant_count', 0)}")
         
-        # For total variants found: prefer file metadata, then mutation types, then state
-        if qc_stats and qc_stats.get("total_variants", 0) > 0:
-            total_variants_found = qc_stats.get("total_variants", 0)
-        elif mutation_type_dist and sum(mutation_type_dist.values()) > 0:
-            total_variants_found = sum(mutation_type_dist.values())
-        else:
-            total_variants_found = state.get("variant_count", 0)
-        
-        # For variants passed QC: prefer QC stats, then filtered_variants length
-        if qc_stats and "passed_qc" in qc_stats:
-            variants_passed_qc = qc_stats.get("passed_qc", 0)
-        else:
-            variants_passed_qc = len(state.get("filtered_variants", []))
+        # Use consistent logic: filtered_variants is the source of truth
+        # Since QC filtering is disabled, total_variants_found equals variants_passed_qc
+        total_variants_found = variant_count
+        variants_passed_qc = variant_count
         
         print(f"Calculated total_variants_found: {total_variants_found}")
         print(f"Calculated variants_passed_qc: {variants_passed_qc}")
