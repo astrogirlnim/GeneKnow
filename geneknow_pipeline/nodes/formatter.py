@@ -10,6 +10,49 @@ from typing import Dict, Any, List, Optional
 logger = logging.getLogger(__name__)
 
 
+def _ensure_structural_variants_format(structural_variants: List[Dict]) -> List[Dict]:
+    """Ensure all structural variants have the genes_affected field as an array"""
+    formatted_svs = []
+    
+    for sv in structural_variants:
+        # Create a copy to avoid modifying the original
+        formatted_sv = sv.copy()
+        
+        # Ensure genes_affected is always an array
+        if "genes_affected" not in formatted_sv:
+            # Try to extract genes from other fields
+            genes = []
+            
+            # Check various fields where genes might be stored
+            if "gene" in formatted_sv:
+                genes.append(formatted_sv["gene"])
+            elif "genes" in formatted_sv:
+                if isinstance(formatted_sv["genes"], list):
+                    genes.extend(formatted_sv["genes"])
+                else:
+                    genes.append(formatted_sv["genes"])
+            elif "fusion_name" in formatted_sv:
+                # For fusions, try to extract gene names from fusion name
+                fusion_name = formatted_sv["fusion_name"]
+                if "-" in fusion_name:
+                    genes.extend(fusion_name.split("-"))
+                else:
+                    genes.append(fusion_name)
+            
+            # If no genes found, use "Unknown"
+            if not genes:
+                genes = ["Unknown"]
+            
+            formatted_sv["genes_affected"] = genes
+        elif not isinstance(formatted_sv["genes_affected"], list):
+            # Ensure it's a list
+            formatted_sv["genes_affected"] = [formatted_sv["genes_affected"]]
+        
+        formatted_svs.append(formatted_sv)
+    
+    return formatted_svs
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Format all pipeline results into structured JSON.
@@ -445,7 +488,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "warnings": state.get("warnings", []),
             # Add all new analysis results
             "mutation_signatures": state.get("mutational_signatures", []),
-            "structural_variants": state.get("structural_variants", []),
+            "structural_variants": _ensure_structural_variants_format(state.get("structural_variants", [])),
             "copy_number_variants": state.get("copy_number_variants", []),
             "pathway_analysis": final_pathway_analysis,
             "pathway_summary": final_pathway_analysis.get("summary", {}) if final_pathway_analysis else {},
