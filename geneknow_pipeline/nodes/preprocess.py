@@ -162,7 +162,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         file_path = state["file_path"]
 
         # Check if input is MAF - pass to MAF parser
-        if file_type == "ma":
+        if file_type == "maf":
             logger.info("Input is MAF, passing to MAF parser")
             # Import and call MAF parser
             from . import maf_parser
@@ -171,7 +171,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             return maf_parser.process(state)
 
         # Check if input is VCF - load variants directly
-        if file_type == "vc":
+        if file_type == "vcf":
             logger.info("Input is VCF, loading variants directly")
             import vcf as pyvcf
 

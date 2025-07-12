@@ -360,17 +360,38 @@ def process(state: Dict) -> Dict:
         risk_scores = state.get("risk_scores", {})
         variants = state.get("variant_details", state.get("filtered_variants", []))
         
-        # First check direct state, then check structured_json
-        pathway_analysis = state.get("pathway_analysis")
-        if pathway_analysis is None:
-            structured_json = state.get("structured_json", {})
-            pathway_analysis = structured_json.get("pathway_analysis", {})
+        # Get pathway burden results directly (not pathway_analysis which hasn't been created yet)
+        pathway_burden_results = state.get("pathway_burden_results", {})
+        pathway_burden_summary = state.get("pathway_burden_summary", {})
         
-        if pathway_analysis is None:
-            pathway_analysis = {}
+        # Transform pathway burden results into disrupted pathways format
+        disrupted_pathways = []
+        if pathway_burden_results:
+            for pathway_name, burden_result in pathway_burden_results.items():
+                burden_score = burden_result.get("burden_score", 0)
+                
+                if burden_score > 0.1:  # Only include pathways with significant burden
+                    # Create mutations list from damaging genes
+                    mutations = []
+                    if burden_result.get("damaging_genes"):
+                        for gene in burden_result["damaging_genes"]:
+                            mutations.append({
+                                "gene": gene,
+                                "type": "missense",  # Default type, could be enhanced
+                                "effect": f"Damaging variant in {gene}"
+                            })
+                    
+                    disrupted_pathways.append({
+                        "name": pathway_name.replace("_", " ").title(),
+                        "pathway_id": pathway_name.upper(),  # Convert to uppercase for matching
+                        "significance": round(burden_score * 100, 1),  # Convert to percentage
+                        "affected_genes": burden_result.get("damaging_genes", []),
+                        "mutations": mutations,
+                        "description": burden_result.get("description", f"{pathway_name} pathway"),
+                        "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}"
+                    })
         
-        disrupted_pathways = pathway_analysis.get("disrupted_pathways", [])
-        state.get("survival_analysis", {})
+        survival_analysis = state.get("survival_analysis", {})
 
         # Generate screening recommendations
         screening_recs = generate_screening_recommendations(risk_scores)

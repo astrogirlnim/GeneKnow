@@ -288,10 +288,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             file_type = "fastq"
         elif file_lower.endswith((".bam", ".sam")):
             file_type = "bam"
-        elif file_lower.endswith((".vc", ".vcf.gz")):
-            file_type = "vc"
-        elif file_lower.endswith((".ma", ".maf.gz")):
-            file_type = "ma"
+        elif file_lower.endswith((".vcf", ".vcf.gz")):
+            file_type = "vcf"
+        elif file_lower.endswith((".maf", ".maf.gz")):
+            file_type = "maf"
         else:
             raise ValueError(f"Unsupported file type: {file_path}")
 
@@ -303,7 +303,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         elif file_type == "vcf":
             # Basic VCF metadata
             metadata = {"format": "VCF", "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)}
-        elif file_type == "ma":
+        elif file_type == "maf":
             metadata = validate_maf(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_path}")

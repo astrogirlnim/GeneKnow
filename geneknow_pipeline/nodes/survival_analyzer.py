@@ -203,16 +203,38 @@ def process(state: Dict) -> Dict:
         # Get variants and pathways
         variants = state.get("variant_details", state.get("filtered_variants", []))
         
-        # First check direct state, then check structured_json
-        pathway_analysis = state.get("pathway_analysis")
-        if pathway_analysis is None:
-            structured_json = state.get("structured_json", {})
-            pathway_analysis = structured_json.get("pathway_analysis", {})
+        # Get pathway burden results directly (not pathway_analysis which hasn't been created yet)
+        pathway_burden_results = state.get("pathway_burden_results", {})
+        pathway_burden_summary = state.get("pathway_burden_summary", {})
         
-        if pathway_analysis is None:
-            pathway_analysis = {}
+        # Transform pathway burden results into disrupted pathways format
+        disrupted_pathways = []
+        if pathway_burden_results:
+            for pathway_name, burden_result in pathway_burden_results.items():
+                burden_score = burden_result.get("burden_score", 0)
+                
+                if burden_score > 0.1:  # Only include pathways with significant burden
+                    # Create mutations list from damaging genes
+                    mutations = []
+                    if burden_result.get("damaging_genes"):
+                        for gene in burden_result["damaging_genes"]:
+                            mutations.append({
+                                "gene": gene,
+                                "type": "missense",  # Default type, could be enhanced
+                                "effect": f"Damaging variant in {gene}"
+                            })
+                    
+                    disrupted_pathways.append({
+                        "name": pathway_name.replace("_", " ").title(),
+                        "pathway_id": pathway_name.upper(),  # Convert to uppercase for matching
+                        "significance": round(burden_score * 100, 1),  # Convert to percentage
+                        "affected_genes": burden_result.get("damaging_genes", []),
+                        "mutations": mutations,
+                        "description": burden_result.get("description", f"{pathway_name} pathway"),
+                        "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}"
+                    })
         
-        disrupted_pathways = pathway_analysis.get("disrupted_pathways", [])
+        logger.info(f"Transformed {len(disrupted_pathways)} disrupted pathways from pathway burden results")
 
         # Get risk scores to determine relevant cancer types
         risk_scores = state.get("risk_scores", {})
@@ -228,7 +250,7 @@ def process(state: Dict) -> Dict:
 
         # Generate survival curves for each cancer type
         survival_curves = {}
-        time_points = np.linspace(0, 10, 50)  # 0 to 10 years
+        time_points = np.linspace(0, 10, 50)
 
         for cancer_type, risk_score in top_cancers:
             if cancer_type in BASE_SURVIVAL_RATES:
@@ -282,6 +304,43 @@ def process(state: Dict) -> Dict:
             },
             "methodology_note": "Survival estimates based on genomic features and published hazard ratios",
         }
+        
+        # Add frontend-compatible format
+        # Convert the first (highest risk) cancer type's survival curve to the expected format
+        if survival_curves and len(top_cancers) > 0:
+            highest_risk_cancer = top_cancers[0][0]
+            if highest_risk_cancer in survival_curves:
+                curve_data = survival_curves[highest_risk_cancer]
+                
+                # Create patient profile with estimated survival
+                patient_profile = {
+                    "estimated_survival": [],
+                    "risk_category": "High Risk" if top_cancers[0][1] > 50 else "Moderate Risk"
+                }
+                
+                # Create population average array
+                population_average = []
+                
+                # Convert time points to age-based survival data
+                base_age = 40  # Starting age for visualization
+                for i, time_point in enumerate(curve_data["time_points"]):
+                    age = base_age + int(time_point)
+                    
+                    # Patient survival data point
+                    patient_profile["estimated_survival"].append({
+                        "age": age,
+                        "probability": curve_data["patient_survival"][i]
+                    })
+                    
+                    # Population average data point
+                    population_average.append({
+                        "age": age,
+                        "probability": curve_data["population_survival"][i]
+                    })
+                
+                # Add frontend-compatible fields
+                survival_analysis["patient_profile"] = patient_profile
+                survival_analysis["population_average"] = population_average
 
         # Update state
         state["survival_analysis"] = survival_analysis
