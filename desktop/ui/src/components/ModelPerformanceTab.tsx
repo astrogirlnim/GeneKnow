@@ -357,7 +357,7 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
     
     const confidence = metrics.confidence_metrics || {};
     const variant = metrics.variant_metrics || {};
-    const integration = metrics.integration_metrics || {};
+    const integration = metrics.integration_metrics; // Use undefined instead of {} to maintain type safety
     const performance = metrics.performance_indicators || {};
     
     console.log('🏆 ModelPerformanceTab: Processing confidence metrics:', confidence);
@@ -587,25 +587,25 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
               }}>
                                  <MetricCard
                    title="PRS Confidence"
-                   value={(userMetrics.integration as any).prs_confidence ?? 'N/A'}
+                   value={userMetrics.integration?.prs_confidence ?? 'N/A'}
                    unit=""
                    description="Polygenic Risk Score confidence level based on SNP coverage and data quality. PRS combines many small genetic effects to estimate cancer risk. High confidence indicates good coverage of known risk variants. Low confidence suggests limited genetic information and results should be interpreted cautiously."
                  />
                  <MetricCard
                    title="High-Risk Cancers"
-                   value={(userMetrics.integration as any).prs_high_risk_cancers?.length ?? 0}
+                   value={userMetrics.integration?.prs_high_risk_cancers?.length ?? 0}
                    unit="types"
                    description="Number of cancer types where your polygenic risk score falls in the high-risk category (typically >95th percentile). These cancers show elevated genetic predisposition based on cumulative effects of multiple common variants. Enhanced screening may be recommended for these cancer types."
                  />
                  <MetricCard
                    title="Pathway Burden Score"
-                   value={(userMetrics.integration as any).pathway_burden_score?.toFixed(3) ?? 'N/A'}
+                   value={userMetrics.integration?.pathway_burden_score?.toFixed(3) ?? 'N/A'}
                    unit=""
                    description="Overall pathway disruption burden score representing the cumulative impact of genetic variants on biological pathways. Scores range from 0-1, where higher values indicate more pathway disruption. Values above 0.5 suggest significant pathway dysfunction that may contribute to cancer risk."
                  />
                  <MetricCard
                    title="High-Burden Pathways"
-                   value={(userMetrics.integration as any).high_burden_pathways?.length ?? 0}
+                   value={userMetrics.integration?.high_burden_pathways?.length ?? 0}
                    unit="pathways"
                    description="Number of biological pathways with high disruption burden from genetic variants. These pathways show significant dysfunction that may contribute to cancer development. Common high-burden pathways include DNA repair, cell cycle control, and tumor suppression. Multiple disrupted pathways indicate increased cancer risk."
                  />
