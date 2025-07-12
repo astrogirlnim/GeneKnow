@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import AnalysisDisclaimer from '../components/AnalysisDisclaimer';
 import type { PipelineResult, SHAPValidation } from '../api/geneknowPipeline';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -1411,6 +1412,9 @@ ${content}`;
               )}
             </div>
           )}
+          
+          {/* Analysis Disclaimer */}
+          <AnalysisDisclaimer />
         </div>
       </section>
     </Layout>
