@@ -237,8 +237,8 @@ img[src*="langgraph_pipeline"], img[src*="mermaid-07-12"] {
 /* Specific styling for the tall mermaid diagram */
 img[src*="mermaid-07-12"] {
     max-width: 80%;
-    max-height: 26cm;
-    margin: 6pt auto 10pt auto;
+    max-height: 23cm;
+    margin: 6pt auto 20pt auto;
     page-break-before: auto;
     page-break-after: avoid;
     object-fit: contain;
