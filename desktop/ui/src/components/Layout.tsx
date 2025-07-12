@@ -92,6 +92,16 @@ const Header = () => (
         onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
           Privacy First
         </Link>
+        <Link to="/settings" style={{ 
+          color: '#4B5563', 
+          textDecoration: 'none', 
+          transition: 'color 200ms ease',
+          fontWeight: '500'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
+        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
+          Settings
+        </Link>
       </nav>
     </div>
   </header>

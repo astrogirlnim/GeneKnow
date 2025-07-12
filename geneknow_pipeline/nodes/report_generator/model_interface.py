@@ -17,12 +17,15 @@ class OllamaBackend:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url
         self.available_models = []
+        # Use a session for connection pooling and better performance
+        self.session = requests.Session()
+        self.session.headers.update({'Content-Type': 'application/json'})
         self._check_availability()
 
     def _check_availability(self) -> bool:
         """Check if Ollama is running and get available models."""
         try:
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response = self.session.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 self.available_models = [
@@ -49,16 +52,16 @@ class OllamaBackend:
 
         # Priority order for medical/scientific writing
         priority_models = [
+            "llama3.1:8b",  # Updated to prefer 3.1
             "llama3",
-            "llama3:8b",
+            "llama3:8b", 
             "llama3:70b",
             "mistral",
             "mistral:7b",
             "codellama",
             "phi3",
-            "gemma",
+            "gemma"
         ]
-
         for model in priority_models:
             if model in self.available_models:
                 return model
@@ -66,22 +69,26 @@ class OllamaBackend:
         # Fall back to first available model
         return self.available_models[0]
 
-    def generate(
-        self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000
-    ) -> str:
-        """Generate text using Ollama."""
+    def generate(self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000) -> str:
+        """Generate text using Ollama with optimized settings."""
         try:
             payload = {
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
-                "options": {"temperature": temperature, "num_predict": max_tokens},
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                    "num_ctx": 4096,  # Increased context window
+                    "num_thread": 4,  # Optimize thread usage
+                }
             }
-
-            response = requests.post(
-                f"{self.base_url}/api/generate", json=payload, timeout=120
+            
+            response = self.session.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=180  # Increased timeout for parallel requests
             )
-
             if response.status_code == 200:
                 data = response.json()
                 return data.get("response", "")
@@ -104,11 +111,13 @@ class OllamaBackend:
                 "stream": True,
                 "options": {"temperature": temperature, "num_predict": max_tokens},
             }
-
-            response = requests.post(
-                f"{self.base_url}/api/generate", json=payload, stream=True, timeout=120
+            
+            response = self.session.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                stream=True,
+                timeout=120
             )
-
             if response.status_code == 200:
                 for line in response.iter_lines():
                     if line:

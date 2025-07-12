@@ -7,6 +7,8 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional, Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 from .config import load_config
 from .model_interface import ModelInterface
@@ -362,85 +364,125 @@ def _create_dashboard_report_sections(
     return sections
 
 
-def _generate_llm_content(
-    data: Dict[str, Any],
-    model_interface: ModelInterface,
-    prompt_builder: PromptBuilder,
-    stream_callback: Optional[Callable] = None,
-) -> str:
-    """Generate LLM-enhanced report content section by section."""
+def _generate_single_section(section_name: str, 
+                           data: Dict[str, Any],
+                           model_interface: ModelInterface,
+                           prompt_builder: PromptBuilder,
+                           stream_callback: Optional[Callable] = None) -> tuple[str, str]:
+    """Generate content for a single section. Returns (section_name, content)."""
+    
+    try:
+        if stream_callback:
+            stream_callback({
+                "section": section_name.lower().replace(" ", "_"),
+                "content": f"Generating {section_name} section...",
+                "total_length": 0
+            })
+        
+        # Get the appropriate prompt for this section
+        if section_name == "Summary":
+            prompt = prompt_builder.build_summary_section_prompt(data)
+        elif section_name == "Key Variants":
+            prompt = prompt_builder.build_key_variants_section_prompt(data)
+        elif section_name == "Risk Summary":
+            prompt = prompt_builder.build_risk_summary_section_prompt(data)
+        elif section_name == "Clinical Interpretation":
+            prompt = prompt_builder.build_clinical_interpretation_section_prompt(data)
+        elif section_name == "Recommendations":
+            prompt = prompt_builder.build_recommendations_section_prompt(data)
+        else:
+            return section_name, _get_fallback_section_content(section_name, data)
+        
+        # Generate content for this section
+        section_content = model_interface.generate(prompt, None)  # No streaming per section
+        
+        if section_content and section_content.strip():
+            content = section_content.strip()
+            logger.info(f"Generated {section_name} section: {len(content)} characters")
+            return section_name, content
+        else:
+            logger.warning(f"Empty content generated for {section_name} section, using fallback")
+            return section_name, _get_fallback_section_content(section_name, data)
+            
+    except Exception as e:
+        logger.error(f"Failed to generate {section_name} section: {e}")
+        return section_name, _get_fallback_section_content(section_name, data)
 
+
+def _generate_llm_content(data: Dict[str, Any], 
+                         model_interface: ModelInterface,
+                         prompt_builder: PromptBuilder,
+                         stream_callback: Optional[Callable] = None) -> str:
+    """Generate LLM-enhanced report content with configurable parallel section generation."""
+    
     try:
         # Check if we have any high-risk findings to report on
         high_risk_count = _count_high_risk_findings(data, prompt_builder.risk_threshold)
-
-        logger.info(
-            f"Generating LLM content for {high_risk_count} high-risk findings using section-by-section approach"
-        )
-
-        # Generate each section separately for maximum consistency
+        
+        # Get config from model_interface
+        config = model_interface.config
+        
+        # Define sections to generate
+        section_names = ["Summary", "Key Variants", "Risk Summary", "Clinical Interpretation", "Recommendations"]
         sections = {}
-        section_names = [
-            "Summary",
-            "Key Variants",
-            "Risk Summary",
-            "Clinical Interpretation",
-            "Recommendations",
-        ]
-
-        for section_name in section_names:
-            if stream_callback:
-                stream_callback(
-                    {
-                        "section": section_name.lower().replace(" ", "_"),
-                        "content": f"Generating {section_name} section...",
-                        "total_length": 0,
-                    }
-                )
-
-            try:
-                # Get the appropriate prompt for this section
-                if section_name == "Summary":
-                    prompt = prompt_builder.build_summary_section_prompt(data)
-                elif section_name == "Key Variants":
-                    prompt = prompt_builder.build_key_variants_section_prompt(data)
-                elif section_name == "Risk Summary":
-                    prompt = prompt_builder.build_risk_summary_section_prompt(data)
-                elif section_name == "Clinical Interpretation":
-                    prompt = (
-                        prompt_builder.build_clinical_interpretation_section_prompt(
-                            data
-                        )
+        
+        # Record start time for performance monitoring
+        start_time = time.time()
+        
+        if config.enable_parallel_generation and len(section_names) > 1:
+            logger.info(f"Generating LLM content for {high_risk_count} high-risk findings using parallel section generation (max workers: {config.max_parallel_workers})")
+            
+            # Generate sections in parallel using ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=min(len(section_names), config.max_parallel_workers)) as executor:
+                # Submit all section generation tasks
+                future_to_section = {
+                    executor.submit(_generate_single_section, section_name, data, model_interface, prompt_builder, stream_callback): section_name 
+                    for section_name in section_names
+                }
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_section):
+                    section_name = future_to_section[future]
+                    try:
+                        returned_section_name, content = future.result()
+                        sections[returned_section_name] = content
+                        
+                        if stream_callback:
+                            stream_callback({
+                                "section": returned_section_name.lower().replace(" ", "_"),
+                                "content": f"Completed {returned_section_name} section",
+                                "total_length": len(content)
+                            })
+                            
+                    except Exception as e:
+                        logger.error(f"Section generation failed for {section_name}: {e}")
+                        sections[section_name] = _get_fallback_section_content(section_name, data)
+        else:
+            # Sequential generation (fallback or disabled parallel processing)
+            logger.info(f"Generating LLM content for {high_risk_count} high-risk findings using sequential section generation")
+            
+            for section_name in section_names:
+                try:
+                    returned_section_name, content = _generate_single_section(
+                        section_name, data, model_interface, prompt_builder, stream_callback
                     )
-                elif section_name == "Recommendations":
-                    prompt = prompt_builder.build_recommendations_section_prompt(data)
-                else:
-                    continue
-
-                # Generate content for this section
-                section_content = model_interface.generate(
-                    prompt, None
-                )  # No streaming per section
-
-                if section_content:
-                    sections[section_name] = section_content.strip()
-                    logger.info(
-                        f"Generated {section_name} section: {len(section_content)} characters"
-                    )
-                else:
-                    logger.warning(
-                        f"Empty content generated for {section_name} section"
-                    )
-                    sections[section_name] = _get_fallback_section_content(
-                        section_name, data
-                    )
-
-            except Exception as e:
-                logger.error(f"Failed to generate {section_name} section: {e}")
-                sections[section_name] = _get_fallback_section_content(
-                    section_name, data
-                )
-
+                    sections[returned_section_name] = content
+                    
+                    if stream_callback:
+                        stream_callback({
+                            "section": returned_section_name.lower().replace(" ", "_"),
+                            "content": f"Completed {returned_section_name} section",
+                            "total_length": len(content)
+                        })
+                        
+                except Exception as e:
+                    logger.error(f"Section generation failed for {section_name}: {e}")
+                    sections[section_name] = _get_fallback_section_content(section_name, data)
+        
+        # Log performance improvement
+        generation_time = time.time() - start_time
+        generation_mode = "parallel" if config.enable_parallel_generation else "sequential"
+        logger.info(f"{generation_mode.capitalize()} section generation completed in {generation_time:.2f} seconds")
         # Combine all sections into the final report
         final_content = _combine_sections_into_report(sections)
 

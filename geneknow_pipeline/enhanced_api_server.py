@@ -752,6 +752,113 @@ def list_jobs():
         return jsonify({"total": len(job_list), "jobs": job_list})
 
 
+# Report Generator Configuration Endpoints
+
+@app.route('/api/report-generator/config', methods=['GET'])
+def get_report_config():
+    """Get current report generator configuration."""
+    try:
+        from nodes.report_generator.config import load_config
+        config = load_config()
+        
+        return jsonify({
+            'backend': config.backend.value,
+            'model_name': config.model_name,
+            'temperature': config.temperature,
+            'max_tokens': config.max_tokens,
+            'style': config.style.value,
+            'enable_streaming': config.enable_streaming,
+            'enable_parallel_generation': config.enable_parallel_generation,
+            'max_parallel_workers': config.max_parallel_workers,
+            'risk_threshold': config.risk_threshold,
+            'include_glossary': config.include_glossary,
+            'include_technical_appendix': config.include_technical_appendix,
+            'output_formats': config.output_formats
+        })
+    except Exception as e:
+        logger.error(f"Error loading report config: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/config', methods=['POST'])
+def save_report_config():
+    """Save report generator configuration."""
+    try:
+        from nodes.report_generator.config import save_config, ReportConfig, LLMBackend, ReportStyle
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate and convert backend
+        backend_str = data.get('backend', 'none')
+        try:
+            backend = LLMBackend(backend_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid backend: {backend_str}'}), 400
+        
+        # Validate and convert style
+        style_str = data.get('style', 'clinician')
+        try:
+            style = ReportStyle(style_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid style: {style_str}'}), 400
+        
+        # Create config object
+        config = ReportConfig(
+            backend=backend,
+            model_name=data.get('model_name'),
+            temperature=float(data.get('temperature', 0.3)),
+            max_tokens=int(data.get('max_tokens', 2000)),
+            style=style,
+            enable_streaming=bool(data.get('enable_streaming', True)),
+            enable_parallel_generation=bool(data.get('enable_parallel_generation', True)),
+            max_parallel_workers=int(data.get('max_parallel_workers', 5)),
+            risk_threshold=float(data.get('risk_threshold', 5.0)),
+            include_glossary=bool(data.get('include_glossary', True)),
+            include_technical_appendix=bool(data.get('include_technical_appendix', True)),
+            output_formats=data.get('output_formats', ['markdown'])
+        )
+        
+        # Save configuration
+        save_config(config)
+        
+        return jsonify({'message': 'Configuration saved successfully'})
+    
+    except Exception as e:
+        logger.error(f"Error saving report config: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/available-models', methods=['GET'])
+def get_available_models():
+    """Get available models and backend status."""
+    try:
+        from nodes.report_generator.model_interface import OllamaBackend, HuggingFaceBackend
+        
+        # Check Ollama
+        ollama = OllamaBackend()
+        ollama_available = ollama.is_available()
+        ollama_models = ollama.available_models if ollama_available else []
+        
+        # Check Hugging Face
+        hf = HuggingFaceBackend()
+        hf_available = hf.is_available()
+        hf_models = hf.available_models if hf_available else []
+        
+        return jsonify({
+            'status': {
+                'ollama': ollama_available,
+                'huggingface': hf_available
+            },
+            'models': {
+                'ollama': ollama_models,
+                'huggingface': hf_models
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"Error checking available models: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # WebSocket events for real-time updates
 
 
