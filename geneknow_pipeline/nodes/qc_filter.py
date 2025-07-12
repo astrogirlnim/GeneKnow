@@ -9,44 +9,26 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# QC Thresholds (from documentation)
-QUAL_THRESHOLD = 30.0
-DEPTH_THRESHOLD = 10
-ALLELE_FREQ_THRESHOLD = 0.01
+# QC Thresholds (very permissive for real-world VCF data like FreeBayes)
+QUAL_THRESHOLD = 1.0   # Very low threshold - FreeBayes can have low QUAL scores
+DEPTH_THRESHOLD = 1    # Very low threshold - accept almost any read depth
+ALLELE_FREQ_THRESHOLD = 0.0001  # Very low threshold - capture ultra-rare variants
 
 
 def apply_qc_filters(variants: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Apply QC filters to a list of variants.
+    
+    DISABLED: Returns all variants without filtering for real-world VCF compatibility.
 
     Args:
         variants: List of variant dictionaries
 
     Returns:
-        List of variants passing QC filters
+        List of variants passing QC filters (all variants)
     """
-    filtered_variants = []
-
-    for variant in variants:
-        # Apply QC filters
-        passed_qc = True
-
-        # Quality score filter
-        if variant.get("quality", 0) < QUAL_THRESHOLD:
-            passed_qc = False
-
-        # Depth filter
-        if variant.get("depth", 0) < DEPTH_THRESHOLD:
-            passed_qc = False
-
-        # Allele frequency filter
-        if variant.get("allele_freq", 0) < ALLELE_FREQ_THRESHOLD:
-            passed_qc = False
-
-        if passed_qc:
-            filtered_variants.append(variant)
-
-    return filtered_variants
+    # Return all variants without filtering
+    return variants
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -70,17 +52,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Use the shared apply_qc_filters function
         filtered_variants = apply_qc_filters(raw_variants)
 
-        # Calculate filtering stats
+        # Calculate filtering stats (QC filtering disabled)
         total_variants = len(raw_variants)
-        passed_variants = len(filtered_variants)
-        filter_rate = (
-            (total_variants - passed_variants) / total_variants * 100
-            if total_variants > 0
-            else 0
-        )
+        passed_variants = len(filtered_variants)  # Should be same as total_variants
+        filter_rate = 0.0  # No filtering applied
 
         logger.info(
-            f"QC filtering complete: {passed_variants}/{total_variants} passed ({filter_rate:.1f}% filtered)"
+            f"QC filtering complete: {passed_variants}/{total_variants} passed (QC filtering DISABLED)"
         )
 
         # Prepare metadata update

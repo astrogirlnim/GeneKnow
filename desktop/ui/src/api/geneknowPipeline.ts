@@ -132,66 +132,9 @@ export interface PipelineResult {
   risk_genes?: Record<string, string[]>; // Added - genes associated with each cancer type
   report_sections: Record<string, ReportSection>;
   processing_time_seconds: number;
-  enhanced_report_content?: Record<string, string>; // In-memory report content (markdown, html, txt)
-  report_generator_info?: {
-    report_id: string;
-    backend_used: string;
-    model_used?: string;
-    llm_enhanced: boolean;
-    generation_time: string;
-    high_risk_findings_count: number;
-    available_formats?: string[];
-    content_length?: number;
-    error?: string;
-  };
-  tcga_matches?: Record<string, unknown>; // Added - TCGA variant matching data
-  cadd_stats?: {
-    variants_scored: number;
-    mean_phred: number;
-    max_phred: number;
-    variants_gt20: number;
-    variants_in_cancer_genes: number;
-  };
-  // Pathway burden analysis results
-  pathway_burden_results?: Record<string, {
-    pathway_name: string;
-    description: string;
-    total_variants: number;
-    damaging_variants: number;
-    burden_score: number;
-    raw_burden: number;
-    risk_level: string;
-    genes_in_pathway: number;
-    genes_with_variants: number;
-    genes_with_damaging: number;
-    contributing_genes: string[];
-    damaging_genes: string[];
-    multi_hit_genes: string[];
-    top_variant?: {
-      variant_id: string;
-      gene: string;
-      consequence: string;
-      damage_score: number;
-      cadd_phred: number;
-      clinical_significance: string;
-    };
-    gene_variant_counts: Record<string, number>;
-    gene_damaging_counts: Record<string, number>;
-    pathway_weight: number;
-    cancer_relevance: number;
-  }>;
-  pathway_burden_summary?: {
-    overall_burden_score: number;
-    high_burden_pathways: string[];
-    moderate_burden_pathways: string[];
-    primary_concern: string;
-    total_damaging_variants: number;
-    total_variants: number;
-    pathways_analyzed: number;
-    multi_pathway_genes: Record<string, string[]>;
-    pathway_crosstalk: boolean;
-  };
   structured_json?: {
+    shap_validation?: SHAPValidation;
+    patient_data?: Record<string, unknown>;
     // Summary statistics
     summary?: {
       total_variants_found: number;
@@ -204,6 +147,7 @@ export interface PipelineResult {
         structural: number;
       };
     };
+    risk_assessment?: Record<string, unknown>;
     // Variant details with transformations
     variant_details?: Array<{
       gene: string;
@@ -228,6 +172,8 @@ export interface PipelineResult {
         effect: string;
       };
     }>;
+    quality_control?: Record<string, unknown>;
+    tcga_summary?: Record<string, unknown>;
     // Structural variants
     structural_variants?: Array<{
       type: string;
@@ -295,7 +241,6 @@ export interface PipelineResult {
       cancer_gene_variants: number;
       description: string;
     };
-    shap_validation?: SHAPValidation;
     metrics?: {
       timestamp: string;
       pipeline_version: string;
@@ -374,7 +319,68 @@ export interface PipelineResult {
       };
       validation_status: boolean;
     };
+    warnings?: Record<string, unknown>;
+    report_metadata?: Record<string, unknown>;
     [key: string]: unknown;
+  };
+  enhanced_report_content?: Record<string, string>; // In-memory report content (markdown, html, txt)
+  report_generator_info?: {
+    report_id: string;
+    backend_used: string;
+    model_used?: string;
+    llm_enhanced: boolean;
+    generation_time: string;
+    high_risk_findings_count: number;
+    available_formats?: string[];
+    content_length?: number;
+    error?: string;
+  };
+  tcga_matches?: Record<string, unknown>; // Added - TCGA variant matching data
+  cadd_stats?: {
+    variants_scored: number;
+    mean_phred: number;
+    max_phred: number;
+    variants_gt20: number;
+    variants_in_cancer_genes: number;
+  };
+  // Pathway burden analysis results
+  pathway_burden_results?: Record<string, {
+    pathway_name: string;
+    description: string;
+    total_variants: number;
+    damaging_variants: number;
+    burden_score: number;
+    raw_burden: number;
+    risk_level: string;
+    genes_in_pathway: number;
+    genes_with_variants: number;
+    genes_with_damaging: number;
+    contributing_genes: string[];
+    damaging_genes: string[];
+    multi_hit_genes: string[];
+    top_variant?: {
+      variant_id: string;
+      gene: string;
+      consequence: string;
+      damage_score: number;
+      cadd_phred: number;
+      clinical_significance: string;
+    };
+    gene_variant_counts: Record<string, number>;
+    gene_damaging_counts: Record<string, number>;
+    pathway_weight: number;
+    cancer_relevance: number;
+  }>;
+  pathway_burden_summary?: {
+    overall_burden_score: number;
+    high_burden_pathways: string[];
+    moderate_burden_pathways: string[];
+    primary_concern: string;
+    total_damaging_variants: number;
+    total_variants: number;
+    pathways_analyzed: number;
+    multi_pathway_genes: Record<string, string[]>;
+    pathway_crosstalk: boolean;
   };
   variants?: Array<{
     gene: string;

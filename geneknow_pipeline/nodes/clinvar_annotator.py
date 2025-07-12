@@ -645,7 +645,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Query ClinVar database
             clinvar_data = query_clinvar_database(
-                variant["chrom"], variant["pos"], variant["re"], variant["alt"]
+                variant["chrom"], variant["pos"], variant["ref"], variant["alt"]
             )
 
             # Calculate clinical risk score

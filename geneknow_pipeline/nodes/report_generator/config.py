@@ -13,11 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class LLMBackend(Enum):
-    """Supported LLM backends."""
+    """Available LLM backends."""
 
     OLLAMA = "ollama"
-    HUGGINGFACE = "huggingface"
-    NONE = "none"  # Fallback mode
+    NONE = "none"
 
 
 class ReportStyle(Enum):
@@ -45,7 +44,10 @@ class ReportConfig:
     include_glossary: bool = True
     include_technical_appendix: bool = True
     risk_threshold: float = 5.0  # Only include >5% risk findings
-
+    
+    # Performance Configuration
+    enable_parallel_generation: bool = True
+    max_parallel_workers: int = 5  # Maximum number of parallel section generators
     # Fallback Configuration
     fallback_mode_indicator: str = "Generated without LLM assistance"
     dev_mode_indicator: str = "NON-LLM MODE"
@@ -139,6 +141,8 @@ def save_config(config: ReportConfig, config_path: Optional[str] = None) -> None
         "include_glossary": config.include_glossary,
         "include_technical_appendix": config.include_technical_appendix,
         "risk_threshold": config.risk_threshold,
+        "enable_parallel_generation": config.enable_parallel_generation,
+        "max_parallel_workers": config.max_parallel_workers,
         "fallback_mode_indicator": config.fallback_mode_indicator,
         "dev_mode_indicator": config.dev_mode_indicator,
     }
@@ -158,7 +162,7 @@ def save_config(config: ReportConfig, config_path: Optional[str] = None) -> None
 # Example config.yaml structure for reference
 EXAMPLE_CONFIG = """
 report_generator:
-  backend: "ollama"  # ollama, huggingface, or none
+  backend: "ollama"  # ollama or none
   model_name: "llama3"  # null for auto-detect
   temperature: 0.3
   max_tokens: 2000
@@ -168,6 +172,8 @@ report_generator:
   include_glossary: true
   include_technical_appendix: true
   risk_threshold: 5.0
+  enable_parallel_generation: true
+  max_parallel_workers: 5
   fallback_mode_indicator: "Generated without LLM assistance"
   dev_mode_indicator: "NON-LLM MODE"
 """

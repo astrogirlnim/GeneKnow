@@ -5,8 +5,11 @@ Replaces the existing report_writer.process function with LLM-enhanced report ge
 
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional, Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 from .config import load_config
 from .model_interface import ModelInterface
@@ -21,7 +24,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     Generate enhanced genomic risk assessment reports.
 
     This function replaces the original report_writer.process and generates
-    professional clinical reports using LLM enhancement when available,
+    professional reports using LLM enhancement when available,
     with intelligent fallback to template-based generation.
 
     Args:
@@ -32,6 +35,30 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     logger.info("Starting enhanced report generation")
 
+    # Add debug logging to see what data we receive
+    print(f"\n=== REPORT GENERATOR DEBUG ===")
+    print(f"State keys: {list(state.keys())}")
+    
+    # Check if structured_json exists and what it contains
+    structured_json = state.get("structured_json")
+    if structured_json:
+        print(f"structured_json keys: {list(structured_json.keys())}")
+        summary = structured_json.get("summary", {})
+        print(f"structured_json summary: {summary}")
+    else:
+        print("No structured_json found in state")
+        
+    # Check raw state data
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    mutation_type_dist = state.get("mutation_type_distribution")
+    
+    print(f"Raw state - file_metadata keys: {list(file_metadata.keys())}")
+    print(f"Raw state - qc_stats: {qc_stats}")
+    print(f"Raw state - mutation_type_distribution: {mutation_type_dist}")
+    print(f"Raw state - variant_count: {state.get('variant_count', 0)}")
+    print(f"=== END REPORT GENERATOR DEBUG ===\n")
+
     try:
         # Load configuration
         config = load_config()
@@ -40,7 +67,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         # Get or create structured JSON data
-        structured_json = state.get("structured_json")
         if not structured_json:
             logger.warning("No structured_json found, creating basic structure")
             structured_json = _create_basic_structured_json(state)
@@ -152,8 +178,48 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
+def _get_total_variants_count(state: Dict[str, Any]) -> int:
+    """Get total variant count, preferring file metadata if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer file metadata first
+    if qc_stats and qc_stats.get("total_variants", 0) > 0:
+        return qc_stats.get("total_variants", 0)
+    
+    # Fallback to mutation type distribution
+    mutation_type_dist = state.get("mutation_type_distribution")
+    if mutation_type_dist and sum(mutation_type_dist.values()) > 0:
+        return sum(mutation_type_dist.values())
+    
+    # Final fallback to state
+    return state.get("variant_count", 0)
+
+
+def _get_variants_passed_qc_count(state: Dict[str, Any]) -> int:
+    """Get variants passed QC count, preferring QC stats if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer QC stats
+    if qc_stats and "passed_qc" in qc_stats:
+        return qc_stats.get("passed_qc", 0)
+    
+    # Fallback to filtered_variants length
+    return len(state.get("filtered_variants", []))
+
+
 def _create_basic_structured_json(state: Dict[str, Any]) -> Dict[str, Any]:
     """Create basic structured JSON from pipeline state."""
+    
+    # Get counts using helper functions
+    total_variants = _get_total_variants_count(state)
+    passed_qc = _get_variants_passed_qc_count(state)
+    
+    print(f"\n=== _create_basic_structured_json DEBUG ===")
+    print(f"Calculated total_variants: {total_variants}")
+    print(f"Calculated passed_qc: {passed_qc}")
+    print(f"=== END _create_basic_structured_json DEBUG ===\n")
 
     return {
         "report_metadata": {
@@ -169,8 +235,8 @@ def _create_basic_structured_json(state: Dict[str, Any]) -> Dict[str, Any]:
             "file_metadata": state.get("file_metadata", {}),
         },
         "summary": {
-            "total_variants_found": state.get("variant_count", 0),
-            "variants_passed_qc": len(state.get("filtered_variants", [])),
+            "total_variants_found": total_variants,
+            "variants_passed_qc": passed_qc,
             "high_risk_findings": len(
                 [s for s in state.get("risk_scores", {}).values() if s >= 5.0]
             ),
@@ -346,7 +412,7 @@ def _create_dashboard_report_sections(
             "title": "Variant Analysis",
             "content": f"Key genetic variants identified in {', '.join(key_genes)}. Detailed pathogenicity assessment completed.",
             "severity": "medium",
-            "technical_details": f"CADD scores and clinical significance evaluated for {len(variant_details)} variants.",
+                            "technical_details": f"CADD scores and pathogenicity evaluated for {len(variant_details)} variants.",
         }
 
     # Report generation info
@@ -355,92 +421,181 @@ def _create_dashboard_report_sections(
         if backend_used != "none":
             sections["ai_enhancement"] = {
                 "title": "AI-Enhanced Analysis",
-                "content": f"Report generated using {backend_used} LLM with model {report_info.get('model_used', 'unknown')}. Enhanced clinical interpretations provided.",
+                "content": f"Report generated using {backend_used} LLM with model {report_info.get('model_used', 'unknown')}. Enhanced interpretations provided.",
                 "severity": "low",
             }
 
     return sections
 
 
-def _generate_llm_content(
-    data: Dict[str, Any],
-    model_interface: ModelInterface,
-    prompt_builder: PromptBuilder,
-    stream_callback: Optional[Callable] = None,
-) -> str:
-    """Generate LLM-enhanced report content section by section."""
+def _clean_llm_output(content: str, section_name: str) -> str:
+    """Clean LLM output to remove instruction artifacts and prompt text."""
+    
+    # Remove common instruction phrases
+    instruction_patterns = [
+        r"^Here is the .* section content for.*?:\s*",
+        r"^Here is the .* section content:\s*",
+        r"^Generated content for.*?:\s*",
+        r"^Content for the .* section:\s*",
+        r"^The following is the .* section.*?:\s*",
+        r"^Below is the .* section.*?:\s*",
+        r"^\*\*.*Section.*\*\*\s*",
+        r"^#+ .*Section.*\s*",
+        r"^## .*\s*",  # Remove section headers that start with ##
+        r"^# .*\s*",   # Remove section headers that start with #
+        r"^OUTPUT:\s*",
+        r"^CONTENT:\s*",
+        r"^RESULT:\s*",
+        r"^RESPONSE:\s*",
+    ]
+    
+    # Apply cleaning patterns
+    cleaned_content = content
+    for pattern in instruction_patterns:
+        cleaned_content = re.sub(pattern, "", cleaned_content, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove section name headers that might be at the beginning
+    section_header_patterns = [
+        rf"^{re.escape(section_name)}\s*:?\s*",
+        rf"^\*\*{re.escape(section_name)}\*\*\s*:?\s*",
+        rf"^#{1,6}\s*{re.escape(section_name)}\s*:?\s*",
+    ]
+    
+    for pattern in section_header_patterns:
+        cleaned_content = re.sub(pattern, "", cleaned_content, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove any leading/trailing whitespace or newlines
+    cleaned_content = cleaned_content.strip()
+    
+    # If content is significantly reduced, log a warning
+    if len(cleaned_content) < len(content) * 0.5:
+        logger.warning(f"Significant content reduction after cleaning {section_name}: {len(content)} -> {len(cleaned_content)} characters")
+    
+    return cleaned_content
 
+
+def _generate_single_section(section_name: str, 
+                           data: Dict[str, Any],
+                           model_interface: ModelInterface,
+                           prompt_builder: PromptBuilder,
+                           stream_callback: Optional[Callable] = None) -> tuple[str, str]:
+    """Generate content for a single section. Returns (section_name, content)."""
+    
+    try:
+        if stream_callback:
+            stream_callback({
+                "section": section_name.lower().replace(" ", "_"),
+                "content": f"Generating {section_name} section...",
+                "total_length": 0
+            })
+        
+        # Get the appropriate prompt for this section
+        if section_name == "Summary":
+            prompt = prompt_builder.build_summary_section_prompt(data)
+        elif section_name == "Key Variants":
+            prompt = prompt_builder.build_key_variants_section_prompt(data)
+        elif section_name == "Risk Summary":
+            prompt = prompt_builder.build_risk_summary_section_prompt(data)
+        elif section_name == "Interpretation":
+            prompt = prompt_builder.build_clinical_interpretation_section_prompt(data)
+        elif section_name == "Recommendations":
+            prompt = prompt_builder.build_recommendations_section_prompt(data)
+        else:
+            logger.warning(f"Unknown section: {section_name}")
+            return section_name, f"Section '{section_name}' not implemented"
+        
+        # Generate content for this section
+        section_content = model_interface.generate(prompt, None)  # No streaming per section
+        
+        if section_content and section_content.strip():
+            content = section_content.strip()
+            # Clean up LLM output artifacts
+            content = _clean_llm_output(content, section_name)
+            logger.info(f"Generated {section_name} section: {len(content)} characters")
+            return section_name, content
+        else:
+            logger.warning(f"Empty content generated for {section_name} section, using fallback")
+            return section_name, _get_fallback_section_content(section_name, data)
+            
+    except Exception as e:
+        logger.error(f"Failed to generate {section_name} section: {e}")
+        return section_name, _get_fallback_section_content(section_name, data)
+
+
+def _generate_llm_content(data: Dict[str, Any], 
+                         model_interface: ModelInterface,
+                         prompt_builder: PromptBuilder,
+                         stream_callback: Optional[Callable] = None) -> str:
+    """Generate LLM-enhanced report content with configurable parallel section generation."""
+    
     try:
         # Check if we have any high-risk findings to report on
         high_risk_count = _count_high_risk_findings(data, prompt_builder.risk_threshold)
-
-        logger.info(
-            f"Generating LLM content for {high_risk_count} high-risk findings using section-by-section approach"
-        )
-
-        # Generate each section separately for maximum consistency
+        
+        # Get config from model_interface
+        config = model_interface.config
+        
+        # Define sections to generate
+        section_names = ["Summary", "Key Variants", "Risk Summary", "Interpretation", "Recommendations"]
         sections = {}
-        section_names = [
-            "Summary",
-            "Key Variants",
-            "Risk Summary",
-            "Clinical Interpretation",
-            "Recommendations",
-        ]
-
-        for section_name in section_names:
-            if stream_callback:
-                stream_callback(
-                    {
-                        "section": section_name.lower().replace(" ", "_"),
-                        "content": f"Generating {section_name} section...",
-                        "total_length": 0,
-                    }
-                )
-
-            try:
-                # Get the appropriate prompt for this section
-                if section_name == "Summary":
-                    prompt = prompt_builder.build_summary_section_prompt(data)
-                elif section_name == "Key Variants":
-                    prompt = prompt_builder.build_key_variants_section_prompt(data)
-                elif section_name == "Risk Summary":
-                    prompt = prompt_builder.build_risk_summary_section_prompt(data)
-                elif section_name == "Clinical Interpretation":
-                    prompt = (
-                        prompt_builder.build_clinical_interpretation_section_prompt(
-                            data
-                        )
+        
+        # Record start time for performance monitoring
+        start_time = time.time()
+        
+        if config.enable_parallel_generation and len(section_names) > 1:
+            logger.info(f"Generating LLM content for {high_risk_count} high-risk findings using parallel section generation (max workers: {config.max_parallel_workers})")
+            
+            # Generate sections in parallel using ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=min(len(section_names), config.max_parallel_workers)) as executor:
+                # Submit all section generation tasks
+                future_to_section = {
+                    executor.submit(_generate_single_section, section_name, data, model_interface, prompt_builder, stream_callback): section_name 
+                    for section_name in section_names
+                }
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_section):
+                    section_name = future_to_section[future]
+                    try:
+                        returned_section_name, content = future.result()
+                        sections[returned_section_name] = content
+                        
+                        if stream_callback:
+                            stream_callback({
+                                "section": returned_section_name.lower().replace(" ", "_"),
+                                "content": f"Completed {returned_section_name} section",
+                                "total_length": len(content)
+                            })
+                            
+                    except Exception as e:
+                        logger.error(f"Section generation failed for {section_name}: {e}")
+                        sections[section_name] = _get_fallback_section_content(section_name, data)
+        else:
+            # Sequential generation (fallback or disabled parallel processing)
+            logger.info(f"Generating LLM content for {high_risk_count} high-risk findings using sequential section generation")
+            
+            for section_name in section_names:
+                try:
+                    returned_section_name, content = _generate_single_section(
+                        section_name, data, model_interface, prompt_builder, stream_callback
                     )
-                elif section_name == "Recommendations":
-                    prompt = prompt_builder.build_recommendations_section_prompt(data)
-                else:
-                    continue
-
-                # Generate content for this section
-                section_content = model_interface.generate(
-                    prompt, None
-                )  # No streaming per section
-
-                if section_content:
-                    sections[section_name] = section_content.strip()
-                    logger.info(
-                        f"Generated {section_name} section: {len(section_content)} characters"
-                    )
-                else:
-                    logger.warning(
-                        f"Empty content generated for {section_name} section"
-                    )
-                    sections[section_name] = _get_fallback_section_content(
-                        section_name, data
-                    )
-
-            except Exception as e:
-                logger.error(f"Failed to generate {section_name} section: {e}")
-                sections[section_name] = _get_fallback_section_content(
-                    section_name, data
-                )
-
+                    sections[returned_section_name] = content
+                    
+                    if stream_callback:
+                        stream_callback({
+                            "section": returned_section_name.lower().replace(" ", "_"),
+                            "content": f"Completed {returned_section_name} section",
+                            "total_length": len(content)
+                        })
+                        
+                except Exception as e:
+                    logger.error(f"Section generation failed for {section_name}: {e}")
+                    sections[section_name] = _get_fallback_section_content(section_name, data)
+        
+        # Log performance improvement
+        generation_time = time.time() - start_time
+        generation_mode = "parallel" if config.enable_parallel_generation else "sequential"
+        logger.info(f"{generation_mode.capitalize()} section generation completed in {generation_time:.2f} seconds")
         # Combine all sections into the final report
         final_content = _combine_sections_into_report(sections)
 
@@ -466,14 +621,14 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
 
     if section_name == "Summary":
         summary = data.get("summary", {})
-        return f"This genomic risk assessment analyzed {summary.get('total_variants_found', 0)} genetic variants, with {summary.get('variants_passed_qc', 0)} variants passing quality control filters. The analysis completed successfully with results available for clinical review."
+        return f"This genomic risk assessment analyzed {summary.get('total_variants_found', 0)} genetic variants, with {summary.get('variants_passed_qc', 0)} variants passing quality control filters. The analysis completed successfully with results available for review."
 
     elif section_name == "Key Variants":
         variant_details = data.get("variant_details", [])
         if not variant_details:
             return "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
         else:
-            return f"Analysis identified {len(variant_details)} variants for review. Detailed variant interpretation requires clinical genetics expertise."
+            return f"Analysis identified {len(variant_details)} variants for review. Detailed variant interpretation requires genetics expertise."
 
     elif section_name == "Risk Summary":
         risk_assessment = data.get("risk_assessment", {})
@@ -495,14 +650,14 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
 
         high_risk_count = sum(1 for score in scores.values() if score > 5.0)
         if high_risk_count > 0:
-            table += "\n\nRisks above 5% are considered elevated and warrant further clinical attention."
+            table += "\n\nRisks above 5% are considered elevated and warrant further attention."
         else:
             table += "\n\nAll risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
 
         return table
 
-    elif section_name == "Clinical Interpretation":
-        return "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
+    elif section_name == "Interpretation":
+        return "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and guidelines. These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
 
     elif section_name == "Recommendations":
         risk_assessment = data.get("risk_assessment", {})
@@ -536,10 +691,10 @@ def _combine_sections_into_report(sections: Dict[str, str]) -> str:
     if "Risk Summary" in sections:
         report_parts.append(f"**Risk Summary**\n\n{sections['Risk Summary']}")
 
-    # Clinical Interpretation section
-    if "Clinical Interpretation" in sections:
+    # Interpretation section
+    if "Interpretation" in sections:
         report_parts.append(
-            f"**Clinical Interpretation**\n\n{sections['Clinical Interpretation']}"
+            f"**Interpretation**\n\n{sections['Interpretation']}"
         )
 
     # Recommendations section

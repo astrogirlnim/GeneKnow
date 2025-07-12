@@ -189,15 +189,25 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         if file_type == "vcf":
             logger.info("Input is VCF, loading variants directly")
             import vcf as pyvcf
+            import gzip
 
             variants = []
-            with open(file_path, "r") as vcf_file:
+            
+            # Handle both compressed and uncompressed VCF files
+            if file_path.endswith('.gz'):
+                logger.info("Detected gzipped VCF file")
+                vcf_file = gzip.open(file_path, 'rt')
+            else:
+                logger.info("Detected uncompressed VCF file")
+                vcf_file = open(file_path, 'r')
+            
+            try:
                 vcf_reader = pyvcf.Reader(vcf_file)
                 for record in vcf_reader:
                     variant_data = {
                         "chrom": record.CHROM,
                         "pos": record.POS,
-                        "re": record.REF,
+                        "ref": record.REF,
                         "alt": str(record.ALT[0]) if record.ALT else ".",
                         "qual": record.QUAL or 0,
                         "quality": record.QUAL
@@ -211,20 +221,56 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     if record.samples:
                         sample = record.samples[0]
                         if hasattr(sample.data, "DP"):
-                            variant_data["depth"] = sample.data.DP
+                            dp_value = sample.data.DP
+                            variant_data["depth"] = int(dp_value) if dp_value is not None else 0
                         if hasattr(sample.data, "AF"):
                             # Handle AF as list (take first value) or single value
                             af_value = sample.data.AF
                             if isinstance(af_value, list):
                                 variant_data["allele_freq"] = (
-                                    af_value[0] if af_value else 0.0
+                                    float(af_value[0]) if af_value and af_value[0] is not None else 0.0
                                 )
                             else:
-                                variant_data["allele_freq"] = af_value or 0.0
+                                variant_data["allele_freq"] = float(af_value) if af_value is not None else 0.0
+                    
+                    # Extract gene information from INFO field
+                    gene = "Unknown"
+                    if "GENEINFO" in variant_data["info"]:
+                        # Parse GENEINFO field (format: "GENE:ID" or "GENE1:ID1|GENE2:ID2")
+                        geneinfo = variant_data["info"]["GENEINFO"]
+                        if isinstance(geneinfo, str):
+                            # Take first gene if multiple
+                            gene = geneinfo.split(":")[0].split("|")[0]
+                        elif isinstance(geneinfo, list):
+                            gene = str(geneinfo[0]).split(":")[0].split("|")[0]
+                    
+                    # Extract clinical significance from INFO field
+                    clinical_significance = "Unknown"
+                    if "CLNSIG" in variant_data["info"]:
+                        clnsig = variant_data["info"]["CLNSIG"]
+                        if isinstance(clnsig, list):
+                            clinical_significance = str(clnsig[0])
+                        else:
+                            clinical_significance = str(clnsig)
+                        
+                        # Normalize clinical significance (case-insensitive)
+                        clinical_significance = clinical_significance.lower().replace("_", " ")
+                    
+                    # Add extracted information to variant
+                    variant_data["gene"] = gene
+                    variant_data["clinical_significance"] = clinical_significance
+                    variant_data["clinvar_significance"] = clinical_significance
+                    
+                    # Ensure all required fields have non-None values
+                    variant_data.setdefault("depth", 0)
+                    variant_data.setdefault("allele_freq", 0.0)
 
                     variants.append(variant_data)
 
-            logger.info(f"Loaded {len(variants)} variants from VCF")
+                logger.info(f"Loaded {len(variants)} variants from VCF")
+            
+            finally:
+                vcf_file.close()
 
             # Return only the fields this node updates
             # This is important for LangGraph parallel execution

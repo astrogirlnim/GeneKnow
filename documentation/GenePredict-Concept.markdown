@@ -131,7 +131,7 @@ With 3-5 engineers, a functional prototype is achievable in 7 days by leveraging
   - [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss): Styling.
 - **Tutorials**:
   - TensorFlow genomic ML guide: [tensorflow.org/tutorials].
-  - Llama fine-tuning: [huggingface.co/docs/transformers].
+  - Llama fine-tuning: [ollama.com/docs].
   - PySyft privacy setup: [openmined.org/docs].
 
 ## Call to Action

@@ -210,7 +210,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 tcga_data = query_tcga_database(
                     variant["chrom"],
                     variant["pos"],
-                    variant["re"],
+                    variant["ref"],
                     variant["alt"],
                     cancer_type,
                 )

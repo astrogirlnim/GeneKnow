@@ -34,7 +34,7 @@ def classify_mutation_type(variant: Dict) -> str:
 def process(state: Dict) -> Dict:
     """Process variants and count mutation types"""
     logger.info("Starting mutation classification")
-    state["current_node"] = "mutation_classifier"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         variants = state.get("filtered_variants", [])
@@ -52,26 +52,21 @@ def process(state: Dict) -> Dict:
             variant["mutation_type"] = mutation_type
             classified_variants.append(variant)
 
-        # Update state
-        state["classified_variants"] = classified_variants
-        state["mutation_types"] = mutation_counts
-
-        # Add to completed nodes
-        completed = state.get("completed_nodes", [])
-        if "mutation_classifier" not in completed:
-            completed.append("mutation_classifier")
-        state["completed_nodes"] = completed
-
         logger.info(f"Classified {len(variants)} variants: {mutation_counts}")
+
+        # Return only the fields this node updates
+        return {
+            "classified_variants": classified_variants,
+            "mutation_type_distribution": mutation_counts,
+        }
 
     except Exception as e:
         logger.error(f"Error in mutation classification: {str(e)}")
-        state["errors"] = state.get("errors", []) + [
-            {
+        # Return error state updates
+        return {
+            "errors": [{
                 "node": "mutation_classifier",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
-            }
-        ]
-
-    return state
+            }]
+        }

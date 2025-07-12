@@ -61,7 +61,6 @@ class NumpyEncoder(json.JSONEncoder):
             return None
         return super().default(obj)
 
-
 # Configure logging with proper formatting and unbuffered output
 logging.basicConfig(
     level=logging.INFO,
@@ -88,13 +87,30 @@ print("Starting GeneKnow Enhanced API Server...", flush=True)
 # Initialize Flask app with SocketIO for real-time updates
 app = Flask(__name__)
 # Note: app.json_encoder is deprecated in newer Flask versions, we'll handle this in the response
+
+# Configure Flask for large file uploads
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024  # 5GB
+app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp(prefix="geneknow_uploads_")
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 CORS(
     app, origins=["tauri://localhost", "http://localhost:*"]
 )  # Allow Tauri and local dev
-socketio = SocketIO(
-    app, cors_allowed_origins="*"
-)  # Let SocketIO choose the best available async mode
 
+# Configure eventlet properly to avoid blocking issues
+try:
+    import eventlet
+    # Patch standard library for async operation, but preserve stdout/stderr
+    eventlet.monkey_patch(socket=True, select=True, thread=False)
+    print("Eventlet monkey patching completed", flush=True)
+except ImportError:
+    print("WARNING: eventlet not installed, falling back to threading mode", flush=True)
+    eventlet = None
+
+# Initialize SocketIO with appropriate async mode
+async_mode = 'eventlet' if eventlet else 'threading'
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode, logger=True, engineio_logger=True)
+print(f"SocketIO initialized with async_mode: {async_mode}", flush=True)
 
 # Configuration
 class Config:
@@ -105,9 +121,9 @@ class Config:
         ".fastq.gz",
         ".fq.gz",
         ".bam",
-        ".vc",
+        ".vcf",
         ".vcf.gz",
-        ".ma",
+        ".maf",
         ".maf.gz",
     }
     UPLOAD_FOLDER = tempfile.mkdtemp(prefix="geneknow_uploads_")
@@ -136,10 +152,10 @@ def get_file_type(filename: str) -> str:
         return "fastq"
     elif filename_lower.endswith(".bam"):
         return "bam"
-    elif filename_lower.endswith((".vc", ".vcf.gz")):
-        return "vc"
-    elif filename_lower.endswith((".ma", ".maf.gz")):
-        return "ma"
+    elif filename_lower.endswith((".vcf", ".vcf.gz")):
+        return "vcf"
+    elif filename_lower.endswith((".maf", ".maf.gz")):
+        return "maf"
     return "unknown"
 
 
@@ -187,6 +203,68 @@ def convert_numpy_types(obj):
 
     # Return as-is for other types
     return obj
+
+
+def format_pipeline_results_for_frontend(pipeline_state: dict) -> dict:
+    """
+    Transform full pipeline state into frontend-compatible PipelineResult format.
+    
+    This function extracts the key fields that the frontend expects and formats
+    them according to the TypeScript PipelineResult interface.
+    """
+    # Extract core fields that frontend expects
+    formatted_result = {
+        "pipeline_status": pipeline_state.get("pipeline_status", "completed"),
+        "variant_count": pipeline_state.get("variant_count", 0),
+        "risk_scores": pipeline_state.get("risk_scores", {}),
+        "risk_genes": pipeline_state.get("risk_genes", {}),
+        "processing_time_seconds": pipeline_state.get("processing_time_seconds", 0),
+        
+        # Report sections - transform if needed
+        "report_sections": pipeline_state.get("report_sections", {}),
+        
+        # Enhanced report content
+        "enhanced_report_content": pipeline_state.get("enhanced_report_content", {}),
+        
+        # Report generator info
+        "report_generator_info": pipeline_state.get("report_generator_info", {}),
+        
+        # TCGA and analysis data
+        "tcga_matches": pipeline_state.get("tcga_matches", {}),
+        "cadd_stats": pipeline_state.get("cadd_stats", {}),
+        
+        # Pathway burden results
+        "pathway_burden_results": pipeline_state.get("pathway_burden_results", {}),
+        "pathway_burden_summary": pipeline_state.get("pathway_burden_summary", {}),
+        
+        # Structured JSON for detailed frontend components
+        "structured_json": pipeline_state.get("structured_json", {}),
+        
+        # Variant details for tables
+        "variants": format_variants_for_frontend(pipeline_state.get("variant_details", []))
+    }
+    
+    return formatted_result
+
+
+def format_variants_for_frontend(variant_details: list) -> list:
+    """Format variant details for frontend consumption."""
+    if not variant_details:
+        return []
+    
+    formatted_variants = []
+    for variant in variant_details[:10]:  # Limit to top 10 variants
+        formatted_variant = {
+            "gene": variant.get("gene", "Unknown"),
+            "position": variant.get("position", 0),
+            "type": variant.get("mutation_type", variant.get("consequence", "Unknown")),
+            "impact": variant.get("functional_impact", "Unknown"),
+            "quality_score": variant.get("quality_metrics", {}).get("quality", 0),
+            "clinical_significance": variant.get("clinical_significance", "Unknown")
+        }
+        formatted_variants.append(formatted_variant)
+    
+    return formatted_variants
 
 
 def create_job(file_path: str, preferences: dict) -> str:
@@ -481,13 +559,13 @@ def supported_formats():
                     "paired_end_support": False,
                 },
                 {
-                    "extension": ".vc",
+                    "extension": ".vcf",
                     "description": "Variant Call Format",
                     "compressed": [".vcf.gz"],
                     "paired_end_support": False,
                 },
                 {
-                    "extension": ".ma",
+                    "extension": ".maf",
                     "description": "Mutation Annotation Format",
                     "compressed": [".maf.gz"],
                     "paired_end_support": False,
@@ -499,7 +577,7 @@ def supported_formats():
 
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
-    """Upload a file for processing."""
+    """Upload a file for processing with streaming support for large files."""
     try:
         if "file" not in request.files:
             return jsonify({"error": "No file provided"}), 400
@@ -518,12 +596,37 @@ def upload_file():
                 400,
             )
 
-        # Save uploaded file
+        # Save uploaded file with streaming to handle large files
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_filename = f"{timestamp}_{filename}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
-        file.save(file_path)
+        
+        # Stream the file to disk instead of loading into memory
+        logger.info(f"Starting streaming upload for {filename}")
+        bytes_written = 0
+        chunk_size = 64 * 1024  # 64KB chunks for better performance
+        
+        try:
+            with open(file_path, 'wb') as f:
+                while True:
+                    chunk = file.stream.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    bytes_written += len(chunk)
+                    
+                    # Log progress for very large files
+                    if bytes_written % (100 * 1024 * 1024) == 0:  # Every 100MB
+                        logger.info(f"Uploaded {bytes_written / (1024*1024):.1f}MB of {filename}")
+            
+            logger.info(f"Upload completed: {filename} ({bytes_written / (1024*1024):.1f}MB)")
+            
+        except Exception as e:
+            # Clean up partial file on error
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise e
 
         # Check file size
         file_size = os.path.getsize(file_path)
@@ -655,13 +758,23 @@ def job_results(job_id: str):
 
         # Read full results from file
         result_file = job["result"].get("result_file")
+        logger.info(f"Looking for result file: {result_file}")
+        logger.info(f"Result file exists: {result_file and os.path.exists(result_file)}")
+        
         if result_file and os.path.exists(result_file):
+            logger.info("Reading full results from file and formatting for frontend")
             with open(result_file, "r") as f:
                 full_results = json.load(f)
+            
+            # Transform full pipeline state into frontend-compatible format
+            formatted_results = format_pipeline_results_for_frontend(full_results)
+            logger.info(f"Formatted results keys: {list(formatted_results.keys())}")
+            
             # Ensure all numpy types are converted before returning
-            converted_results = convert_numpy_types(full_results)
+            converted_results = convert_numpy_types(formatted_results)
             return jsonify(converted_results)
         else:
+            logger.info("Using fallback job result")
             # Fallback to job result, ensure it's converted
             converted_result = convert_numpy_types(job["result"])
             return jsonify(converted_result)
@@ -743,6 +856,150 @@ def list_jobs():
 
         return jsonify({"total": len(job_list), "jobs": job_list})
 
+
+# Report Generator Configuration Endpoints
+
+@app.route('/api/report-generator/config', methods=['GET'])
+def get_report_config():
+    """Get current report generator configuration."""
+    try:
+        from nodes.report_generator.config import load_config
+        config = load_config()
+        
+        return jsonify({
+            'backend': config.backend.value,
+            'model_name': config.model_name,
+            'temperature': config.temperature,
+            'max_tokens': config.max_tokens,
+            'style': config.style.value,
+            'enable_streaming': config.enable_streaming,
+            'enable_parallel_generation': config.enable_parallel_generation,
+            'max_parallel_workers': config.max_parallel_workers,
+            'risk_threshold': config.risk_threshold,
+            'include_glossary': config.include_glossary,
+            'include_technical_appendix': config.include_technical_appendix,
+            'output_formats': config.output_formats
+        })
+    except Exception as e:
+        logger.error(f"Error loading report config: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/config', methods=['POST'])
+def save_report_config():
+    """Save report generator configuration."""
+    try:
+        from nodes.report_generator.config import save_config, ReportConfig, LLMBackend, ReportStyle
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate and convert backend
+        backend_str = data.get('backend', 'none')
+        try:
+            backend = LLMBackend(backend_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid backend: {backend_str}'}), 400
+        
+        # Validate and convert style
+        style_str = data.get('style', 'clinician')
+        try:
+            style = ReportStyle(style_str)
+        except ValueError:
+            return jsonify({'error': f'Invalid style: {style_str}'}), 400
+        
+        # Create config object
+        config = ReportConfig(
+            backend=backend,
+            model_name=data.get('model_name'),
+            temperature=float(data.get('temperature', 0.3)),
+            max_tokens=int(data.get('max_tokens', 2000)),
+            style=style,
+            enable_streaming=bool(data.get('enable_streaming', True)),
+            enable_parallel_generation=bool(data.get('enable_parallel_generation', True)),
+            max_parallel_workers=int(data.get('max_parallel_workers', 5)),
+            risk_threshold=float(data.get('risk_threshold', 5.0)),
+            include_glossary=bool(data.get('include_glossary', True)),
+            include_technical_appendix=bool(data.get('include_technical_appendix', True)),
+            output_formats=data.get('output_formats', ['markdown'])
+        )
+        
+        # Save configuration
+        save_config(config)
+        
+        return jsonify({'message': 'Configuration saved successfully'})
+    
+    except Exception as e:
+        logger.error(f"Error saving report config: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/available-models', methods=['GET'])
+def get_available_models():
+    """Get available LLM models for report generation."""
+    try:
+        from nodes.report_generator.model_interface import OllamaBackend
+        
+        # Check Ollama
+        ollama = OllamaBackend()
+        ollama_available = ollama.is_available()
+        ollama_models = ollama.available_models if ollama_available else []
+        
+        return jsonify({
+            'status': {
+                'ollama': ollama_available
+            },
+            'models': {
+                'ollama': ollama_models
+            },
+            'recommended': {
+                'ollama': ['llama3', 'mistral', 'codellama']
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting available models: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/warm-model', methods=['POST'])
+def warm_model():
+    """Warm up a model by loading it into memory (not needed for Ollama)."""
+    try:
+        data = request.get_json()
+        model_name = data.get('model_name', 'auto')
+        backend = data.get('backend', 'ollama')
+        
+        if backend != 'ollama':
+            return jsonify({'message': 'Model warming only supported for Ollama models'}), 200
+        
+        # Ollama models are loaded on-demand, no warming needed
+        return jsonify({
+            'success': True,
+            'message': 'Ollama models are loaded on-demand',
+            'model': model_name,
+            'backend': backend
+        })
+        
+    except Exception as e:
+        logger.error(f"Error warming model: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/report-generator/model-status', methods=['GET'])
+def get_model_status():
+    """Get the current status of loaded models."""
+    try:
+        from nodes.report_generator.model_interface import OllamaBackend
+        
+        ollama = OllamaBackend()
+        
+        return jsonify({
+            'ollama': {
+                'available': ollama.is_available(),
+                'models': ollama.available_models if ollama.is_available() else []
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting model status: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # WebSocket events for real-time updates
 
@@ -860,6 +1117,7 @@ if __name__ == "__main__":
 
     # Print configuration for debugging
     print(f"Debug mode: {debug}", flush=True)
+    print(f"Async mode: {socketio.async_mode}", flush=True)
 
     # Note: allow_unsafe_werkzeug is only needed for production mode with Flask dev server
     # Gunicorn doesn't need this flag

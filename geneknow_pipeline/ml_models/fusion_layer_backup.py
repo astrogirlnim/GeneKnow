@@ -23,6 +23,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, mean_squared_error
 import pickle
 import json
 from typing import Dict, List, Tuple, Any, Optional
+
 from dataclasses import dataclass
 import logging
 
@@ -33,13 +34,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StaticModelInputs:
     """Data class for static model inputs to the fusion layer."""
+
     prs_score: float
     clinvar_classification: str  # 'pathogenic', 'benign', 'uncertain', 'not_found'
     cadd_score: float
     tcga_enrichment: float
     gene_burden_score: float
-    
-    def to_dict(self) -> Dict[str, Any]:
+def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for processing."""
         return {
             'prs_score': self.prs_score,
@@ -52,12 +53,12 @@ class StaticModelInputs:
 @dataclass
 class FusionOutput:
     """Data class for fusion layer output."""
+
     risk_score: float
     confidence: float
     contributing_factors: Dict[str, float]
     risk_category: str  # 'low', 'moderate', 'high', 'very_high'
-    
-    def to_dict(self) -> Dict[str, Any]:
+def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             'risk_score': self.risk_score,
@@ -70,6 +71,7 @@ class FusionLayer:
     """
     ML Fusion Layer that combines static model outputs into final risk assessment.
     
+
     This is the meta-learning component that learns optimal weights for combining:
     - PRS (inherited background risk)
     - ClinVar (known pathogenic variants)
@@ -77,11 +79,11 @@ class FusionLayer:
     - TCGA (tumor enrichment evidence)
     - Gene burden (pathway-level risk)
     """
-    
-    def __init__(self, model_type: str = 'gradient_boosting'):
+def __init__(self, model_type: str = 'gradient_boosting'):
         """
         Initialize the fusion layer.
         
+
         Args:
             model_type: Type of ML model ('gradient_boosting', 'random_forest', 'linear')
         """
@@ -89,7 +91,7 @@ class FusionLayer:
         self.model = None
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
-        self.feature_names = ['prs_score', 'cadd_score', 'tcga_enrichment', 'gene_burden_score']
+self.feature_names = ['prs_score', 'cadd_score', 'tcga_enrichment', 'gene_burden_score']
         self.clinvar_categories = ['pathogenic', 'benign', 'uncertain', 'not_found']
         self.is_trained = False
         
@@ -116,25 +118,25 @@ class FusionLayer:
                 random_state=42
             )
         elif model_type == 'linear':
+
             # Use LinearRegression for continuous targets
             self.model = LinearRegression()
         else:
             raise ValueError(f"Unknown model type: {model_type}")
-    
-    def _encode_features(self, inputs: List[StaticModelInputs]) -> np.ndarray:
+def _encode_features(self, inputs: List[StaticModelInputs]) -> np.ndarray:
         """
         Encode static model inputs into feature vectors.
         
         Args:
             inputs: List of StaticModelInputs
             
+
         Returns:
             Encoded feature matrix
         """
         # Convert to DataFrame for easier processing
         df = pd.DataFrame([inp.to_dict() for inp in inputs])
-        
-        # One-hot encode ClinVar classifications
+# One-hot encode ClinVar classifications
         clinvar_encoded = pd.get_dummies(df['clinvar_classification'], prefix='clinvar')
         
         # Ensure all expected columns are present
@@ -162,12 +164,12 @@ class FusionLayer:
             training_data: List of (StaticModelInputs, risk_score) pairs
             validation_split: Fraction of data to use for validation
             
+
         Returns:
             Training metrics and results
         """
         logger.info(f"Training fusion layer with {len(training_data)} samples")
-        
-        # Extract inputs and targets
+# Extract inputs and targets
         inputs = [item[0] for item in training_data]
         targets = np.array([item[1] for item in training_data])
         
@@ -177,6 +179,7 @@ class FusionLayer:
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
         
+
         # Split data only if validation_split > 0
         if validation_split > 0:
             X_train, X_val, y_train, y_val = train_test_split(
@@ -185,8 +188,7 @@ class FusionLayer:
         else:
             # Use all data for training when validation_split is 0
             X_train, X_val, y_train, y_val = X_scaled, X_scaled, targets, targets
-        
-        # Train model
+# Train model
         self.model.fit(X_train, y_train)
         self.is_trained = True
         
@@ -226,13 +228,13 @@ class FusionLayer:
         Args:
             inputs: Static model inputs
             
+
         Returns:
             Fusion output with risk score and metadata
         """
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions")
-        
-        # Encode features
+# Encode features
         X = self._encode_features([inputs])
         X_scaled = self.scaler.transform(X)
         
@@ -247,12 +249,12 @@ class FusionLayer:
         
         # Determine risk category
         risk_category = 'low'
+
         for category, threshold in self.risk_thresholds.items():
             if risk_score <= threshold:
                 risk_category = category
                 break
-        
-        # Calculate contributing factors (feature importance weighted by input values)
+# Calculate contributing factors (feature importance weighted by input values)
         contributing_factors = {}
         if hasattr(self.model, 'feature_importances_'):
             feature_names = self.feature_names + [f'clinvar_{cat}' for cat in self.clinvar_categories]
@@ -261,19 +263,20 @@ class FusionLayer:
             for i, (name, importance) in enumerate(zip(feature_names, self.model.feature_importances_)):
                 contributing_factors[name] = float(importance * abs(feature_values[i]))
         
+
         return FusionOutput(
             risk_score=float(risk_score),
             confidence=float(confidence),
             contributing_factors=contributing_factors,
-            risk_category=risk_category
+risk_category=risk_category
         )
     
+
     def save_model(self, filepath: str) -> None:
         """Save the trained fusion layer model."""
         if not self.is_trained:
             raise ValueError("Cannot save untrained model")
-        
-        model_data = {
+model_data = {
             'model': self.model,
             'scaler': self.scaler,
             'model_type': self.model_type,
@@ -307,13 +310,13 @@ def create_synthetic_training_data(n_samples: int = 1000) -> List[Tuple[StaticMo
     """
     Create synthetic training data for testing the fusion layer.
     
+
     This simulates the outputs that would come from the 5 static models.
     In production, this would be replaced with real data from your pipeline.
     """
     np.random.seed(42)
     training_data = []
-    
-    for _ in range(n_samples):
+for _ in range(n_samples):
         # Generate synthetic static model outputs
         prs_score = np.random.beta(2, 5)  # Most people have low PRS
         
@@ -348,32 +351,33 @@ def create_synthetic_training_data(n_samples: int = 1000) -> List[Tuple[StaticMo
         elif clinvar_classification == 'benign':
             risk_score -= 0.2
         
+
         # CADD contribution
         if cadd_score > 20:
             risk_score += 0.3
         elif cadd_score > 15:
             risk_score += 0.1
-        
+
         # TCGA contribution
         if tcga_enrichment > 5:
             risk_score += 0.2
         elif tcga_enrichment > 2:
             risk_score += 0.1
-        
-        # Gene burden contribution
+# Gene burden contribution
         risk_score += gene_burden_score * 0.05
         
         # Add some noise and clip to valid range
         risk_score += np.random.normal(0, 0.1)
         risk_score = np.clip(risk_score, 0.0, 1.0)
         
+
         # Create input object
         inputs = StaticModelInputs(
             prs_score=float(prs_score),
             clinvar_classification=clinvar_classification,
             cadd_score=float(cadd_score),
             tcga_enrichment=float(tcga_enrichment),
-            gene_burden_score=float(gene_burden_score)
+gene_burden_score=float(gene_burden_score)
         )
         
         training_data.append((inputs, risk_score))
@@ -393,32 +397,34 @@ if __name__ == "__main__":
     fusion = FusionLayer(model_type='gradient_boosting')
     results = fusion.train(training_data)
     
+
     # Print results
     print(f"✅ Training completed:")
     print(f"  Validation MSE: {results['val_mse']:.4f}")
     print(f"  CV MSE: {results['cv_mse_mean']:.4f} ± {results['cv_mse_std']:.4f}")
-    
-    if results['feature_importance']:
+if results['feature_importance']:
         print("📈 Feature Importance:")
         for feature, importance in sorted(results['feature_importance'].items(), 
                                         key=lambda x: x[1], reverse=True):
             print(f"  {feature}: {importance:.3f}")
     
+
     # Test prediction
     print("\n🧪 Testing prediction...")
     test_input = StaticModelInputs(
         prs_score=0.8,
-        clinvar_classification='pathogenic',
+clinvar_classification='pathogenic',
         cadd_score=25.0,
         tcga_enrichment=3.0,
         gene_burden_score=2.0
     )
     
+
     prediction = fusion.predict(test_input)
     print(f"Risk Score: {prediction.risk_score:.3f}")
     print(f"Risk Category: {prediction.risk_category}")
     print(f"Confidence: {prediction.confidence:.3f}")
-    
-    # Save model
+# Save model
     fusion.save_model('fusion_model.pkl')
-    print("💾 Model saved successfully!")
+    print("💾 Model saved successfully!") 
+

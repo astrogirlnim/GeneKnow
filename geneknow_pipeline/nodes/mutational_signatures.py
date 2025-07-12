@@ -172,7 +172,7 @@ def calculate_signature_contributions(
 def process(state: Dict) -> Dict:
     """Analyze mutational signatures in variants"""
     logger.info("Starting mutational signature analysis")
-    state["current_node"] = "mutational_signatures"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Use classified variants if available, otherwise use filtered variants
@@ -210,34 +210,26 @@ def process(state: Dict) -> Dict:
                 for s in signatures:
                     s["contribution"] = round(s["contribution"] / total, 3)
 
-        # Update state
-        state["mutational_signatures"] = signatures
-
-        # Add summary statistics
-        state["mutational_signatures_summary"] = {
-            "total_signatures": len(signatures),
-            "dominant_signature": signatures[0] if signatures else None,
-            "pattern_weights": pattern_weights,
-        }
-
-        # Add to completed nodes
-        completed = state.get("completed_nodes", [])
-        if "mutational_signatures" not in completed:
-            completed.append("mutational_signatures")
-        state["completed_nodes"] = completed
-
         logger.info(f"Identified {len(signatures)} mutational signatures")
+
+        # Return only the fields this node updates
+        return {
+            "mutational_signatures": signatures,
+            "mutational_signatures_summary": {
+                "total_signatures": len(signatures),
+                "dominant_signature": signatures[0] if signatures else None,
+                "pattern_weights": pattern_weights,
+            }
+        }
 
     except Exception as e:
         logger.error(f"Error in mutational signature analysis: {str(e)}")
-        state["errors"] = state.get("errors", []) + [
-            {
+        # Return error state updates
+        return {
+            "mutational_signatures": [],
+            "errors": [{
                 "node": "mutational_signatures",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
-            }
-        ]
-        # Set empty results on error
-        state["mutational_signatures"] = []
-
-    return state
+            }]
+        }

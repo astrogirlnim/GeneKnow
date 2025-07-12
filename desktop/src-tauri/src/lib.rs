@@ -1149,6 +1149,7 @@ async fn convert_markdown_to_pdf(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    .plugin(tauri_plugin_shell::init())
     .setup(|app| {
       // Enable logging for both debug and release builds
       app.handle().plugin(

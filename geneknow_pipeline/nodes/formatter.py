@@ -5,9 +5,52 @@ Structures all results into JSON format for frontend consumption.
 
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _ensure_structural_variants_format(structural_variants: List[Dict]) -> List[Dict]:
+    """Ensure all structural variants have the genes_affected field as an array"""
+    formatted_svs = []
+    
+    for sv in structural_variants:
+        # Create a copy to avoid modifying the original
+        formatted_sv = sv.copy()
+        
+        # Ensure genes_affected is always an array
+        if "genes_affected" not in formatted_sv:
+            # Try to extract genes from other fields
+            genes = []
+            
+            # Check various fields where genes might be stored
+            if "gene" in formatted_sv:
+                genes.append(formatted_sv["gene"])
+            elif "genes" in formatted_sv:
+                if isinstance(formatted_sv["genes"], list):
+                    genes.extend(formatted_sv["genes"])
+                else:
+                    genes.append(formatted_sv["genes"])
+            elif "fusion_name" in formatted_sv:
+                # For fusions, try to extract gene names from fusion name
+                fusion_name = formatted_sv["fusion_name"]
+                if "-" in fusion_name:
+                    genes.extend(fusion_name.split("-"))
+                else:
+                    genes.append(fusion_name)
+            
+            # If no genes found, use "Unknown"
+            if not genes:
+                genes = ["Unknown"]
+            
+            formatted_sv["genes_affected"] = genes
+        elif not isinstance(formatted_sv["genes_affected"], list):
+            # Ensure it's a list
+            formatted_sv["genes_affected"] = [formatted_sv["genes_affected"]]
+        
+        formatted_svs.append(formatted_sv)
+    
+    return formatted_svs
 
 
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -145,15 +188,38 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         # Build comprehensive summary including mutation types
+        # SIMPLIFIED: Use filtered_variants as the source of truth
+        filtered_variants = state.get("filtered_variants", [])
+        variant_count = len(filtered_variants)
+        
+        # Get mutation type distribution if available
+        mutation_type_dist = state.get("mutation_type_distribution")
+        
+        # Add debug logging to track data flow
+        print(f"\n=== FORMATTER DEBUG ===")
+        print(f"State keys: {list(state.keys())}")
+        print(f"filtered_variants length: {variant_count}")
+        print(f"mutation_type_distribution: {mutation_type_dist}")
+        print(f"variant_count from state: {state.get('variant_count', 0)}")
+        
+        # Use consistent logic: filtered_variants is the source of truth
+        # Since QC filtering is disabled, total_variants_found equals variants_passed_qc
+        total_variants_found = variant_count
+        variants_passed_qc = variant_count
+        
+        print(f"Calculated total_variants_found: {total_variants_found}")
+        print(f"Calculated variants_passed_qc: {variants_passed_qc}")
+        print(f"=== END FORMATTER DEBUG ===\n")
+        
         summary = {
-            "total_variants_found": state["variant_count"],
-            "variants_passed_qc": len(state["filtered_variants"]),
+            "total_variants_found": total_variants_found,
+            "variants_passed_qc": variants_passed_qc,
             "high_risk_findings": len(high_risk_findings),
         }
-
+        
         # Add mutation type distribution if available
-        if state.get("mutation_type_distribution"):
-            summary["mutation_types"] = state["mutation_type_distribution"]
+        if mutation_type_dist:
+            summary["mutation_types"] = mutation_type_dist
 
         # Process pathway analysis data from pathway burden results
         pathway_analysis = None
@@ -397,7 +463,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "file_type": state["file_type"],
                 "file_metadata": state["file_metadata"],
             },
-            "summary": summary,
+            "summary": {
+                "total_variants_found": total_variants_found,
+                "variants_passed_qc": variants_passed_qc,
+                "high_risk_findings": len(high_risk_findings),
+                "mutation_types": mutation_type_dist,
+            },
             "risk_assessment": (
                 {
                     "scores": risk_scores,
@@ -417,9 +488,10 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "warnings": state.get("warnings", []),
             # Add all new analysis results
             "mutation_signatures": state.get("mutational_signatures", []),
-            "structural_variants": state.get("structural_variants", []),
+            "structural_variants": _ensure_structural_variants_format(state.get("structural_variants", [])),
             "copy_number_variants": state.get("copy_number_variants", []),
             "pathway_analysis": final_pathway_analysis,
+            "pathway_summary": final_pathway_analysis.get("summary", {}) if final_pathway_analysis else {},
             "survival_analysis": state.get("survival_analysis"),
             "clinical_recommendations": state.get("clinical_recommendations"),
         }

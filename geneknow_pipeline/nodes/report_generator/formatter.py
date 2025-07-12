@@ -20,7 +20,7 @@ class MedicalGlossary:
         self.terms = {
             "allele frequency": "The proportion of chromosomes in a population that carry a specific variant of a gene.",
             "CADD score": "Combined Annotation Dependent Depletion score - predicts the deleteriousness of genetic variants.",
-            "clinical significance": "The medical importance of a genetic variant, ranging from benign to pathogenic.",
+            "pathogenicity": "The medical importance of a genetic variant, ranging from benign to pathogenic.",
             "frameshift": "A genetic mutation that causes a shift in the reading frame of DNA, often resulting in a nonfunctional protein.",
             "heterozygous": "Having two different versions (alleles) of a gene.",
             "homozygous": "Having two identical versions (alleles) of a gene.",
@@ -133,8 +133,8 @@ class ReportFormatter:
         # Build header
         markdown = self._build_header(data, report_id, llm_enhanced=True)
 
-        # Add LLM-generated content under Clinical Assessment
-        markdown += "\n## Clinical Assessment\n\n"
+        # Add LLM-generated content under Assessment
+        markdown += "\n## Assessment\n\n"
         markdown += llm_content
 
         # Always add standardized technical appendix
@@ -160,8 +160,8 @@ class ReportFormatter:
         # Add fallback content warning
         markdown += f"\n> **{self.config.dev_mode_indicator}**: {self.config.fallback_mode_indicator}\n\n"
 
-        # Add Clinical Assessment section with template content
-        markdown += "\n## Clinical Assessment\n\n"
+        # Add Assessment section with template content
+        markdown += "\n## Assessment\n\n"
 
         # Generate template-based sections using the same structure as LLM reports
         markdown += self._build_template_summary(data)
@@ -170,7 +170,7 @@ class ReportFormatter:
         markdown += "\n\n"
         markdown += self._build_template_risk_summary(data)
         markdown += "\n\n"
-        markdown += self._build_template_clinical_interpretation(data)
+        markdown += self._build_template_interpretation(data)
         markdown += "\n\n"
         markdown += self._build_template_recommendations(data)
 
@@ -193,13 +193,13 @@ class ReportFormatter:
     ) -> str:
         """Build report header section."""
 
-        header = """# Genomic Risk Assessment Report
+        header = f"""# Genomic Risk Assessment Report
 
 **Generated:** {datetime.now().strftime('%B %d, %Y at %H:%M')}
 """
 
         if llm_enhanced:
-            header += "**Analysis Type:** AI-Enhanced Clinical Report  \n"
+            header += "**Analysis Type:** AI-Enhanced Report  \n"
         else:
             header += "**Analysis Type:** Template-Based Report  \n"
 
@@ -226,11 +226,11 @@ class ReportFormatter:
         content += f"This genomic risk assessment analyzed {total_variants} genetic variants, with {qc_variants} variants passing quality control filters ({qc_rate:.1f}% pass rate). "
 
         if high_risk_count > 0:
-            content += f"The analysis identified {high_risk_count} high-risk findings requiring clinical attention.\n\n"
-            content += "The individual's genetic profile indicates elevated risk for certain cancer types that warrant further clinical evaluation and genetic counseling."
+            content += f"The analysis identified {high_risk_count} high-risk findings requiring attention.\n\n"
+            content += "The individual's genetic profile indicates elevated risk for certain cancer types that warrant further evaluation and genetic counseling."
         else:
-            content += "No high-risk findings were identified.\n\n"
-            content += "The individual's genetic profile shows cancer risk levels within normal baseline ranges for all analyzed cancer types (<5%)."
+            content += "No elevated cancer risks (>5%) were detected in this analysis.\n\n"
+            content += "All genetic variants analyzed fall within normal population ranges, indicating no significant genetic predisposition was identified."
 
         return content
 
@@ -277,18 +277,18 @@ class ReportFormatter:
             high_risk_count = sum(1 for score in scores.values() if score > 5.0)
             content += "\n"
             if high_risk_count > 0:
-                content += "Risks above 5% are considered elevated and warrant further clinical attention."
+                content += "Risks above 5% are considered elevated and warrant further attention."
             else:
                 content += "All risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
 
         return content
 
-    def _build_template_clinical_interpretation(self, data: Dict[str, Any]) -> str:
-        """Build template-based clinical interpretation section."""
+    def _build_template_interpretation(self, data: Dict[str, Any]) -> str:
+        """Build template-based interpretation section."""
         tcga_summary = data.get("tcga_summary", {})
         cadd_summary = data.get("cadd_summary", {})
 
-        content = "**Clinical Interpretation**\n\n"
+        content = "**Interpretation**\n\n"
         content += "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, "
         content += f"TCGA tumor database comparison ({tcga_summary.get('variants_with_tcga_data', 0)} variants matched), "
         content += "pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. "
@@ -296,8 +296,8 @@ class ReportFormatter:
         if cadd_summary and cadd_summary.get("enabled", False):
             content += f"CADD scoring was performed on {cadd_summary.get('variants_scored', 0)} variants. "
 
-        content += "\n\nThe analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. "
-        content += "These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
+        content += "\n\nThe analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and guidelines. "
+        content += "These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
 
         return content
 
@@ -341,7 +341,7 @@ class ReportFormatter:
             (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
         )
 
-        appendix = """## Technical Appendix
+        appendix = f"""**Technical Appendix**
 
 ### Analysis Methods
 
@@ -371,13 +371,13 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 - Risk estimates are population-based and may not apply to all individuals
 - Not all genetic variants associated with cancer risk are included
 - Results should be interpreted by qualified healthcare professionals
-- This analysis is for research purposes and not for clinical diagnosis"""
+- This analysis is for research purposes and not for diagnosis"""
 
         return appendix
 
     def _build_standardized_glossary(self, content: str) -> str:
         """Build standardized glossary with terms relevant to the report content."""
-        glossary = "## Glossary\n\n"
+        glossary = "**Glossary**\n\n"
 
         # Always include these basic terms
         glossary += "**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n"
@@ -397,12 +397,12 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
     def _build_standardized_footer(self, data: Dict[str, Any], report_id: str) -> str:
         """Build standardized footer that's the same for every report."""
-        footer = """---
+        footer = f"""---
 
 ## Important Disclaimers
 
 - This report is for research and educational purposes only
-- Results should not be used for clinical decision-making without consultation with qualified healthcare providers
+- Results should not be used for decision-making without consultation with qualified healthcare providers
 - Genetic risk assessment is based on current scientific understanding and may change as research evolves
 - Not all genetic variants associated with disease risk are included in this analysis
 - Environmental and lifestyle factors also contribute significantly to cancer risk
@@ -422,7 +422,7 @@ For questions about this report or genetic counseling resources, please consult 
         try:
             # Basic markdown to HTML conversion
             # In a real implementation, you might use a library like markdown or mistune
-            html_content = """<!DOCTYPE html>
+            html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <title>Genomic Risk Assessment Report - {report_id}</title>
@@ -433,6 +433,36 @@ For questions about this report or genetic counseling resources, please consult 
         table {{ border-collapse: collapse; width: 100%; }}
         th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
         th {{ background-color: #f2f2f2; }}
+        
+        /* Print-specific styles */
+        @media print {{
+            @page {{
+                @bottom-center {{
+                    content: "Page " counter(page);
+                    font-size: 10pt;
+                    color: #666;
+                }}
+            
+            /* Page break controls */
+            h1 {{
+                page-break-before: always;
+                page-break-after: avoid;
+            }}
+            
+            h2 {{
+                page-break-after: avoid;
+            }}
+            
+            /* Avoid breaking tables */
+            table {{
+                page-break-inside: avoid;
+            }}
+            
+            /* First page special handling */
+            h1:first-of-type {{
+                page-break-before: avoid;
+            }}
+        }}
     </style>
 </head>
 <body>

@@ -13,7 +13,7 @@
 ### Genomic Processing & AI
 - **TensorFlow**: Deep learning for genomic risk scoring.
 - **OpenMined PySyft**: Differential privacy on ML models.
-- **Llama 3.1 (via HuggingFace or local model runner)**: For generating readable reports.
+- **Llama 3.1 (via Ollama or local model runner)**: For generating readable reports.
 - **Samtools / BioPython / pysam**: For FASTQ/BAM parsing and variant extraction.
 - **DeepVariant**: For variant calling if needed.
 

@@ -154,7 +154,7 @@ def parse_vcf_file(vcf_path: str) -> List[Dict[str, Any]]:
         variant = {
             "chrom": chrom,
             "pos": pos,
-            "re": ref,
+            "ref": ref,
             "alt": alt,
             "variant_id": variant_id,
             "quality": float(qual),

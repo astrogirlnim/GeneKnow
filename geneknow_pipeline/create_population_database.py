@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Create Population Database Script
-================================
 Downloads ClinVar data and creates population_variants.db for the GeneKnow pipeline.
 This script ensures reproducibility by recreating the database from source data.
 
@@ -266,7 +265,7 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
                 variant = {
                     "chrom": chrom.replace("chr", ""),  # Normalize chromosome format
                     "pos": pos,
-                    "re": ref if ref != "." else "na",
+                    "ref": ref if ref != "." else "na",
                     "alt": alt if alt != "." else "na",
                     "gene": gene_symbol,
                     "gnomad_a": gnomad_af,

@@ -44,40 +44,63 @@ class PromptBuilder:
         )[:3]
 
         prompt = self._get_style_prefix()
-        prompt += """
+        # Format the actual values
+        file_type = patient_data.get('file_type', 'Unknown')
+        
+        # Handle both new and old summary format
+        if 'total_variants_found' in summary:
+            # New format with variant data
+            total_variants = summary.get('total_variants_found', 0)
+            qc_variants = summary.get('variants_passed_qc', 0)
+        else:
+            # Old format or missing data - try to get from file metadata
+            file_metadata = patient_data.get('file_metadata', {})
+            qc_stats = file_metadata.get('qc_stats', {})
+            if qc_stats:
+                total_variants = qc_stats.get('total_variants', 0)
+                qc_variants = qc_stats.get('passed_qc', 0)
+            else:
+                total_variants = 0
+                qc_variants = 0
+        
+        qc_pass_rate = (qc_variants / max(total_variants, 1)) * 100
+        processing_time = report_metadata.get('processing_time_seconds', 0)
+        top_risks_text = ', '.join(top_risks) if top_risks else 'All within baseline levels (<5%)'
+        
+        # Add debug logging
+        print(f"\n=== PROMPT BUILDER DEBUG ===")
+        print(f"summary data: {summary}")
+        print(f"total_variants: {total_variants}")
+        print(f"qc_variants: {qc_variants}")
+        print(f"qc_pass_rate: {qc_pass_rate}")
+        print(f"=== END PROMPT BUILDER DEBUG ===\n")
+
+        prompt += f"""
 Generate ONLY the Summary section content for a genomic risk assessment report.
 
 INPUT DATA:
-- File type: {patient_data.get('file_type', 'Unknown')}
-- Total variants found: {summary.get('total_variants_found', 0)}
-- Variants passed QC: {summary.get('variants_passed_qc', 0)}
-- QC pass rate: {(summary.get('variants_passed_qc', 0) / max(summary.get('total_variants_found', 1), 1) * 100):.1f}%
-- Processing time: {report_metadata.get('processing_time_seconds', 0):.1f} seconds
+- File type: {file_type}
+- Total variants found: {total_variants}
+- Variants passed QC: {qc_variants}
+- QC pass rate: {qc_pass_rate:.1f}%
+- Processing time: {processing_time:.1f} seconds
 - High-risk findings: {high_risk_count}
-- Top cancer risks: {', '.join(top_risks) if top_risks else 'All within baseline levels (<5%)'}
+- Top cancer risks: {top_risks_text}
 
 TASK:
-Write exactly 1-2 paragraphs for the Summary section that:
-1. First paragraph: Briefly describes the analysis performed (variants analyzed, QC results)
-2. Second paragraph: States the overall risk profile and most significant findings
-3. Uses professional medical language appropriate for clinicians
-4. Is concise but informative
-5. For high-risk cases: Mentions the elevated risks found
-6. For low-risk cases: Emphasizes reassuring baseline results
+Write exactly 2-3 detailed paragraphs for the Summary section that:
+1. First paragraph: Describe the analysis performed including methodology overview (e.g., variant calling, QC filters, risk modeling), key statistics like total variants and QC pass rate.
+2. Second paragraph: Detail the overall risk profile, highlighting top risks with brief explanations of contributing factors (e.g., specific genes or scores).
+3. Third paragraph (optional): Discuss general implications and next steps.
+4. Use professional medical language appropriate for healthcare providers.
+5. Be informative and evidence-based, including brief references to analysis methods where relevant.
+6. For high-risk cases: Elaborate on elevated risks and potential significance.
+7. For low-risk cases: Emphasize reassuring aspects and standard recommendations.
 
 OUTPUT FORMAT:
-Return ONLY the paragraph text. Do not include section headers, bullets, or formatting.
-Start directly with the content.
+Return ONLY the paragraph text. ABSOLUTELY NO section headers, bullets, markdown, or extra formatting. Start directly with the content text.
 
-EXAMPLE OUTPUT (high-risk case):
-"This genomic risk assessment analyzed [X] genetic variants from [file type] data, with [Y] variants passing quality control filters (Z% pass rate). The analysis was completed in [time] seconds and identified [count] high-risk findings requiring clinical attention.
-
-The individual's genetic profile indicates significantly elevated risk for [top cancers], with the highest risk being [specific cancer] at [percentage]. These findings warrant further clinical evaluation and genetic counseling to discuss preventive measures and screening protocols."
-
-EXAMPLE OUTPUT (low-risk case):
-"This genomic risk assessment analyzed [X] genetic variants from [file type] data, with [Y] variants passing quality control filters (Z% pass rate). The analysis was completed in [time] seconds with no high-risk findings identified.
-
-The individual's genetic profile shows cancer risk levels within normal baseline ranges for all analyzed cancer types (<5%). This reassuring result indicates that no known high-risk genetic variants were detected in major cancer susceptibility genes."
+GENERATE YOUR OWN TEXT based on the actual input data provided above. Do not use template language or placeholders.
 """
 
         return prompt
@@ -127,58 +150,34 @@ REQUIRED OUTPUT:
 "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
 """
         else:
-            prompt += """
+            # Format the actual values
+            total_variants = len(variant_details)
+            high_risk_variants = len(key_variants)
+            top_genes = list(set(v.get("gene", "") for v in key_variants if v.get("gene")))[:5]
+            top_genes_text = ', '.join(top_genes) if top_genes else 'None identified'
+
+            prompt += f"""
 Generate ONLY the Key Variants section content for a genomic risk assessment report.
 
-KEY VARIANTS TO ANALYZE (top {min(len(key_variants), 5)}):
-"""
+INPUT DATA:
+- Total variants analyzed: {total_variants}
+- High-risk variants: {high_risk_variants}
+- Genes with elevated risk: {top_genes_text}
 
-            for i, variant in enumerate(key_variants[:5], 1):  # Top 5 variants
-                quality = variant.get("quality_metrics", {})
-                tcga_matches = variant.get("tcga_matches", {})
-                cadd_scores = variant.get("cadd_scores", {})
-
-                prompt += """
-Variant {i}:
-- Gene: {variant.get('gene', 'Unknown')}
-- Variant ID: {variant.get('variant', 'Unknown')}
-- Consequence: {variant.get('consequence', 'Unknown')}
-- HGVS (coding): {variant.get('hgvs_c', 'N/A')}
-- HGVS (protein): {variant.get('hgvs_p', 'N/A')}
-- Quality score: {quality.get('quality', 0)}
-- Read depth: {quality.get('depth', 0)}
-- Allele frequency: {quality.get('allele_freq', 0):.3f}
-"""
-
-                if cadd_scores:
-                    prompt += f"- CADD PHRED score: {cadd_scores.get('phred', 'N/A')}\n"
-
-                if tcga_matches:
-                    prompt += "- TCGA matches:\n"
-                    for cancer_type, match_data in tcga_matches.items():
-                        if match_data:
-                            prompt += f"  * {cancer_type}: {match_data.get('frequency_percent', 0):.1f}% frequency\n"
-
-                prompt += "\n"
-
-            prompt += """
 TASK:
-Write a numbered list (1., 2., etc.) of the key variants with clinical interpretation.
-For each variant, write 1-2 sentences that:
-1. Identify the gene and mutation type (e.g., "BRCA1 frameshift mutation")
-2. Explain the clinical significance and cancer risk association
-3. Mention quality metrics if confidence is high (quality >90) or low (<50)
-4. Use proper genetic nomenclature
-5. Avoid overstating conclusions
+Write a numbered list (1., 2., etc.) of the key variants with detailed interpretation.
+1. Focus on variants that contribute most to cancer risk (pathogenic/likely pathogenic).
+2. Explain the detailed significance, associated cancers, and evidence from databases like ClinVar/TCGA.
+3. Include specific risk contributions and functional impact where known.
+4. Use professional medical language.
+5. Be specific about evidence and database sources.
+6. Limit to the top 3-5 most significant variants if many exist.
 
 OUTPUT FORMAT:
-Return ONLY the numbered list. Do not include section headers or additional formatting.
-Start directly with "1. **[GENE]**: [description]"
+Return ONLY the numbered list. Do not include section headers or extra formatting.
+Start directly with "1." for the first variant.
 
-EXAMPLE OUTPUT:
-"1. **BRCA1**: A frameshift mutation (c.5266dupC) resulting in a premature stop codon (p.Gln1756Profs*74). This pathogenic variant significantly increases the risk for breast and ovarian cancer. The quality score of 99 and read depth of 45 indicate high confidence in this finding.
-
-2. **TP53**: A missense mutation (c.743G>A) causing an arginine to glutamine substitution at position 248 (p.Arg248Gln). This variant may contribute to increased cancer risk across multiple cancer types. The quality score of 85 indicates moderate confidence in this finding."
+GENERATE YOUR OWN NUMBERED LIST based on the actual variant data provided. Each entry should describe a real variant from the analysis, not example variants.
 """
 
         return prompt
@@ -213,70 +212,63 @@ CANCER RISK SCORES:
             1 for _, score in sorted_scores if score > self.risk_threshold
         )
 
-        prompt += """
+        prompt += f"""
 High-risk findings (>5%): {high_risk_count}
 
 TASK:
 Generate the Risk Summary section with:
 1. A markdown table with columns "Cancer Type" and "Risk (%)"
 2. All cancer types sorted by descending risk percentage
-3. One sentence after the table explaining the significance
+3. After the table, 1-2 detailed paragraphs explaining the scores, comparisons to population averages (assume 1-2% baseline), health implications, and factors influencing the risks.
 
 OUTPUT FORMAT:
-Return the markdown table followed by exactly one explanatory sentence.
-Do not include section headers or additional formatting.
+Return the markdown table followed by the explanatory paragraphs. ABSOLUTELY NO section headers. Start with the table.
 
 REQUIRED TABLE FORMAT:
 | Cancer Type | Risk (%) |
 |-------------|----------|
 | [Type]      | [X.X]    |
-| [Type]      | [X.X]    |
+
+EXPLANATORY TEXT:
+Explain scores relative to baselines, highlight elevations, discuss potential genetic factors.
 
 REQUIRED SENTENCE (choose based on findings):
-- If high-risk findings: "Risks above 5% are considered elevated and warrant further clinical attention."
+- If high-risk findings: "Risks above 5% are considered elevated and warrant further medical attention."
 - If no high-risk findings: "All risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
 """
 
         return prompt
 
     def build_clinical_interpretation_section_prompt(self, data: Dict[str, Any]) -> str:
-        """Build prompt for generating the Clinical Interpretation section only."""
+        """Build prompt for generating the Interpretation section only."""
 
+        # Extract relevant data
         summary = data.get("summary", {})
-        risk_assessment = data.get("risk_assessment", {})
         tcga_summary = data.get("tcga_summary", {})
         cadd_summary = data.get("cadd_summary", {})
-
-        # Count high-risk findings
-        high_risk_count = 0
-        if risk_assessment and "scores" in risk_assessment:
-            high_risk_count = sum(
-                1
-                for score in risk_assessment["scores"].values()
-                if score > self.risk_threshold
-            )
-
+        risk_assessment = data.get("risk_assessment", {})
+        
+        # Check if high-risk findings exist
+        high_risk_count = self._count_high_risk_findings(data)
+        
+        # Build section prompt
         prompt = self._get_style_prefix()
-        prompt += """
-Generate ONLY the Clinical Interpretation section content for a genomic risk assessment report.
+        
+        prompt += f"""
+Generate ONLY the Interpretation section content for a genomic risk assessment report.
 
-ANALYSIS SUMMARY:
+INPUT DATA:
 - Total variants analyzed: {summary.get('total_variants_found', 0)}
-- Quality-filtered variants: {summary.get('variants_passed_qc', 0)}
-- High-risk cancer findings: {high_risk_count}
-- TCGA database coverage: {len(tcga_summary.get('cancer_types_analyzed', []))} cancer types
+- High-risk findings: {high_risk_count}
 - TCGA variants matched: {tcga_summary.get('variants_with_tcga_data', 0)}
-"""
+- CADD scoring enabled: {cadd_summary.get('enabled', False)}
+- Risk assessment available: {bool(risk_assessment)}
 
-        if cadd_summary and cadd_summary.get("enabled", False):
-            prompt += f"- CADD scoring: {cadd_summary.get('variants_scored', 0)} variants scored\n"
-
-        prompt += """
 TASK:
-Write exactly 1-2 paragraphs for the Clinical Interpretation section that:
+Write exactly 2-3 paragraphs for the Interpretation section that:
 1. First paragraph: Explains the methodology used (TCGA matching, CADD scoring, ML models, etc.)
-2. Second paragraph: Discusses reliability, limitations, and clinical context
-3. Always includes the standard caveat about correlating with family history and clinical presentation
+2. Second paragraph: Discusses reliability, limitations, and context
+3. Always includes the standard caveat about correlating with family history and presentation
 4. Uses professional medical language
 5. Maintains balanced, evidence-based tone
 6. Emphasizes research nature of analysis
@@ -291,10 +283,10 @@ REQUIRED ELEMENTS TO INCLUDE:
 - Discuss pathogenicity prediction algorithms
 - Note polygenic risk scoring and machine learning
 - Include reliability/limitations discussion
-- End with caveat about clinical correlation
+- End with caveat about correlation
 
 REQUIRED ENDING SENTENCE:
-"These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
+"These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
 """
 
         return prompt
@@ -304,6 +296,7 @@ REQUIRED ENDING SENTENCE:
 
         risk_assessment = data.get("risk_assessment", {})
         scores = risk_assessment.get("scores", {}) if risk_assessment else {}
+        summary = data.get("summary", {})
 
         # Get high-risk cancers
         high_risk_cancers = []
@@ -314,57 +307,35 @@ REQUIRED ENDING SENTENCE:
 
         # Sort by risk score
         high_risk_cancers.sort(key=lambda x: x[1], reverse=True)
+        
+        # Format the actual values
+        high_risk_count = len(high_risk_cancers)
+        top_risks = [f"{cancer}: {score:.1f}%" for cancer, score in high_risk_cancers[:3]]
+        top_risks_text = ', '.join(top_risks) if top_risks else 'All within baseline levels'
+        total_variants = summary.get('total_variants_found', 0)
 
         prompt = self._get_style_prefix()
-        prompt += """
+        prompt += f"""
 Generate ONLY the Recommendations section content for a genomic risk assessment report.
 
-RISK PROFILE:
-- High-risk cancers found: {len(high_risk_cancers)}
-"""
+INPUT DATA:
+- High-risk findings: {high_risk_count}
+- Top cancer risks: {top_risks_text}
+- Total variants analyzed: {total_variants}
 
-        if high_risk_cancers:
-            prompt += "- Elevated risks:\n"
-            for cancer_type, score in high_risk_cancers[:3]:  # Top 3
-                prompt += f"  * {cancer_type.title()}: {score:.1f}%\n"
-        else:
-            prompt += "- All cancer risks within baseline levels\n"
-
-        prompt += """
 TASK:
-Generate a bulleted list of 3-5 actionable clinical recommendations.
-Tailor recommendations to the risk profile:
-
-FOR HIGH-RISK CASES:
-- Include genetic counseling recommendation
-- Suggest specific screening protocols for elevated cancer types
-- Mention consideration of preventive measures if appropriate
-- Include standard follow-up advice
-
-FOR LOW-RISK CASES:
-- Recommend standard age-appropriate screening
-- Mention continued adherence to preventive care
-- Include lifestyle recommendations
-- Still suggest genetic counseling if family history warrants
+Generate a bulleted list of 4-6 actionable recommendations, each with 1-2 explanatory sentences.
+Focus on:
+1. Immediate actions based on risk level (genetic counseling, enhanced screening)
+2. Preventive measures and lifestyle modifications
+3. Family considerations and cascade screening when appropriate
+4. Follow-up care and monitoring
+5. Risk management plan based on current guidelines."
 
 OUTPUT FORMAT:
-Return ONLY the bulleted list using "- " format.
-Do not include section headers or additional formatting.
-Always end with: "- Consult a qualified healthcare provider for personalized guidance."
+Return ONLY the bulleted list. Use "- " for bullets. Do not include section headers or extra formatting.
 
-EXAMPLE OUTPUT (high-risk):
-"- Genetic counseling is strongly recommended to discuss these findings and develop a personalized risk management plan
-- Enhanced breast cancer screening including annual mammography and consideration of MRI screening
-- Ovarian cancer surveillance with transvaginal ultrasound and CA-125 testing
-- Consider prophylactic measures in consultation with oncology specialists
-- Consult a qualified healthcare provider for personalized guidance."
-
-EXAMPLE OUTPUT (low-risk):
-"- Adhere to standard age-appropriate cancer screening protocols
-- Maintain healthy lifestyle including regular exercise and balanced diet
-- Continue routine preventive care and health maintenance
-- Consider genetic counseling if strong family history of cancer emerges
-- Consult a qualified healthcare provider for personalized guidance."
+GENERATE YOUR OWN RECOMMENDATIONS based on the actual risk levels and findings in the data. Do not use example recommendations.
 """
 
         return prompt
@@ -373,15 +344,24 @@ EXAMPLE OUTPUT (low-risk):
         """Get style-specific prefix for prompts."""
 
         if self.style == ReportStyle.CLINICIAN:
-            return """You are a clinical geneticist writing a professional genomic risk assessment report for healthcare providers. Use appropriate medical terminology, maintain scientific accuracy, and provide clinically relevant insights. """
+            return """You are a geneticist writing a professional genomic risk assessment report for healthcare providers. Use appropriate medical terminology, maintain scientific accuracy, and provide relevant insights. """
 
         elif self.style == ReportStyle.TECHNICAL:
-            return """You are a bioinformatician writing a detailed technical report for researchers and clinical scientists. Use precise scientific terminology, include methodological details, and provide comprehensive technical analysis. """
+            return """You are a bioinformatician writing a detailed technical report for researchers and scientists. Use precise scientific terminology, include methodological details, and provide comprehensive technical analysis. """
 
         elif self.style == ReportStyle.PATIENT:
             return """You are a genetic counselor writing a report for patients and their families. Use clear, accessible language while maintaining accuracy. Explain technical terms and provide context for understanding genetic risk. """
 
         return ""
+
+    def _count_high_risk_findings(self, data: Dict[str, Any]) -> int:
+        """Count the number of high-risk findings in the data."""
+        risk_assessment = data.get("risk_assessment", {})
+        if not risk_assessment or "scores" not in risk_assessment:
+            return 0
+        
+        scores = risk_assessment.get("scores", {})
+        return sum(1 for score in scores.values() if score > self.risk_threshold)
 
     def build_full_report_prompt(self, data: Dict[str, Any]) -> str:
         """Build a comprehensive prompt for generating the entire report (legacy method)."""

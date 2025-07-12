@@ -548,7 +548,7 @@ def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
 def process(state: Dict) -> Dict:
     """Add transformation details to variants"""
     logger.info("Starting variant transformation")
-    state["current_node"] = "variant_transformer"
+    # Note: Don't set current_node to avoid concurrent updates
 
     try:
         # Get variants - prefer classified variants if available
@@ -574,9 +574,6 @@ def process(state: Dict) -> Dict:
 
             transformed_variants.append(transformed_variant)
 
-        # Update state
-        state["variant_details"] = transformed_variants
-
         # Add summary statistics
         impact_summary = {
             "total_variants": len(transformed_variants),
@@ -596,28 +593,26 @@ def process(state: Dict) -> Dict:
                 if "conservative" in v.get("functional_impact", "").lower()
             ),
         }
-        state["variant_transformation_summary"] = impact_summary
-
-        # Add to completed nodes
-        completed = state.get("completed_nodes", [])
-        if "variant_transformer" not in completed:
-            completed.append("variant_transformer")
-        state["completed_nodes"] = completed
 
         logger.info(f"Transformed {len(transformed_variants)} variants")
 
+        # Return only the fields this node updates
+        return {
+            "variant_details": transformed_variants,
+            "variant_transformation_summary": impact_summary,
+        }
+
     except Exception as e:
         logger.error(f"Error in variant transformation: {str(e)}")
-        state["errors"] = state.get("errors", []) + [
-            {
+        # Return error state updates
+        # Pass through variants without transformation on error
+        return {
+            "variant_details": state.get(
+                "classified_variants", state.get("filtered_variants", [])
+            ),
+            "errors": [{
                 "node": "variant_transformer",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
-            }
-        ]
-        # Pass through variants without transformation on error
-        state["variant_details"] = state.get(
-            "classified_variants", state.get("filtered_variants", [])
-        )
-
-    return state
+            }]
+        }
