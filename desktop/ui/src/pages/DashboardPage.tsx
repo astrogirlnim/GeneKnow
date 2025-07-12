@@ -1001,45 +1001,7 @@ ${content}`;
             </div>
           </div>
 
-          {/* Report Sections from Pipeline Results */}
-          {pipelineResults && pipelineResults.report_sections && (
-            <div style={{
-              marginBottom: '2rem',
-              padding: '1.5rem',
-              background: '#FFFFFF',
-              borderRadius: '0.75rem',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{ fontWeight: '600', fontSize: '1.25rem', marginBottom: '1rem', color: '#111827' }}>
-                Analysis Report
-              </h3>
-              {Object.entries(pipelineResults.report_sections || {}).map(([key, section]) => (
-                <div key={key} style={{ marginBottom: '1rem' }}>
-                  <h4 style={{ 
-                    fontWeight: '600', 
-                    fontSize: '1rem',
-                    color: section.severity === 'high' ? '#DC2626' : 
-                           section.severity === 'medium' ? '#F59E0B' : '#059669',
-                    marginBottom: '0.5rem'
-                  }}>
-                    {section.title}
-                  </h4>
-                  <p style={{ color: '#4B5563', lineHeight: '1.5' }}>{section.content}</p>
-                  {section.technical_details && (
-                    <details style={{ marginTop: '0.5rem' }}>
-                      <summary style={{ cursor: 'pointer', color: '#6B7280', fontSize: '0.875rem' }}>
-                        Technical Details
-                      </summary>
-                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6B7280' }}>
-                        {section.technical_details}
-                      </p>
-                    </details>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+
 
           {/* Tab Navigation */}
           <div style={{
@@ -1307,143 +1269,38 @@ ${content}`;
                   Clinical Reports
                 </h3>
                 
-                {pipelineResults && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {pipelineResults.enhanced_report_content?.markdown && (
-                      <>
-                        <button
-                          onClick={() => {
-                            // Download the in-memory markdown content
-                            const content = pipelineResults.enhanced_report_content?.markdown;
-                            if (content) {
-                              const blob = new Blob([content], { type: 'text/markdown' });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(url);
-                            }
-                          }}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#2563EB',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'background 200ms ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#1D4ED8'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#2563EB'}
-                        >
-                          Download Markdown
-                        </button>
-                        {pipelineResults.enhanced_report_content?.html && (
-                          <button
-                            onClick={() => {
-                              // Download the in-memory HTML content
-                              const content = pipelineResults.enhanced_report_content?.html;
-                              if (content) {
-                                const blob = new Blob([content], { type: 'text/html' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.html`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                              }
-                            }}
-                            style={{
-                              padding: '0.5rem 1rem',
-                              background: '#DC2626',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.875rem',
-                              cursor: 'pointer',
-                              transition: 'background 200ms ease'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#B91C1C'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = '#DC2626'}
-                          >
-                            Download HTML
-                          </button>
-                        )}
-                        <button
-                          onClick={downloadPDF}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#7C3AED',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'background 200ms ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#6D28D9'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#7C3AED'}
-                        >
-                          Download PDF
-                        </button>
-                      </>
-                    )}
-                    {!pipelineResults.enhanced_report_content?.markdown && markdownContent && (
-                      <>
-                        <button
-                          onClick={() => {
-                            // Create and download the generated markdown
-                            const blob = new Blob([markdownContent], { type: 'text/markdown' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `genomic-report-${fileName || 'analysis'}-${new Date().toISOString().split('T')[0]}.md`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                          }}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#059669',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'background 200ms ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#047857'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#059669'}
-                        >
-                          Download Report
-                        </button>
-                        <button
-                          onClick={downloadPDF}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#7C3AED',
-                            color: '#FFFFFF',
-                            border: 'none',
-                            borderRadius: '0.375rem',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'background 200ms ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#6D28D9'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#7C3AED'}
-                        >
-                          Download PDF
-                        </button>
-                      </>
-                    )}
-                  </div>
+{/* Download PDF Button */}
+                {(markdownContent || pipelineResults?.enhanced_report_content?.markdown) && (
+                  <button
+                    onClick={downloadPDF}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#2563EB',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 200ms ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#1D4ED8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#2563EB';
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download PDF
+                  </button>
                 )}
 
               </div>
