@@ -5,7 +5,7 @@ Structures all results into JSON format for frontend consumption.
 
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -145,15 +145,47 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         # Build comprehensive summary including mutation types
+        # Get variant counts from best available source
+        file_metadata = state.get("file_metadata", {})
+        qc_stats = file_metadata.get("qc_stats", {})
+        mutation_type_dist = state.get("mutation_type_distribution")
+        
+        # Add debug logging to track data flow
+        print(f"\n=== FORMATTER DEBUG ===")
+        print(f"State keys: {list(state.keys())}")
+        print(f"file_metadata keys: {list(file_metadata.keys())}")
+        print(f"qc_stats: {qc_stats}")
+        print(f"mutation_type_distribution: {mutation_type_dist}")
+        print(f"variant_count: {state.get('variant_count', 0)}")
+        print(f"filtered_variants length: {len(state.get('filtered_variants', []))}")
+        
+        # For total variants found: prefer file metadata, then mutation types, then state
+        if qc_stats and qc_stats.get("total_variants", 0) > 0:
+            total_variants_found = qc_stats.get("total_variants", 0)
+        elif mutation_type_dist and sum(mutation_type_dist.values()) > 0:
+            total_variants_found = sum(mutation_type_dist.values())
+        else:
+            total_variants_found = state.get("variant_count", 0)
+        
+        # For variants passed QC: prefer QC stats, then filtered_variants length
+        if qc_stats and "passed_qc" in qc_stats:
+            variants_passed_qc = qc_stats.get("passed_qc", 0)
+        else:
+            variants_passed_qc = len(state.get("filtered_variants", []))
+        
+        print(f"Calculated total_variants_found: {total_variants_found}")
+        print(f"Calculated variants_passed_qc: {variants_passed_qc}")
+        print(f"=== END FORMATTER DEBUG ===\n")
+        
         summary = {
-            "total_variants_found": state["variant_count"],
-            "variants_passed_qc": len(state["filtered_variants"]),
+            "total_variants_found": total_variants_found,
+            "variants_passed_qc": variants_passed_qc,
             "high_risk_findings": len(high_risk_findings),
         }
-
+        
         # Add mutation type distribution if available
-        if state.get("mutation_type_distribution"):
-            summary["mutation_types"] = state["mutation_type_distribution"]
+        if mutation_type_dist:
+            summary["mutation_types"] = mutation_type_dist
 
         # Process pathway analysis data from pathway burden results
         pathway_analysis = None
@@ -397,7 +429,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                 "file_type": state["file_type"],
                 "file_metadata": state["file_metadata"],
             },
-            "summary": summary,
+            "summary": {
+                "total_variants_found": total_variants_found,
+                "variants_passed_qc": variants_passed_qc,
+                "high_risk_findings": len(high_risk_findings),
+                "mutation_types": mutation_type_dist,
+            },
             "risk_assessment": (
                 {
                     "scores": risk_scores,
@@ -420,6 +457,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "structural_variants": state.get("structural_variants", []),
             "copy_number_variants": state.get("copy_number_variants", []),
             "pathway_analysis": final_pathway_analysis,
+            "pathway_summary": final_pathway_analysis.get("summary", {}) if final_pathway_analysis else {},
             "survival_analysis": state.get("survival_analysis"),
             "clinical_recommendations": state.get("clinical_recommendations"),
         }

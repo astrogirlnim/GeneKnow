@@ -35,6 +35,30 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     logger.info("Starting enhanced report generation")
 
+    # Add debug logging to see what data we receive
+    print(f"\n=== REPORT GENERATOR DEBUG ===")
+    print(f"State keys: {list(state.keys())}")
+    
+    # Check if structured_json exists and what it contains
+    structured_json = state.get("structured_json")
+    if structured_json:
+        print(f"structured_json keys: {list(structured_json.keys())}")
+        summary = structured_json.get("summary", {})
+        print(f"structured_json summary: {summary}")
+    else:
+        print("No structured_json found in state")
+        
+    # Check raw state data
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    mutation_type_dist = state.get("mutation_type_distribution")
+    
+    print(f"Raw state - file_metadata keys: {list(file_metadata.keys())}")
+    print(f"Raw state - qc_stats: {qc_stats}")
+    print(f"Raw state - mutation_type_distribution: {mutation_type_dist}")
+    print(f"Raw state - variant_count: {state.get('variant_count', 0)}")
+    print(f"=== END REPORT GENERATOR DEBUG ===\n")
+
     try:
         # Load configuration
         config = load_config()
@@ -43,7 +67,6 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         # Get or create structured JSON data
-        structured_json = state.get("structured_json")
         if not structured_json:
             logger.warning("No structured_json found, creating basic structure")
             structured_json = _create_basic_structured_json(state)
@@ -155,8 +178,48 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
+def _get_total_variants_count(state: Dict[str, Any]) -> int:
+    """Get total variant count, preferring file metadata if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer file metadata first
+    if qc_stats and qc_stats.get("total_variants", 0) > 0:
+        return qc_stats.get("total_variants", 0)
+    
+    # Fallback to mutation type distribution
+    mutation_type_dist = state.get("mutation_type_distribution")
+    if mutation_type_dist and sum(mutation_type_dist.values()) > 0:
+        return sum(mutation_type_dist.values())
+    
+    # Final fallback to state
+    return state.get("variant_count", 0)
+
+
+def _get_variants_passed_qc_count(state: Dict[str, Any]) -> int:
+    """Get variants passed QC count, preferring QC stats if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer QC stats
+    if qc_stats and "passed_qc" in qc_stats:
+        return qc_stats.get("passed_qc", 0)
+    
+    # Fallback to filtered_variants length
+    return len(state.get("filtered_variants", []))
+
+
 def _create_basic_structured_json(state: Dict[str, Any]) -> Dict[str, Any]:
     """Create basic structured JSON from pipeline state."""
+    
+    # Get counts using helper functions
+    total_variants = _get_total_variants_count(state)
+    passed_qc = _get_variants_passed_qc_count(state)
+    
+    print(f"\n=== _create_basic_structured_json DEBUG ===")
+    print(f"Calculated total_variants: {total_variants}")
+    print(f"Calculated passed_qc: {passed_qc}")
+    print(f"=== END _create_basic_structured_json DEBUG ===\n")
 
     return {
         "report_metadata": {
@@ -172,8 +235,8 @@ def _create_basic_structured_json(state: Dict[str, Any]) -> Dict[str, Any]:
             "file_metadata": state.get("file_metadata", {}),
         },
         "summary": {
-            "total_variants_found": state.get("variant_count", 0),
-            "variants_passed_qc": len(state.get("filtered_variants", [])),
+            "total_variants_found": total_variants,
+            "variants_passed_qc": passed_qc,
             "high_risk_findings": len(
                 [s for s in state.get("risk_scores", {}).values() if s >= 5.0]
             ),

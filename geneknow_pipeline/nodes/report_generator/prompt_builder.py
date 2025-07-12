@@ -44,17 +44,48 @@ class PromptBuilder:
         )[:3]
 
         prompt = self._get_style_prefix()
-        prompt += """
+        # Format the actual values
+        file_type = patient_data.get('file_type', 'Unknown')
+        
+        # Handle both new and old summary format
+        if 'total_variants_found' in summary:
+            # New format with variant data
+            total_variants = summary.get('total_variants_found', 0)
+            qc_variants = summary.get('variants_passed_qc', 0)
+        else:
+            # Old format or missing data - try to get from file metadata
+            file_metadata = patient_data.get('file_metadata', {})
+            qc_stats = file_metadata.get('qc_stats', {})
+            if qc_stats:
+                total_variants = qc_stats.get('total_variants', 0)
+                qc_variants = qc_stats.get('passed_qc', 0)
+            else:
+                total_variants = 0
+                qc_variants = 0
+        
+        qc_pass_rate = (qc_variants / max(total_variants, 1)) * 100
+        processing_time = report_metadata.get('processing_time_seconds', 0)
+        top_risks_text = ', '.join(top_risks) if top_risks else 'All within baseline levels (<5%)'
+        
+        # Add debug logging
+        print(f"\n=== PROMPT BUILDER DEBUG ===")
+        print(f"summary data: {summary}")
+        print(f"total_variants: {total_variants}")
+        print(f"qc_variants: {qc_variants}")
+        print(f"qc_pass_rate: {qc_pass_rate}")
+        print(f"=== END PROMPT BUILDER DEBUG ===\n")
+
+        prompt += f"""
 Generate ONLY the Summary section content for a genomic risk assessment report.
 
 INPUT DATA:
-- File type: {patient_data.get('file_type', 'Unknown')}
-- Total variants found: {summary.get('total_variants_found', 0)}
-- Variants passed QC: {summary.get('variants_passed_qc', 0)}
-- QC pass rate: {(summary.get('variants_passed_qc', 0) / max(summary.get('total_variants_found', 1), 1) * 100):.1f}%
-- Processing time: {report_metadata.get('processing_time_seconds', 0):.1f} seconds
+- File type: {file_type}
+- Total variants found: {total_variants}
+- Variants passed QC: {qc_variants}
+- QC pass rate: {qc_pass_rate:.1f}%
+- Processing time: {processing_time:.1f} seconds
 - High-risk findings: {high_risk_count}
-- Top cancer risks: {', '.join(top_risks) if top_risks else 'All within baseline levels (<5%)'}
+- Top cancer risks: {top_risks_text}
 
 TASK:
 Write exactly 2-3 detailed paragraphs for the Summary section that:
@@ -70,11 +101,11 @@ OUTPUT FORMAT:
 Return ONLY the paragraph text. ABSOLUTELY NO section headers, bullets, markdown, or extra formatting. Start directly with the content text.
 
 EXAMPLE OUTPUT (high-risk case):
-This genomic risk assessment employed advanced variant calling algorithms followed by rigorous quality control filters, analyzing a total of [X] genetic variants from [file type] data. Of these, [Y] variants passed QC thresholds including minimum read depth and allele frequency requirements, achieving a Z% pass rate. The complete analysis, incorporating TCGA database matching and machine learning risk modeling, was executed in [time] seconds.
+This genomic risk assessment employed advanced variant calling algorithms followed by rigorous quality control filters, analyzing a total of {total_variants} genetic variants from {file_type} data. Of these, {qc_variants} variants passed QC thresholds including minimum read depth and allele frequency requirements, achieving a {qc_pass_rate:.1f}% pass rate. The complete analysis, incorporating TCGA database matching and machine learning risk modeling, was executed in {processing_time:.1f} seconds.
 
-The genetic profile reveals significantly elevated risks for [top cancers], with the highest being [specific cancer] at [percentage], primarily driven by pathogenic variants in key oncogenes and high polygenic risk scores. Additional contributing factors include [brief mention of other factors if applicable]. These findings suggest a strong genetic predisposition that may influence management.
+The genetic profile reveals significantly elevated risks for {top_risks_text if high_risk_count > 0 else 'multiple cancer types'}, primarily driven by pathogenic variants in key oncogenes and high polygenic risk scores. Additional contributing factors include population-specific allele frequencies and functional impact predictions. These findings suggest {'a strong genetic predisposition' if high_risk_count > 0 else 'baseline risk levels'} that may influence management.
 
-Given these results, immediate genetic counseling is recommended to discuss preventive strategies, enhanced screening protocols, and potential family implications.
+Given these results, {'immediate genetic counseling is recommended' if high_risk_count > 0 else 'routine screening protocols are appropriate'} to discuss {'preventive strategies, enhanced screening protocols, and potential family implications' if high_risk_count > 0 else 'standard care recommendations and lifestyle factors'}.
 """
 
         return prompt
@@ -124,13 +155,19 @@ REQUIRED OUTPUT:
 "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
 """
         else:
-            prompt += """
+            # Format the actual values
+            total_variants = len(variant_details)
+            high_risk_variants = len(key_variants)
+            top_genes = list(set(v.get("gene", "") for v in key_variants if v.get("gene")))[:5]
+            top_genes_text = ', '.join(top_genes) if top_genes else 'None identified'
+
+            prompt += f"""
 Generate ONLY the Key Variants section content for a genomic risk assessment report.
 
 INPUT DATA:
 - Total variants analyzed: {total_variants}
 - High-risk variants: {high_risk_variants}
-- Genes with elevated risk: {', '.join(top_genes) if top_genes else 'None identified'}
+- Genes with elevated risk: {top_genes_text}
 
 TASK:
 Write a numbered list (1., 2., etc.) of the key variants with detailed interpretation.
@@ -183,7 +220,7 @@ CANCER RISK SCORES:
             1 for _, score in sorted_scores if score > self.risk_threshold
         )
 
-        prompt += """
+        prompt += f"""
 High-risk findings (>5%): {high_risk_count}
 
 TASK:
@@ -267,6 +304,7 @@ REQUIRED ENDING SENTENCE:
 
         risk_assessment = data.get("risk_assessment", {})
         scores = risk_assessment.get("scores", {}) if risk_assessment else {}
+        summary = data.get("summary", {})
 
         # Get high-risk cancers
         high_risk_cancers = []
@@ -277,6 +315,12 @@ REQUIRED ENDING SENTENCE:
 
         # Sort by risk score
         high_risk_cancers.sort(key=lambda x: x[1], reverse=True)
+        
+        # Format the actual values
+        high_risk_count = len(high_risk_cancers)
+        top_risks = [f"{cancer}: {score:.1f}%" for cancer, score in high_risk_cancers[:3]]
+        top_risks_text = ', '.join(top_risks) if top_risks else 'All within baseline levels'
+        total_variants = summary.get('total_variants_found', 0)
 
         prompt = self._get_style_prefix()
         prompt += f"""
@@ -284,8 +328,8 @@ Generate ONLY the Recommendations section content for a genomic risk assessment 
 
 INPUT DATA:
 - High-risk findings: {high_risk_count}
-- Top cancer risks: {', '.join(top_risks) if top_risks else 'All within baseline levels'}
-- Total variants analyzed: {summary.get('total_variants_found', 0)}
+- Top cancer risks: {top_risks_text}
+- Total variants analyzed: {total_variants}
 
 TASK:
 Generate a bulleted list of 4-6 actionable recommendations, each with 1-2 explanatory sentences.
@@ -321,6 +365,15 @@ EXAMPLE OUTPUT (high-risk case):
             return """You are a genetic counselor writing a report for patients and their families. Use clear, accessible language while maintaining accuracy. Explain technical terms and provide context for understanding genetic risk. """
 
         return ""
+
+    def _count_high_risk_findings(self, data: Dict[str, Any]) -> int:
+        """Count the number of high-risk findings in the data."""
+        risk_assessment = data.get("risk_assessment", {})
+        if not risk_assessment or "scores" not in risk_assessment:
+            return 0
+        
+        scores = risk_assessment.get("scores", {})
+        return sum(1 for score in scores.values() if score > self.risk_threshold)
 
     def build_full_report_prompt(self, data: Dict[str, Any]) -> str:
         """Build a comprehensive prompt for generating the entire report (legacy method)."""

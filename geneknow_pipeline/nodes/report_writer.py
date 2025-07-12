@@ -10,6 +10,37 @@ from typing import Dict, Any, List
 logger = logging.getLogger(__name__)
 
 
+def _get_total_variants_count(state: Dict[str, Any]) -> int:
+    """Get total variant count, preferring file metadata if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer file metadata first
+    if qc_stats and qc_stats.get("total_variants", 0) > 0:
+        return qc_stats.get("total_variants", 0)
+    
+    # Fallback to mutation type distribution
+    mutation_type_dist = state.get("mutation_type_distribution")
+    if mutation_type_dist and sum(mutation_type_dist.values()) > 0:
+        return sum(mutation_type_dist.values())
+    
+    # Final fallback to state
+    return state.get("variant_count", 0)
+
+
+def _get_variants_passed_qc_count(state: Dict[str, Any]) -> int:
+    """Get variants passed QC count, preferring QC stats if available."""
+    file_metadata = state.get("file_metadata", {})
+    qc_stats = file_metadata.get("qc_stats", {})
+    
+    # Prefer QC stats
+    if qc_stats and "passed_qc" in qc_stats:
+        return qc_stats.get("passed_qc", 0)
+    
+    # Fallback to filtered_variants length
+    return len(state.get("filtered_variants", []))
+
+
 def process(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate structured report sections.
@@ -42,8 +73,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     "file_metadata": state.get("file_metadata", {}),
                 },
                 "summary": {
-                    "total_variants_found": state.get("variant_count", 0),
-                    "variants_passed_qc": len(state.get("filtered_variants", [])),
+                    "total_variants_found": _get_total_variants_count(state),
+                    "variants_passed_qc": _get_variants_passed_qc_count(state),
                     "high_risk_findings": len(
                         [s for s in state.get("risk_scores", {}).values() if s >= 50]
                     ),

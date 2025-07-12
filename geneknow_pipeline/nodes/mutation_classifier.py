@@ -55,6 +55,7 @@ def process(state: Dict) -> Dict:
         # Update state
         state["classified_variants"] = classified_variants
         state["mutation_types"] = mutation_counts
+        state["mutation_type_distribution"] = mutation_counts
 
         # Add to completed nodes
         completed = state.get("completed_nodes", [])

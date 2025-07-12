@@ -354,7 +354,7 @@ export const SettingsPage: React.FC = () => {
     }
   }
 
-  const handleSave = async () => {
+  const autoSave = async (newConfig: ReportGeneratorConfig) => {
     try {
       setIsSaving(true)
       setSaveMessage(null)
@@ -364,30 +364,34 @@ export const SettingsPage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(config)
+        body: JSON.stringify(newConfig)
       })
 
       if (response.ok) {
-        setSaveMessage('Settings saved successfully!')
-        setTimeout(() => setSaveMessage(null), 3000)
+        setSaveMessage('Settings saved automatically ✓')
+        setTimeout(() => setSaveMessage(null), 2000)
       } else {
-        setSaveMessage('Failed to save settings. Please try again.')
+        setSaveMessage('Failed to auto-save settings')
+        setTimeout(() => setSaveMessage(null), 3000)
       }
     } catch (error) {
-      console.error('Failed to save configuration:', error)
-      setSaveMessage('Failed to save settings. Please try again.')
+      console.error('Failed to auto-save configuration:', error)
+      setSaveMessage('Failed to auto-save settings')
+      setTimeout(() => setSaveMessage(null), 3000)
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleBackendChange = (backend: 'ollama' | 'none') => {
-    
-    setConfig(prev => ({
-      ...prev,
+    const newConfig = {
+      ...config,
       backend,
       model_name: null // Reset model selection when backend changes
-    }))
+    }
+    
+    setConfig(newConfig)
+    autoSave(newConfig)
     
     // If switching to Ollama and there was a previously selected model, 
     // we could potentially warm it up, but since we're resetting model_name,
@@ -396,10 +400,13 @@ export const SettingsPage: React.FC = () => {
 
   const handleModelChange = (modelName: string) => {
     const actualModelName = modelName === 'auto' ? null : modelName
-    setConfig(prev => ({
-      ...prev,
+    const newConfig = {
+      ...config,
       model_name: actualModelName
-    }))
+    }
+    
+    setConfig(newConfig)
+    autoSave(newConfig)
 
     // Request notification permission for background loading updates
     if (config.backend === 'ollama' && actualModelName && 'Notification' in window) {
@@ -912,7 +919,11 @@ export const SettingsPage: React.FC = () => {
             
             <CustomDropdown
               value={config.style}
-              onChange={(value) => setConfig(prev => ({ ...prev, style: value as 'clinical' | 'technical' | 'patient' }))}
+              onChange={(value) => {
+                const newConfig = { ...config, style: value as 'clinical' | 'technical' | 'patient' }
+                setConfig(newConfig)
+                autoSave(newConfig)
+              }}
               options={getStyleOptions()}
               placeholder="Select report style"
             />
@@ -958,7 +969,11 @@ export const SettingsPage: React.FC = () => {
                   max="1.0"
                   step="0.1"
                   value={config.temperature}
-                  onChange={(e) => setConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                  onChange={(e) => {
+                    const newConfig = { ...config, temperature: parseFloat(e.target.value) }
+                    setConfig(newConfig)
+                    autoSave(newConfig)
+                  }}
                   style={{ width: '100%' }}
                 />
                 <div style={{ 
@@ -983,7 +998,11 @@ export const SettingsPage: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={config.include_recommendations}
-                  onChange={(e) => setConfig(prev => ({ ...prev, include_recommendations: e.target.checked }))}
+                  onChange={(e) => {
+                    const newConfig = { ...config, include_recommendations: e.target.checked }
+                    setConfig(newConfig)
+                    autoSave(newConfig)
+                  }}
                   style={{ marginRight: '8px' }}
                 />
                 <span style={{ color: '#374151', fontWeight: '500' }}>Include Clinical Recommendations</span>
@@ -999,7 +1018,11 @@ export const SettingsPage: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={config.include_glossary}
-                  onChange={(e) => setConfig(prev => ({ ...prev, include_glossary: e.target.checked }))}
+                  onChange={(e) => {
+                    const newConfig = { ...config, include_glossary: e.target.checked }
+                    setConfig(newConfig)
+                    autoSave(newConfig)
+                  }}
                   style={{ marginRight: '8px' }}
                 />
                 <span style={{ color: '#374151', fontWeight: '500' }}>Include Medical Glossary</span>
@@ -1007,52 +1030,38 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Save Section */}
-          <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              {saveMessage && (
-                <div style={{
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  background: saveMessage.includes('successfully') ? '#DCFCE7' : '#FEF2F2',
-                  color: saveMessage.includes('successfully') ? '#166534' : '#991B1B'
-                }}>
-                  {saveMessage}
-                </div>
-              )}
-            </div>
-            
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              style={{
-                background: isSaving ? '#9CA3AF' : '#2563EB',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '12px 24px',
+          {/* Auto-save Status */}
+          {saveMessage && (
+            <div style={{ 
+              padding: '16px 24px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
                 fontSize: '14px',
-                fontWeight: '600',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                transition: 'all 200ms ease',
-                outline: 'none'
-              }}
-              onMouseEnter={(e) => {
-                if (!isSaving) {
-                  e.currentTarget.style.background = '#1D4ED8';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSaving) {
-                  e.currentTarget.style.background = '#2563EB';
-                }
-              }}
-            >
-              {isSaving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </div>
+                fontWeight: '500',
+                background: saveMessage.includes('✓') ? '#DCFCE7' : '#FEF2F2',
+                color: saveMessage.includes('✓') ? '#166534' : '#991B1B',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                {isSaving && (
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #E5E7EB',
+                    borderTop: '2px solid #2563EB',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                )}
+                {saveMessage}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

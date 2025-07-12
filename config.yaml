@@ -12,5 +12,5 @@ report_generator:
   output_formats:
   - markdown
   risk_threshold: 5.0
-  style: clinician
-  temperature: 0.3
+  style: technical
+  temperature: 0.5
