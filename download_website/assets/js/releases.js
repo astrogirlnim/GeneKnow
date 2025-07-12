@@ -59,19 +59,19 @@ function getMockReleaseData() {
         published_at: new Date().toISOString(),
         body: `## What's New in v1.2.3
 
-### ✨ New Features
+### New Features
 - **Enhanced Privacy Protection**: Improved local data processing with zero cloud uploads
 - **TCGA Data Integration**: Updated machine learning models with latest TCGA datasets
 - **Cross-Platform Compatibility**: Native support for Windows, macOS, and Linux
 - **Faster Processing**: Optimized algorithms for 3x faster genomic analysis
 
-### 🛠️ Improvements
+### Improvements
 - **Better User Interface**: Streamlined workflow for easier navigation
 - **Enhanced Reports**: More detailed visualizations and risk assessments
 - **Memory Optimization**: Reduced RAM usage by 40%
 - **Security Updates**: Latest security patches and improvements
 
-### 🐛 Bug Fixes
+### Bug Fixes
 - Fixed occasional crashes during large file processing
 - Resolved memory leaks in long-running analysis sessions
 - Improved error handling for corrupted input files

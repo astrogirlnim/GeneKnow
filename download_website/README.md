@@ -2,7 +2,7 @@
 
 This is the static website for hosting GeneKnow downloads and serving as a marketing landing page. The website is automatically deployed to GitHub Pages and fetches the latest releases from the GitHub API.
 
-## 🌟 Features
+## Features
 
 - **Responsive Design**: Works on all devices and screen sizes
 - **Dynamic Release Fetching**: Automatically displays latest releases from GitHub API
@@ -13,7 +13,7 @@ This is the static website for hosting GeneKnow downloads and serving as a marke
 - **Dark Mode Support**: Automatically adapts to user's system theme preference
 - **Accessibility**: WCAG compliant with proper focus management
 
-## 📁 Structure
+## Structure
 
 ```
 download_website/
@@ -32,7 +32,7 @@ download_website/
 └── README.md              # This file
 ```
 
-## 🚀 Setup
+## Setup
 
 ### 1. GitHub Repository Configuration
 
@@ -62,7 +62,7 @@ If you want to use a custom domain:
 1. Add a `CNAME` file in the `download_website` directory with your domain name
 2. Configure your DNS settings to point to `your-username.github.io`
 
-## 🔧 Customization
+## Customization
 
 ### Logo and Branding
 
@@ -100,7 +100,7 @@ The website uses CSS custom properties (variables) for easy theming:
 }
 ```
 
-## 📱 Platform Support
+## Platform Support
 
 The website automatically detects the user's platform and highlights the appropriate download:
 
@@ -108,11 +108,11 @@ The website automatically detects the user's platform and highlights the appropr
 - **macOS**: Prioritizes `.dmg` files, then `.app`
 - **Linux**: Prioritizes `.AppImage`, then `.deb`, then `.rpm`
 
-## 🔄 Automatic Updates
+## Automatic Updates
 
 The website automatically fetches the latest release information from the GitHub API when users visit the page. No manual updates are required when you publish new releases.
 
-## 🛠️ Development
+## Development
 
 ### Local Development
 
@@ -133,7 +133,7 @@ The website automatically fetches the latest release information from the GitHub
 - Validate HTML and CSS
 - Test accessibility features
 
-## 🚨 Important Notes
+## Important Notes
 
 ### API Rate Limits
 
@@ -154,18 +154,18 @@ const REPO_NAME = 'your-repository-name';
 
 The website fetches data from the GitHub API using client-side JavaScript. This works because GitHub's API supports CORS. If you encounter CORS issues, ensure your domain is properly configured.
 
-## 🎯 Performance
+## Performance
 
 - All assets are optimized for fast loading
 - CSS and JavaScript are minified for production
 - Images use modern formats when possible
 - The website is designed to work well on slow connections
 
-## 📄 License
+## License
 
 This download website template is part of the GeneKnow project and follows the same licensing terms as the main repository.
 
-## 🤝 Contributing
+## Contributing
 
 To contribute to the download website:
 
@@ -175,7 +175,7 @@ To contribute to the download website:
 4. Test thoroughly
 5. Submit a pull request
 
-## 📞 Support
+## Support
 
 If you encounter issues with the download website:
 
@@ -186,4 +186,4 @@ If you encounter issues with the download website:
 
 ---
 
-Made with ❤️ by the GeneKnow team 
+Made with love by the GeneKnow team 
