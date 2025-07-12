@@ -91,6 +91,143 @@ Cross-platform compatibility is achieved through Tauri's bundling, with Rust han
 - **Scripts:** `create_population_database.py` (reproducible, public data only)
 - **No PHI:** Confirmed in all code and documentation
 
+## LangGraph Pipeline Architecture
+
+Geneknow’s core analysis pipeline is orchestrated using LangGraph, a modular, node-based workflow engine. This architecture enables reproducible, auditable, and privacy-preserving genomic analysis by chaining together discrete processing steps—each implemented as a node in the pipeline. The pipeline is divided into two phases:
+
+- **Phase 1: Offline Model Training & Validation** (performed before shipping the app)
+- **Phase 2: Online Real-Time Inference Pipeline** (runs locally in the app)
+
+Below is a high-level diagram of the pipeline, followed by a detailed explanation of each node and its implementation in the codebase.
+
+```mermaid
+flowchart TD
+ subgraph subGraph0["Phase 1: Offline Model Training & Validation (Done Before App is Shipped)"]
+        B_Train("Model Training<br>TensorFlow/PyTorch")
+        A_Data["Public & Clinical Data<br>TCGA, 1000 Genomes"]
+        C_Eval{"Evaluate Performance\n---\n**AUC-ROC:** Measures ability to distinguish high vs. low risk.\n**Sensitivity/F1-Score:** Prioritized to minimize false negatives (clinical safety).\n**MCC:** Provides a robust, balanced score for overall performance."}
+        D_Artifact(("Validated Model Artifact<br>*.pt / *.h5 file"))
+  end
+ subgraph subGraph1["Data Ingestion & Processing"]
+        G_Cond{"Conditional"}
+        F_Parse["Alignment/Parsing"]
+        E_Input["File Input<br>FASTQ/BAM/VCF"]
+        H_Call["Variant Calling<br>DeepVariant"]
+        I_QC["QC Filter"]
+        J_Merge["Merge & Consolidate"]
+  end
+ subgraph subGraph2["Genomic Feature Extraction"]
+        K_Pop["Population Mapper<br>gnomAD/dbSNP"]
+        L_TCGA["TCGA Mapper"]
+        M_CADD["CADD Scoring"]
+        N_ClinVar["ClinVar Annotator"]
+        O_PRS["PRS Calculator"]
+        P_Pathway["Pathway Burden"]
+  end
+ subgraph subGraph3["Machine Learning & Validation"]
+        Q_Vec["Feature Vector Builder"]
+        R_Model("Risk Model<br>TensorFlow/PyTorch")
+        S_Sanity{{"Explainability & Sanity-Check<br>SHAP-based rules"}}
+  end
+ subgraph subGraph4["Report & Human Interaction"]
+        T_Format["Formatter & Report Writer<br>Generate Markdown/VCF with PASS/FLAG"]
+        U_Front(["Frontend<br>React + Tailwind"])
+        V_Verify{"Human Verification"}
+        W_KM_Viz["Kaplan-Meier<br>Survival Curve Viz 📊"]
+        V_Confirm["Simple Confirmation<br>👍 / 👎"]
+        V_Review["Manual Review Required"]
+  end
+ subgraph subGraph5["Phase 2: Online Real-Time Inference Pipeline (Runs in the App)"]
+        subGraph1
+        subGraph2
+        subGraph3
+        subGraph4
+  end
+    A_Data --> B_Train
+    B_Train --> C_Eval
+    C_Eval --> D_Artifact
+    E_Input --> F_Parse
+    F_Parse --> G_Cond
+    G_Cond --> H_Call & I_QC
+    H_Call --> J_Merge
+    I_QC --> J_Merge
+    J_Merge --> K_Pop
+    K_Pop --> L_TCGA & M_CADD & N_ClinVar & O_PRS & P_Pathway
+    L_TCGA --> Q_Vec
+    M_CADD --> Q_Vec
+    N_ClinVar --> Q_Vec
+    O_PRS --> Q_Vec
+    P_Pathway --> Q_Vec
+    Q_Vec --> R_Model
+    R_Model --> S_Sanity
+    D_Artifact -- "Is Loaded By..." --> R_Model
+    S_Sanity --> T_Format
+    T_Format --> U_Front
+    U_Front --> V_Verify & W_KM_Viz
+    V_Verify -- ✅ PASS Status --> V_Confirm
+    V_Verify -- ⚠️ FLAG Status --> V_Review
+    style A_Data fill:#cde4f7,stroke:#333
+    style B_Train fill:#e2d9f3,stroke:#333
+    style C_Eval fill:#fce8b2,stroke:#333
+    style D_Artifact fill:#d4edda,stroke:#333,stroke-width:4px
+    style E_Input fill:#cde4f7,stroke:#333
+    style F_Parse fill:#cde4f7,stroke:#333
+    style G_Cond fill:#cde4f7,stroke:#333
+    style H_Call fill:#cde4f7,stroke:#333
+    style I_QC fill:#cde4f7,stroke:#333
+    style J_Merge fill:#cde4f7,stroke:#333
+    style K_Pop fill:#d4edda,stroke:#333
+    style L_TCGA fill:#d4edda,stroke:#333
+    style M_CADD fill:#d4edda,stroke:#333
+    style N_ClinVar fill:#d4edda,stroke:#333
+    style O_PRS fill:#d4edda,stroke:#333
+    style P_Pathway fill:#d4edda,stroke:#333
+    style Q_Vec fill:#e2d9f3,stroke:#333
+    style R_Model fill:#e2d9f3,stroke:#333
+    style S_Sanity fill:#fce8b2,stroke:#d63384,stroke-width:3px
+    style T_Format fill:#d1ecf1,stroke:#333
+    style U_Front fill:#f8d7da,stroke:#333
+    style V_Verify fill:#f8d7da,stroke:#333
+    style W_KM_Viz fill:#d1ecf1,stroke:#333
+    style V_Confirm fill:#d4edda,stroke:#333
+    style V_Review fill:#fce8b2,stroke:#333
+```
+
+### Node-by-Node Explanation
+
+| Node (Diagram)         | Implementation File/Function                  | Purpose/Role                                                                                   |
+|------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------|
+| **A_Data**             | *N/A (input data)*                            | Public & clinical data sources (TCGA, 1000 Genomes) used for model training                   |
+| **B_Train**            | *Offline ML scripts*                          | Model training (TensorFlow/PyTorch, see `ml_models/`)                                         |
+| **C_Eval**             | *Offline ML scripts*                          | Model evaluation (AUC, F1, MCC)                                                               |
+| **D_Artifact**         | `ml_models/best_fusion_model.pkl`             | Saved, validated model artifact                                                               |
+| **E_Input**            | `nodes/file_input.py:process`                 | Validates and extracts metadata from FASTQ/BAM/VCF/MAF files                                  |
+| **F_Parse**            | `nodes/preprocess.py:process`                 | Preprocesses input: aligns FASTQ, validates BAM, loads VCF/MAF                                |
+| **G_Cond**             | `nodes/preprocess.py:process`                 | Conditional logic for file type handling                                                      |
+| **H_Call**             | `nodes/variant_calling.py:run_simple_variant_caller` | Variant calling (DeepVariant or test VCF)                                                     |
+| **I_QC**               | `nodes/qc_filter.py`                          | Quality control filtering of variants                                                         |
+| **J_Merge**            | `nodes/preprocess.py` / pipeline logic        | Merges and consolidates variant data                                                          |
+| **K_Pop**              | `nodes/population_mapper.py`                  | Maps variants to population frequencies (gnomAD/dbSNP)                                        |
+| **L_TCGA**             | `nodes/tcga_mapper.py`                        | Maps variants to TCGA cancer cohort frequencies                                               |
+| **M_CADD**             | `nodes/cadd_scoring.py:process`               | Computes CADD-like deleteriousness scores locally                                             |
+| **N_ClinVar**          | `nodes/clinvar_annotator.py`                  | Annotates variants with ClinVar clinical significance                                         |
+| **O_PRS**              | `nodes/prs_calculator.py:process`             | Calculates Polygenic Risk Scores (PRS)                                                        |
+| **P_Pathway**          | `nodes/pathway_burden.py`                     | Calculates pathway-specific burden scores                                                     |
+| **Q_Vec**              | `nodes/feature_vector_builder.py:process`     | Builds feature vectors from all static model outputs for ML fusion                            |
+| **R_Model**            | `nodes/ml_fusion_node.py:MLFusionNode`        | ML fusion layer combines static model outputs for final risk assessment                       |
+| **S_Sanity**           | `nodes/shap_validator.py:process`             | SHAP-based explainability and sanity-check of ML predictions                                  |
+| **T_Format**           | `nodes/formatter.py:process`, `report_writer` | Formats results, generates markdown/VCF, prepares for report export                           |
+| **U_Front**            | `desktop/ui/`                                 | Frontend (React + Tailwind) for user interaction and visualization                            |
+| **V_Verify**           | *Frontend logic*                              | Human verification of results                                                                 |
+| **W_KM_Viz**           | `desktop/ui/components/`                      | Kaplan-Meier survival curve visualization                                                     |
+| **V_Confirm/Review**   | *Frontend logic*                              | User confirmation or manual review                                                            |
+
+**How It Works:**
+- **Phase 1** (Offline): Models are trained and validated on public/clinical data, producing a validated artifact that is bundled with the app.
+- **Phase 2** (Online): User uploads a file, which is validated, parsed, and processed through a series of nodes—each responsible for a specific analysis step. Features are extracted, risk is assessed, explainability is performed, and results are formatted for user review and export. All processing is local, with no data leaving the device.
+
+Each node is implemented as a Python module in `geneknow_pipeline/nodes/`, with clear logging and modular design for extensibility and auditability. For more details, see the code references above or the pipeline documentation.
+
 ## 5. Privacy & Security Design
 
 **Narrative Overview:**
