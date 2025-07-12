@@ -4,6 +4,38 @@ import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
+// Type definitions for genomic data structures
+interface StructuralVariant {
+  type: string;
+  chromosome: string;
+  start: number;
+  end: number;
+  size: number;
+  genes_affected: string[];
+  clinical_significance: string;
+  functional_impact: string;
+  transformation: {
+    original: string;
+    mutated: string;
+    effect: string;
+  };
+}
+
+interface CopyNumberVariant {
+  gene: string;
+  chromosome: string;
+  copy_number: number;
+  normal_copy_number: number;
+  fold_change: number;
+  clinical_significance: string;
+  cancer_relevance: string;
+  transformation: {
+    original: string;
+    mutated: string;
+    effect: string;
+  };
+}
+
 // Type definitions for external libraries
 interface JsPDFConstructor {
   new (orientation?: string, unit?: string, format?: string): JsPDFInstance;
@@ -39,7 +71,8 @@ declare global {
   const jsPDF: JsPDFConstructor | undefined;
 }
 
-// Mock SHAP validation for testing - different statuses for different risk levels
+// Mock SHAP validation for demo purposes only - NOT used when real pipeline results exist
+// This function should only be called for demo/testing scenarios, never with real data
 const getMockSHAPValidation = (riskLevel: string) => {
   switch (riskLevel) {
     case 'high':
@@ -1413,32 +1446,31 @@ const ClinicalViewPage: React.FC = () => {
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
   
+  // Check if we have real results from the pipeline
+  const pipelineResults = location.state?.results as PipelineResult | undefined;
+  const fileName = location.state?.fileName as string | undefined;
+  
   // Extract risk level from URL parameter - use same default as dashboard for consistency
   const riskLevel = searchParams.get('risk') || 'low';
   
-  // Use real SHAP validation from pipeline results if available, otherwise use mock data
+  // Use real SHAP validation from pipeline results only
   const getConfidenceCheckValidation = () => {
-    // Always use real SHAP validation results if pipeline results are available
+    // Use real SHAP validation if available
     if (pipelineResults?.structured_json?.shap_validation) {
       return pipelineResults.structured_json.shap_validation;
     }
     
-    // Only fall back to mock data if no pipeline results at all
-    if (!pipelineResults) {
-      return getMockSHAPValidation(riskLevel);
-    }
-    
-    // If we have pipeline results but no SHAP validation, create a default
+    // If no pipeline results or no SHAP validation, return SKIPPED status
     return {
       status: 'SKIPPED' as const,
-      reasons: ['Model validation not available'],
+      reasons: ['No pipeline results available'],
       top_contributors: [],
       feature_importance: {},
       details: {
         status: 'SKIPPED' as const,
         risk_score: 0.0,
         top_contributors: [],
-        validation_reasons: ['Model validation not available'],
+        validation_reasons: ['No pipeline results available'],
         rule_results: {},
         shap_values: [],
         feature_names: [],
@@ -1449,11 +1481,7 @@ const ClinicalViewPage: React.FC = () => {
   
   const confidenceCheckValidation = getConfidenceCheckValidation();
   
-  // Check if we have real results from the pipeline
-  const pipelineResults = location.state?.results as PipelineResult | undefined;
-  const fileName = location.state?.fileName as string | undefined;
-  
-  // Get mock data for UI elements
+  // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
   // Function to convert pipeline results to the format expected by the clinical view
@@ -1463,16 +1491,16 @@ const ClinicalViewPage: React.FC = () => {
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const riskFindings = riskScores.map(([cancer_type, risk_percentage]) => ({
         cancer_type,
-        risk_percentage,
-        risk_level: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
+        risk_percentage: risk_percentage as number,
+        risk_level: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
         affected_genes: pipelineResults.variants?.map(v => v.gene) || [],
-        recommendation: risk_percentage > 50 
+        recommendation: (risk_percentage as number) > 50 
           ? `Enhanced ${cancer_type} cancer screening recommended`
-          : risk_percentage > 20
+          : (risk_percentage as number) > 20
           ? `Moderate ${cancer_type} cancer screening recommended`
           : 'Standard screening guidelines apply',
-        mutation_burden: risk_percentage > 50 ? 'high' : risk_percentage > 20 ? 'medium' : 'low',
-        pathway_disruption: risk_percentage > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
+        mutation_burden: (risk_percentage as number) > 50 ? 'high' : (risk_percentage as number) > 20 ? 'medium' : 'low',
+        pathway_disruption: (risk_percentage as number) > 50 ? ['DNA_REPAIR', 'CELL_CYCLE'] : []
       }));
 
       const variantTable = pipelineResults.variants?.map((variant, index) => ({
@@ -1508,8 +1536,8 @@ const ClinicalViewPage: React.FC = () => {
         },
         risk_findings: riskFindings,
         variant_table: variantTable,
-        structural_variants: [],
-        copy_number_variants: [],
+        structural_variants: [] as StructuralVariant[],
+        copy_number_variants: [] as CopyNumberVariant[],
         mutation_signatures: [
           {
             signature: "SBS1",
@@ -1528,8 +1556,26 @@ const ClinicalViewPage: React.FC = () => {
         ]
       };
     } else {
-      // Fall back to mock data for demo purposes
-      return mockGenomicData;
+      // No pipeline results - return empty state
+      return {
+        summary: {
+          total_variants_found: 0,
+          variants_passed_qc: 0,
+          high_risk_findings_count: 0,
+          processing_time_seconds: 0,
+          mutation_types: {
+            snv: 0,
+            indel: 0,
+            cnv: 0,
+            structural: 0
+          }
+        },
+        risk_findings: [],
+        variant_table: [],
+        structural_variants: [] as StructuralVariant[],
+        copy_number_variants: [] as CopyNumberVariant[],
+        mutation_signatures: []
+      };
     }
   };
 

@@ -6,7 +6,7 @@ import os
 import logging
 from pathlib import Path
 import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class MLFusionNode:
     - Gene burden scores from pathway analysis
     """
 
-    def __init__(self, model_path: str = None):
+    def __init__(self, model_path: Optional[str] = None):
         """
         Initialize the ML Fusion Node.
 
@@ -362,7 +362,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Alternative node function for custom model path
-def create_ml_fusion_node(model_path: str = None):
+def create_ml_fusion_node(model_path: Optional[str] = None):
     """
     Create a custom ML fusion node with specific model path.
 

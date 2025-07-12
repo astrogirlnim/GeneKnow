@@ -197,7 +197,8 @@ const MetricCard = ({ title, value, unit, tooltipContent }: {
   </div>
 );
 
-// Mock SHAP validation for testing - different statuses for different risk levels
+// Mock SHAP validation for demo purposes only - NOT used when real pipeline results exist
+// This function should only be called for demo/testing scenarios, never with real data
 const getMockSHAPValidation = (riskLevel: string) => {
   switch (riskLevel) {
     case 'high':
@@ -748,29 +749,24 @@ const DashboardPage: React.FC = () => {
   const riskLevel = searchParams.get('risk') || mockRiskLevel || 'low';
   const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
   
-  // Use real SHAP validation from pipeline results if available, otherwise use mock data
+  // Use real SHAP validation from pipeline results only - no mock data fallback
   const getConfidenceCheckValidation = () => {
-    // Always use real SHAP validation results if pipeline results are available
+    // Use real SHAP validation if available
     if (pipelineResults?.structured_json?.shap_validation) {
       return pipelineResults.structured_json.shap_validation;
     }
     
-    // Only fall back to mock data if no pipeline results at all
-    if (!pipelineResults) {
-      return getMockSHAPValidation(riskLevel);
-    }
-    
-    // If we have pipeline results but no SHAP validation, create a default
+    // If no pipeline results or no SHAP validation, return SKIPPED status
     return {
       status: 'SKIPPED' as const,
-      reasons: ['Model validation not available'],
+      reasons: ['No pipeline results available'],
       top_contributors: [],
       feature_importance: {},
       details: {
         status: 'SKIPPED' as const,
         risk_score: 0.0,
         top_contributors: [],
-        validation_reasons: ['Model validation not available'],
+        validation_reasons: ['No pipeline results available'],
         rule_results: {},
         shap_values: [],
         feature_names: [],
