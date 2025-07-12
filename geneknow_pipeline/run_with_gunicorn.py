@@ -19,7 +19,7 @@ def main():
         '--timeout', '120',
         '--log-level', 'info'
     ]
-    
+
     # Run Gunicorn
     try:
         subprocess.run(gunicorn_cmd, check=True)
@@ -28,4 +28,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()

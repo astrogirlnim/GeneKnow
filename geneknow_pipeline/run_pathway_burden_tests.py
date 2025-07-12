@@ -20,38 +20,38 @@ def run_command(cmd, description):
     print(f"{'='*60}")
     print(f"Command: {cmd}")
     print(f"Started: {datetime.now().strftime('%H:%M:%S')}")
-    
+
     start_time = time.time()
     try:
         result = subprocess.run(
-            cmd, 
-            shell=True, 
-            capture_output=True, 
+            cmd,
+            shell=True,
+            capture_output=True,
             text=True,
             timeout=300  # 5 minute timeout
         )
-        
+
         end_time = time.time()
         duration = end_time - start_time
-        
+
         print(f"Duration: {duration:.2f} seconds")
         print(f"Return code: {result.returncode}")
-        
+
         if result.stdout:
-            print(f"\n📋 STDOUT:")
+            print("\n📋 STDOUT:")
             print(result.stdout)
-        
+
         if result.stderr:
-            print(f"\n⚠️  STDERR:")
+            print("\n⚠️  STDERR:")
             print(result.stderr)
-        
+
         success = result.returncode == 0
         print(f"\n{'✅ SUCCESS' if success else '❌ FAILED'}")
-        
+
         return success, duration, result.stdout, result.stderr
-        
+
     except subprocess.TimeoutExpired:
-        print(f"\n⏰ TIMEOUT: Test exceeded 5 minutes")
+        print("\n⏰ TIMEOUT: Test exceeded 5 minutes")
         return False, 300, "", "Timeout"
     except Exception as e:
         print(f"\n❌ ERROR: {str(e)}")
@@ -59,12 +59,12 @@ def run_command(cmd, description):
 
 def check_prerequisites():
     """Check if all required components are available."""
-    
+
     print("🔍 Checking Prerequisites")
     print("=" * 60)
-    
+
     checks = []
-    
+
     # Check if pathway_burden.py exists
     pathway_burden_file = "nodes/pathway_burden.py"
     if os.path.exists(pathway_burden_file):
@@ -73,7 +73,7 @@ def check_prerequisites():
     else:
         print(f"❌ {pathway_burden_file} missing")
         checks.append(False)
-    
+
     # Check if test file exists
     test_file = "test_pathway_burden.py"
     if os.path.exists(test_file):
@@ -82,56 +82,56 @@ def check_prerequisites():
     else:
         print(f"❌ {test_file} missing")
         checks.append(False)
-    
+
     # Check if graph.py has pathway_burden
     try:
         with open("graph.py", 'r') as f:
             content = f.read()
             if "pathway_burden" in content:
-                print(f"✅ graph.py includes pathway_burden")
+                print("✅ graph.py includes pathway_burden")
                 checks.append(True)
             else:
-                print(f"❌ graph.py missing pathway_burden")
+                print("❌ graph.py missing pathway_burden")
                 checks.append(False)
     except:
-        print(f"❌ graph.py not readable")
+        print("❌ graph.py not readable")
         checks.append(False)
-    
+
     # Check if __init__.py has pathway_burden
     try:
         with open("nodes/__init__.py", 'r') as f:
             content = f.read()
             if "pathway_burden" in content:
-                print(f"✅ nodes/__init__.py includes pathway_burden")
+                print("✅ nodes/__init__.py includes pathway_burden")
                 checks.append(True)
             else:
-                print(f"❌ nodes/__init__.py missing pathway_burden")
+                print("❌ nodes/__init__.py missing pathway_burden")
                 checks.append(False)
     except:
-        print(f"❌ nodes/__init__.py not readable")
+        print("❌ nodes/__init__.py not readable")
         checks.append(False)
-    
+
     all_good = all(checks)
     print(f"\n{'✅ All prerequisites met' if all_good else '❌ Some prerequisites missing'}")
-    
+
     return all_good
 
 def run_all_tests():
     """Run all pathway burden tests."""
-    
+
     print("🧬 Pathway Burden Model - Complete Test Suite")
     print("=" * 70)
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
     # Check prerequisites
     if not check_prerequisites():
         print("\n❌ Prerequisites not met. Cannot run tests.")
         return False
-    
+
     # Test results
     results = {}
     total_duration = 0
-    
+
     # Run comprehensive test
     success, duration, stdout, stderr = run_command(
         "python test_pathway_burden.py",
@@ -139,7 +139,7 @@ def run_all_tests():
     )
     results["pathway_burden_tests"] = success
     total_duration += duration
-    
+
     # Quick Pipeline Test (if available)
     if os.path.exists("test_pipeline_comprehensive.py"):
         success, duration, stdout, stderr = run_command(
@@ -148,7 +148,7 @@ def run_all_tests():
         )
         results["pipeline_test"] = success
         total_duration += duration
-    
+
     # Import Test
     success, duration, stdout, stderr = run_command(
         "python -c \"from nodes.pathway_burden import process, CANCER_PATHWAYS; print('Import successful'); print(f'Pathways: {len(CANCER_PATHWAYS)}')\"",
@@ -156,7 +156,7 @@ def run_all_tests():
     )
     results["import_test"] = success
     total_duration += duration
-    
+
     # Syntax Check
     success, duration, stdout, stderr = run_command(
         "python -m py_compile nodes/pathway_burden.py",
@@ -164,32 +164,32 @@ def run_all_tests():
     )
     results["syntax_check"] = success
     total_duration += duration
-    
+
     # Generate summary
     print("\n" + "=" * 70)
     print("🏆 TEST RESULTS SUMMARY")
     print("=" * 70)
-    
+
     passed = sum(1 for success in results.values() if success)
     total = len(results)
-    
+
     print(f"📊 Overall: {passed}/{total} tests passed")
     print(f"⏱️  Total duration: {total_duration:.2f} seconds")
-    
+
     for test_name, success in results.items():
         status = "✅ PASS" if success else "❌ FAIL"
         print(f"  {test_name}: {status}")
-    
+
     # Overall success
     overall_success = all(results.values())
-    
+
     if overall_success:
-        print(f"\n🎉 ALL TESTS PASSED!")
-        print(f"The Pathway Burden Model is fully functional and ready for use.")
+        print("\n🎉 ALL TESTS PASSED!")
+        print("The Pathway Burden Model is fully functional and ready for use.")
     else:
-        print(f"\n❌ Some tests failed.")
-        print(f"Please check the detailed output above for specific issues.")
-    
+        print("\n❌ Some tests failed.")
+        print("Please check the detailed output above for specific issues.")
+
     # Generate test report
     report_file = "pathway_burden_test_report.txt"
     with open(report_file, 'w') as f:
@@ -201,29 +201,29 @@ def run_all_tests():
         f.write(f"Failed: {total - passed}\n")
         f.write(f"Duration: {total_duration:.2f} seconds\n")
         f.write(f"Overall: {'PASS' if overall_success else 'FAIL'}\n\n")
-        
+
         f.write("Detailed Results:\n")
         for test_name, success in results.items():
             f.write(f"  {test_name}: {'PASS' if success else 'FAIL'}\n")
-    
+
     print(f"\n📄 Test report saved to: {report_file}")
-    
+
     return overall_success
 
 def quick_test():
     """Run a quick smoke test."""
-    
+
     print("🚀 Quick Smoke Test")
     print("=" * 40)
-    
+
     try:
         # Test import
         from nodes.pathway_burden import process, CANCER_PATHWAYS, is_damaging_variant
-        
-        print(f"✅ Module import: SUCCESS")
+
+        print("✅ Module import: SUCCESS")
         print(f"  - Pathways defined: {len(CANCER_PATHWAYS)}")
-        print(f"  - Functions available: process, is_damaging_variant, etc.")
-        
+        print("  - Functions available: process, is_damaging_variant, etc.")
+
         # Test basic functionality
         test_variant = {
             "variant_id": "test:123:A>G",
@@ -233,23 +233,23 @@ def quick_test():
             "allele_frequency": 0.001,
             "consequence": "missense_variant"
         }
-        
+
         damage_result = is_damaging_variant(test_variant)
-        print(f"✅ Damage assessment: SUCCESS")
+        print("✅ Damage assessment: SUCCESS")
         print(f"  - Damage score: {damage_result['damage_score']:.3f}")
         print(f"  - Is damaging: {damage_result['is_damaging']}")
-        
+
         # Test with minimal state
         test_state = {"filtered_variants": [test_variant]}
         result = process(test_state)
-        
-        print(f"✅ Node processing: SUCCESS")
+
+        print("✅ Node processing: SUCCESS")
         print(f"  - Pathways analyzed: {len(result.get('pathway_burden_results', {}))}")
         print(f"  - Overall burden score: {result.get('pathway_burden_summary', {}).get('overall_burden_score', 0):.3f}")
-        
-        print(f"\n🎉 Quick test PASSED!")
+
+        print("\n🎉 Quick test PASSED!")
         return True
-        
+
     except Exception as e:
         print(f"\n❌ Quick test FAILED: {str(e)}")
         import traceback
@@ -258,7 +258,7 @@ def quick_test():
 
 def main():
     """Main function."""
-    
+
     if len(sys.argv) > 1:
         if sys.argv[1] == "quick":
             success = quick_test()
@@ -272,8 +272,8 @@ def main():
             return
     else:
         success = run_all_tests()
-    
+
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
-    main() 
+    main()

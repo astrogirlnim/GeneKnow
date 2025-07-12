@@ -26,7 +26,7 @@ chr17	41246481	.	C	T	99	PASS	GENE=BRCA1;CONSEQUENCE=frameshift
 chr17	7577120	.	G	A	85	PASS	GENE=TP53;CONSEQUENCE=missense
 chr12	25398284	.	C	T	70	PASS	GENE=KRAS;CONSEQUENCE=missense
 """
-    
+
     # Create temporary file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.vcf', delete=False) as f:
         f.write(vcf_content)
@@ -35,11 +35,11 @@ chr12	25398284	.	C	T	70	PASS	GENE=KRAS;CONSEQUENCE=missense
 def test_end_to_end():
     """Test the complete pipeline flow."""
     print("=== End-to-End Pipeline Test ===")
-    
+
     # Create test file
     test_file = create_test_vcf()
     print(f"Created test VCF: {test_file}")
-    
+
     # User preferences
     user_preferences = {
         "language": "en",
@@ -48,30 +48,30 @@ def test_end_to_end():
             "case_id": "E2E_TEST_001"
         }
     }
-    
+
     try:
         print("\n=== Running Full Pipeline ===")
         start_time = datetime.now()
-        
+
         # Run the pipeline (this should now use our new report generator)
         result = run_pipeline(test_file, user_preferences)
-        
+
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
-        
+
         print(f"✅ Pipeline completed in {processing_time:.2f} seconds")
         print(f"Pipeline status: {result.get('pipeline_status', 'unknown')}")
-        
+
         # Check what we got back
         print(f"\n=== Pipeline Results ===")
         print(f"Result keys: {list(result.keys())}")
-        
+
         # Check report_sections (for dashboard)
         if "report_sections" in result:
             print("✅ report_sections available for dashboard")
             sections = result["report_sections"]
             print(f"  Sections: {list(sections.keys())}")
-            
+
             for key, section in sections.items():
                 if isinstance(section, dict):
                     title = section.get('title', 'No title')
@@ -80,7 +80,7 @@ def test_end_to_end():
                     print(f"  ✅ {key}: {title} ({severity}) - {content_preview}")
         else:
             print("❌ No report_sections found")
-        
+
         # Check enhanced report paths
         if "enhanced_report_paths" in result:
             print("✅ enhanced_report_paths available")
@@ -93,7 +93,7 @@ def test_end_to_end():
                     print(f"  ❌ {fmt}: {path} (file not found)")
         else:
             print("❌ No enhanced_report_paths found")
-        
+
         # Check report generator info
         if "report_generator_info" in result:
             print("✅ report_generator_info available")
@@ -104,7 +104,7 @@ def test_end_to_end():
             print(f"  High-risk findings: {info.get('high_risk_findings_count', 0)}")
         else:
             print("❌ No report_generator_info found")
-        
+
         # Check risk scores (should be preserved)
         if "risk_scores" in result:
             print("✅ risk_scores preserved")
@@ -116,7 +116,7 @@ def test_end_to_end():
                 print("  No high-risk cancers detected")
         else:
             print("❌ No risk_scores found")
-        
+
         # Simulate what the API would return
         print(f"\n=== API Response Simulation ===")
         api_response = {
@@ -133,18 +133,18 @@ def test_end_to_end():
             "metrics": result.get("metrics", {}),
             "pipeline_status": result.get("pipeline_status", "unknown")
         }
-        
+
         print("API response structure ready for frontend!")
         print(f"Response size: {len(json.dumps(api_response, default=str))} characters")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Pipeline failed: {e}")
         import traceback
         traceback.print_exc()
         return False
-    
+
     finally:
         # Clean up test file
         try:
@@ -155,4 +155,4 @@ def test_end_to_end():
 
 if __name__ == "__main__":
     success = test_end_to_end()
-    sys.exit(0 if success else 1) 
+    sys.exit(0 if success else 1)

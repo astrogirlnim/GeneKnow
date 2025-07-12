@@ -809,6 +809,49 @@ interface Alert {
   };
 }
 
+interface QualityMetrics {
+  quality?: number;
+  depth?: number;
+  allele_freq?: number;
+}
+
+interface PathwayResult {
+  burden_score?: number;
+  contributing_genes?: string[];
+  damaging_genes?: string[];
+  gene_damaging_counts?: Record<string, number>;
+}
+
+interface VariantTransformation {
+  original?: string;
+  mutated?: string;
+  amino_acid_change?: string;
+  effect?: string;
+}
+
+interface ExtendedVariant {
+  transformation?: VariantTransformation;
+  functional_impact?: string;
+  [key: string]: unknown;
+}
+
+interface ClinicalRecommendation {
+  title: string;
+  description: string;
+  priority: string;
+  category: string;
+  cancer_type: string;
+  risk_level: string;
+  risk_percentage: number;
+  recommendation: string;
+  screening_protocol?: {
+    test: string;
+    frequency: string;
+    start_age: string;
+  };
+  prevention_options?: string[];
+}
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -1303,7 +1346,7 @@ const ClinicalViewPage: React.FC = () => {
         }
         
         // Calculate more detailed quality score
-        const qualityMetrics = variant.quality_metrics || {} as any;
+        const qualityMetrics = variant.quality_metrics || {} as QualityMetrics;
         const baseQuality = qualityMetrics.quality || 85;
         const depth = qualityMetrics.depth || 0;
         const alleleFreq = qualityMetrics.allele_freq || 0;
@@ -2158,7 +2201,7 @@ const ClinicalViewPage: React.FC = () => {
                 const allGenes = new Set<string>();
                 
                 // Collect all genes from pathway burden analysis
-                Object.values(pathwayBurdenResults).forEach((pathwayResult: any) => {
+                Object.values(pathwayBurdenResults).forEach((pathwayResult: PathwayResult) => {
                   if (pathwayResult.contributing_genes) {
                     pathwayResult.contributing_genes.forEach((gene: string) => allGenes.add(gene));
                   }
@@ -2228,7 +2271,7 @@ const ClinicalViewPage: React.FC = () => {
                   };
                   
                   // Build associations based on pathway burden scores
-                  Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, any]) => {
+                  Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, PathwayResult]) => {
                     const associatedCancers = pathwayCancerMapping[pathwayName] || [];
                     const burdenScore = pathwayResult.burden_score || 0;
                     
@@ -2258,7 +2301,7 @@ const ClinicalViewPage: React.FC = () => {
                     if (cancerTypes.includes(cancer)) {
                       // For genes that appear in multiple pathways, boost their association
                       const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
-                      Object.entries(multiPathwayGenes).forEach(([gene, pathways]: [string, any]) => {
+                      Object.entries(multiPathwayGenes).forEach(([gene, pathways]: [string, string[]]) => {
                         if (geneAssociations[gene] && pathways.length > 1) {
                           geneAssociations[gene][cancer] = Math.max(
                             geneAssociations[gene][cancer] || 0,
@@ -3149,7 +3192,7 @@ const ClinicalViewPage: React.FC = () => {
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
                           }}>
-                            {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
+                            {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
                           </div>
                         </td>
                       </tr>
@@ -3237,7 +3280,7 @@ const ClinicalViewPage: React.FC = () => {
                             {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
                           </div>
                           <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                            {(variant as any).transformation?.effect || variant.functional_impact || 'Impact not determined'}
+                            {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
                           </div>
                         </div>
                         <div style={{
@@ -3778,7 +3821,7 @@ const ClinicalViewPage: React.FC = () => {
                   // Use real clinical recommendations
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      {clinicalRecs.map((rec: any, index: number) => (
+                      {clinicalRecs.map((rec: ClinicalRecommendation, index: number) => (
                         <div key={index} style={{
                           padding: '1.5rem',
                           border: `2px solid ${getRiskColor(rec.risk_level)}`,
