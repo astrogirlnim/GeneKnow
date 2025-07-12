@@ -747,8 +747,40 @@ const DashboardPage: React.FC = () => {
   // Get the risk level from URL parameters or state, default to 'low' if not specified
   const riskLevel = searchParams.get('risk') || mockRiskLevel || 'low';
   const mockData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
-  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
   
+  // Use real SHAP validation from pipeline results if available, otherwise use mock data
+  const getConfidenceCheckValidation = () => {
+    // Always use real SHAP validation results if pipeline results are available
+    if (pipelineResults?.structured_json?.shap_validation) {
+      return pipelineResults.structured_json.shap_validation;
+    }
+    
+    // Only fall back to mock data if no pipeline results at all
+    if (!pipelineResults) {
+      return getMockSHAPValidation(riskLevel);
+    }
+    
+    // If we have pipeline results but no SHAP validation, create a default
+    return {
+      status: 'SKIPPED' as const,
+      reasons: ['Model validation not available'],
+      top_contributors: [],
+      feature_importance: {},
+      details: {
+        status: 'SKIPPED' as const,
+        risk_score: 0.0,
+        top_contributors: [],
+        validation_reasons: ['Model validation not available'],
+        rule_results: {},
+        shap_values: [],
+        feature_names: [],
+        model_type: 'None'
+      }
+    };
+  };
+  
+  const confidenceCheckValidation = getConfidenceCheckValidation();
+
   // Use real data if available, otherwise use mock data
   const displayData: DisplayData = React.useMemo(() => {
     if (pipelineResults) {
@@ -1228,7 +1260,7 @@ ${content}`;
                 <HazardScoreCard 
                   value={displayData.hazardScore} 
                   tooltipContent={baseTooltips.hazardScore}
-                  shapValidation={pipelineResults?.structured_json?.shap_validation ?? (mockSHAPValidation as unknown as SHAPValidation)}
+                  shapValidation={confidenceCheckValidation as unknown as SHAPValidation}
                 />
               </div>
 

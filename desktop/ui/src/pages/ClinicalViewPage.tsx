@@ -1413,11 +1413,41 @@ const ClinicalViewPage: React.FC = () => {
   const [hoveredAlert, setHoveredAlert] = useState<number | null>(null);
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
   
-  // Extract risk level from URL parameter
-  const riskLevel = searchParams.get('risk') || 'high';
+  // Extract risk level from URL parameter - use same default as dashboard for consistency
+  const riskLevel = searchParams.get('risk') || 'low';
   
-  // Get the appropriate SHAP validation data
-  const mockSHAPValidation = getMockSHAPValidation(riskLevel);
+  // Use real SHAP validation from pipeline results if available, otherwise use mock data
+  const getConfidenceCheckValidation = () => {
+    // Always use real SHAP validation results if pipeline results are available
+    if (pipelineResults?.structured_json?.shap_validation) {
+      return pipelineResults.structured_json.shap_validation;
+    }
+    
+    // Only fall back to mock data if no pipeline results at all
+    if (!pipelineResults) {
+      return getMockSHAPValidation(riskLevel);
+    }
+    
+    // If we have pipeline results but no SHAP validation, create a default
+    return {
+      status: 'SKIPPED' as const,
+      reasons: ['Model validation not available'],
+      top_contributors: [],
+      feature_importance: {},
+      details: {
+        status: 'SKIPPED' as const,
+        risk_score: 0.0,
+        top_contributors: [],
+        validation_reasons: ['Model validation not available'],
+        rule_results: {},
+        shap_values: [],
+        feature_names: [],
+        model_type: 'None'
+      }
+    };
+  };
+  
+  const confidenceCheckValidation = getConfidenceCheckValidation();
   
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
@@ -3259,7 +3289,7 @@ const ClinicalViewPage: React.FC = () => {
                 
                 {/* Confidence Check */}
                 <ConfidenceCheck 
-                  validation={mockSHAPValidation} 
+                  validation={confidenceCheckValidation} 
                   isDetailed={true} 
                 />
               </div>
