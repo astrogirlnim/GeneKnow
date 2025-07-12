@@ -259,7 +259,15 @@ def process(state: Dict) -> Dict:
         interactions = build_interaction_network(affected_genes)
 
         # Add pathway-specific interactions if available
-        pathway_analysis = state.get("pathway_analysis", {})
+        # First check direct state, then check structured_json
+        pathway_analysis = state.get("pathway_analysis")
+        if pathway_analysis is None:
+            structured_json = state.get("structured_json", {})
+            pathway_analysis = structured_json.get("pathway_analysis", {})
+        
+        if pathway_analysis is None:
+            pathway_analysis = {}
+        
         for pathway in pathway_analysis.get("disrupted_pathways", []):
             pathway_genes = pathway.get("affected_genes", [])
             if len(pathway_genes) >= 2:
