@@ -59,7 +59,9 @@ class TCGAFile:
         # Log file information for transparency
         logging.info(f"📄 Created TCGA File object: {self.file_name}")
         logging.debug(f"   File ID: {self.file_id}")
-        logging.debug(f"   Size: {self.file_size:,} bytes ({self.file_size / (1024**3):.2f} GB)")
+        logging.debug(
+            f"   Size: {self.file_size:,} bytes ({self.file_size / (1024**3):.2f} GB)"
+        )
         logging.debug(f"   Strategy: {self.experimental_strategy}")
         logging.debug(f"   Cases: {len(self.cases)} associated cases")
 
@@ -95,7 +97,9 @@ class DownloadProgress:
         logging.info(
             f"📊 Download Progress: {self.completed_files}/{self.total_files} files ({self.progress_percentage:.1f}%)"
         )
-        logging.info(f"   Data: {self.downloaded_bytes / (1024**3):.2f} GB / {self.total_bytes / (1024**3):.2f} GB")
+        logging.info(
+            f"   Data: {self.downloaded_bytes / (1024**3):.2f} GB / {self.total_bytes / (1024**3):.2f} GB"
+        )
         logging.info(f"   Speed: {self.speed_mbps:.2f} MB/s")
         logging.info(f"   Failed: {self.failed_files} files")
 
@@ -141,7 +145,9 @@ class BloodCancerClassifier:
             "stem_cell",
         }
 
-        logging.info(f"🧠 BloodCancerClassifier initialized (LLM: {'enabled' if self.use_llm else 'disabled'})")
+        logging.info(
+            f"🧠 BloodCancerClassifier initialized (LLM: {'enabled' if self.use_llm else 'disabled'})"
+        )
 
     def classify_cancer_type(self, case_data: Dict) -> Tuple[bool, str, float]:
         """
@@ -157,7 +163,9 @@ class BloodCancerClassifier:
         disease_type = case_data.get("disease_type", "").lower()
         project_id = case_data.get("project", {}).get("project_id", "").lower()
 
-        logging.debug(f"🔍 Classifying cancer type for case {case_data.get('submitter_id', 'unknown')}")
+        logging.debug(
+            f"🔍 Classifying cancer type for case {case_data.get('submitter_id', 'unknown')}"
+        )
         logging.debug(f"   Primary site: {primary_site}")
         logging.debug(f"   Disease type: {disease_type}")
         logging.debug(f"   Project ID: {project_id}")
@@ -170,35 +178,23 @@ class BloodCancerClassifier:
     def _classify_with_llm(self, case_data: Dict) -> Tuple[bool, str, float]:
         """Use LLM to classify cancer type with sophisticated reasoning."""
         try:
-                        You are a medical expert specializing in oncology. Classify if the following case represents blood or bone marrow cancer.
-
-            Case Data:
-            - Primary Site: {case_data.get('primary_site', 'N/A')}
-            - Disease Type: {case_data.get('disease_type', 'N/A')}
-            - Project ID: {case_data.get('project', {}).get('project_id', 'N/A')}
-            - Diagnoses: {case_data.get('diagnoses', [])}
-
-            Respond with:
-            1. YES or NO (is this blood/bone marrow cancer?)
-            2. Confidence score (0.0-1.0)
-            3. Brief reasoning (one sentence)
-
-            Format: YES|0.95|This is acute myeloid leukemia, a blood cancer affecting bone marrow
-            """
-
             # Note: This would require OpenAI API key setup
             # For now, implementing as a more sophisticated keyword-based system
             logging.info("🤖 Using LLM-powered classification (simulated)")
             return self._classify_with_advanced_keywords(case_data)
 
         except Exception as e:
-            logging.warning(f"⚠️  LLM classification failed: {e}, falling back to keywords")
+            logging.warning(
+                f"⚠️  LLM classification failed: {e}, falling back to keywords"
+            )
             primary_site = case_data.get("primary_site", "").lower()
             disease_type = case_data.get("disease_type", "").lower()
             project_id = case_data.get("project", {}).get("project_id", "").lower()
             return self._classify_with_keywords(primary_site, disease_type, project_id)
 
-    def _classify_with_advanced_keywords(self, case_data: Dict) -> Tuple[bool, str, float]:
+    def _classify_with_advanced_keywords(
+        self, case_data: Dict
+    ) -> Tuple[bool, str, float]:
         """Advanced keyword-based classification simulating LLM reasoning."""
         primary_site = case_data.get("primary_site", "").lower()
         disease_type = case_data.get("disease_type", "").lower()
@@ -236,8 +232,12 @@ class BloodCancerClassifier:
 
         # Medium confidence checks
         if not is_blood_cancer:
-            blood_count = sum(1 for keyword in self.blood_cancer_keywords if keyword in all_text)
-            marrow_count = sum(1 for keyword in self.bone_marrow_keywords if keyword in all_text)
+            blood_count = sum(
+                1 for keyword in self.blood_cancer_keywords if keyword in all_text
+            )
+            marrow_count = sum(
+                1 for keyword in self.bone_marrow_keywords if keyword in all_text
+            )
 
             if blood_count >= 2 or marrow_count >= 1:
                 is_blood_cancer = True
@@ -246,14 +246,20 @@ class BloodCancerClassifier:
             elif blood_count >= 1:
                 is_blood_cancer = True
                 confidence = 0.5
-                reasoning = f"Low confidence blood cancer ({blood_count} blood keywords)"
+                reasoning = (
+                    f"Low confidence blood cancer ({blood_count} blood keywords)"
+                )
 
-        logging.debug(f"   Classification result: {is_blood_cancer} (confidence: {confidence:.2f})")
+        logging.debug(
+            f"   Classification result: {is_blood_cancer} (confidence: {confidence:.2f})"
+        )
         logging.debug(f"   Reasoning: {reasoning}")
 
         return is_blood_cancer, reasoning, confidence
 
-    def _classify_with_keywords(self, primary_site: str, disease_type: str, project_id: str) -> Tuple[bool, str, float]:
+    def _classify_with_keywords(
+        self, primary_site: str, disease_type: str, project_id: str
+    ) -> Tuple[bool, str, float]:
         """Simple keyword-based classification."""
         all_text = f"{primary_site} {disease_type} {project_id}".lower()
 
@@ -311,7 +317,10 @@ class GDCAPIClient:
         # Initialize session with proper headers
         self.session = requests.Session()
         self.session.headers.update(
-            {"Content-Type": "application/json", "User-Agent": "GenePredict-TCGA-Downloader/1.0.0"}
+            {
+                "Content-Type": "application/json",
+                "User-Agent": "GenePredict-TCGA-Downloader/1.0.0",
+            }
         )
 
         if self.auth_token:
@@ -331,7 +340,10 @@ class GDCAPIClient:
         logging.info(f"   Authenticated: {'Yes' if self.auth_token else 'No'}")
 
     def search_blood_cancer_files(
-        self, file_types: List[str] = None, experimental_strategies: List[str] = None, max_results: int = 1000
+        self,
+        file_types: List[str] = None,
+        experimental_strategies: List[str] = None,
+        max_results: int = 1000,
     ) -> List[TCGAFile]:
         """
         Search for TCGA files related to blood and bone marrow cancers.
@@ -359,9 +371,24 @@ class GDCAPIClient:
         filters = {
             "op": "and",
             "content": [
-                {"op": "in", "content": {"field": "files.experimental_strategy", "value": experimental_strategies}},
-                {"op": "in", "content": {"field": "files.data_format", "value": file_types}},
-                {"op": "in", "content": {"field": "files.access", "value": ["open", "controlled"]}},
+                {
+                    "op": "in",
+                    "content": {
+                        "field": "files.experimental_strategy",
+                        "value": experimental_strategies,
+                    },
+                },
+                {
+                    "op": "in",
+                    "content": {"field": "files.data_format", "value": file_types},
+                },
+                {
+                    "op": "in",
+                    "content": {
+                        "field": "files.access",
+                        "value": ["open", "controlled"],
+                    },
+                },
             ],
         }
 
@@ -377,7 +404,13 @@ class GDCAPIClient:
         ]
 
         filters["content"].append(
-            {"op": "in", "content": {"field": "cases.primary_site", "value": primary_site_filters}}
+            {
+                "op": "in",
+                "content": {
+                    "field": "cases.primary_site",
+                    "value": primary_site_filters,
+                },
+            }
         )
 
         params = {
@@ -402,7 +435,9 @@ class GDCAPIClient:
             logging.debug(f"🔍 API Response keys: {list(data.keys())}")
             data_section = data.get("data", {})
             logging.debug(f"🔍 Data section keys: {list(data_section.keys())}")
-            logging.debug(f"🔍 Total files available: {data_section.get('pagination', {}).get('total', 0)}")
+            logging.debug(
+                f"🔍 Total files available: {data_section.get('pagination', {}).get('total', 0)}"
+            )
 
             if raw_files and len(raw_files) > 0:
                 logging.debug(f"🔍 First file keys: {list(raw_files[0].keys())}")
@@ -417,7 +452,9 @@ class GDCAPIClient:
                 try:
                     # Debug: Check if file_data is a dict
                     if not isinstance(file_data, dict):
-                        logging.error(f"❌ Expected dict but got {type(file_data)}: {file_data}")
+                        logging.error(
+                            f"❌ Expected dict but got {type(file_data)}: {file_data}"
+                        )
                         continue
 
                     # Create TCGAFile object
@@ -436,12 +473,18 @@ class GDCAPIClient:
                     is_blood_cancer_file = False
 
                     for case in tcga_file.cases:
-                        is_blood_cancer, reasoning, confidence = self.classifier.classify_cancer_type(case)
+                        is_blood_cancer, reasoning, confidence = (
+                            self.classifier.classify_cancer_type(case)
+                        )
 
                         if is_blood_cancer and confidence >= 0.5:
                             is_blood_cancer_file = True
-                            logging.debug(f"🩸 Blood cancer file identified: {tcga_file.file_name}")
-                            logging.debug(f"   Case: {case.get('submitter_id', 'unknown')}")
+                            logging.debug(
+                                f"🩸 Blood cancer file identified: {tcga_file.file_name}"
+                            )
+                            logging.debug(
+                                f"   Case: {case.get('submitter_id', 'unknown')}"
+                            )
                             logging.debug(f"   Reasoning: {reasoning}")
                             logging.debug(f"   Confidence: {confidence:.2f}")
                             break
@@ -451,11 +494,17 @@ class GDCAPIClient:
                         blood_cancer_count += 1
 
                 except Exception as e:
-                    file_id = file_data.get("id", "unknown") if isinstance(file_data, dict) else "unknown"
+                    file_id = (
+                        file_data.get("id", "unknown")
+                        if isinstance(file_data, dict)
+                        else "unknown"
+                    )
                     logging.error(f"❌ Error processing file {file_id}: {e}")
                     continue
 
-            logging.info(f"🩸 Found {blood_cancer_count} blood cancer files out of {len(raw_files)} total")
+            logging.info(
+                f"🩸 Found {blood_cancer_count} blood cancer files out of {len(raw_files)} total"
+            )
             logging.info(f"   Files selected for download: {len(tcga_files)}")
 
             return tcga_files
@@ -467,7 +516,9 @@ class GDCAPIClient:
             logging.error(f"❌ Unexpected error during file search: {e}")
             raise
 
-    def download_files(self, tcga_files: List[TCGAFile], resume: bool = True) -> DownloadProgress:
+    def download_files(
+        self, tcga_files: List[TCGAFile], resume: bool = True
+    ) -> DownloadProgress:
         """
         Download TCGA files with parallel processing and resume capability.
 
@@ -483,7 +534,10 @@ class GDCAPIClient:
             return self.progress
 
         # Initialize progress tracking
-        self.progress = DownloadProgress(total_files=len(tcga_files), total_bytes=sum(f.file_size for f in tcga_files))
+        self.progress = DownloadProgress(
+            total_files=len(tcga_files),
+            total_bytes=sum(f.file_size for f in tcga_files),
+        )
 
         logging.info(f"📥 Starting download of {len(tcga_files)} files")
         logging.info(f"   Total size: {self.progress.total_bytes / (1024**3):.2f} GB")
@@ -497,12 +551,16 @@ class GDCAPIClient:
                 file_path = self.download_dir / tcga_file.file_name
                 if file_path.exists():
                     if file_path.stat().st_size == tcga_file.file_size:
-                        logging.info(f"⏭️  Skipping already downloaded file: {tcga_file.file_name}")
+                        logging.info(
+                            f"⏭️  Skipping already downloaded file: {tcga_file.file_name}"
+                        )
                         self.progress.completed_files += 1
                         self.progress.downloaded_bytes += tcga_file.file_size
                         continue
                     else:
-                        logging.info(f"🔄 Resuming partial download: {tcga_file.file_name}")
+                        logging.info(
+                            f"🔄 Resuming partial download: {tcga_file.file_name}"
+                        )
 
                 files_to_download.append(tcga_file)
         else:
@@ -511,9 +569,13 @@ class GDCAPIClient:
         logging.info(f"📦 Files to download: {len(files_to_download)}")
 
         # Download files in parallel
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
             future_to_file = {
-                executor.submit(self._download_single_file, tcga_file, resume): tcga_file
+                executor.submit(
+                    self._download_single_file, tcga_file, resume
+                ): tcga_file
                 for tcga_file in files_to_download
             }
 
@@ -531,22 +593,32 @@ class GDCAPIClient:
 
                 except Exception as e:
                     self.progress.failed_files += 1
-                    logging.error(f"❌ Exception downloading {tcga_file.file_name}: {e}")
+                    logging.error(
+                        f"❌ Exception downloading {tcga_file.file_name}: {e}"
+                    )
 
                 # Log progress every few files
-                if (self.progress.completed_files + self.progress.failed_files) % 5 == 0:
+                if (
+                    self.progress.completed_files + self.progress.failed_files
+                ) % 5 == 0:
                     self.progress.log_progress()
 
         # Final progress report
         self.progress.log_progress()
         logging.info("🎉 Download complete!")
-        logging.info(f"   Successfully downloaded: {self.progress.completed_files} files")
+        logging.info(
+            f"   Successfully downloaded: {self.progress.completed_files} files"
+        )
         logging.info(f"   Failed downloads: {self.progress.failed_files} files")
-        logging.info(f"   Total data downloaded: {self.progress.downloaded_bytes / (1024**3):.2f} GB")
+        logging.info(
+            f"   Total data downloaded: {self.progress.downloaded_bytes / (1024**3):.2f} GB"
+        )
 
         return self.progress
 
-    def _download_single_file(self, tcga_file: TCGAFile, resume: bool = True) -> Tuple[bool, int]:
+    def _download_single_file(
+        self, tcga_file: TCGAFile, resume: bool = True
+    ) -> Tuple[bool, int]:
         """
         Download a single TCGA file with retry logic and resume capability.
 
@@ -578,9 +650,13 @@ class GDCAPIClient:
 
         for attempt in range(max_retries):
             try:
-                logging.debug(f"📡 Downloading {tcga_file.file_name} (attempt {attempt + 1})")
+                logging.debug(
+                    f"📡 Downloading {tcga_file.file_name} (attempt {attempt + 1})"
+                )
 
-                response = self.session.get(download_url, headers=headers, stream=True, timeout=300)
+                response = self.session.get(
+                    download_url, headers=headers, stream=True, timeout=300
+                )
                 response.raise_for_status()
 
                 # Open file in append mode if resuming, write mode otherwise
@@ -596,14 +672,20 @@ class GDCAPIClient:
                 # Verify file size
                 if bytes_downloaded == tcga_file.file_size:
                     # Verify MD5 checksum if available
-                    if tcga_file.md5sum and self._verify_md5(file_path, tcga_file.md5sum):
+                    if tcga_file.md5sum and self._verify_md5(
+                        file_path, tcga_file.md5sum
+                    ):
                         logging.debug(f"✅ Download verified: {tcga_file.file_name}")
                         return True, bytes_downloaded
                     elif not tcga_file.md5sum:
-                        logging.debug(f"✅ Download complete (no checksum): {tcga_file.file_name}")
+                        logging.debug(
+                            f"✅ Download complete (no checksum): {tcga_file.file_name}"
+                        )
                         return True, bytes_downloaded
                     else:
-                        logging.error(f"❌ MD5 verification failed: {tcga_file.file_name}")
+                        logging.error(
+                            f"❌ MD5 verification failed: {tcga_file.file_name}"
+                        )
                         if file_path.exists():
                             file_path.unlink()
                         return False, 0
@@ -617,16 +699,22 @@ class GDCAPIClient:
                     return False, 0
 
             except requests.exceptions.RequestException as e:
-                logging.warning(f"⚠️  Download attempt {attempt + 1} failed for {tcga_file.file_name}: {e}")
+                logging.warning(
+                    f"⚠️  Download attempt {attempt + 1} failed for {tcga_file.file_name}: {e}"
+                )
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay * (2**attempt))  # Exponential backoff
                     continue
                 else:
-                    logging.error(f"❌ All download attempts failed for {tcga_file.file_name}")
+                    logging.error(
+                        f"❌ All download attempts failed for {tcga_file.file_name}"
+                    )
                     return False, 0
 
             except Exception as e:
-                logging.error(f"❌ Unexpected error downloading {tcga_file.file_name}: {e}")
+                logging.error(
+                    f"❌ Unexpected error downloading {tcga_file.file_name}: {e}"
+                )
                 return False, 0
 
         return False, 0
@@ -660,7 +748,10 @@ class GDCAPIClient:
             "total_size_gb": self.progress.total_bytes / (1024**3),
             "downloaded_size_gb": self.progress.downloaded_bytes / (1024**3),
             "average_speed_mbps": self.progress.speed_mbps,
-            "duration_minutes": (datetime.now() - self.progress.start_time).total_seconds() / 60,
+            "duration_minutes": (
+                datetime.now() - self.progress.start_time
+            ).total_seconds()
+            / 60,
         }
 
 
@@ -676,7 +767,9 @@ if __name__ == "__main__":
     logging.info("🧬 GDC API Client Test Started")
 
     # Initialize client (would need actual auth token for controlled access)
-    client = GDCAPIClient(download_dir="test_downloads", max_workers=2)  # Conservative for testing
+    client = GDCAPIClient(
+        download_dir="test_downloads", max_workers=2
+    )  # Conservative for testing
 
     # Search for blood cancer files (limited for testing)
     try:
@@ -686,7 +779,9 @@ if __name__ == "__main__":
             max_results=10,  # Small test batch
         )
 
-        logging.info(f"🔍 Found {len(blood_cancer_files)} blood cancer files for testing")
+        logging.info(
+            f"🔍 Found {len(blood_cancer_files)} blood cancer files for testing"
+        )
 
         # Download first few files for testing
         if blood_cancer_files:

@@ -13,7 +13,9 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 # Path to ClinVar database
-CLINVAR_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "clinvar_annotations.db")
+CLINVAR_DB_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "clinvar_annotations.db"
+)
 
 # Clinical significance mapping to risk scores
 CLINICAL_SIGNIFICANCE_SCORES = {
@@ -103,10 +105,16 @@ def create_clinvar_database():
     )
 
     # Create indexes for fast lookups
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_position ON clinvar_variants(chrom, pos, ref, alt)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_position ON clinvar_variants(chrom, pos, ref, alt)"
+    )
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_gene ON clinvar_variants(gene)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_clinical_sig ON clinvar_variants(clinical_significance)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cancer_related ON clinvar_variants(cancer_related)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_clinical_sig ON clinvar_variants(clinical_significance)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_cancer_related ON clinvar_variants(cancer_related)"
+    )
 
     # Insert example ClinVar data (based on known pathogenic variants)
     example_variants = [
@@ -422,7 +430,9 @@ def create_clinvar_database():
 
     conn.commit()
     conn.close()
-    logger.info(f"Created ClinVar database with {len(example_variants)} example variants")
+    logger.info(
+        f"Created ClinVar database with {len(example_variants)} example variants"
+    )
 
 
 def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str, Any]:
@@ -512,7 +522,9 @@ def query_clinvar_database(chrom: str, pos: int, ref: str, alt: str) -> Dict[str
         conn.close()
 
 
-def calculate_clinical_risk_score(variant: Dict[str, Any], clinvar_data: Dict[str, Any]) -> float:
+def calculate_clinical_risk_score(
+    variant: Dict[str, Any], clinvar_data: Dict[str, Any]
+) -> float:
     """Calculate clinical risk score based on ClinVar annotation."""
     if not clinvar_data.get("found_in_clinvar"):
         return 0.0  # No clinical evidence
@@ -537,7 +549,9 @@ def calculate_clinical_risk_score(variant: Dict[str, Any], clinvar_data: Dict[st
     return max(0.0, min(1.0, base_score))
 
 
-def assess_clinical_significance(variant: Dict[str, Any], clinvar_data: Dict[str, Any]) -> Dict[str, Any]:
+def assess_clinical_significance(
+    variant: Dict[str, Any], clinvar_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """Assess clinical significance and provide interpretation."""
     if not clinvar_data.get("found_in_clinvar"):
         return {
@@ -625,10 +639,14 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         total_variants_annotated = 0
 
         for variant in filtered_variants:
-            variant_id = variant.get("variant_id", f"{variant.get('chrom')}:{variant.get('pos')}")
+            variant_id = variant.get(
+                "variant_id", f"{variant.get('chrom')}:{variant.get('pos')}"
+            )
 
             # Query ClinVar database
-            clinvar_data = query_clinvar_database(variant["chrom"], variant["pos"], variant["re"], variant["alt"])
+            clinvar_data = query_clinvar_database(
+                variant["chrom"], variant["pos"], variant["re"], variant["alt"]
+            )
 
             # Calculate clinical risk score
             clinical_risk_score = calculate_clinical_risk_score(variant, clinvar_data)
@@ -637,7 +655,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             clinical_assessment = assess_clinical_significance(variant, clinvar_data)
 
             # Combine data
-            annotation = {**clinvar_data, "clinical_risk_score": clinical_risk_score, **clinical_assessment}
+            annotation = {
+                **clinvar_data,
+                "clinical_risk_score": clinical_risk_score,
+                **clinical_assessment,
+            }
 
             clinvar_annotations[variant_id] = annotation
 
@@ -668,19 +690,35 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                     )
                 elif "benign" in clinical_sig:
                     benign_variants.append(
-                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                        }
                     )
                 elif "uncertain_significance" in clinical_sig:
                     vus_variants.append(
-                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                        }
                     )
                 elif "drug_response" in clinical_sig:
                     drug_response_variants.append(
-                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                        }
                     )
                 elif "risk_factor" in clinical_sig:
                     risk_factor_variants.append(
-                        {"variant_id": variant_id, "gene": variant.get("gene"), "clinical_significance": clinical_sig}
+                        {
+                            "variant_id": variant_id,
+                            "gene": variant.get("gene"),
+                            "clinical_significance": clinical_sig,
+                        }
                     )
 
                 # Log significant findings
@@ -699,7 +737,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         clinvar_stats = {
             "total_variants": len(filtered_variants),
             "variants_annotated": total_variants_annotated,
-            "annotation_rate": total_variants_annotated / len(filtered_variants) if filtered_variants else 0,
+            "annotation_rate": (
+                total_variants_annotated / len(filtered_variants)
+                if filtered_variants
+                else 0
+            ),
             "pathogenic_variants": len(pathogenic_variants),
             "likely_pathogenic_variants": len(likely_pathogenic_variants),
             "benign_variants": len(benign_variants),
@@ -707,9 +749,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "drug_response_variants": len(drug_response_variants),
             "risk_factor_variants": len(risk_factor_variants),
             "high_risk_variants": len(
-                [v for v in pathogenic_variants + likely_pathogenic_variants if v["risk_score"] > 0.7]
+                [
+                    v
+                    for v in pathogenic_variants + likely_pathogenic_variants
+                    if v["risk_score"] > 0.7
+                ]
             ),
-            "cancer_related_variants": len([a for a in clinvar_annotations.values() if a.get("cancer_related")]),
+            "cancer_related_variants": len(
+                [a for a in clinvar_annotations.values() if a.get("cancer_related")]
+            ),
         }
 
         # Summary statistics (will be handled by merge function)
@@ -743,4 +791,12 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"ClinVar annotation failed: {str(e)}")
-        return {"errors": [{"node": "clinvar_annotator", "error": str(e), "timestamp": datetime.now()}]}
+        return {
+            "errors": [
+                {
+                    "node": "clinvar_annotator",
+                    "error": str(e),
+                    "timestamp": datetime.now(),
+                }
+            ]
+        }

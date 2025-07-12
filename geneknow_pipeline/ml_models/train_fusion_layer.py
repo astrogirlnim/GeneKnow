@@ -88,13 +88,17 @@ def train_fusion_models(n_samples: int = 5000, model_types: list = None):
 
         print(f"✅ {model_type} completed:")
         print(f"  Validation MSE: {training_results['val_mse']:.4f}")
-        print(f"  CV MSE: {training_results['cv_mse_mean']:.4f} ± {training_results['cv_mse_std']:.4f}")
+        print(
+            f"  CV MSE: {training_results['cv_mse_mean']:.4f} ± {training_results['cv_mse_std']:.4f}"
+        )
 
         if training_results["feature_importance"]:
             print("📈 Top 5 features:")
-            sorted_features = sorted(training_results["feature_importance"].items(), key=lambda x: x[1], reverse=True)[
-                :5
-            ]
+            sorted_features = sorted(
+                training_results["feature_importance"].items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )[:5]
             for feature, importance in sorted_features:
                 print(f"  {feature}: {importance:.3f}")
 
@@ -153,7 +157,9 @@ def create_training_visualization(results, risk_scores):
         importances = list(results[best_model]["feature_importance"].values())
 
         # Sort by importance
-        sorted_pairs = sorted(zip(features, importances), key=lambda x: x[1], reverse=True)
+        sorted_pairs = sorted(
+            zip(features, importances), key=lambda x: x[1], reverse=True
+        )
         features, importances = zip(*sorted_pairs)
 
         axes[1, 0].barh(features, importances, alpha=0.7)
@@ -242,7 +248,11 @@ def test_fusion_predictions():
 
         # Show top contributing factors
         if prediction.contributing_factors:
-            top_factors = sorted(prediction.contributing_factors.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_factors = sorted(
+                prediction.contributing_factors.items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )[:3]
             print(f"  Top factors:")
             for factor, contribution in top_factors:
                 print(f"    {factor}: {contribution:.3f}")

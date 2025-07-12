@@ -62,13 +62,39 @@ PATHWAYS = {
     },
     "APOPTOSIS": {
         "name": "Apoptosis",
-        "genes": ["TP53", "BCL2", "BAX", "CASP3", "CASP9", "FAS", "FADD", "APAF1", "BCL2L1", "MCL1", "BID", "BIRC5"],
+        "genes": [
+            "TP53",
+            "BCL2",
+            "BAX",
+            "CASP3",
+            "CASP9",
+            "FAS",
+            "FADD",
+            "APAF1",
+            "BCL2L1",
+            "MCL1",
+            "BID",
+            "BIRC5",
+        ],
         "description": "Programmed cell death",
         "cancer_relevance": 0.85,
     },
     "WNT_SIGNALING": {
         "name": "WNT Signaling",
-        "genes": ["APC", "CTNNB1", "WNT1", "TCF7L2", "AXIN1", "AXIN2", "GSK3B", "DVL1", "DVL2", "DVL3", "LRP5", "LRP6"],
+        "genes": [
+            "APC",
+            "CTNNB1",
+            "WNT1",
+            "TCF7L2",
+            "AXIN1",
+            "AXIN2",
+            "GSK3B",
+            "DVL1",
+            "DVL2",
+            "DVL3",
+            "LRP5",
+            "LRP6",
+        ],
         "description": "Cell fate determination",
         "cancer_relevance": 0.8,
     },
@@ -93,7 +119,20 @@ PATHWAYS = {
     },
     "RAS_MAPK": {
         "name": "RAS-MAPK Signaling",
-        "genes": ["KRAS", "NRAS", "HRAS", "BRAF", "RAF1", "MAP2K1", "MAP2K2", "MAPK1", "MAPK3", "NF1", "RASA1", "SOS1"],
+        "genes": [
+            "KRAS",
+            "NRAS",
+            "HRAS",
+            "BRAF",
+            "RAF1",
+            "MAP2K1",
+            "MAP2K2",
+            "MAPK1",
+            "MAPK3",
+            "NF1",
+            "RASA1",
+            "SOS1",
+        ],
         "description": "Cell proliferation signaling",
         "cancer_relevance": 0.95,
     },
@@ -118,13 +157,35 @@ PATHWAYS = {
     },
     "HORMONE_SIGNALING": {
         "name": "Hormone Signaling",
-        "genes": ["ESR1", "ESR2", "AR", "PGR", "ERBB2", "FOXA1", "GATA3", "NCOA3", "NCOR1", "NCOR2"],
+        "genes": [
+            "ESR1",
+            "ESR2",
+            "AR",
+            "PGR",
+            "ERBB2",
+            "FOXA1",
+            "GATA3",
+            "NCOA3",
+            "NCOR1",
+            "NCOR2",
+        ],
         "description": "Hormone receptor pathways",
         "cancer_relevance": 0.85,
     },
     "IMMUNE_CHECKPOINT": {
         "name": "Immune Checkpoint",
-        "genes": ["PD1", "PDL1", "CTLA4", "LAG3", "TIM3", "TIGIT", "B7H3", "IDO1", "CD47", "SIRPA"],
+        "genes": [
+            "PD1",
+            "PDL1",
+            "CTLA4",
+            "LAG3",
+            "TIM3",
+            "TIGIT",
+            "B7H3",
+            "IDO1",
+            "CD47",
+            "SIRPA",
+        ],
         "description": "Immune regulation",
         "cancer_relevance": 0.8,
     },
@@ -152,7 +213,13 @@ PATHWAYS = {
 
 # Cancer-specific pathway associations
 CANCER_PATHWAYS = {
-    "breast": ["DNA_REPAIR", "CELL_CYCLE", "PI3K_AKT", "HORMONE_SIGNALING", "APOPTOSIS"],
+    "breast": [
+        "DNA_REPAIR",
+        "CELL_CYCLE",
+        "PI3K_AKT",
+        "HORMONE_SIGNALING",
+        "APOPTOSIS",
+    ],
     "colon": ["WNT_SIGNALING", "APOPTOSIS", "DNA_REPAIR", "CELL_CYCLE", "RAS_MAPK"],
     "lung": ["CELL_CYCLE", "PI3K_AKT", "APOPTOSIS", "RAS_MAPK", "CHROMATIN_REMODELING"],
     "prostate": ["HORMONE_SIGNALING", "PI3K_AKT", "CELL_CYCLE", "DNA_REPAIR"],
@@ -196,7 +263,9 @@ def get_variant_impact_weight(variant: Dict) -> float:
     return 0.3  # Default weight
 
 
-def calculate_pathway_impact(pathway: Dict, affected_genes: Set[str], variant_impacts: Dict[str, float]) -> float:
+def calculate_pathway_impact(
+    pathway: Dict, affected_genes: Set[str], variant_impacts: Dict[str, float]
+) -> float:
     """Calculate the impact score for a pathway"""
     pathway_genes = set(pathway["genes"])
     affected_in_pathway = affected_genes.intersection(pathway_genes)
@@ -239,13 +308,22 @@ def analyze_pathway_interactions(disrupted_pathways: List[Dict]) -> Dict:
     for (p1, p2), description in pathway_interactions.items():
         if p1 in disrupted_ids and p2 in disrupted_ids:
             interactions.append(
-                {"pathways": [p1, p2], "interaction": description, "impact": "Synergistic pathway disruption"}
+                {
+                    "pathways": [p1, p2],
+                    "interaction": description,
+                    "impact": "Synergistic pathway disruption",
+                }
             )
 
-    return {"pathway_interactions": interactions, "interaction_count": len(interactions)}
+    return {
+        "pathway_interactions": interactions,
+        "interaction_count": len(interactions),
+    }
 
 
-def generate_pathway_recommendations(disrupted_pathways: List[Dict], cancer_associations: Dict) -> List[str]:
+def generate_pathway_recommendations(
+    disrupted_pathways: List[Dict], cancer_associations: Dict
+) -> List[str]:
     """Generate clinical recommendations based on pathway disruptions"""
     recommendations = []
 
@@ -275,7 +353,9 @@ def generate_pathway_recommendations(disrupted_pathways: List[Dict], cancer_asso
     # Cancer-specific recommendations
     for cancer_type, associated_pathways in cancer_associations.items():
         if len(associated_pathways) >= 3:
-            recommendations.append(f"High pathway burden suggests increased {cancer_type} cancer risk")
+            recommendations.append(
+                f"High pathway burden suggests increased {cancer_type} cancer risk"
+            )
 
     return list(set(recommendations))  # Remove duplicates
 
@@ -316,7 +396,9 @@ def process(state: Dict) -> Dict:
         disrupted_pathways = []
 
         for pathway_id, pathway_data in PATHWAYS.items():
-            impact_score = calculate_pathway_impact(pathway_data, affected_genes, variant_impacts)
+            impact_score = calculate_pathway_impact(
+                pathway_data, affected_genes, variant_impacts
+            )
 
             if impact_score > 10:  # Significance threshold
                 affected_in_pathway = affected_genes.intersection(pathway_data["genes"])
@@ -327,8 +409,17 @@ def process(state: Dict) -> Dict:
                     if gene in gene_mutations:
                         # Take the most severe mutation
                         gene_muts = gene_mutations[gene]
-                        most_severe = max(gene_muts, key=lambda m: IMPACT_WEIGHTS.get(m["type"].lower(), 0.3))
-                        mutations.append({"gene": gene, "type": most_severe["type"], "effect": most_severe["impact"]})
+                        most_severe = max(
+                            gene_muts,
+                            key=lambda m: IMPACT_WEIGHTS.get(m["type"].lower(), 0.3),
+                        )
+                        mutations.append(
+                            {
+                                "gene": gene,
+                                "type": most_severe["type"],
+                                "effect": most_severe["impact"],
+                            }
+                        )
 
                 disrupted_pathways.append(
                     {
@@ -348,7 +439,11 @@ def process(state: Dict) -> Dict:
         # Build cancer pathway associations
         cancer_associations = {}
         for cancer_type, pathway_ids in CANCER_PATHWAYS.items():
-            associated_pathways = [p["pathway_id"] for p in disrupted_pathways if p["pathway_id"] in pathway_ids]
+            associated_pathways = [
+                p["pathway_id"]
+                for p in disrupted_pathways
+                if p["pathway_id"] in pathway_ids
+            ]
             if associated_pathways:
                 cancer_associations[cancer_type] = associated_pathways
 
@@ -356,7 +451,9 @@ def process(state: Dict) -> Dict:
         interaction_analysis = analyze_pathway_interactions(disrupted_pathways)
 
         # Generate recommendations
-        recommendations = generate_pathway_recommendations(disrupted_pathways, cancer_associations)
+        recommendations = generate_pathway_recommendations(
+            disrupted_pathways, cancer_associations
+        )
 
         # Create pathway analysis result
         pathway_analysis = {
@@ -366,7 +463,9 @@ def process(state: Dict) -> Dict:
             "clinical_recommendations": recommendations,
             "summary": {
                 "total_pathways_disrupted": len(disrupted_pathways),
-                "highly_disrupted_pathways": sum(1 for p in disrupted_pathways if p["significance"] > 50),
+                "highly_disrupted_pathways": sum(
+                    1 for p in disrupted_pathways if p["significance"] > 50
+                ),
                 "total_genes_affected": len(affected_genes),
                 "pathway_interaction_count": interaction_analysis["interaction_count"],
             },
@@ -386,9 +485,16 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error in pathway analysis: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "pathway_analyzer", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "pathway_analyzer",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Set empty results on error
-        state["pathway_analysis"] = {"disrupted_pathways": [], "cancer_pathway_associations": {}}
+        state["pathway_analysis"] = {
+            "disrupted_pathways": [],
+            "cancer_pathway_associations": {},
+        }
 
     return state

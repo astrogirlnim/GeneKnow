@@ -103,27 +103,141 @@ CODON_TABLE = {
 # Amino acid properties - standard biochemical properties
 # Also necessary for offline functional impact assessment
 AA_PROPERTIES = {
-    "Phe": {"hydrophobic": True, "size": "large", "aromatic": True, "charge": "neutral"},
-    "Leu": {"hydrophobic": True, "size": "large", "aromatic": False, "charge": "neutral"},
-    "Ile": {"hydrophobic": True, "size": "medium", "aromatic": False, "charge": "neutral"},
-    "Met": {"hydrophobic": True, "size": "medium", "aromatic": False, "charge": "neutral"},
-    "Val": {"hydrophobic": True, "size": "small", "aromatic": False, "charge": "neutral"},
-    "Ser": {"hydrophobic": False, "size": "small", "aromatic": False, "charge": "neutral", "polar": True},
-    "Pro": {"hydrophobic": False, "size": "small", "aromatic": False, "charge": "neutral", "special": "helix_breaker"},
-    "Thr": {"hydrophobic": False, "size": "small", "aromatic": False, "charge": "neutral", "polar": True},
-    "Ala": {"hydrophobic": True, "size": "tiny", "aromatic": False, "charge": "neutral"},
-    "Tyr": {"hydrophobic": False, "size": "large", "aromatic": True, "charge": "neutral", "polar": True},
-    "His": {"hydrophobic": False, "size": "medium", "aromatic": True, "charge": "positive"},
-    "Gln": {"hydrophobic": False, "size": "medium", "aromatic": False, "charge": "neutral", "polar": True},
-    "Asn": {"hydrophobic": False, "size": "small", "aromatic": False, "charge": "neutral", "polar": True},
-    "Lys": {"hydrophobic": False, "size": "large", "aromatic": False, "charge": "positive"},
-    "Asp": {"hydrophobic": False, "size": "small", "aromatic": False, "charge": "negative"},
-    "Glu": {"hydrophobic": False, "size": "medium", "aromatic": False, "charge": "negative"},
-    "Cys": {"hydrophobic": True, "size": "small", "aromatic": False, "charge": "neutral", "special": "disulfide"},
-    "Trp": {"hydrophobic": True, "size": "large", "aromatic": True, "charge": "neutral"},
-    "Arg": {"hydrophobic": False, "size": "large", "aromatic": False, "charge": "positive"},
-    "Gly": {"hydrophobic": False, "size": "tiny", "aromatic": False, "charge": "neutral", "special": "flexible"},
-    "*": {"hydrophobic": False, "size": "none", "aromatic": False, "charge": "none", "special": "stop"},
+    "Phe": {
+        "hydrophobic": True,
+        "size": "large",
+        "aromatic": True,
+        "charge": "neutral",
+    },
+    "Leu": {
+        "hydrophobic": True,
+        "size": "large",
+        "aromatic": False,
+        "charge": "neutral",
+    },
+    "Ile": {
+        "hydrophobic": True,
+        "size": "medium",
+        "aromatic": False,
+        "charge": "neutral",
+    },
+    "Met": {
+        "hydrophobic": True,
+        "size": "medium",
+        "aromatic": False,
+        "charge": "neutral",
+    },
+    "Val": {
+        "hydrophobic": True,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+    },
+    "Ser": {
+        "hydrophobic": False,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+        "polar": True,
+    },
+    "Pro": {
+        "hydrophobic": False,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+        "special": "helix_breaker",
+    },
+    "Thr": {
+        "hydrophobic": False,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+        "polar": True,
+    },
+    "Ala": {
+        "hydrophobic": True,
+        "size": "tiny",
+        "aromatic": False,
+        "charge": "neutral",
+    },
+    "Tyr": {
+        "hydrophobic": False,
+        "size": "large",
+        "aromatic": True,
+        "charge": "neutral",
+        "polar": True,
+    },
+    "His": {
+        "hydrophobic": False,
+        "size": "medium",
+        "aromatic": True,
+        "charge": "positive",
+    },
+    "Gln": {
+        "hydrophobic": False,
+        "size": "medium",
+        "aromatic": False,
+        "charge": "neutral",
+        "polar": True,
+    },
+    "Asn": {
+        "hydrophobic": False,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+        "polar": True,
+    },
+    "Lys": {
+        "hydrophobic": False,
+        "size": "large",
+        "aromatic": False,
+        "charge": "positive",
+    },
+    "Asp": {
+        "hydrophobic": False,
+        "size": "small",
+        "aromatic": False,
+        "charge": "negative",
+    },
+    "Glu": {
+        "hydrophobic": False,
+        "size": "medium",
+        "aromatic": False,
+        "charge": "negative",
+    },
+    "Cys": {
+        "hydrophobic": True,
+        "size": "small",
+        "aromatic": False,
+        "charge": "neutral",
+        "special": "disulfide",
+    },
+    "Trp": {
+        "hydrophobic": True,
+        "size": "large",
+        "aromatic": True,
+        "charge": "neutral",
+    },
+    "Arg": {
+        "hydrophobic": False,
+        "size": "large",
+        "aromatic": False,
+        "charge": "positive",
+    },
+    "Gly": {
+        "hydrophobic": False,
+        "size": "tiny",
+        "aromatic": False,
+        "charge": "neutral",
+        "special": "flexible",
+    },
+    "*": {
+        "hydrophobic": False,
+        "size": "none",
+        "aromatic": False,
+        "charge": "none",
+        "special": "stop",
+    },
 }
 
 
@@ -328,7 +442,12 @@ def get_protein_change(variant: Dict) -> Dict:
     # Determine functional impact
     impact = assess_functional_impact(ref_aa, alt_aa, variant.get("gene", ""))
 
-    return {"original": ref_codon, "mutated": alt_codon, "amino_acid_change": f"{ref_aa}→{alt_aa}", "effect": impact}
+    return {
+        "original": ref_codon,
+        "mutated": alt_codon,
+        "amino_acid_change": f"{ref_aa}→{alt_aa}",
+        "effect": impact,
+    }
 
 
 def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
@@ -354,12 +473,20 @@ def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
 
     # Charge change
     if ref_props.get("charge") != alt_props.get("charge"):
-        if ref_props.get("charge") == "positive" and alt_props.get("charge") == "negative":
+        if (
+            ref_props.get("charge") == "positive"
+            and alt_props.get("charge") == "negative"
+        ):
             impacts.append("Charge reversal (positive to negative)")
-        elif ref_props.get("charge") == "negative" and alt_props.get("charge") == "positive":
+        elif (
+            ref_props.get("charge") == "negative"
+            and alt_props.get("charge") == "positive"
+        ):
             impacts.append("Charge reversal (negative to positive)")
         else:
-            impacts.append(f"Charge change ({ref_props.get('charge')} to {alt_props.get('charge')})")
+            impacts.append(
+                f"Charge change ({ref_props.get('charge')} to {alt_props.get('charge')})"
+            )
 
     # Hydrophobicity change
     if ref_props.get("hydrophobic") != alt_props.get("hydrophobic"):
@@ -374,7 +501,9 @@ def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
     alt_size = size_order.get(alt_props.get("size", "medium"), 2)
 
     if abs(ref_size - alt_size) >= 2:
-        impacts.append(f"Significant size change ({ref_props.get('size')} to {alt_props.get('size')})")
+        impacts.append(
+            f"Significant size change ({ref_props.get('size')} to {alt_props.get('size')})"
+        )
 
     # Special residues
     if ref_props.get("special") or alt_props.get("special"):
@@ -389,7 +518,10 @@ def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
 
     # Known hotspot mutations in cancer genes
     cancer_hotspots = {
-        "TP53": {"R273": "DNA binding domain hotspot", "R248": "DNA binding domain hotspot"},
+        "TP53": {
+            "R273": "DNA binding domain hotspot",
+            "R248": "DNA binding domain hotspot",
+        },
         "KRAS": {"G12": "GTPase domain hotspot", "G13": "GTPase domain hotspot"},
         "BRAF": {"V600": "Kinase domain activation hotspot"},
         "PIK3CA": {"H1047": "Kinase domain hotspot", "E545": "Helical domain hotspot"},
@@ -405,7 +537,9 @@ def assess_functional_impact(ref_aa: str, alt_aa: str, gene: str) -> str:
     # Generate final impact description
     if impacts:
         return " - ".join(impacts)
-    elif ref_props.get("size") == alt_props.get("size") and ref_props.get("charge") == alt_props.get("charge"):
+    elif ref_props.get("size") == alt_props.get("size") and ref_props.get(
+        "charge"
+    ) == alt_props.get("charge"):
         return "Conservative substitution - minimal impact expected"
     else:
         return "Moderate change - potential functional impact"
@@ -447,13 +581,19 @@ def process(state: Dict) -> Dict:
         impact_summary = {
             "total_variants": len(transformed_variants),
             "nonsense_mutations": sum(
-                1 for v in transformed_variants if "nonsense" in v.get("functional_impact", "").lower()
+                1
+                for v in transformed_variants
+                if "nonsense" in v.get("functional_impact", "").lower()
             ),
             "charge_changes": sum(
-                1 for v in transformed_variants if "charge" in v.get("functional_impact", "").lower()
+                1
+                for v in transformed_variants
+                if "charge" in v.get("functional_impact", "").lower()
             ),
             "conservative_changes": sum(
-                1 for v in transformed_variants if "conservative" in v.get("functional_impact", "").lower()
+                1
+                for v in transformed_variants
+                if "conservative" in v.get("functional_impact", "").lower()
             ),
         }
         state["variant_transformation_summary"] = impact_summary
@@ -469,9 +609,15 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error in variant transformation: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "variant_transformer", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "variant_transformer",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Pass through variants without transformation on error
-        state["variant_details"] = state.get("classified_variants", state.get("filtered_variants", []))
+        state["variant_details"] = state.get(
+            "classified_variants", state.get("filtered_variants", [])
+        )
 
     return state

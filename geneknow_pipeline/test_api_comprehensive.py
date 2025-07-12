@@ -41,7 +41,9 @@ class APITestSuite:
         except Exception as e:
             self.results["failed"] += 1
             print(f"❌ ERROR: {str(e)}")
-            self.results["tests"].append({"name": name, "status": "error", "error": str(e)})
+            self.results["tests"].append(
+                {"name": name, "status": "error", "error": str(e)}
+            )
 
     def print_summary(self):
         """Print test summary."""
@@ -49,7 +51,9 @@ class APITestSuite:
         print("📊 TEST SUMMARY")
         print("=" * 60)
         print(f"Total tests: {self.results['total']}")
-        print(f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)")
+        print(
+            f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)"
+        )
         print(f"Failed: {self.results['failed']}")
 
         if self.results["failed"] > 0:
@@ -138,9 +142,14 @@ def test_websocket_wrapper():
     # For now, we'll just check if the Socket.IO endpoint exists
     try:
         # Socket.IO handshake is at /socket.io/
-        response = requests.get(f"{BASE_URL}/socket.io/", params={"EIO": "4", "transport": "polling"})
+        response = requests.get(
+            f"{BASE_URL}/socket.io/", params={"EIO": "4", "transport": "polling"}
+        )
         # Socket.IO returns specific status codes/responses for handshake
-        return response.status_code in [200, 400]  # 400 is expected without proper handshake
+        return response.status_code in [
+            200,
+            400,
+        ]  # 400 is expected without proper handshake
     except Exception as e:
         print(f"Socket.IO check error: {e}")
         return False
@@ -206,7 +215,9 @@ def test_tcga_results():
     has_cohort = "tcga_cohort_sizes" in results
 
     if has_tcga:
-        total_matches = sum(len(matches) for matches in results["tcga_matches"].values())
+        total_matches = sum(
+            len(matches) for matches in results["tcga_matches"].values()
+        )
         print(f"  Found {total_matches} total TCGA matches")
 
     return has_tcga and has_cohort
@@ -253,7 +264,9 @@ def find_test_file(prefer_maf=False):
 
     if prefer_maf:
         # Move MAF files to front
-        test_files = [f for f in test_files if ".ma" in f] + [f for f in test_files if ".ma" not in f]
+        test_files = [f for f in test_files if ".ma" in f] + [
+            f for f in test_files if ".ma" not in f
+        ]
 
     for file in test_files:
         if os.path.exists(file):
@@ -264,7 +277,10 @@ def find_test_file(prefer_maf=False):
 
 def submit_file_for_processing(file_path):
     """Submit a file for processing and return job ID."""
-    process_data = {"file_path": str(file_path), "preferences": {"language": "en", "include_technical_details": True}}
+    process_data = {
+        "file_path": str(file_path),
+        "preferences": {"language": "en", "include_technical_details": True},
+    }
 
     response = requests.post(f"{API_BASE}/process", json=process_data)
     if response.status_code == 202:

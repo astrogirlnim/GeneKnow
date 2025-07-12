@@ -114,21 +114,69 @@ class TestCADDUnit(unittest.TestCase):
         # Insert comprehensive test data
         test_cadd_scores = [
             # Cancer genes with various scores
-            ("17", 43044295, "A", "T", 2.345, 24.7, "test_job_001"),  # BRCA1 - pathogenic
-            ("17", 43045719, "G", "A", 3.456, 34.1, "test_job_001"),  # BRCA1 - highly pathogenic
-            ("13", 32315474, "G", "A", 1.234, 15.3, "test_job_001"),  # BRCA2 - uncertain
+            (
+                "17",
+                43044295,
+                "A",
+                "T",
+                2.345,
+                24.7,
+                "test_job_001",
+            ),  # BRCA1 - pathogenic
+            (
+                "17",
+                43045719,
+                "G",
+                "A",
+                3.456,
+                34.1,
+                "test_job_001",
+            ),  # BRCA1 - highly pathogenic
+            (
+                "13",
+                32315474,
+                "G",
+                "A",
+                1.234,
+                15.3,
+                "test_job_001",
+            ),  # BRCA2 - uncertain
             ("7", 55019017, "T", "G", 2.890, 28.5, "test_job_001"),  # EGFR - pathogenic
             ("17", 7578406, "C", "T", 2.123, 22.8, "test_job_001"),  # TP53 - pathogenic
             # Benign variants
             ("5", 112839936, "C", "T", 0.456, 8.2, "test_job_001"),  # APC - benign
-            ("1", 100000, "G", "A", 0.123, 3.5, "test_job_001"),  # Non-cancer gene - benign
+            (
+                "1",
+                100000,
+                "G",
+                "A",
+                0.123,
+                3.5,
+                "test_job_001",
+            ),  # Non-cancer gene - benign
             # Edge cases
             ("X", 153296777, "C", "T", 1.789, 18.9, "test_job_001"),  # X chromosome
             ("Y", 2786989, "G", "A", 1.456, 16.2, "test_job_001"),  # Y chromosome
             ("MT", 8697, "G", "A", 0.789, 9.8, "test_job_001"),  # Mitochondrial
             # High-impact variants
-            ("2", 212578380, "G", "A", 3.890, 38.9, "test_job_001"),  # ERBB4 - very high
-            ("3", 178952085, "A", "G", 4.123, 41.2, "test_job_001"),  # PIK3CA - extremely high
+            (
+                "2",
+                212578380,
+                "G",
+                "A",
+                3.890,
+                38.9,
+                "test_job_001",
+            ),  # ERBB4 - very high
+            (
+                "3",
+                178952085,
+                "A",
+                "G",
+                4.123,
+                41.2,
+                "test_job_001",
+            ),  # PIK3CA - extremely high
         ]
 
         cursor.executemany(
@@ -189,7 +237,10 @@ class TestCADDUnit(unittest.TestCase):
             with self.subTest(phred=phred):
                 result = calculate_risk_weight(phred)
                 self.assertAlmostEqual(
-                    result, expected, places=2, msg=f"PHRED {phred} should give risk weight ~{expected}"
+                    result,
+                    expected,
+                    places=2,
+                    msg=f"PHRED {phred} should give risk weight ~{expected}",
                 )
 
     def test_compute_cadd_score_frameshift(self):
@@ -372,7 +423,9 @@ class TestCADDPerformance(unittest.TestCase):
             test_data.append((chrom, pos, ref, alt, raw, phred, "perf_test"))
 
             if len(test_data) >= 10000:
-                cursor.executemany("INSERT INTO cadd_scores VALUES (?, ?, ?, ?, ?, ?, ?)", test_data)
+                cursor.executemany(
+                    "INSERT INTO cadd_scores VALUES (?, ?, ?, ?, ?, ?, ?)", test_data
+                )
                 test_data = []
 
         conn.commit()
@@ -413,12 +466,20 @@ class TestCADDPerformance(unittest.TestCase):
         conn.close()
 
         # Log results
-        logger.info(f"Performance test: {successful_lookups}/10000 lookups in {elapsed_ms:.1f}ms")
+        logger.info(
+            f"Performance test: {successful_lookups}/10000 lookups in {elapsed_ms:.1f}ms"
+        )
         logger.info(f"Average: {elapsed_ms/10000:.3f}ms per lookup")
 
         # Assert performance requirement
-        self.assertLess(elapsed_ms, 200, f"10k lookups took {elapsed_ms:.1f}ms, requirement is <200ms")
-        self.assertEqual(successful_lookups, 10000, "All lookups should succeed in performance test")
+        self.assertLess(
+            elapsed_ms,
+            200,
+            f"10k lookups took {elapsed_ms:.1f}ms, requirement is <200ms",
+        )
+        self.assertEqual(
+            successful_lookups, 10000, "All lookups should succeed in performance test"
+        )
 
 
 class TestCADDMemory(unittest.TestCase):
@@ -473,10 +534,17 @@ class TestCADDMemory(unittest.TestCase):
 
             conn.close()
 
-            logger.info(f"Memory test: {mem_before:.1f}MB -> {mem_after:.1f}MB " f"(+{mem_increase:.1f}MB)")
+            logger.info(
+                f"Memory test: {mem_before:.1f}MB -> {mem_after:.1f}MB "
+                f"(+{mem_increase:.1f}MB)"
+            )
 
             # Assert memory requirement
-            self.assertLess(mem_increase, 200, f"Memory increase {mem_increase:.1f}MB exceeds 200MB limit")
+            self.assertLess(
+                mem_increase,
+                200,
+                f"Memory increase {mem_increase:.1f}MB exceeds 200MB limit",
+            )
 
         finally:
             if os.path.exists(temp_db_path):
@@ -503,7 +571,12 @@ class TestCADDEdgeCases(unittest.TestCase):
             "filtered_variants": [
                 {"chrom": "1"},  # Missing pos, ref, alt
                 {"pos": 100, "re": "A", "alt": "G"},  # Missing chrom
-                {"chrom": "X", "pos": "not_a_number", "re": "A", "alt": "G"},  # Invalid pos
+                {
+                    "chrom": "X",
+                    "pos": "not_a_number",
+                    "re": "A",
+                    "alt": "G",
+                },  # Invalid pos
                 {},  # Empty variant
             ],
             "completed_nodes": [],
@@ -555,7 +628,12 @@ class TestCADDIntegration(unittest.TestCase):
                 }
             ],
             "variant_count": 1,
-            "completed_nodes": ["file_input", "preprocess", "qc_filter", "population_mapper"],
+            "completed_nodes": [
+                "file_input",
+                "preprocess",
+                "qc_filter",
+                "population_mapper",
+            ],
             "errors": [],
             "warnings": [],
             "tcga_matches": {},

@@ -105,7 +105,9 @@ def demonstrate_perfect_prediction():
 
     # Generate features
     prs = np.random.beta(2, 5, n_samples)
-    clinvar = np.random.choice(["pathogenic", "benign", "uncertain"], n_samples, p=[0.2, 0.6, 0.2])
+    clinvar = np.random.choice(
+        ["pathogenic", "benign", "uncertain"], n_samples, p=[0.2, 0.6, 0.2]
+    )
     cadd = np.random.exponential(10, n_samples)
     tcga = np.random.lognormal(0, 1, n_samples)
     burden = np.random.poisson(2, n_samples)

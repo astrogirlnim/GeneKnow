@@ -7,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 import numpy as np
-from typing import Dict, Any, List, Union, Optional
+from typing import Dict, Any, List, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -43,7 +43,9 @@ class MLFusionNode:
             model_path: Path to the trained fusion model. If None, uses best model.
         """
         self.fusion_layer = FusionLayer()
-        self.model_path = model_path or str(Path(__file__).parent.parent / "ml_models" / "best_fusion_model.pkl")
+        self.model_path = model_path or str(
+            Path(__file__).parent.parent / "ml_models" / "best_fusion_model.pkl"
+        )
         self.is_loaded = False
 
         # Load model if it exists
@@ -57,16 +59,32 @@ class MLFusionNode:
                 logger.info(f"✅ Found ML Fusion model at: {self.model_path}")
                 self.fusion_layer.load_model(self.model_path)
                 self.is_loaded = True
-                logger.info(f"✅ ML Fusion model loaded successfully from {self.model_path}")
+                logger.info(
+                    f"✅ ML Fusion model loaded successfully from {self.model_path}"
+                )
             else:
                 # Try alternative paths
                 alternative_paths = [
-                    str(Path(__file__).parent.parent / "ml_models" / "fusion_gradient_boosting.pkl"),
-                    str(Path(__file__).parent.parent / "ml_models" / "fusion_random_forest.pkl"),
-                    str(Path(__file__).parent.parent / "ml_models_no_leakage" / "best_model.pkl"),
+                    str(
+                        Path(__file__).parent.parent
+                        / "ml_models"
+                        / "fusion_gradient_boosting.pkl"
+                    ),
+                    str(
+                        Path(__file__).parent.parent
+                        / "ml_models"
+                        / "fusion_random_forest.pkl"
+                    ),
+                    str(
+                        Path(__file__).parent.parent
+                        / "ml_models_no_leakage"
+                        / "best_model.pkl"
+                    ),
                 ]
 
-                logger.warning(f"⚠️ ML Fusion model not found at primary path: {self.model_path}")
+                logger.warning(
+                    f"⚠️ ML Fusion model not found at primary path: {self.model_path}"
+                )
 
                 for alt_path in alternative_paths:
                     if os.path.exists(alt_path):
@@ -74,7 +92,9 @@ class MLFusionNode:
                         self.model_path = alt_path
                         self.fusion_layer.load_model(alt_path)
                         self.is_loaded = True
-                        logger.info(f"✅ ML Fusion model loaded successfully from alternative: {alt_path}")
+                        logger.info(
+                            f"✅ ML Fusion model loaded successfully from alternative: {alt_path}"
+                        )
                         break
 
                 if not self.is_loaded:
@@ -92,7 +112,9 @@ class MLFusionNode:
             logger.error(traceback.format_exc())
             self.is_loaded = False
 
-    def _extract_static_model_outputs(self, state: Dict[str, Any]) -> List[StaticModelInputs]:
+    def _extract_static_model_outputs(
+        self, state: Dict[str, Any]
+    ) -> List[StaticModelInputs]:
         """
         Extract static model outputs from the pipeline state.
 
@@ -122,12 +144,17 @@ class MLFusionNode:
             if "clinvar" in variant:
                 clinvar_data = variant["clinvar"]
                 if isinstance(clinvar_data, dict):
-                    clinical_significance = clinvar_data.get("clinical_significance", "").lower()
+                    clinical_significance = clinvar_data.get(
+                        "clinical_significance", ""
+                    ).lower()
                     if "pathogenic" in clinical_significance:
                         clinvar_classification = "pathogenic"
                     elif "benign" in clinical_significance:
                         clinvar_classification = "benign"
-                    elif "uncertain" in clinical_significance or "vus" in clinical_significance:
+                    elif (
+                        "uncertain" in clinical_significance
+                        or "vus" in clinical_significance
+                    ):
                         clinvar_classification = "uncertain"
                 elif isinstance(clinvar_data, str):
                     clinical_significance = clinvar_data.lower()
@@ -175,7 +202,9 @@ class MLFusionNode:
 
         return static_inputs
 
-    def _calculate_aggregate_risk(self, fusion_outputs: List[FusionOutput]) -> Dict[str, Any]:
+    def _calculate_aggregate_risk(
+        self, fusion_outputs: List[FusionOutput]
+    ) -> Dict[str, Any]:
         """
         Calculate aggregate risk assessment from individual variant predictions.
 
@@ -201,14 +230,20 @@ class MLFusionNode:
 
         # Aggregate risk score (weighted average, with higher weights for higher risk)
         weights = np.array(risk_scores)
-        weights = weights / np.sum(weights) if np.sum(weights) > 0 else np.ones(len(weights)) / len(weights)
+        weights = (
+            weights / np.sum(weights)
+            if np.sum(weights) > 0
+            else np.ones(len(weights)) / len(weights)
+        )
         aggregate_risk_score = np.average(risk_scores, weights=weights)
 
         # Aggregate confidence (average confidence)
         aggregate_confidence = np.mean(confidences)
 
         # Count high-risk variants
-        high_risk_variants = sum(1 for output in fusion_outputs if output.risk_score > 0.7)
+        high_risk_variants = sum(
+            1 for output in fusion_outputs if output.risk_score > 0.7
+        )
 
         # Determine aggregate risk category
         if aggregate_risk_score <= 0.25:
@@ -229,7 +264,10 @@ class MLFusionNode:
                 all_factors[factor].append(contribution)
 
         # Average contribution per factor
-        aggregated_factors = {factor: np.mean(contributions) for factor, contributions in all_factors.items()}
+        aggregated_factors = {
+            factor: np.mean(contributions)
+            for factor, contributions in all_factors.items()
+        }
 
         return {
             "aggregate_risk_score": float(aggregate_risk_score),
@@ -315,7 +353,9 @@ class MLFusionNode:
             # Build fusion results
             ml_fusion_results = {
                 "aggregate_risk_assessment": aggregate_results,
-                "individual_predictions": [output.to_dict() for output in fusion_outputs],
+                "individual_predictions": [
+                    output.to_dict() for output in fusion_outputs
+                ],
                 "static_model_inputs": [inputs.to_dict() for inputs in static_inputs],
                 "model_path": self.model_path,
                 "processing_successful": True,
@@ -324,9 +364,13 @@ class MLFusionNode:
             # Log results
             logger.info("ML Fusion completed successfully:")
             logger.info(f"  Processed {len(fusion_outputs)} variants")
-            logger.info(f"  Aggregate risk score: {aggregate_results['aggregate_risk_score']:.3f}")
+            logger.info(
+                f"  Aggregate risk score: {aggregate_results['aggregate_risk_score']:.3f}"
+            )
             logger.info(f"  Risk category: {aggregate_results['risk_category']}")
-            logger.info(f"  High-risk variants: {aggregate_results['high_risk_variants']}")
+            logger.info(
+                f"  High-risk variants: {aggregate_results['high_risk_variants']}"
+            )
 
             # Return only the keys this node updates
             return {
@@ -337,7 +381,9 @@ class MLFusionNode:
 
         except Exception as e:
             logger.error(f"Error in ML Fusion processing: {e}")
-            return {"ml_fusion_results": {"error": str(e), "processing_successful": False}}
+            return {
+                "ml_fusion_results": {"error": str(e), "processing_successful": False}
+            }
 
 
 # LangGraph node function

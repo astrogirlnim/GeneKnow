@@ -98,7 +98,9 @@ def analyze_mutation_patterns(variants: List[Dict]) -> Dict[str, float]:
     return pattern_weights
 
 
-def calculate_signature_contributions(pattern_weights: Dict[str, float], cosmic_signatures: Dict) -> List[Dict]:
+def calculate_signature_contributions(
+    pattern_weights: Dict[str, float], cosmic_signatures: Dict
+) -> List[Dict]:
     """Calculate contribution of each signature based on mutation patterns"""
     results = []
 
@@ -183,7 +185,9 @@ def process(state: Dict) -> Dict:
         pattern_weights = analyze_mutation_patterns(variants)
 
         # Calculate signature contributions
-        signatures = calculate_signature_contributions(pattern_weights, cosmic_signatures)
+        signatures = calculate_signature_contributions(
+            pattern_weights, cosmic_signatures
+        )
 
         # Add special check for BRCA1/BRCA2 variants
         brca_genes = {"BRCA1", "BRCA2"}
@@ -227,7 +231,11 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error in mutational signature analysis: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "mutational_signatures", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "mutational_signatures",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Set empty results on error
         state["mutational_signatures"] = []

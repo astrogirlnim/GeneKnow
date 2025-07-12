@@ -13,7 +13,9 @@ import tempfile
 logger = logging.getLogger(__name__)
 
 # Configuration
-REFERENCE_GENOME = os.path.join(os.path.dirname(__file__), "..", "test_reference", "test_genome.fa")
+REFERENCE_GENOME = os.path.join(
+    os.path.dirname(__file__), "..", "test_reference", "test_genome.fa"
+)
 # For production, use real reference: "/path/to/hg38.fa"
 
 
@@ -59,14 +61,18 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
 
     # Check reference index exists
     if not os.path.exists(f"{REFERENCE_GENOME}.bwt"):
-        raise FileNotFoundError(f"Reference genome not indexed. Run: bwa index {REFERENCE_GENOME}")
+        raise FileNotFoundError(
+            f"Reference genome not indexed. Run: bwa index {REFERENCE_GENOME}"
+        )
 
     # Prepare output directory
     if output_dir is None:
         output_dir = tempfile.gettempdir()
 
     # Generate output filename
-    base_name = os.path.basename(fastq_path).replace(".fastq.gz", "").replace(".fastq", "")
+    base_name = (
+        os.path.basename(fastq_path).replace(".fastq.gz", "").replace(".fastq", "")
+    )
     sam_path = os.path.join(output_dir, f"{base_name}_aligned.sam")
     bam_path = os.path.join(output_dir, f"{base_name}_aligned.bam")
     sorted_bam_path = os.path.join(output_dir, f"{base_name}_aligned_sorted.bam")
@@ -77,7 +83,9 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
         align_cmd = [bwa_cmd, "mem", "-t", "4", REFERENCE_GENOME, fastq_path]
 
         with open(sam_path, "w") as sam_file:
-            process = subprocess.Popen(align_cmd, stdout=sam_file, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                align_cmd, stdout=sam_file, stderr=subprocess.PIPE
+            )
             _, stderr = process.communicate()
 
             if process.returncode != 0:
@@ -85,11 +93,15 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
 
         # Convert SAM to BAM
         logger.info("Converting SAM to BAM...")
-        subprocess.run(["samtools", "view", "-bS", sam_path, "-o", bam_path], check=True)
+        subprocess.run(
+            ["samtools", "view", "-bS", sam_path, "-o", bam_path], check=True
+        )
 
         # Sort BAM
         logger.info("Sorting BAM file...")
-        subprocess.run(["samtools", "sort", bam_path, "-o", sorted_bam_path], check=True)
+        subprocess.run(
+            ["samtools", "sort", bam_path, "-o", sorted_bam_path], check=True
+        )
 
         # Index BAM
         logger.info("Indexing BAM file...")
@@ -98,7 +110,10 @@ def align_fastq(fastq_path: str, output_dir: str = None) -> tuple[str, Dict[str,
         # Get alignment statistics
         logger.info("Calculating alignment statistics...")
         stats_output = subprocess.run(
-            ["samtools", "flagstat", sorted_bam_path], capture_output=True, text=True, check=True
+            ["samtools", "flagstat", sorted_bam_path],
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout
 
         # Parse statistics
@@ -162,7 +177,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         file_path = state["file_path"]
 
         # Check if input is MAF - pass to MAF parser
-        if file_type == "ma":
+        if file_type == "maf":
             logger.info("Input is MAF, passing to MAF parser")
             # Import and call MAF parser
             from . import maf_parser
@@ -171,7 +186,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             return maf_parser.process(state)
 
         # Check if input is VCF - load variants directly
-        if file_type == "vc":
+        if file_type == "vcf":
             logger.info("Input is VCF, loading variants directly")
             import vcf as pyvcf
 
@@ -185,7 +200,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         "re": record.REF,
                         "alt": str(record.ALT[0]) if record.ALT else ".",
                         "qual": record.QUAL or 0,
-                        "quality": record.QUAL or 0,  # Map to field name expected by QC filter
+                        "quality": record.QUAL
+                        or 0,  # Map to field name expected by QC filter
                         "filter": record.FILTER or [],
                         "info": dict(record.INFO) if record.INFO else {},
                         "variant_id": f"{record.CHROM}:{record.POS}:{record.REF}>{record.ALT[0] if record.ALT else '.'}",
@@ -196,11 +212,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
                         sample = record.samples[0]
                         if hasattr(sample.data, "DP"):
                             variant_data["depth"] = sample.data.DP
-                        if hasattr(sample.data, 'AF'):
+                        if hasattr(sample.data, "AF"):
                             # Handle AF as list (take first value) or single value
                             af_value = sample.data.AF
                             if isinstance(af_value, list):
-                                variant_data["allele_freq"] = af_value[0] if af_value else 0.0
+                                variant_data["allele_freq"] = (
+                                    af_value[0] if af_value else 0.0
+                                )
                             else:
                                 variant_data["allele_freq"] = af_value or 0.0
 
@@ -242,7 +260,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Basic validation
             try:
-                result = subprocess.run(["samtools", "quickcheck", file_path], capture_output=True)
+                result = subprocess.run(
+                    ["samtools", "quickcheck", file_path], capture_output=True
+                )
                 if result.returncode != 0:
                     raise ValueError("BAM file validation failed")
             except subprocess.CalledProcessError:
@@ -257,11 +277,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Preprocessing complete. BAM path: {state['aligned_bam_path']}")
 
         # For FASTQ/BAM files, return only the fields we updated
-        return {"aligned_bam_path": state["aligned_bam_path"], "file_metadata": state["file_metadata"]}
+        return {
+            "aligned_bam_path": state["aligned_bam_path"],
+            "file_metadata": state["file_metadata"],
+        }
 
     except Exception as e:
         logger.error(f"Preprocessing failed: {str(e)}")
-        state["errors"].append({"node": "preprocess", "error": str(e), "timestamp": datetime.now()})
+        state["errors"].append(
+            {"node": "preprocess", "error": str(e), "timestamp": datetime.now()}
+        )
         state["pipeline_status"] = "failed"
 
         # Return error state

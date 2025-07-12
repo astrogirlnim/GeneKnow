@@ -28,7 +28,9 @@ FEATURE_DISPLAY_NAMES = {
 # Validation thresholds
 HIGH_RISK_THRESHOLD = 0.6
 LOW_RISK_THRESHOLD = 0.1
-MIN_PATHOGENIC_CONTRIBUTION = 0.15  # Minimum SHAP contribution expected from pathogenic variants
+MIN_PATHOGENIC_CONTRIBUTION = (
+    0.15  # Minimum SHAP contribution expected from pathogenic variants
+)
 
 
 class SHAPValidator:
@@ -44,7 +46,9 @@ class SHAPValidator:
             "consistency_check": self._validate_consistency,
         }
 
-    def _create_explainer(self, model: Any, feature_matrix: np.ndarray) -> shap.Explainer:
+    def _create_explainer(
+        self, model: Any, feature_matrix: np.ndarray
+    ) -> shap.Explainer:
         """
         Create appropriate SHAP explainer based on model type.
 
@@ -63,7 +67,9 @@ class SHAPValidator:
             return shap.LinearExplainer(model, feature_matrix)
         else:
             # Fallback to KernelExplainer (slower but universal)
-            logger.warning(f"Using KernelExplainer for model type: {type(model).__name__}")
+            logger.warning(
+                f"Using KernelExplainer for model type: {type(model).__name__}"
+            )
             return shap.KernelExplainer(model.predict, feature_matrix)
 
     def _get_top_contributors(
@@ -104,7 +110,11 @@ class SHAPValidator:
         return contributors
 
     def _validate_high_risk(
-        self, risk_score: float, shap_values: np.ndarray, feature_names: List[str], variant_data: Dict[str, Any]
+        self,
+        risk_score: float,
+        shap_values: np.ndarray,
+        feature_names: List[str],
+        variant_data: Dict[str, Any],
     ) -> Tuple[bool, List[str]]:
         """
         Validate high risk predictions.
@@ -118,19 +128,23 @@ class SHAPValidator:
             return True, []
 
         reasons = []
-        top_contributors = self._get_top_contributors(shap_values, feature_names, n_top=3)
+        top_contributors = self._get_top_contributors(
+            shap_values, feature_names, n_top=3
+        )
 
         # Check if any pathogenic feature is in top contributors
         pathogenic_features = ["clinvar_pathogenic"]
         has_pathogenic_contributor = any(
-            contrib["feature"] in pathogenic_features and contrib["shap_value"] > MIN_PATHOGENIC_CONTRIBUTION
+            contrib["feature"] in pathogenic_features
+            and contrib["shap_value"] > MIN_PATHOGENIC_CONTRIBUTION
             for contrib in top_contributors
         )
 
         if not has_pathogenic_contributor:
             # Check if pathogenic variant exists in data
             has_pathogenic_variant = any(
-                (v.get("clinvar_clinical_significance") or "").lower() in ["pathogenic", "likely pathogenic"]
+                (v.get("clinvar_clinical_significance") or "").lower()
+                in ["pathogenic", "likely pathogenic"]
                 for v in variant_data.get("filtered_variants", [])
             )
 
@@ -142,12 +156,18 @@ class SHAPValidator:
                 )
             else:
                 # High risk without pathogenic variants might be valid (polygenic risk)
-                logger.info("High risk score based on polygenic/burden factors - this may be valid")
+                logger.info(
+                    "High risk score based on polygenic/burden factors - this may be valid"
+                )
 
         return len(reasons) == 0, reasons
 
     def _validate_low_risk(
-        self, risk_score: float, shap_values: np.ndarray, feature_names: List[str], variant_data: Dict[str, Any]
+        self,
+        risk_score: float,
+        shap_values: np.ndarray,
+        feature_names: List[str],
+        variant_data: Dict[str, Any],
     ) -> Tuple[bool, List[str]]:
         """
         Validate low risk predictions.
@@ -166,20 +186,25 @@ class SHAPValidator:
         pathogenic_variants = [
             v
             for v in variant_data.get("filtered_variants", [])
-            if (v.get("clinvar_clinical_significance") or "").lower() in ["pathogenic", "likely pathogenic"]
+            if (v.get("clinvar_clinical_significance") or "").lower()
+            in ["pathogenic", "likely pathogenic"]
         ]
 
         if pathogenic_variants:
             # Get SHAP value for pathogenic feature
             pathogenic_idx = (
-                feature_names.index("clinvar_pathogenic") if "clinvar_pathogenic" in feature_names else None
+                feature_names.index("clinvar_pathogenic")
+                if "clinvar_pathogenic" in feature_names
+                else None
             )
 
             if pathogenic_idx is not None:
                 pathogenic_shap = shap_values[pathogenic_idx]
 
                 if pathogenic_shap < MIN_PATHOGENIC_CONTRIBUTION:
-                    variant_genes = [v.get("gene", "Unknown") for v in pathogenic_variants[:3]]
+                    variant_genes = [
+                        v.get("gene", "Unknown") for v in pathogenic_variants[:3]
+                    ]
                     reasons.append(
                         f"The AI predicted LOW RISK ({risk_score*100:.0f}%) even though "
                         f"{len(pathogenic_variants)} known disease-causing mutation(s) were found in: {', '.join(variant_genes)}. "
@@ -189,7 +214,11 @@ class SHAPValidator:
         return len(reasons) == 0, reasons
 
     def _validate_consistency(
-        self, risk_score: float, shap_values: np.ndarray, feature_names: List[str], variant_data: Dict[str, Any]
+        self,
+        risk_score: float,
+        shap_values: np.ndarray,
+        feature_names: List[str],
+        variant_data: Dict[str, Any],
     ) -> Tuple[bool, List[str]]:
         """
         Check for consistency in SHAP explanations.
@@ -200,7 +229,11 @@ class SHAPValidator:
         reasons = []
 
         # Check for negative SHAP values for pathogenic features
-        pathogenic_idx = feature_names.index("clinvar_pathogenic") if "clinvar_pathogenic" in feature_names else None
+        pathogenic_idx = (
+            feature_names.index("clinvar_pathogenic")
+            if "clinvar_pathogenic" in feature_names
+            else None
+        )
         if pathogenic_idx is not None and shap_values[pathogenic_idx] < -0.05:
             reasons.append(
                 "Model logic error: Disease-causing mutations are being counted as protective factors. "
@@ -208,7 +241,11 @@ class SHAPValidator:
             )
 
         # Check for very high positive SHAP values for benign features
-        benign_idx = feature_names.index("clinvar_benign") if "clinvar_benign" in feature_names else None
+        benign_idx = (
+            feature_names.index("clinvar_benign")
+            if "clinvar_benign" in feature_names
+            else None
+        )
         if benign_idx is not None and shap_values[benign_idx] > 0.2:
             reasons.append(
                 "Model logic error: Harmless genetic variants are being counted as major risk factors. "
@@ -265,14 +302,18 @@ class SHAPValidator:
             rule_results = {}
 
             for rule_name, rule_func in self.validation_rules.items():
-                passed, reasons = rule_func(aggregate_risk, shap_values, feature_names, variant_data)
+                passed, reasons = rule_func(
+                    aggregate_risk, shap_values, feature_names, variant_data
+                )
                 rule_results[rule_name] = {"passed": passed, "reasons": reasons}
                 if not passed:
                     all_passed = False
                     all_reasons.extend(reasons)
 
             # Get top contributors
-            top_contributors = self._get_top_contributors(shap_values, feature_names, n_top=3)
+            top_contributors = self._get_top_contributors(
+                shap_values, feature_names, n_top=3
+            )
 
             # Determine validation status
             validation_status = "PASS" if all_passed else "FLAG_FOR_REVIEW"
@@ -342,7 +383,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     # Get the actual model from fusion layer
     if hasattr(ml_fusion_model, "model"):
         model = ml_fusion_model.model
-        feature_names = ml_fusion_model.feature_names + [f"clinvar_{cat}" for cat in ml_fusion_model.clinvar_categories]
+        feature_names = ml_fusion_model.feature_names + [
+            f"clinvar_{cat}" for cat in ml_fusion_model.clinvar_categories
+        ]
     else:
         logger.error("ML fusion model instance doesn't have expected structure")
         return {
@@ -371,7 +414,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         "shap_feature_importance": {
             name: float(value)
             for name, value in zip(
-                validation_results.get("feature_names", []), validation_results.get("shap_values", [])
+                validation_results.get("feature_names", []),
+                validation_results.get("shap_values", []),
             )
         },
         "shap_validation_details": validation_results,

@@ -217,7 +217,9 @@ def annotate_sv_impact(sv: Dict) -> Dict:
     if sv["type"] == "deletion":
         if sv.get("size", 0) > 1000000:  # > 1Mb
             sv["clinical_significance"] = "likely_pathogenic"
-            sv["functional_impact"] = "Large deletion potentially affecting multiple genes"
+            sv["functional_impact"] = (
+                "Large deletion potentially affecting multiple genes"
+            )
         elif sv.get("size", 0) > 100000:  # > 100kb
             sv["clinical_significance"] = "uncertain_significance"
             sv["functional_impact"] = "Moderate deletion"
@@ -228,7 +230,9 @@ def annotate_sv_impact(sv: Dict) -> Dict:
     elif sv["type"] == "duplication":
         if sv.get("size", 0) > 1000000:
             sv["clinical_significance"] = "likely_pathogenic"
-            sv["functional_impact"] = "Large duplication potentially causing dosage imbalance"
+            sv["functional_impact"] = (
+                "Large duplication potentially causing dosage imbalance"
+            )
         else:
             sv["clinical_significance"] = "uncertain_significance"
             sv["functional_impact"] = "Gene duplication"
@@ -236,7 +240,9 @@ def annotate_sv_impact(sv: Dict) -> Dict:
     elif sv["type"] == "insertion":
         if sv.get("size", 0) > 1000:
             sv["clinical_significance"] = "uncertain_significance"
-            sv["functional_impact"] = "Large insertion potentially disrupting gene function"
+            sv["functional_impact"] = (
+                "Large insertion potentially disrupting gene function"
+            )
         else:
             sv["clinical_significance"] = "uncertain_significance"
             sv["functional_impact"] = "Insertion variant"
@@ -251,7 +257,10 @@ def process(state: Dict) -> Dict:
 
     try:
         # Get variants
-        variants = state.get("variant_details", state.get("classified_variants", state.get("filtered_variants", [])))
+        variants = state.get(
+            "variant_details",
+            state.get("classified_variants", state.get("filtered_variants", [])),
+        )
 
         structural_variants = []
 
@@ -272,7 +281,12 @@ def process(state: Dict) -> Dict:
         unique_svs = []
         for sv in structural_variants:
             # Create unique key
-            key = (sv.get("type"), sv.get("chromosome", ""), sv.get("start", 0), sv.get("size", 0))
+            key = (
+                sv.get("type"),
+                sv.get("chromosome", ""),
+                sv.get("start", 0),
+                sv.get("size", 0),
+            )
             if key not in seen:
                 seen.add(key)
                 # Annotate SV
@@ -284,11 +298,18 @@ def process(state: Dict) -> Dict:
             "total_svs": len(unique_svs),
             "deletions": sum(1 for sv in unique_svs if sv["type"] == "deletion"),
             "duplications": sum(1 for sv in unique_svs if sv["type"] == "duplication"),
-            "translocations": sum(1 for sv in unique_svs if sv["type"] == "translocation"),
-            "pathogenic_svs": sum(
-                1 for sv in unique_svs if sv.get("clinical_significance") in ["pathogenic", "likely_pathogenic"]
+            "translocations": sum(
+                1 for sv in unique_svs if sv["type"] == "translocation"
             ),
-            "gene_fusions": [sv.get("fusion_name") for sv in unique_svs if "fusion_name" in sv],
+            "pathogenic_svs": sum(
+                1
+                for sv in unique_svs
+                if sv.get("clinical_significance")
+                in ["pathogenic", "likely_pathogenic"]
+            ),
+            "gene_fusions": [
+                sv.get("fusion_name") for sv in unique_svs if "fusion_name" in sv
+            ],
         }
 
         # Add to completed nodes
@@ -308,7 +329,11 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error in structural variant detection: {str(e)}")
         errors = state.get("errors", []) + [
-            {"node": "structural_variant_detector", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "structural_variant_detector",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Return only the keys this node updates
         return {"structural_variants": [], "errors": errors}

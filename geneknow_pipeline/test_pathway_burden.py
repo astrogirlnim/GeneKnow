@@ -27,7 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 def create_test_variant(
-    gene, variant_id, cadd_phred=0, clinical_significance="", allele_frequency=0.01, consequence="missense_variant"
+    gene,
+    variant_id,
+    cadd_phred=0,
+    clinical_significance="",
+    allele_frequency=0.01,
+    consequence="missense_variant",
 ):
     """Create a test variant with specified parameters."""
     return {
@@ -115,7 +120,11 @@ def test_pathway_burden_calculation():
     # Create test variants for DNA repair pathway
     dna_repair_variants = [
         create_test_variant(
-            "BRCA1", "17:43045677:G>A", cadd_phred=30, clinical_significance="Pathogenic", allele_frequency=0.0001
+            "BRCA1",
+            "17:43045677:G>A",
+            cadd_phred=30,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0001,
         ),
         create_test_variant(
             "BRCA2",
@@ -132,16 +141,26 @@ def test_pathway_burden_calculation():
             allele_frequency=0.01,
         ),
         create_test_variant(
-            "PALB2", "16:23635000:A>G", cadd_phred=20, clinical_significance="Pathogenic", allele_frequency=0.0002
+            "PALB2",
+            "16:23635000:A>G",
+            cadd_phred=20,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0002,
         ),
         create_test_variant(
-            "UNKNOWN_GENE", "1:12345678:A>G", cadd_phred=10, clinical_significance="", allele_frequency=0.05
+            "UNKNOWN_GENE",
+            "1:12345678:A>G",
+            cadd_phred=10,
+            clinical_significance="",
+            allele_frequency=0.05,
         ),  # Not in pathway
     ]
 
     # Test DNA repair pathway
     dna_repair_data = CANCER_PATHWAYS["dna_repair"]
-    burden_result = calculate_pathway_burden("dna_repair", dna_repair_data, dna_repair_variants)
+    burden_result = calculate_pathway_burden(
+        "dna_repair", dna_repair_data, dna_repair_variants
+    )
 
     print("\nDNA Repair Pathway Results:")
     print(f"  Total variants in pathway: {burden_result['total_variants']}")
@@ -149,19 +168,31 @@ def test_pathway_burden_calculation():
     print(f"  Burden score: {burden_result['burden_score']:.3f}")
     print(f"  Risk level: {burden_result['risk_level']}")
     print(f"  Genes with variants: {', '.join(burden_result['contributing_genes'])}")
-    print(f"  Genes with damaging variants: {', '.join(burden_result['damaging_genes'])}")
+    print(
+        f"  Genes with damaging variants: {', '.join(burden_result['damaging_genes'])}"
+    )
 
     if burden_result["top_variant"]:
         top = burden_result["top_variant"]
-        print(f"  Top variant: {top['variant_id']} in {top['gene']} (score: {top['damage_score']:.3f})")
+        print(
+            f"  Top variant: {top['variant_id']} in {top['gene']} (score: {top['damage_score']:.3f})"
+        )
 
     # Test with multi-hit gene
     multi_hit_variants = [
         create_test_variant(
-            "BRCA1", "17:43045677:G>A", cadd_phred=30, clinical_significance="Pathogenic", allele_frequency=0.0001
+            "BRCA1",
+            "17:43045677:G>A",
+            cadd_phred=30,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0001,
         ),
         create_test_variant(
-            "BRCA1", "17:43045678:C>T", cadd_phred=28, clinical_significance="Pathogenic", allele_frequency=0.0002
+            "BRCA1",
+            "17:43045678:C>T",
+            cadd_phred=28,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0002,
         ),
         create_test_variant(
             "BRCA1",
@@ -172,11 +203,17 @@ def test_pathway_burden_calculation():
         ),
     ]
 
-    multi_hit_result = calculate_pathway_burden("dna_repair", dna_repair_data, multi_hit_variants)
+    multi_hit_result = calculate_pathway_burden(
+        "dna_repair", dna_repair_data, multi_hit_variants
+    )
     print("\n  Multi-hit test (BRCA1):")
     print(f"    Multi-hit genes: {', '.join(multi_hit_result['multi_hit_genes'])}")
-    print(f"    BRCA1 variant count: {multi_hit_result['gene_variant_counts'].get('BRCA1', 0)}")
-    print(f"    BRCA1 damaging count: {multi_hit_result['gene_damaging_counts'].get('BRCA1', 0)}")
+    print(
+        f"    BRCA1 variant count: {multi_hit_result['gene_variant_counts'].get('BRCA1', 0)}"
+    )
+    print(
+        f"    BRCA1 damaging count: {multi_hit_result['gene_damaging_counts'].get('BRCA1', 0)}"
+    )
 
     return burden_result
 
@@ -217,8 +254,12 @@ def test_overall_burden_assessment():
 
     print("\nOverall Burden Assessment:")
     print(f"  Overall burden score: {overall_result['overall_burden_score']:.3f}")
-    print(f"  High burden pathways: {', '.join(overall_result['high_burden_pathways'])}")
-    print(f"  Moderate burden pathways: {', '.join(overall_result['moderate_burden_pathways'])}")
+    print(
+        f"  High burden pathways: {', '.join(overall_result['high_burden_pathways'])}"
+    )
+    print(
+        f"  Moderate burden pathways: {', '.join(overall_result['moderate_burden_pathways'])}"
+    )
     print(f"  Primary concern: {overall_result['primary_concern']}")
     print(f"  Total damaging variants: {overall_result['total_damaging_variants']}")
     print(f"  Pathway crosstalk detected: {overall_result['pathway_crosstalk']}")
@@ -242,7 +283,11 @@ def test_pathway_burden_node():
     test_variants = [
         # DNA repair pathway
         create_test_variant(
-            "BRCA1", "17:43045677:G>A", cadd_phred=30, clinical_significance="Pathogenic", allele_frequency=0.0001
+            "BRCA1",
+            "17:43045677:G>A",
+            cadd_phred=30,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0001,
         ),
         create_test_variant(
             "BRCA2",
@@ -260,14 +305,26 @@ def test_pathway_burden_node():
         ),
         # Tumor suppressors
         create_test_variant(
-            "TP53", "17:7673803:C>T", cadd_phred=28, clinical_significance="Pathogenic", allele_frequency=0.0003
+            "TP53",
+            "17:7673803:C>T",
+            cadd_phred=28,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0003,
         ),
         create_test_variant(
-            "RB1", "13:48877782:G>A", cadd_phred=22, clinical_significance="Likely_pathogenic", allele_frequency=0.0008
+            "RB1",
+            "13:48877782:G>A",
+            cadd_phred=22,
+            clinical_significance="Likely_pathogenic",
+            allele_frequency=0.0008,
         ),
         # Oncogenes
         create_test_variant(
-            "KRAS", "12:25245350:C>T", cadd_phred=20, clinical_significance="Likely_pathogenic", allele_frequency=0.001
+            "KRAS",
+            "12:25245350:C>T",
+            cadd_phred=20,
+            clinical_significance="Likely_pathogenic",
+            allele_frequency=0.001,
         ),
         create_test_variant(
             "EGFR",
@@ -278,18 +335,34 @@ def test_pathway_burden_node():
         ),
         # Mismatch repair
         create_test_variant(
-            "MLH1", "3:37034946:G>A", cadd_phred=27, clinical_significance="Pathogenic", allele_frequency=0.0004
+            "MLH1",
+            "3:37034946:G>A",
+            cadd_phred=27,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0004,
         ),
         create_test_variant(
-            "MSH2", "2:47403068:C>T", cadd_phred=24, clinical_significance="Likely_pathogenic", allele_frequency=0.0006
+            "MSH2",
+            "2:47403068:C>T",
+            cadd_phred=24,
+            clinical_significance="Likely_pathogenic",
+            allele_frequency=0.0006,
         ),
         # Cell cycle
         create_test_variant(
-            "CDKN2A", "9:21968225:C>T", cadd_phred=23, clinical_significance="Pathogenic", allele_frequency=0.0007
+            "CDKN2A",
+            "9:21968225:C>T",
+            cadd_phred=23,
+            clinical_significance="Pathogenic",
+            allele_frequency=0.0007,
         ),
         # Non-cancer gene (should be ignored)
         create_test_variant(
-            "UNKNOWN_GENE", "1:12345678:A>G", cadd_phred=10, clinical_significance="", allele_frequency=0.05
+            "UNKNOWN_GENE",
+            "1:12345678:A>G",
+            cadd_phred=10,
+            clinical_significance="",
+            allele_frequency=0.05,
         ),
     ]
 
@@ -307,17 +380,25 @@ def test_pathway_burden_node():
 
     print("\nResults Summary:")
     print(f"  Pathways analyzed: {len(pathway_results)}")
-    print(f"  Overall burden score: {pathway_summary.get('overall_burden_score', 0):.3f}")
-    print(f"  High burden pathways: {', '.join(pathway_summary.get('high_burden_pathways', []))}")
+    print(
+        f"  Overall burden score: {pathway_summary.get('overall_burden_score', 0):.3f}"
+    )
+    print(
+        f"  High burden pathways: {', '.join(pathway_summary.get('high_burden_pathways', []))}"
+    )
     print(f"  Primary concern: {pathway_summary.get('primary_concern', 'None')}")
-    print(f"  Total damaging variants: {pathway_summary.get('total_damaging_variants', 0)}")
+    print(
+        f"  Total damaging variants: {pathway_summary.get('total_damaging_variants', 0)}"
+    )
 
     # Show detailed results for pathways with variants
     print("\nDetailed Pathway Results:")
     for pathway_name, results in pathway_results.items():
         if results["total_variants"] > 0:
             print(f"\n  {pathway_name.upper()}:")
-            print(f"    Variants: {results['damaging_variants']}/{results['total_variants']}")
+            print(
+                f"    Variants: {results['damaging_variants']}/{results['total_variants']}"
+            )
             print(f"    Burden score: {results['burden_score']:.3f}")
             print(f"    Risk level: {results['risk_level']}")
             print(f"    Genes: {', '.join(results['contributing_genes'])}")
@@ -332,7 +413,9 @@ def test_pathway_burden_node():
     # Test with empty variants
     empty_state = {"filtered_variants": []}
     empty_result = process(empty_state)
-    print(f"Empty variants test - Overall burden: {empty_result['pathway_burden_summary']['overall_burden_score']:.3f}")
+    print(
+        f"Empty variants test - Overall burden: {empty_result['pathway_burden_summary']['overall_burden_score']:.3f}"
+    )
 
     # Test with malformed variants
     malformed_state = {
@@ -342,7 +425,9 @@ def test_pathway_burden_node():
         ]
     }
     malformed_result = process(malformed_state)
-    print(f"Malformed variants test - Pathways analyzed: {len(malformed_result['pathway_burden_results'])}")
+    print(
+        f"Malformed variants test - Pathways analyzed: {len(malformed_result['pathway_burden_results'])}"
+    )
 
     return result_state
 
@@ -370,7 +455,9 @@ def test_performance():
             gene,
             f"chr{i % 22 + 1}:{i * 1000}:A>G",
             cadd_phred=i % 35,  # 0-34 range
-            clinical_significance="Pathogenic" if i % 10 == 0 else "Uncertain_significance",
+            clinical_significance=(
+                "Pathogenic" if i % 10 == 0 else "Uncertain_significance"
+            ),
             allele_frequency=0.001 + (i % 100) / 10000,  # 0.001-0.0109 range
             consequence="missense_variant" if i % 5 else "frameshift_variant",
         )
@@ -415,15 +502,25 @@ def test_performance():
 
     # Ensure we don't divide by zero
     if process_time > 0:
-        print(f"  Analysis rate: {len(large_variants) / process_time:.0f} variants/second")
+        print(
+            f"  Analysis rate: {len(large_variants) / process_time:.0f} variants/second"
+        )
     else:
         print("  Analysis rate: >1,000,000 (too fast to measure accurately)")
 
     print("\nWork actually performed:")
-    print(f"  Total damaging variants found: {result['pathway_burden_summary']['total_damaging_variants']}")
-    print(f"  Pathways analyzed: {result['pathway_burden_summary']['pathways_analyzed']}")
-    print(f"  High burden pathways: {len(result['pathway_burden_summary']['high_burden_pathways'])}")
-    print(f"  Multi-pathway genes: {len(result['pathway_burden_summary']['multi_pathway_genes'])}")
+    print(
+        f"  Total damaging variants found: {result['pathway_burden_summary']['total_damaging_variants']}"
+    )
+    print(
+        f"  Pathways analyzed: {result['pathway_burden_summary']['pathways_analyzed']}"
+    )
+    print(
+        f"  High burden pathways: {len(result['pathway_burden_summary']['high_burden_pathways'])}"
+    )
+    print(
+        f"  Multi-pathway genes: {len(result['pathway_burden_summary']['multi_pathway_genes'])}"
+    )
 
     # Verify some actual results to ensure work was done
     dna_repair_result = result["pathway_burden_results"].get("dna_repair", {})
@@ -438,7 +535,9 @@ def test_performance():
         if variants_per_second > 100:
             print(f"\n  ✅ Performance: GOOD ({variants_per_second:.0f} variants/sec)")
         elif variants_per_second > 50:
-            print(f"  ⚠️  Performance: MODERATE ({variants_per_second:.0f} variants/sec)")
+            print(
+                f"  ⚠️  Performance: MODERATE ({variants_per_second:.0f} variants/sec)"
+            )
         else:
             print(f"  ❌ Performance: SLOW ({variants_per_second:.0f} variants/sec)")
     else:
@@ -447,11 +546,15 @@ def test_performance():
     # Let's also test with a smaller dataset to see if timing scales linearly
     print("\nScaling test:")
     for size in [100, 500, 2000]:
-        test_variants = large_variants[:size] if size <= 1000 else large_variants * (size // 1000)
+        test_variants = (
+            large_variants[:size] if size <= 1000 else large_variants * (size // 1000)
+        )
         small_start = time.perf_counter()
         process({"filtered_variants": test_variants})
         small_time = time.perf_counter() - small_start
-        print(f"  {size} variants: {small_time * 1000:.2f} ms ({size / small_time:.0f} variants/sec)")
+        print(
+            f"  {size} variants: {small_time * 1000:.2f} ms ({size / small_time:.0f} variants/sec)"
+        )
 
     return process_time
 

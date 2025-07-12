@@ -47,7 +47,9 @@ def create_tcga_database():
     cursor.execute("CREATE INDEX idx_tcga_gene ON tcga_variants(gene)")
     cursor.execute("CREATE INDEX idx_tcga_position ON tcga_variants(chrom, pos)")
     cursor.execute("CREATE INDEX idx_tcga_cancer ON tcga_variants(cancer_type)")
-    cursor.execute("CREATE INDEX idx_tcga_enrichment ON tcga_variants(enrichment_score)")
+    cursor.execute(
+        "CREATE INDEX idx_tcga_enrichment ON tcga_variants(enrichment_score)"
+    )
 
     # Insert sample TCGA data (based on your existing cohort)
     sample_data = generate_sample_tcga_data()
@@ -73,14 +75,23 @@ def generate_sample_tcga_data():
     import random
 
     # Your existing cohort sizes from documentation
-    cohort_sizes = {"breast": 1084, "colon": 461, "lung": 585, "prostate": 498, "blood": 200}
+    cohort_sizes = {
+        "breast": 1084,
+        "colon": 461,
+        "lung": 585,
+        "prostate": 498,
+        "blood": 200,
+    }
 
     # Comprehensive cancer genes with their cancer associations and genomic positions
     cancer_genes = {
         # Breast cancer genes
         "BRCA1": (["breast"], (17, 43044000, 43125000)),
         "BRCA2": (["breast"], (13, 32315000, 32400000)),
-        "TP53": (["breast", "colon", "lung", "prostate", "blood"], (17, 7661000, 7688000)),
+        "TP53": (
+            ["breast", "colon", "lung", "prostate", "blood"],
+            (17, 7661000, 7688000),
+        ),
         "PIK3CA": (["breast"], (3, 178866000, 178958000)),
         "ATM": (["breast"], (11, 108093000, 108239000)),
         "CHEK2": (["breast"], (22, 29083000, 29137000)),
@@ -120,7 +131,10 @@ def generate_sample_tcga_data():
         "IDH1": (["blood"], (2, 208236000, 208255000)),
         "IDH2": (["blood"], (15, 90084000, 90101000)),
         # Pan-cancer genes (found in multiple cancer types)
-        "MYC": (["breast", "colon", "lung", "prostate", "blood"], (8, 127735000, 127742000)),
+        "MYC": (
+            ["breast", "colon", "lung", "prostate", "blood"],
+            (8, 127735000, 127742000),
+        ),
         "PIK3R1": (["breast", "colon", "lung"], (5, 68293000, 68507000)),
         "FBXW7": (["breast", "colon", "lung"], (4, 152323000, 152422000)),
         "NOTCH1": (["breast", "blood"], (9, 139388000, 139440000)),
@@ -174,17 +188,49 @@ def generate_sample_tcga_data():
                 enrichment = tumor_freq / normal_freq if normal_freq > 0 else 1000
 
                 cancer_variants.append(
-                    (str(chrom), pos, ref, alt, gene, cancer_type, tumor_freq, normal_freq, enrichment)
+                    (
+                        str(chrom),
+                        pos,
+                        ref,
+                        alt,
+                        gene,
+                        cancer_type,
+                        tumor_freq,
+                        normal_freq,
+                        enrichment,
+                    )
                 )
 
     # Convert to database format
     tcga_data = []
-    for chrom, pos, ref, alt, gene, cancer_type, tumor_freq, normal_freq, enrichment in cancer_variants:
+    for (
+        chrom,
+        pos,
+        ref,
+        alt,
+        gene,
+        cancer_type,
+        tumor_freq,
+        normal_freq,
+        enrichment,
+    ) in cancer_variants:
         total_samples = cohort_sizes[cancer_type]
         sample_count = int(tumor_freq * total_samples)
 
         tcga_data.append(
-            (chrom, pos, ref, alt, gene, cancer_type, tumor_freq, normal_freq, enrichment, sample_count, total_samples)
+            (
+                chrom,
+                pos,
+                ref,
+                alt,
+                gene,
+                cancer_type,
+                tumor_freq,
+                normal_freq,
+                enrichment,
+                sample_count,
+                total_samples,
+            )
         )
 
     print(f"Generated {len(tcga_data)} TCGA variants across {len(cancer_genes)} genes")

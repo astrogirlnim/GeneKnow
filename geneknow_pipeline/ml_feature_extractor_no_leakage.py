@@ -43,13 +43,49 @@ class GenomicFeatureExtractorNoLeakage:
     def _define_cancer_gene_groups(self) -> Dict[str, List[str]]:
         """Define cancer gene groups for feature engineering."""
         return {
-            "tumor_suppressor": ["TP53", "RB1", "APC", "BRCA1", "BRCA2", "PTEN", "VHL", "STK11"],
+            "tumor_suppressor": [
+                "TP53",
+                "RB1",
+                "APC",
+                "BRCA1",
+                "BRCA2",
+                "PTEN",
+                "VHL",
+                "STK11",
+            ],
             "oncogenes": ["KRAS", "BRAF", "PIK3CA", "EGFR", "MYC", "RAS"],
-            "dna_repair": ["BRCA1", "BRCA2", "ATM", "PALB2", "CHEK2", "MLH1", "MSH2", "MSH6", "PMS2"],
+            "dna_repair": [
+                "BRCA1",
+                "BRCA2",
+                "ATM",
+                "PALB2",
+                "CHEK2",
+                "MLH1",
+                "MSH2",
+                "MSH6",
+                "PMS2",
+            ],
             "cell_cycle": ["TP53", "RB1", "CDKN2A", "ATM", "CHEK2"],
             "mismatch_repair": ["MLH1", "MSH2", "MSH6", "PMS2", "EPCAM"],
-            "breast_cancer": ["BRCA1", "BRCA2", "PALB2", "ATM", "CHEK2", "TP53", "PTEN"],
-            "colon_cancer": ["APC", "KRAS", "TP53", "PIK3CA", "SMAD4", "BRAF", "MLH1", "MSH2"],
+            "breast_cancer": [
+                "BRCA1",
+                "BRCA2",
+                "PALB2",
+                "ATM",
+                "CHEK2",
+                "TP53",
+                "PTEN",
+            ],
+            "colon_cancer": [
+                "APC",
+                "KRAS",
+                "TP53",
+                "PIK3CA",
+                "SMAD4",
+                "BRAF",
+                "MLH1",
+                "MSH2",
+            ],
             "lung_cancer": ["TP53", "KRAS", "EGFR", "STK11", "KEAP1", "NF1", "RB1"],
             "hematologic": ["JAK2", "FLT3", "NPM1", "DNMT3A", "TET2", "IDH1", "IDH2"],
         }
@@ -88,7 +124,12 @@ class GenomicFeatureExtractorNoLeakage:
         consequence_severity = self._get_consequence_severity(consequence)
         features["consequence_severity"] = consequence_severity
         features["is_truncating"] = (
-            1 if any(term in consequence for term in ["nonsense", "frameshift", "stop_gained", "stop_lost"]) else 0
+            1
+            if any(
+                term in consequence
+                for term in ["nonsense", "frameshift", "stop_gained", "stop_lost"]
+            )
+            else 0
         )
         features["is_missense"] = 1 if "missense" in consequence else 0
         features["is_synonymous"] = 1 if "synonymous" in consequence else 0
@@ -171,16 +212,23 @@ class GenomicFeatureExtractorNoLeakage:
             return 1.0
         elif "reviewed_by_expert_panel" in review_status:
             return 0.9
-        elif "criteria_provided" in review_status and "multiple_submitters" in review_status:
+        elif (
+            "criteria_provided" in review_status
+            and "multiple_submitters" in review_status
+        ):
             return 0.8
-        elif "criteria_provided" in review_status and "single_submitter" in review_status:
+        elif (
+            "criteria_provided" in review_status and "single_submitter" in review_status
+        ):
             return 0.6
         elif "no_assertion" in review_status:
             return 0.2
         else:
             return 0.3
 
-    def load_training_data(self, cancer_specific: Optional[str] = None) -> Tuple[pd.DataFrame, pd.Series]:
+    def load_training_data(
+        self, cancer_specific: Optional[str] = None
+    ) -> Tuple[pd.DataFrame, pd.Series]:
         """Load training data from database (NO CLINICAL SIGNIFICANCE FEATURES)."""
         conn = sqlite3.connect(self.db_path)
 
@@ -211,7 +259,9 @@ class GenomicFeatureExtractorNoLeakage:
 
         # Check if TCGA table exists
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tcga_variants'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='tcga_variants'"
+        )
         has_tcga = cursor.fetchone() is not None
 
         if has_tcga:
@@ -232,7 +282,9 @@ class GenomicFeatureExtractorNoLeakage:
         df = pd.read_sql_query(query, conn)
         conn.close()
 
-        logger.info(f"Loaded {len(df)} variants for training (NO clinical significance features)")
+        logger.info(
+            f"Loaded {len(df)} variants for training (NO clinical significance features)"
+        )
 
         # Convert to feature vectors (without clinical significance)
         variants = df.to_dict("records")
@@ -244,13 +296,19 @@ class GenomicFeatureExtractorNoLeakage:
         # Store feature columns
         self.feature_columns = feature_df.columns.tolist()
 
-        logger.info(f"Feature columns (no leakage): {len(self.feature_columns)} features")
+        logger.info(
+            f"Feature columns (no leakage): {len(self.feature_columns)} features"
+        )
         logger.info(f"Features: {self.feature_columns}")
 
         return feature_df, labels
 
     def prepare_for_training(
-        self, X: pd.DataFrame, y: pd.Series, test_size: float = 0.2, random_state: int = 42
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        test_size: float = 0.2,
+        random_state: int = 42,
     ) -> Tuple:
         """Prepare data for ML training with proper encoding and scaling."""
 
@@ -264,7 +322,11 @@ class GenomicFeatureExtractorNoLeakage:
 
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, stratify=y  # Maintain class balance
+            X,
+            y,
+            test_size=test_size,
+            random_state=random_state,
+            stratify=y,  # Maintain class balance
         )
 
         # Scale features

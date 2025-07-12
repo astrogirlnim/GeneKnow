@@ -34,7 +34,9 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         pathway_burden_results = state.get("pathway_burden_results", {})
         state.get("pathway_burden_summary", {})
 
-        logger.info(f"Feature vector builder received {len(filtered_variants)} variants")
+        logger.info(
+            f"Feature vector builder received {len(filtered_variants)} variants"
+        )
 
         # Prepare enriched variants for ML fusion
         ml_ready_variants = []
@@ -86,19 +88,25 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             # 5. Gene/Pathway Burden Score
             pathway_damage = variant.get("pathway_damage_assessment", {})
             if pathway_damage:
-                enhanced_variant["gene_burden_score"] = pathway_damage.get("damage_score", 0.0)
+                enhanced_variant["gene_burden_score"] = pathway_damage.get(
+                    "damage_score", 0.0
+                )
             else:
                 # Fallback: calculate from pathway burden results
                 gene = variant.get("gene", "")
                 burden_score = 0.0
                 for pathway_name, pathway_data in pathway_burden_results.items():
                     if gene in pathway_data.get("damaging_genes", []):
-                        burden_score = max(burden_score, pathway_data.get("burden_score", 0.0))
+                        burden_score = max(
+                            burden_score, pathway_data.get("burden_score", 0.0)
+                        )
                 enhanced_variant["gene_burden_score"] = burden_score
 
             # Add additional metadata for risk calculation
             enhanced_variant["is_high_impact"] = (
-                cadd_phred > 20 or "pathogenic" in str(clinvar_sig).lower() or burden_score > 0.5
+                cadd_phred > 20
+                or "pathogenic" in str(clinvar_sig).lower()
+                or burden_score > 0.5
             )
 
             ml_ready_variants.append(enhanced_variant)
@@ -107,18 +115,24 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("=" * 60)
         logger.info("Feature Vector Builder Summary:")
         logger.info(f"  Total variants: {len(ml_ready_variants)}")
-        logger.info(f"  Variants with PRS data: {sum(1 for v in ml_ready_variants if v.get('prs_score', 0) != 0.5)}")
+        logger.info(
+            f"  Variants with PRS data: {sum(1 for v in ml_ready_variants if v.get('prs_score', 0) != 0.5)}"
+        )
         logger.info(
             f"  Variants with ClinVar: {sum(1 for v in ml_ready_variants if v['clinvar']['clinical_significance'] != 'not_found')}"
         )
-        logger.info(f"  Variants with CADD > 20: {sum(1 for v in ml_ready_variants if v.get('cadd_score', 0) > 20)}")
+        logger.info(
+            f"  Variants with CADD > 20: {sum(1 for v in ml_ready_variants if v.get('cadd_score', 0) > 20)}"
+        )
         logger.info(
             f"  Variants with TCGA enrichment > 2: {sum(1 for v in ml_ready_variants if v.get('tcga_enrichment', 1) > 2)}"
         )
         logger.info(
             f"  Variants with pathway burden > 0: {sum(1 for v in ml_ready_variants if v.get('gene_burden_score', 0) > 0)}"
         )
-        logger.info(f"  High impact variants: {sum(1 for v in ml_ready_variants if v.get('is_high_impact', False))}")
+        logger.info(
+            f"  High impact variants: {sum(1 for v in ml_ready_variants if v.get('is_high_impact', False))}"
+        )
 
         # Log a sample variant
         if ml_ready_variants:
@@ -142,8 +156,16 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "feature_vector": {
                 "status": "complete",
                 "variant_count": len(ml_ready_variants),
-                "features_extracted": ["prs_score", "clinvar", "cadd_score", "tcga_enrichment", "gene_burden_score"],
-                "high_impact_count": sum(1 for v in ml_ready_variants if v.get("is_high_impact", False)),
+                "features_extracted": [
+                    "prs_score",
+                    "clinvar",
+                    "cadd_score",
+                    "tcga_enrichment",
+                    "gene_burden_score",
+                ],
+                "high_impact_count": sum(
+                    1 for v in ml_ready_variants if v.get("is_high_impact", False)
+                ),
             },
         }
 
@@ -153,5 +175,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "ml_ready_variants": [],
             "feature_vector": {"status": "failed", "error": str(e)},
-            "errors": [{"node": "feature_vector_builder", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {
+                    "node": "feature_vector_builder",
+                    "error": str(e),
+                    "timestamp": datetime.now(),
+                }
+            ],
         }

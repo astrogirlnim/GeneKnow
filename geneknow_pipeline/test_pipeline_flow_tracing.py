@@ -62,7 +62,9 @@ def test_direct_pipeline():
     variants = result.get("filtered_variants", [])
     if variants:
         sample_variant = variants[0]
-        print(f"   Sample variant: {sample_variant.get('gene', 'N/A')} - {sample_variant.get('variant_id', 'N/A')}")
+        print(
+            f"   Sample variant: {sample_variant.get('gene', 'N/A')} - {sample_variant.get('variant_id', 'N/A')}"
+        )
 
     # 2. Check static model outputs
     print("\n2️⃣ Static Model Outputs:")
@@ -81,7 +83,9 @@ def test_direct_pipeline():
     # ClinVar
     clinvar_stats = result.get("clinvar_stats", {})
     if clinvar_stats:
-        print(f"   ✅ ClinVar: {clinvar_stats.get('total_annotated', 0)} variants annotated")
+        print(
+            f"   ✅ ClinVar: {clinvar_stats.get('total_annotated', 0)} variants annotated"
+        )
         print(f"      Pathogenic: {clinvar_stats.get('pathogenic_count', 0)}")
         print(f"      Benign: {clinvar_stats.get('benign_count', 0)}")
     else:
@@ -99,7 +103,9 @@ def test_direct_pipeline():
     # TCGA
     tcga_summary = result.get("tcga_summary", {})
     if tcga_summary:
-        print(f"   ✅ TCGA: Analyzed {tcga_summary.get('total_variants_matched', 0)} variants")
+        print(
+            f"   ✅ TCGA: Analyzed {tcga_summary.get('total_variants_matched', 0)} variants"
+        )
         enrichment = tcga_summary.get("max_tumor_enrichment", {})
         if enrichment:
             print(
@@ -111,8 +117,12 @@ def test_direct_pipeline():
     # Pathway Burden
     pathway_summary = result.get("pathway_burden_summary", {})
     if pathway_summary:
-        print(f"   ✅ Pathway Burden: score={pathway_summary.get('overall_burden_score', 0):.3f}")
-        print(f"      High burden pathways: {', '.join(pathway_summary.get('high_burden_pathways', [])) or 'None'}")
+        print(
+            f"   ✅ Pathway Burden: score={pathway_summary.get('overall_burden_score', 0):.3f}"
+        )
+        print(
+            f"      High burden pathways: {', '.join(pathway_summary.get('high_burden_pathways', [])) or 'None'}"
+        )
     else:
         print("   ❌ No pathway burden summary")
 
@@ -122,7 +132,9 @@ def test_direct_pipeline():
     if ml_fusion_results and ml_fusion_results.get("processing_successful"):
         aggregate = ml_fusion_results.get("aggregate_risk_assessment", {})
         print("   ✅ ML Fusion successful")
-        print(f"      Aggregate risk score: {aggregate.get('aggregate_risk_score', 0):.3f}")
+        print(
+            f"      Aggregate risk score: {aggregate.get('aggregate_risk_score', 0):.3f}"
+        )
         print(f"      Risk category: {aggregate.get('risk_category', 'unknown')}")
         print(f"      High-risk variants: {aggregate.get('high_risk_variants', 0)}")
 
@@ -130,7 +142,9 @@ def test_direct_pipeline():
         factors = aggregate.get("contributing_factors", {})
         if factors:
             print("      Contributing factors:")
-            for factor, score in sorted(factors.items(), key=lambda x: x[1], reverse=True)[:3]:
+            for factor, score in sorted(
+                factors.items(), key=lambda x: x[1], reverse=True
+            )[:3]:
                 print(f"        - {factor}: {score:.3f}")
     else:
         print("   ❌ ML Fusion not successful or not run")
@@ -140,9 +154,13 @@ def test_direct_pipeline():
     risk_scores = result.get("risk_scores", {})
     if risk_scores:
         print("   ✅ Risk scores generated:")
-        for cancer, score in sorted(risk_scores.items(), key=lambda x: x[1], reverse=True):
+        for cancer, score in sorted(
+            risk_scores.items(), key=lambda x: x[1], reverse=True
+        ):
             genes = result.get("risk_genes", {}).get(cancer, [])
-            print(f"      {cancer}: {score}% (genes: {', '.join(genes[:3]) if genes else 'None'})")
+            print(
+                f"      {cancer}: {score}% (genes: {', '.join(genes[:3]) if genes else 'None'})"
+            )
     else:
         print("   ❌ No risk scores generated")
 
@@ -154,7 +172,9 @@ def test_direct_pipeline():
         if risk_assessment:
             scores = risk_assessment.get("scores", {})
             print(f"   ✅ Frontend will receive {len(scores)} cancer risk scores")
-            print(f"      High risk findings: {len(risk_assessment.get('high_risk_findings', []))}")
+            print(
+                f"      High risk findings: {len(risk_assessment.get('high_risk_findings', []))}"
+            )
         else:
             print("   ❌ No risk assessment in structured JSON")
     else:
@@ -183,7 +203,9 @@ def test_api_flow():
     try:
         response = requests.get(f"{api_url}/api/health")
         if response.status_code != 200:
-            print("❌ API server not running. Start with: python enhanced_api_server.py")
+            print(
+                "❌ API server not running. Start with: python enhanced_api_server.py"
+            )
             return
     except:
         print("❌ Cannot connect to API server at localhost:5001")
@@ -213,7 +235,11 @@ def test_api_flow():
         f"{api_url}/api/process",
         json={
             "file_path": test_file,
-            "preferences": {"patient_data": {"age": 45, "sex": "F"}, "language": "en", "include_technical": True},
+            "preferences": {
+                "patient_data": {"age": 45, "sex": "F"},
+                "language": "en",
+                "include_technical": True,
+            },
         },
     )
 
@@ -238,13 +264,19 @@ def test_api_flow():
             progress = status_data.get("progress", 0)
             current_step = status_data.get("current_step", "N/A")
 
-            print(f"\r   Status: {status} | Progress: {progress}% | Step: {current_step}", end="", flush=True)
+            print(
+                f"\r   Status: {status} | Progress: {progress}% | Step: {current_step}",
+                end="",
+                flush=True,
+            )
 
             if status == "completed":
                 print("\n✅ Processing completed!")
                 break
             elif status == "failed":
-                print(f"\n❌ Processing failed: {status_data.get('error', 'Unknown error')}")
+                print(
+                    f"\n❌ Processing failed: {status_data.get('error', 'Unknown error')}"
+                )
                 return
 
         time.sleep(1)
@@ -268,7 +300,9 @@ def test_api_flow():
     risk_scores = results.get("risk_scores", {})
     if risk_scores:
         print("✅ Risk scores present:")
-        for cancer, score in sorted(risk_scores.items(), key=lambda x: x[1], reverse=True):
+        for cancer, score in sorted(
+            risk_scores.items(), key=lambda x: x[1], reverse=True
+        ):
             print(f"   {cancer}: {score}%")
     else:
         print("❌ No risk scores in API response!")
@@ -294,7 +328,13 @@ def verify_dashboard_data_mapping():
 
     # Simulate what the dashboard does with pipeline results
     sample_results = {
-        "risk_scores": {"breast": 23.5, "colon": 15.2, "lung": 8.7, "prostate": 5.3, "blood": 3.1},
+        "risk_scores": {
+            "breast": 23.5,
+            "colon": 15.2,
+            "lung": 8.7,
+            "prostate": 5.3,
+            "blood": 3.1,
+        },
         "variant_count": 142,
         "processing_time_seconds": 2.3,
     }
@@ -316,7 +356,9 @@ def verify_dashboard_data_mapping():
     print(f"   Total Variants: {sample_results['variant_count']}")
     print(f"   Processing Time: {sample_results['processing_time_seconds']}s")
 
-    print("\n✅ Data mapping verified - risk scores are displayed as percentages directly")
+    print(
+        "\n✅ Data mapping verified - risk scores are displayed as percentages directly"
+    )
 
 
 if __name__ == "__main__":

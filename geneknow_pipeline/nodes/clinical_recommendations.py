@@ -130,7 +130,11 @@ TARGETED_THERAPIES = {
         "cancer_types": ["breast", "ovarian"],
         "description": "PARP inhibitors",
     },
-    "PIK3CA": {"drugs": ["Alpelisib"], "cancer_types": ["breast"], "description": "PI3K inhibitor"},
+    "PIK3CA": {
+        "drugs": ["Alpelisib"],
+        "cancer_types": ["breast"],
+        "description": "PI3K inhibitor",
+    },
 }
 
 # Prevention strategies
@@ -185,7 +189,11 @@ def generate_screening_recommendations(risk_scores: Dict) -> List[Dict]:
                     "frequency": guidelines["frequency"],
                     "additional_measures": guidelines["additional"],
                 },
-                "priority": "high" if risk_score >= 50 else "moderate" if risk_score >= 20 else "standard",
+                "priority": (
+                    "high"
+                    if risk_score >= 50
+                    else "moderate" if risk_score >= 20 else "standard"
+                ),
             }
 
             recommendations.append(recommendation)
@@ -222,9 +230,15 @@ def generate_therapy_recommendations(variants: List[Dict]) -> List[Dict]:
     return therapy_recommendations
 
 
-def generate_prevention_recommendations(risk_scores: Dict, pathways: List[Dict]) -> Dict:
+def generate_prevention_recommendations(
+    risk_scores: Dict, pathways: List[Dict]
+) -> Dict:
     """Generate prevention recommendations based on risk profile"""
-    prevention_recs = {"lifestyle_modifications": [], "chemoprevention_options": [], "surgical_options": []}
+    prevention_recs = {
+        "lifestyle_modifications": [],
+        "chemoprevention_options": [],
+        "surgical_options": [],
+    }
 
     # General lifestyle recommendations for everyone
     prevention_recs["lifestyle_modifications"] = PREVENTION_STRATEGIES["lifestyle"]
@@ -246,7 +260,11 @@ def generate_prevention_recommendations(risk_scores: Dict, pathways: List[Dict])
                 )
 
     # Check for DNA repair deficiency
-    dna_repair_disrupted = any(p.get("pathway_id") == "DNA_REPAIR" for p in pathways if p.get("significance", 0) > 50)
+    dna_repair_disrupted = any(
+        p.get("pathway_id") == "DNA_REPAIR"
+        for p in pathways
+        if p.get("significance", 0) > 50
+    )
 
     if dna_repair_disrupted:
         # Add surgical prevention options for BRCA-like phenotype
@@ -271,24 +289,36 @@ def generate_prevention_recommendations(risk_scores: Dict, pathways: List[Dict])
     return prevention_recs
 
 
-def generate_clinical_trials_recommendations(variants: List[Dict], pathways: List[Dict]) -> List[str]:
+def generate_clinical_trials_recommendations(
+    variants: List[Dict], pathways: List[Dict]
+) -> List[str]:
     """Generate clinical trial recommendations based on genomic profile"""
     trials_recs = []
 
     # Check for specific targetable alterations
-    targetable_genes = set(v.get("gene") for v in variants if v.get("gene") in TARGETED_THERAPIES)
+    targetable_genes = set(
+        v.get("gene") for v in variants if v.get("gene") in TARGETED_THERAPIES
+    )
 
     if targetable_genes:
-        trials_recs.append(f"Consider clinical trials targeting: {', '.join(targetable_genes)}")
+        trials_recs.append(
+            f"Consider clinical trials targeting: {', '.join(targetable_genes)}"
+        )
 
     # Check for immunotherapy eligibility
-    immune_pathway_disrupted = any(p.get("pathway_id") == "IMMUNE_CHECKPOINT" for p in pathways)
+    immune_pathway_disrupted = any(
+        p.get("pathway_id") == "IMMUNE_CHECKPOINT" for p in pathways
+    )
 
     if immune_pathway_disrupted:
         trials_recs.append("Consider immunotherapy clinical trials")
 
     # DNA repair deficiency trials
-    dna_repair_disrupted = any(p.get("pathway_id") == "DNA_REPAIR" for p in pathways if p.get("significance", 0) > 30)
+    dna_repair_disrupted = any(
+        p.get("pathway_id") == "DNA_REPAIR"
+        for p in pathways
+        if p.get("significance", 0) > 30
+    )
 
     if dna_repair_disrupted:
         trials_recs.append("Eligible for PARP inhibitor trials")
@@ -314,15 +344,27 @@ def generate_monitoring_plan(risk_scores: Dict, variants: List[Dict]) -> Dict:
                 )
             elif cancer_type == "colon":
                 monitoring_plan["biomarkers"].append(
-                    {"marker": "CEA", "frequency": "Annual", "indication": "Colorectal cancer monitoring"}
+                    {
+                        "marker": "CEA",
+                        "frequency": "Annual",
+                        "indication": "Colorectal cancer monitoring",
+                    }
                 )
             elif cancer_type == "ovarian":
                 monitoring_plan["biomarkers"].append(
-                    {"marker": "CA-125", "frequency": "Every 6 months", "indication": "Ovarian cancer monitoring"}
+                    {
+                        "marker": "CA-125",
+                        "frequency": "Every 6 months",
+                        "indication": "Ovarian cancer monitoring",
+                    }
                 )
             elif cancer_type == "prostate":
                 monitoring_plan["biomarkers"].append(
-                    {"marker": "PSA", "frequency": "Annual", "indication": "Prostate cancer monitoring"}
+                    {
+                        "marker": "PSA",
+                        "frequency": "Annual",
+                        "indication": "Prostate cancer monitoring",
+                    }
                 )
 
     # Add imaging recommendations
@@ -330,7 +372,11 @@ def generate_monitoring_plan(risk_scores: Dict, variants: List[Dict]) -> Dict:
 
     if high_risk_count >= 2:
         monitoring_plan["imaging"].append(
-            {"modality": "Whole body MRI", "frequency": "Consider annual", "indication": "Multiple high cancer risks"}
+            {
+                "modality": "Whole body MRI",
+                "frequency": "Consider annual",
+                "indication": "Multiple high cancer risks",
+            }
         )
 
     # Clinical assessments
@@ -359,18 +405,47 @@ def process(state: Dict) -> Dict:
         # Get all relevant data
         risk_scores = state.get("risk_scores", {})
         variants = state.get("variant_details", state.get("filtered_variants", []))
-        
-        # First check direct state, then check structured_json
-        pathway_analysis = state.get("pathway_analysis")
-        if pathway_analysis is None:
-            structured_json = state.get("structured_json", {})
-            pathway_analysis = structured_json.get("pathway_analysis", {})
-        
-        if pathway_analysis is None:
-            pathway_analysis = {}
-        
-        disrupted_pathways = pathway_analysis.get("disrupted_pathways", [])
-        state.get("survival_analysis", {})
+
+        # Get pathway burden results directly (not pathway_analysis which hasn't been created yet)
+        pathway_burden_results = state.get("pathway_burden_results", {})
+        # pathway_burden_summary = state.get("pathway_burden_summary", {})
+
+        # Transform pathway burden results into disrupted pathways format
+        disrupted_pathways = []
+        if pathway_burden_results:
+            for pathway_name, burden_result in pathway_burden_results.items():
+                burden_score = burden_result.get("burden_score", 0)
+
+                if burden_score > 0.1:  # Only include pathways with significant burden
+                    # Create mutations list from damaging genes
+                    mutations = []
+                    if burden_result.get("damaging_genes"):
+                        for gene in burden_result["damaging_genes"]:
+                            mutations.append(
+                                {
+                                    "gene": gene,
+                                    "type": "missense",  # Default type, could be enhanced
+                                    "effect": f"Damaging variant in {gene}",
+                                }
+                            )
+
+                    disrupted_pathways.append(
+                        {
+                            "name": pathway_name.replace("_", " ").title(),
+                            "pathway_id": pathway_name.upper(),  # Convert to uppercase for matching
+                            "significance": round(
+                                burden_score * 100, 1
+                            ),  # Convert to percentage
+                            "affected_genes": burden_result.get("damaging_genes", []),
+                            "mutations": mutations,
+                            "description": burden_result.get(
+                                "description", f"{pathway_name} pathway"
+                            ),
+                            "genes_affected_ratio": f"{burden_result.get('genes_with_damaging', 0)}/{burden_result.get('genes_in_pathway', 0)}",
+                        }
+                    )
+
+        # survival_analysis = state.get("survival_analysis", {})
 
         # Generate screening recommendations
         screening_recs = generate_screening_recommendations(risk_scores)
@@ -379,10 +454,14 @@ def process(state: Dict) -> Dict:
         therapy_recs = generate_therapy_recommendations(variants)
 
         # Generate prevention recommendations
-        prevention_recs = generate_prevention_recommendations(risk_scores, disrupted_pathways)
+        prevention_recs = generate_prevention_recommendations(
+            risk_scores, disrupted_pathways
+        )
 
         # Generate clinical trial recommendations
-        trials_recs = generate_clinical_trials_recommendations(variants, disrupted_pathways)
+        trials_recs = generate_clinical_trials_recommendations(
+            variants, disrupted_pathways
+        )
 
         # Generate monitoring plan
         monitoring_plan = generate_monitoring_plan(risk_scores, variants)
@@ -397,7 +476,9 @@ def process(state: Dict) -> Dict:
             "summary": {
                 "high_risk_cancers": [c for c, s in risk_scores.items() if s >= 50],
                 "actionable_variants": len(therapy_recs),
-                "priority_actions": generate_priority_actions(screening_recs, therapy_recs, prevention_recs),
+                "priority_actions": generate_priority_actions(
+                    screening_recs, therapy_recs, prevention_recs
+                ),
                 "follow_up_timeline": generate_follow_up_timeline(screening_recs),
             },
         }
@@ -423,7 +504,11 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error generating clinical recommendations: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "clinical_recommendations", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "clinical_recommendations",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
         # Set empty results on error
         state["clinical_recommendations"] = {}
@@ -431,7 +516,9 @@ def process(state: Dict) -> Dict:
     return state
 
 
-def generate_priority_actions(screening_recs: List[Dict], therapy_recs: List[Dict], prevention_recs: Dict) -> List[str]:
+def generate_priority_actions(
+    screening_recs: List[Dict], therapy_recs: List[Dict], prevention_recs: Dict
+) -> List[str]:
     """Generate list of priority actions"""
     actions = []
 
@@ -470,9 +557,13 @@ def generate_follow_up_timeline(screening_recs: List[Dict]) -> Dict:
 
     for rec in screening_recs:
         if rec["priority"] == "high":
-            timeline["immediate"].append(f"Schedule {rec['cancer_type']} screening consultation")
+            timeline["immediate"].append(
+                f"Schedule {rec['cancer_type']} screening consultation"
+            )
         elif rec["priority"] == "moderate":
-            timeline["short_term"].append(f"Discuss {rec['cancer_type']} screening with physician")
+            timeline["short_term"].append(
+                f"Discuss {rec['cancer_type']} screening with physician"
+            )
 
     timeline["immediate"].append("Genetic counseling consultation")
     timeline["medium_term"].append("Establish care team and monitoring plan")

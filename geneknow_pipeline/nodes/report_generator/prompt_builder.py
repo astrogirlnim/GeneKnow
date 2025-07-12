@@ -37,7 +37,11 @@ class PromptBuilder:
                     top_risks.append(f"{cancer_type.title()}: {score:.1f}%")
 
         # Sort and limit to top 3
-        top_risks = sorted(top_risks, key=lambda x: float(x.split(": ")[1].replace("%", "")), reverse=True)[:3]
+        top_risks = sorted(
+            top_risks,
+            key=lambda x: float(x.split(": ")[1].replace("%", "")),
+            reverse=True,
+        )[:3]
 
         prompt = self._get_style_prefix()
         prompt += """
@@ -94,12 +98,17 @@ The individual's genetic profile shows cancer risk levels within normal baseline
             if risk_assessment and "risk_genes" in risk_assessment:
                 for cancer_type, score in risk_assessment.get("scores", {}).items():
                     if score > self.risk_threshold:
-                        cancer_genes = risk_assessment["risk_genes"].get(cancer_type, [])
+                        cancer_genes = risk_assessment["risk_genes"].get(
+                            cancer_type, []
+                        )
                         if gene in cancer_genes:
                             is_high_risk = True
                             break
 
-            if is_high_risk or variant.get("quality_metrics", {}).get("quality", 0) > 30:
+            if (
+                is_high_risk
+                or variant.get("quality_metrics", {}).get("quality", 0) > 30
+            ):
                 key_variants.append(variant)
 
         prompt = self._get_style_prefix()
@@ -200,7 +209,9 @@ CANCER RISK SCORES:
             prompt += "- No risk scores available\n"
 
         # Count high-risk findings
-        high_risk_count = sum(1 for _, score in sorted_scores if score > self.risk_threshold)
+        high_risk_count = sum(
+            1 for _, score in sorted_scores if score > self.risk_threshold
+        )
 
         prompt += """
 High-risk findings (>5%): {high_risk_count}
@@ -239,7 +250,11 @@ REQUIRED SENTENCE (choose based on findings):
         # Count high-risk findings
         high_risk_count = 0
         if risk_assessment and "scores" in risk_assessment:
-            high_risk_count = sum(1 for score in risk_assessment["scores"].values() if score > self.risk_threshold)
+            high_risk_count = sum(
+                1
+                for score in risk_assessment["scores"].values()
+                if score > self.risk_threshold
+            )
 
         prompt = self._get_style_prefix()
         prompt += """
@@ -373,6 +388,8 @@ EXAMPLE OUTPUT (low-risk):
 
         # This method is kept for backward compatibility but should not be used
         # The new approach generates each section separately
-        logger.warning("build_full_report_prompt is deprecated. Use individual section methods instead.")
+        logger.warning(
+            "build_full_report_prompt is deprecated. Use individual section methods instead."
+        )
 
         return self.build_summary_section_prompt(data)

@@ -13,7 +13,9 @@ import logging
 import traceback
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -159,7 +161,10 @@ class CADDTestRunner:
 
         if not os.path.exists(db_path):
             print(f"⚠️  Database not found at: {db_path}")
-            self.results["summary"]["database_validation"] = {"exists": False, "path": db_path}
+            self.results["summary"]["database_validation"] = {
+                "exists": False,
+                "path": db_path,
+            }
             return
 
         try:
@@ -264,7 +269,9 @@ class CADDTestRunner:
             print(f"  {status} {test_name}: {duration:.2f}s")
 
         # Save detailed report
-        report_file = f"cadd_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        report_file = (
+            f"cadd_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         with open(report_file, "w") as f:
             json.dump(self.results, f, indent=2)
 

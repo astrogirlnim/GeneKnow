@@ -1260,6 +1260,37 @@ const ClinicalViewPage: React.FC = () => {
   // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
+  // Get real data for sidebar when available
+  const getSidebarData = () => {
+    if (pipelineResults) {
+      // Calculate real risk level and score from pipeline results
+      const riskScores = Object.entries(pipelineResults.risk_scores || {});
+      const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
+        score > prev.score ? { cancer, score } : prev,
+        { cancer: '', score: 0 }
+      );
+      
+      const overallRiskScore = Math.round(highestRisk.score);
+      const riskCategory = overallRiskScore >= 30 ? 'High Risk' : 
+                          overallRiskScore >= 15 ? 'Moderate Risk' : 'Low Risk';
+      
+      // Note: variant details could be used here for enhanced sidebar data in the future
+      
+      return {
+        riskLevel: riskCategory,
+        riskScore: `${overallRiskScore}/100`,
+        condition: `${highestRisk.cancer} Cancer Risk Assessment`,
+        details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
+        alerts: currentData.alerts // Keep mock alerts for now since we don't have real alert data
+      };
+    }
+    
+    // Fallback to mock data if no pipeline results
+    return currentData;
+  };
+
+  const sidebarData = getSidebarData();
+
   // Function to convert pipeline results to the format expected by the clinical view
   const getGenomicData = () => {
     if (pipelineResults) {
@@ -3414,19 +3445,45 @@ const ClinicalViewPage: React.FC = () => {
       case 'pathways':
         return (
           <div style={{ padding: '2rem' }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               marginBottom: '1.5rem'
             }}>
-              Pathway Analysis
-            </h2>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
+              }}>
+                Pathway Analysis
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('pathway-analysis')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Comprehensive analysis of biological pathways affected by genetic variants. Shows which cellular processes are disrupted and their impact on cancer risk. Pathway burden scores indicate the severity of disruption, with higher percentages representing greater dysfunction." isVisible={hoveredTooltip === 'pathway-analysis'} triggerRef={null} />
+              </div>
+            </div>
             
             {/* Check if pathway analysis data is available */}
             {(() => {
-                             // First check structured_json for pathway analysis
-               let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis || null;
+              // First check structured_json for pathway analysis
+              let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis || null;
               
               // If not found in structured_json, try to construct from pathway_burden_results
               if (!pathwayData && pipelineResults?.pathway_burden_results) {
@@ -3435,82 +3492,82 @@ const ClinicalViewPage: React.FC = () => {
                 const pathwayBurdenResults = pipelineResults.pathway_burden_results;
                 const pathwayBurdenSummary = pipelineResults.pathway_burden_summary;
                 
-                                 // Transform pathway burden results into the format expected by frontend
-                 const disrupted_pathways: DisruptedPathway[] = [];
-                 const cancer_pathway_associations: Record<string, string[]> = {};
-                 
-                 // Convert pathway burden results to disrupted pathways format
-                 for (const [pathway_name, burden_result] of Object.entries(pathwayBurdenResults)) {
-                   const typedBurdenResult = burden_result as PathwayBurdenResult;
-                   const burden_score = typedBurdenResult.burden_score || 0;
-                   if (burden_score > 0.1) {
-                     // Create mutations list from damaging genes
-                     const mutations: PathwayMutation[] = [];
-                     if (typedBurdenResult.damaging_genes) {
-                       typedBurdenResult.damaging_genes.forEach((gene: string) => {
-                         mutations.push({
-                           gene: gene,
-                           type: "missense",
-                           effect: `Damaging variant in ${gene}`
-                         });
-                       });
-                     }
-                     
-                     disrupted_pathways.push({
-                       name: pathway_name.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase()),
-                       pathway_id: pathway_name,
-                       significance: Math.round(burden_score * 100 * 10) / 10, // Convert to percentage
-                       affected_genes: typedBurdenResult.damaging_genes || [],
-                       mutations: mutations,
-                       description: typedBurdenResult.description || `${pathway_name} pathway`,
-                       genes_affected_ratio: `${typedBurdenResult.genes_with_damaging || 0}/${typedBurdenResult.genes_in_pathway || 0}`
-                     });
-                   }
-                 }
-                 
-                 // Create cancer pathway associations based on high burden pathways
-                 const high_burden_pathways = pathwayBurdenSummary?.high_burden_pathways || [];
-                 if (high_burden_pathways.length > 0) {
-                   // Map pathways to cancer types based on common associations
-                   const pathway_cancer_mapping: Record<string, string[]> = {
-                     "oncogenes": ["lung", "colon", "breast"],
-                     "tumor_suppressors": ["breast", "lung", "colon", "prostate"],
-                     "dna_repair": ["breast", "colon"],
-                     "chromatin_remodeling": ["blood", "lung"],
-                     "ras_mapk": ["lung", "colon", "prostate"],
-                     "cell_cycle": ["breast", "lung", "prostate"],
-                     "apoptosis": ["breast", "lung", "colon"],
-                     "mismatch_repair": ["colon"],
-                     "wnt_signaling": ["colon"],
-                     "pi3k_akt": ["breast", "prostate"]
-                   };
-                   
-                   high_burden_pathways.forEach((pathway: string) => {
-                     const associated_cancers = pathway_cancer_mapping[pathway] || [];
-                     associated_cancers.forEach((cancer: string) => {
-                       if (!cancer_pathway_associations[cancer]) {
-                         cancer_pathway_associations[cancer] = [];
-                       }
-                       cancer_pathway_associations[cancer].push(pathway);
-                     });
-                   });
-                 }
-                 
-                 // Create pathway analysis structure
-                 const constructedPathwayData: PathwayAnalysisData = {
-                   disrupted_pathways: disrupted_pathways,
-                   cancer_pathway_associations: cancer_pathway_associations,
-                   summary: {
-                     total_pathways_disrupted: disrupted_pathways.length,
-                     highly_disrupted_pathways: disrupted_pathways.filter((p: DisruptedPathway) => p.significance > 50).length,
-                     total_genes_affected: [...new Set(disrupted_pathways.flatMap((p: DisruptedPathway) => p.affected_genes))].length,
-                     pathway_interaction_count: 0,
-                     overall_burden_score: (pathwayBurdenSummary?.overall_burden_score ?? 0) as number,
-                     high_burden_pathways: high_burden_pathways as string[]
-                   }
-                 };
-                 pathwayData = constructedPathwayData;
+                // Transform pathway burden results into the format expected by frontend
+                const disrupted_pathways: DisruptedPathway[] = [];
+                const cancer_pathway_associations: Record<string, string[]> = {};
                 
+                // Convert pathway burden results to disrupted pathways format
+                for (const [pathway_name, burden_result] of Object.entries(pathwayBurdenResults)) {
+                  const typedBurdenResult = burden_result as PathwayBurdenResult;
+                  const burden_score = typedBurdenResult.burden_score || 0;
+                  if (burden_score > 0.1) {
+                    // Create mutations list from damaging genes
+                    const mutations: PathwayMutation[] = [];
+                    if (typedBurdenResult.damaging_genes) {
+                      typedBurdenResult.damaging_genes.forEach((gene: string) => {
+                        mutations.push({
+                          gene: gene,
+                          type: "missense",
+                          effect: `Damaging variant in ${gene}`
+                        });
+                      });
+                    }
+                    
+                    disrupted_pathways.push({
+                      name: pathway_name.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase()),
+                      pathway_id: pathway_name,
+                      significance: Math.round(burden_score * 100 * 10) / 10, // Convert to percentage
+                      affected_genes: typedBurdenResult.damaging_genes || [],
+                      mutations: mutations,
+                      description: typedBurdenResult.description || `${pathway_name} pathway`,
+                      genes_affected_ratio: `${typedBurdenResult.genes_with_damaging || 0}/${typedBurdenResult.genes_in_pathway || 0}`
+                    });
+                  }
+                }
+                
+                // Create cancer pathway associations based on high burden pathways
+                const high_burden_pathways = pathwayBurdenSummary?.high_burden_pathways || [];
+                if (high_burden_pathways.length > 0) {
+                  // Map pathways to cancer types based on common associations
+                  const pathway_cancer_mapping: Record<string, string[]> = {
+                    "oncogenes": ["lung", "colon", "breast"],
+                    "tumor_suppressors": ["breast", "lung", "colon", "prostate"],
+                    "dna_repair": ["breast", "colon"],
+                    "chromatin_remodeling": ["blood", "lung"],
+                    "ras_mapk": ["lung", "colon", "prostate"],
+                    "cell_cycle": ["breast", "lung", "prostate"],
+                    "apoptosis": ["breast", "lung", "colon"],
+                    "mismatch_repair": ["colon"],
+                    "wnt_signaling": ["colon"],
+                    "pi3k_akt": ["breast", "prostate"]
+                  };
+                  
+                  high_burden_pathways.forEach((pathway: string) => {
+                    const associated_cancers = pathway_cancer_mapping[pathway] || [];
+                    associated_cancers.forEach((cancer: string) => {
+                      if (!cancer_pathway_associations[cancer]) {
+                        cancer_pathway_associations[cancer] = [];
+                      }
+                      cancer_pathway_associations[cancer].push(pathway);
+                    });
+                  });
+                }
+                
+                // Create pathway analysis structure
+                const constructedPathwayData: PathwayAnalysisData = {
+                  disrupted_pathways: disrupted_pathways,
+                  cancer_pathway_associations: cancer_pathway_associations,
+                  summary: {
+                    total_pathways_disrupted: disrupted_pathways.length,
+                    highly_disrupted_pathways: disrupted_pathways.filter((p: DisruptedPathway) => p.significance > 50).length,
+                    total_genes_affected: [...new Set(disrupted_pathways.flatMap((p: DisruptedPathway) => p.affected_genes))].length,
+                    pathway_interaction_count: 0,
+                    overall_burden_score: (pathwayBurdenSummary?.overall_burden_score ?? 0) as number,
+                    high_burden_pathways: high_burden_pathways as string[]
+                  }
+                };
+                pathwayData = constructedPathwayData;
+               
                 console.log('✅ Constructed pathway data:', pathwayData);
               }
               
@@ -3585,14 +3642,41 @@ const ClinicalViewPage: React.FC = () => {
                     border: '1px solid #E5E7EB',
                     marginBottom: '2rem'
                   }}>
-                    <h3 style={{ 
-                      color: '#111827',
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
+                    <div style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
                       marginBottom: '1rem'
                     }}>
-                      Affected Biological Pathways
-                    </h3>
+                      <h3 style={{ 
+                        color: '#111827',
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        margin: 0
+                      }}>
+                        Affected Biological Pathways
+                      </h3>
+                      <div 
+                        style={{ position: 'relative', display: 'inline-flex' }}
+                        onMouseEnter={() => setHoveredTooltip('affected-pathways')}
+                        onMouseLeave={() => setHoveredTooltip(null)}
+                      >
+                        <InformationCircleIcon 
+                          style={{ width: '16px', height: '16px' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#D1D5DB';
+                            e.currentTarget.style.color = '#374151';
+                            e.currentTarget.style.borderColor = '#9CA3AF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#E5E7EB';
+                            e.currentTarget.style.color = '#6B7280';
+                            e.currentTarget.style.borderColor = '#D1D5DB';
+                          }}
+                        />
+                        <SmartTooltip content="Biological pathways are cellular processes that work together to maintain normal cell function. When disrupted by genetic variants, these pathways can lead to cancer development. Each pathway shows the percentage of disruption based on the number and severity of variants affecting key genes in that pathway." isVisible={hoveredTooltip === 'affected-pathways'} triggerRef={null} />
+                      </div>
+                    </div>
                     
                     {/* Pathway Disruption Analysis */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
@@ -3602,17 +3686,44 @@ const ClinicalViewPage: React.FC = () => {
                           padding: '1.5rem',
                           border: `2px solid ${pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6'}`,
                           borderRadius: '0.75rem',
-                          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                          position: 'relative'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h4 style={{ 
-                              color: '#111827',
-                              fontSize: '1.125rem',
-                              fontWeight: '600',
-                              margin: 0
-                            }}>
-                              {pathway.name} Pathway
-                            </h4>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <h4 style={{ 
+                                color: '#111827',
+                                fontSize: '1.125rem',
+                                fontWeight: '600',
+                                margin: 0
+                              }}>
+                                {pathway.name} Pathway
+                              </h4>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`pathway-${index}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '16px', height: '16px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip 
+                                  content={`${pathway.description}. This pathway contains ${pathway.genes_affected_ratio} genes with damaging variants. The ${pathway.significance}% disruption score indicates ${pathway.significance > 80 ? 'severe dysfunction requiring immediate clinical attention' : pathway.significance > 60 ? 'moderate disruption with potential therapeutic implications' : 'mild disruption that should be monitored'}.`} 
+                                  isVisible={hoveredTooltip === `pathway-${index}`} 
+                                  triggerRef={null} 
+                                />
+                              </div>
+                            </div>
                             <div style={{
                               background: pathway.significance > 80 ? '#EF4444' : pathway.significance > 60 ? '#F59E0B' : '#3B82F6',
                               color: '#FFFFFF',
@@ -3649,7 +3760,8 @@ const ClinicalViewPage: React.FC = () => {
                                 padding: '0.75rem',
                                 background: '#F9FAFB',
                                 borderRadius: '0.5rem',
-                                border: '1px solid #E5E7EB'
+                                border: '1px solid #E5E7EB',
+                                position: 'relative'
                               }}>
                                 <div style={{
                                   background: mutation.type === 'frameshift' ? '#EF4444' : 
@@ -3672,6 +3784,30 @@ const ClinicalViewPage: React.FC = () => {
                                     {mutation.effect}
                                   </div>
                                 </div>
+                                <div 
+                                  style={{ position: 'relative', display: 'inline-flex' }}
+                                  onMouseEnter={() => setHoveredTooltip(`mutation-${index}-${mutIndex}`)}
+                                  onMouseLeave={() => setHoveredTooltip(null)}
+                                >
+                                  <InformationCircleIcon 
+                                    style={{ width: '16px', height: '16px' }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                      e.currentTarget.style.color = '#374151';
+                                      e.currentTarget.style.borderColor = '#9CA3AF';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                      e.currentTarget.style.color = '#6B7280';
+                                      e.currentTarget.style.borderColor = '#D1D5DB';
+                                    }}
+                                  />
+                                  <SmartTooltip 
+                                    content={`${mutation.gene} is a key gene in the ${pathway.name} pathway. ${mutation.type === 'missense' ? 'Missense mutations change one amino acid and may alter protein function.' : mutation.type === 'frameshift' ? 'Frameshift mutations shift the reading frame and typically cause severe protein dysfunction.' : 'This mutation type affects protein structure and function.'} The variant contributes to the overall pathway disruption score.`} 
+                                    isVisible={hoveredTooltip === `mutation-${index}-${mutIndex}`} 
+                                    triggerRef={null} 
+                                  />
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -3688,14 +3824,41 @@ const ClinicalViewPage: React.FC = () => {
                       border: '1px solid #E5E7EB',
                       marginBottom: '2rem'
                     }}>
-                      <h4 style={{ 
-                        color: '#111827',
-                        fontSize: '1.125rem',
-                        fontWeight: '600',
+                      <div style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
                         marginBottom: '1rem'
                       }}>
-                        Cancer Risk by Pathway Disruption
-                      </h4>
+                        <h4 style={{ 
+                          color: '#111827',
+                          fontSize: '1.125rem',
+                          fontWeight: '600',
+                          margin: 0
+                        }}>
+                          Cancer Risk by Pathway Disruption
+                        </h4>
+                        <div 
+                          style={{ position: 'relative', display: 'inline-flex' }}
+                          onMouseEnter={() => setHoveredTooltip('cancer-risk-pathways')}
+                          onMouseLeave={() => setHoveredTooltip(null)}
+                        >
+                          <InformationCircleIcon 
+                            style={{ width: '16px', height: '16px' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#D1D5DB';
+                              e.currentTarget.style.color = '#374151';
+                              e.currentTarget.style.borderColor = '#9CA3AF';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#E5E7EB';
+                              e.currentTarget.style.color = '#6B7280';
+                              e.currentTarget.style.borderColor = '#D1D5DB';
+                            }}
+                          />
+                          <SmartTooltip content="Shows how pathway disruptions translate to cancer risk for different cancer types. Each cancer type is associated with specific pathways - when those pathways are disrupted, the risk for that cancer increases. The percentage represents the calculated risk based on the severity of pathway disruption and clinical evidence." isVisible={hoveredTooltip === 'cancer-risk-pathways'} triggerRef={null} />
+                        </div>
+                      </div>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                         {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
@@ -3707,17 +3870,44 @@ const ClinicalViewPage: React.FC = () => {
                               padding: '1rem',
                               border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
                               borderRadius: '0.5rem',
-                              background: `${getRiskColor(riskFinding.risk_level)}10`
+                              background: `${getRiskColor(riskFinding.risk_level)}10`,
+                              position: 'relative'
                             }}>
-                              <h5 style={{ 
-                                color: '#111827',
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                marginBottom: '0.5rem',
-                                textTransform: 'capitalize'
-                              }}>
-                                {cancer} Cancer
-                              </h5>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                <h5 style={{ 
+                                  color: '#111827',
+                                  fontSize: '1rem',
+                                  fontWeight: '600',
+                                  margin: 0,
+                                  textTransform: 'capitalize'
+                                }}>
+                                  {cancer} Cancer
+                                </h5>
+                                <div 
+                                  style={{ position: 'relative', display: 'inline-flex' }}
+                                  onMouseEnter={() => setHoveredTooltip(`cancer-${cancer}`)}
+                                  onMouseLeave={() => setHoveredTooltip(null)}
+                                >
+                                  <InformationCircleIcon 
+                                    style={{ width: '14px', height: '14px' }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                      e.currentTarget.style.color = '#374151';
+                                      e.currentTarget.style.borderColor = '#9CA3AF';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                      e.currentTarget.style.color = '#6B7280';
+                                      e.currentTarget.style.borderColor = '#D1D5DB';
+                                    }}
+                                  />
+                                  <SmartTooltip 
+                                    content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
+                                    isVisible={hoveredTooltip === `cancer-${cancer}`} 
+                                    triggerRef={null} 
+                                  />
+                                </div>
+                              </div>
                               <div style={{ 
                                 fontSize: '1.5rem',
                                 fontWeight: 'bold',
@@ -3757,14 +3947,40 @@ const ClinicalViewPage: React.FC = () => {
       case 'clinical':
         return (
           <div style={{ padding: '2rem' }}>
-            <h2 style={{ 
-              color: '#111827',
-              fontSize: '1.5rem',
-              fontWeight: '600',
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
               marginBottom: '1.5rem'
             }}>
-              Clinical Report & Recommendations
-            </h2>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
+              }}>
+                Clinical Report & Recommendations
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('clinical-report')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
+              </div>
+            </div>
             
             {/* Survival Analysis */}
             <div id="survival-analysis" style={{
@@ -3776,14 +3992,39 @@ const ClinicalViewPage: React.FC = () => {
               marginBottom: '2rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ 
-                  color: '#111827',
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  margin: 0
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
                 }}>
-                  Survival Analysis vs Population Average
-                </h3>
+                  <h3 style={{ 
+                    color: '#111827',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    Survival Analysis vs Population Average
+                  </h3>
+                  <div 
+                    style={{ position: 'relative', display: 'inline-flex' }}
+                    onMouseEnter={() => setHoveredTooltip('survival-analysis')}
+                    onMouseLeave={() => setHoveredTooltip(null)}
+                  >
+                    <InformationCircleIcon 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#D1D5DB';
+                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.borderColor = '#9CA3AF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6B7280';
+                        e.currentTarget.style.borderColor = '#D1D5DB';
+                      }}
+                    />
+                    <SmartTooltip content="Comparative survival analysis showing how your genetic risk profile affects life expectancy compared to the general population. The red solid line represents your personalized risk profile, while the blue dashed line shows population averages. Early intervention and enhanced screening can significantly improve outcomes." isVisible={hoveredTooltip === 'survival-analysis'} triggerRef={null} />
+                  </div>
+                </div>
                 <DownloadButton 
                   elementId="survival-analysis"
                   title="Survival Analysis"
@@ -3797,8 +4038,18 @@ const ClinicalViewPage: React.FC = () => {
               {(() => {
                 const survivalData = pipelineResults?.structured_json?.survival_analysis;
                 
-                if (!survivalData) {
-                  // No survival data - show informative message
+                console.log('🔍 SURVIVAL DEBUG: survivalData exists:', !!survivalData);
+                console.log('🔍 SURVIVAL DEBUG: patient_profile exists:', !!survivalData?.patient_profile);
+                console.log('🔍 SURVIVAL DEBUG: estimated_survival exists:', !!survivalData?.patient_profile?.estimated_survival);
+                console.log('🔍 SURVIVAL DEBUG: population_average exists:', !!survivalData?.population_average);
+                
+                if (!survivalData || 
+                    !survivalData.patient_profile || 
+                    !survivalData.patient_profile.estimated_survival || 
+                    !Array.isArray(survivalData.patient_profile.estimated_survival) ||
+                    !survivalData.population_average ||
+                    !Array.isArray(survivalData.population_average)) {
+                  // No proper survival data - show informative message
                   return (
                     <div style={{ 
                       padding: '3rem',
@@ -3812,11 +4063,40 @@ const ClinicalViewPage: React.FC = () => {
                       <p style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
                         This feature will provide personalized survival curves based on your genetic risk profile.
                       </p>
+                      <div style={{ 
+                        marginTop: '2rem',
+                        padding: '1rem',
+                        background: '#F3F4F6',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.7rem',
+                        color: '#6B7280'
+                      }}>
+                        <p style={{ marginBottom: '0.5rem' }}>
+                          <strong>Expected Data Structure:</strong>
+                        </p>
+                        <ul style={{ 
+                          textAlign: 'left',
+                          margin: 0,
+                          paddingLeft: '1.5rem',
+                          fontSize: '0.65rem'
+                        }}>
+                          <li>survival_analysis.patient_profile.estimated_survival (array)</li>
+                          <li>survival_analysis.population_average (array)</li>
+                          <li>survival_analysis.patient_profile.risk_category (string)</li>
+                        </ul>
+                        <p style={{ marginTop: '0.5rem', fontStyle: 'italic' }}>
+                          Backend implementation pending
+                        </p>
+                      </div>
                     </div>
                   );
                 }
                 
-                // Use real survival data
+                // Use real survival data - with additional safety checks
+                const patientSurvival = survivalData.patient_profile.estimated_survival || [];
+                const populationAverage = survivalData.population_average || [];
+                const riskCategory = survivalData.patient_profile.risk_category || 'Unknown';
+                
                 return (
                   <svg width="100%" height="300" viewBox="0 0 800 300">
                     {/* Background */}
@@ -3831,40 +4111,44 @@ const ClinicalViewPage: React.FC = () => {
                     ))}
                     
                     {/* Age axis */}
-                    {survivalData.patient_profile.estimated_survival.map((point, i) => (
+                    {patientSurvival.map((point, i) => (
                       <g key={i}>
                         <line x1={80 + i * 80} y1="50" x2={80 + i * 80} y2="250" stroke="#E5E7EB" strokeWidth="1"/>
-                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age}</text>
+                        <text x={80 + i * 80} y="270" fill="#6B7280" fontSize="12" textAnchor="middle">{point.age || `Age ${i}`}</text>
                       </g>
                     ))}
                     
                     {/* Population average survival curve */}
-                    <path 
-                      d={`M ${survivalData.population_average.map((point, i) => 
-                        `${80 + i * 80} ${250 - (point.probability * 200)}`
-                      ).join(' L ')}`}
-                      stroke="#2563EB" 
-                      strokeWidth="3" 
-                      fill="none"
-                      strokeDasharray="5,5"
-                    />
+                    {populationAverage.length > 0 && (
+                      <path 
+                        d={`M ${populationAverage.map((point, i) => 
+                          `${80 + i * 80} ${250 - ((point.probability || 0) * 200)}`
+                        ).join(' L ')}`}
+                        stroke="#2563EB" 
+                        strokeWidth="3" 
+                        fill="none"
+                        strokeDasharray="5,5"
+                      />
+                    )}
                     
                     {/* Patient risk profile survival curve */}
-                    <path 
-                      d={`M ${survivalData.patient_profile.estimated_survival.map((point, i) => 
-                        `${80 + i * 80} ${250 - (point.probability * 200)}`
-                      ).join(' L ')}`}
-                      stroke="#EF4444" 
-                      strokeWidth="3" 
-                      fill="none"
-                    />
+                    {patientSurvival.length > 0 && (
+                      <path 
+                        d={`M ${patientSurvival.map((point, i) => 
+                          `${80 + i * 80} ${250 - ((point.probability || 0) * 200)}`
+                        ).join(' L ')}`}
+                        stroke="#EF4444" 
+                        strokeWidth="3" 
+                        fill="none"
+                      />
+                    )}
                     
                     {/* Legend */}
                     <g transform="translate(500, 80)">
                       <line x1="0" y1="0" x2="20" y2="0" stroke="#2563EB" strokeWidth="3" strokeDasharray="5,5"/>
                       <text x="25" y="5" fill="#2563EB" fontSize="12" fontWeight="600">Population Average</text>
                       <line x1="0" y1="20" x2="20" y2="20" stroke="#EF4444" strokeWidth="3"/>
-                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{survivalData.patient_profile.risk_category} Risk Profile</text>
+                      <text x="25" y="25" fill="#EF4444" fontSize="12" fontWeight="600">{riskCategory} Risk Profile</text>
                     </g>
                     
                     {/* Axis labels */}
@@ -3883,14 +4167,40 @@ const ClinicalViewPage: React.FC = () => {
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB'
             }}>
-              <h3 style={{ 
-                color: '#111827',
-                fontSize: '1.125rem',
-                fontWeight: '600',
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
                 marginBottom: '1rem'
               }}>
-                Clinical Recommendations
-              </h3>
+                <h3 style={{ 
+                  color: '#111827',
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  Clinical Recommendations
+                </h3>
+                <div 
+                  style={{ position: 'relative', display: 'inline-flex' }}
+                  onMouseEnter={() => setHoveredTooltip('clinical-recommendations')}
+                  onMouseLeave={() => setHoveredTooltip(null)}
+                >
+                  <InformationCircleIcon 
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#D1D5DB';
+                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.borderColor = '#9CA3AF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#E5E7EB';
+                      e.currentTarget.style.color = '#6B7280';
+                      e.currentTarget.style.borderColor = '#D1D5DB';
+                    }}
+                  />
+                  <SmartTooltip content="Personalized screening and prevention recommendations based on your genetic risk profile. Each recommendation includes specific cancer types, risk percentages, screening protocols, and prevention strategies. High-risk findings require enhanced surveillance while medium-risk findings may benefit from earlier or more frequent screening." isVisible={hoveredTooltip === 'clinical-recommendations'} triggerRef={null} />
+                </div>
+              </div>
               
               {/* Check if clinical recommendations are available from backend */}
               {(() => {
@@ -4005,23 +4315,57 @@ const ClinicalViewPage: React.FC = () => {
                           background: risk.risk_level === 'high' ? '#FEF2F2' : '#FFFBEB'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                            <h4 style={{ 
-                              color: '#111827',
-                              fontSize: '1rem',
-                              fontWeight: '600',
-                              textTransform: 'capitalize'
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
                             }}>
-                              {risk.cancer_type} Cancer Screening
-                            </h4>
-                            <div style={{
-                              background: getRiskColor(risk.risk_level),
-                              color: '#FFFFFF',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.75rem',
-                              fontWeight: '600'
-                            }}>
-                              {risk.risk_percentage}% Risk
+                              <h4 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                textTransform: 'capitalize',
+                                margin: 0
+                              }}>
+                                {risk.cancer_type} Cancer Screening
+                              </h4>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`screening-${risk.cancer_type}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '16px', height: '16px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip content={`Personalized screening recommendations for ${risk.cancer_type} cancer based on your genetic risk profile. Risk level: ${risk.risk_level}. Enhanced screening protocols may include earlier start ages, more frequent testing, or additional screening modalities compared to standard population guidelines.`} isVisible={hoveredTooltip === `screening-${risk.cancer_type}`} triggerRef={null} />
+                              </div>
+                            </div>
+                            <div 
+                              style={{ position: 'relative', display: 'inline-flex' }}
+                              onMouseEnter={() => setHoveredTooltip(`risk-percentage-${risk.cancer_type}`)}
+                              onMouseLeave={() => setHoveredTooltip(null)}
+                            >
+                              <div style={{
+                                background: getRiskColor(risk.risk_level),
+                                color: '#FFFFFF',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '600'
+                              }}>
+                                {risk.risk_percentage}% Risk
+                              </div>
+                              <SmartTooltip content={`${risk.risk_percentage}% lifetime risk of developing ${risk.cancer_type} cancer based on your genetic variants. This is ${risk.risk_level === 'high' ? 'significantly higher' : risk.risk_level === 'medium' ? 'moderately higher' : 'similar to or lower'} than the general population average. Risk is calculated using machine learning models trained on clinical outcomes and population data.`} isVisible={hoveredTooltip === `risk-percentage-${risk.cancer_type}`} triggerRef={null} />
                             </div>
                           </div>
                           <p style={{ 
@@ -4037,14 +4381,41 @@ const ClinicalViewPage: React.FC = () => {
                             borderRadius: '0.5rem',
                             border: '1px solid #E5E7EB'
                           }}>
-                            <h5 style={{ 
-                              color: '#111827',
-                              fontSize: '0.875rem',
-                              fontWeight: '600',
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
                               marginBottom: '0.5rem'
                             }}>
-                              Affected Genes:
-                            </h5>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                margin: 0
+                              }}>
+                                Affected Genes:
+                              </h5>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`affected-genes-${risk.cancer_type}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '14px', height: '14px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip content={`Genes containing variants that contribute to ${risk.cancer_type} cancer risk. These genes are involved in critical cellular pathways like DNA repair, cell cycle control, and tumor suppression. Variants in these genes can increase cancer susceptibility and influence screening recommendations.`} isVisible={hoveredTooltip === `affected-genes-${risk.cancer_type}`} triggerRef={null} />
+                              </div>
+                            </div>
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                               {risk.affected_genes.length > 0 ? risk.affected_genes.map((gene, geneIndex) => (
                                 <span key={geneIndex} style={{
@@ -4192,14 +4563,14 @@ const ClinicalViewPage: React.FC = () => {
                   marginBottom: '0.5rem',
                   color: '#111827'
                 }}>
-                  {currentData.riskLevel}
+                  {sidebarData.riskLevel}
                 </div>
                 <div style={{ 
                   fontSize: '0.875rem',
                   lineHeight: '1.4',
                   color: '#4B5563'
                 }}>
-                  <span dangerouslySetInnerHTML={{ __html: currentData.details }} />
+                  <span dangerouslySetInnerHTML={{ __html: sidebarData.details }} />
                 </div>
                 <div style={{
                   background: '#DBEAFE',
@@ -4211,7 +4582,7 @@ const ClinicalViewPage: React.FC = () => {
                   fontWeight: '500',
                   textAlign: 'center'
                 }}>
-                  Risk Score: {currentData.riskScore}
+                  Risk Score: {sidebarData.riskScore}
                 </div>
               </div>
 
@@ -4280,7 +4651,7 @@ const ClinicalViewPage: React.FC = () => {
                   Clinical Alerts
                 </div>
                 
-                {currentData.alerts.map((alert: Alert, index: number) => (
+                {sidebarData.alerts.map((alert: Alert, index: number) => (
                   <div 
                     key={index}
                     style={{

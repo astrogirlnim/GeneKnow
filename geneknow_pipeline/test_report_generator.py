@@ -53,7 +53,10 @@ def create_sample_state():
                     "clinvar_significance": "Likely pathogenic",
                     "cadd_score": 28.5,
                     "tcga_cancer_relevance": 0.75,
-                    "pathway_damage_assessment": {"pathways_affected": ["p53 signaling"], "damage_score": 0.72},
+                    "pathway_damage_assessment": {
+                        "pathways_affected": ["p53 signaling"],
+                        "damage_score": 0.72,
+                    },
                 },
             ],
             "metrics": {
@@ -63,7 +66,10 @@ def create_sample_state():
                     "moderate_impact": 230,
                     "low_impact": 975,
                 },
-                "confidence_metrics": {"overall_confidence": 0.92, "data_quality": 0.98},
+                "confidence_metrics": {
+                    "overall_confidence": 0.92,
+                    "data_quality": 0.98,
+                },
             },
             "report_sections": {
                 "overview": {
@@ -180,7 +186,11 @@ def test_streaming():
     interface = ModelInterface(config)
     if interface.is_available():
         print("Testing streaming with LLM...")
-        chunks = list(interface.generate("Generate a brief test report about BRCA1 mutation.", stream=True))
+        chunks = list(
+            interface.generate(
+                "Generate a brief test report about BRCA1 mutation.", stream=True
+            )
+        )
         print(f"Received {len(chunks)} chunks")
         if chunks:
             print(f"First chunk: {chunks[0][:50]}...")

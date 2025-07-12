@@ -23,7 +23,9 @@ import logging
 from typing import Dict, List
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Database path
@@ -142,7 +144,9 @@ def download_file(url: str, filename: str, chunk_size: int = 8192) -> str:
 
                     if total_size > 0:
                         progress = (downloaded / total_size) * 100
-                        sys.stdout.write(f"\rProgress: {progress:.1f}% ({downloaded:,}/{total_size:,} bytes)")
+                        sys.stdout.write(
+                            f"\rProgress: {progress:.1f}% ({downloaded:,}/{total_size:,} bytes)"
+                        )
                         sys.stdout.flush()
 
         print()  # New line after progress
@@ -175,7 +179,9 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
 
                 # Progress indication
                 if processed_count % 10000 == 0:
-                    logger.info(f"Processed {processed_count:,} variants, kept {kept_count:,}")
+                    logger.info(
+                        f"Processed {processed_count:,} variants, kept {kept_count:,}"
+                    )
 
                 # Parse VCF line
                 fields = line.split("\t")
@@ -200,11 +206,17 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
                         info_dict[key] = value
 
                 # Extract relevant fields
-                gene_symbol = info_dict.get("GENEINFO", "").split(":")[0] if "GENEINFO" in info_dict else None
+                gene_symbol = (
+                    info_dict.get("GENEINFO", "").split(":")[0]
+                    if "GENEINFO" in info_dict
+                    else None
+                )
                 clinical_significance = info_dict.get("CLNSIG", "")
                 review_status = info_dict.get("CLNREVSTAT", "")
                 consequence = (
-                    info_dict.get("MC", "").split("|")[1] if "MC" in info_dict and "|" in info_dict["MC"] else ""
+                    info_dict.get("MC", "").split("|")[1]
+                    if "MC" in info_dict and "|" in info_dict["MC"]
+                    else ""
                 )
 
                 # Skip if no gene symbol
@@ -217,12 +229,20 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
 
                 # Determine pathogenicity
                 is_pathogenic = 0
-                if any(term in clinical_significance.lower() for term in ["pathogenic", "likely_pathogenic"]):
+                if any(
+                    term in clinical_significance.lower()
+                    for term in ["pathogenic", "likely_pathogenic"]
+                ):
                     is_pathogenic = 1
-                elif any(term in clinical_significance.lower() for term in ["benign", "likely_benign"]):
+                elif any(
+                    term in clinical_significance.lower()
+                    for term in ["benign", "likely_benign"]
+                ):
                     is_pathogenic = 0
                 else:
-                    is_pathogenic = 0  # Default to non-pathogenic for uncertain variants
+                    is_pathogenic = (
+                        0  # Default to non-pathogenic for uncertain variants
+                    )
 
                 # Extract population frequency from gnomAD if available
                 gnomad_af = 0.0
@@ -268,7 +288,9 @@ def parse_clinvar_vcf(vcf_file: str, cancer_genes_only: bool = False) -> List[Di
         logger.error(f"Error parsing VCF file: {e}")
         raise
 
-    logger.info(f"Parsing complete. Processed {processed_count:,} variants, kept {kept_count:,}")
+    logger.info(
+        f"Parsing complete. Processed {processed_count:,} variants, kept {kept_count:,}"
+    )
     return variants
 
 
@@ -307,7 +329,9 @@ def create_database(variants: List[Dict], db_path: str = DB_PATH) -> None:
         # Create indexes
         cursor.execute("CREATE INDEX idx_gene ON population_variants(gene)")
         cursor.execute("CREATE INDEX idx_position ON population_variants(chrom, pos)")
-        cursor.execute("CREATE INDEX idx_pathogenic ON population_variants(is_pathogenic)")
+        cursor.execute(
+            "CREATE INDEX idx_pathogenic ON population_variants(is_pathogenic)"
+        )
 
         # Insert variants
         logger.info("Inserting variants into database...")
@@ -319,7 +343,7 @@ def create_database(variants: List[Dict], db_path: str = DB_PATH) -> None:
 
         batch_size = 1000
         for i in range(0, len(variants), batch_size):
-            batch = variants[i: i + batch_size]
+            batch = variants[i : i + batch_size]
             batch_data = [
                 (
                     v["chrom"],
@@ -346,7 +370,9 @@ def create_database(variants: List[Dict], db_path: str = DB_PATH) -> None:
         cursor.execute("SELECT COUNT(*) FROM population_variants")
         total_variants = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM population_variants WHERE is_pathogenic = 1")
+        cursor.execute(
+            "SELECT COUNT(*) FROM population_variants WHERE is_pathogenic = 1"
+        )
         pathogenic_variants = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(DISTINCT gene) FROM population_variants")
@@ -373,7 +399,9 @@ def validate_database(db_path: str = DB_PATH) -> bool:
         cursor = conn.cursor()
 
         # Check table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='population_variants'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='population_variants'"
+        )
         if not cursor.fetchone():
             logger.error("Table 'population_variants' not found")
             return False
@@ -381,7 +409,9 @@ def validate_database(db_path: str = DB_PATH) -> bool:
         # Check for cancer genes
         test_genes = ["BRCA1", "BRCA2", "TP53", "KRAS", "APC"]
         for gene in test_genes:
-            cursor.execute("SELECT COUNT(*) FROM population_variants WHERE gene = ?", (gene,))
+            cursor.execute(
+                "SELECT COUNT(*) FROM population_variants WHERE gene = ?", (gene,)
+            )
             count = cursor.fetchone()[0]
             if count > 0:
                 logger.info(f"✓ Found {count} variants in {gene}")
@@ -415,11 +445,19 @@ def validate_database(db_path: str = DB_PATH) -> bool:
 
 def main():
     """Main function to create the population database."""
-    parser = argparse.ArgumentParser(description="Create population variants database from ClinVar data")
-    parser.add_argument(
-        "--cancer-genes-only", action="store_true", help="Only process variants in known cancer genes (faster)"
+    parser = argparse.ArgumentParser(
+        description="Create population variants database from ClinVar data"
     )
-    parser.add_argument("--force", action="store_true", help="Overwrite existing database without prompting")
+    parser.add_argument(
+        "--cancer-genes-only",
+        action="store_true",
+        help="Only process variants in known cancer genes (faster)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing database without prompting",
+    )
 
     args = parser.parse_args()
 

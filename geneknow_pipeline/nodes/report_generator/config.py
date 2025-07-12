@@ -68,7 +68,9 @@ def load_config(config_path: Optional[str] = None) -> ReportConfig:
     """
     if config_path is None:
         # Look for config.yaml in project root
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        )
         config_path = os.path.join(project_root, "config.yaml")
 
     config_data = {}
@@ -111,7 +113,9 @@ def save_config(config: ReportConfig, config_path: Optional[str] = None) -> None
         config_path: Path to save config file. If None, saves to project root.
     """
     if config_path is None:
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        )
         config_path = os.path.join(project_root, "config.yaml")
 
     # Load existing config or create new

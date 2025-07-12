@@ -46,7 +46,13 @@ class PipelineTestSuite:
             if result:
                 self.results["passed"] += 1
                 print(f"✅ PASSED ({end_time - start_time:.2f}s)")
-                self.results["tests"].append({"name": name, "status": "passed", "duration": end_time - start_time})
+                self.results["tests"].append(
+                    {
+                        "name": name,
+                        "status": "passed",
+                        "duration": end_time - start_time,
+                    }
+                )
             else:
                 self.results["failed"] += 1
                 print("❌ FAILED")
@@ -54,7 +60,9 @@ class PipelineTestSuite:
         except Exception as e:
             self.results["failed"] += 1
             print(f"❌ ERROR: {str(e)}")
-            self.results["tests"].append({"name": name, "status": "error", "error": str(e)})
+            self.results["tests"].append(
+                {"name": name, "status": "error", "error": str(e)}
+            )
 
     def print_summary(self):
         """Print test summary."""
@@ -62,7 +70,9 @@ class PipelineTestSuite:
         print("📊 PIPELINE TEST SUMMARY")
         print("=" * 60)
         print(f"Total tests: {self.results['total']}")
-        print(f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)")
+        print(
+            f"Passed: {self.results['passed']} ({self.results['passed']/self.results['total']*100:.1f}%)"
+        )
         print(f"Failed: {self.results['failed']}")
 
         if self.results["failed"] > 0:
@@ -88,7 +98,12 @@ def test_basic_pipeline():
 
     try:
         result = run_pipeline(
-            test_file, {"language": "en", "include_technical_details": True, "risk_threshold_percentage": 30.0}
+            test_file,
+            {
+                "language": "en",
+                "include_technical_details": True,
+                "risk_threshold_percentage": 30.0,
+            },
         )
 
         # Check basic requirements
@@ -220,7 +235,9 @@ def test_maf_processing():
         print("No MAF test file found, skipping...")
         assert True  # Don't fail if no test file
 
-    result = run_pipeline(test_file, {"language": "en", "include_technical_details": True})
+    result = run_pipeline(
+        test_file, {"language": "en", "include_technical_details": True}
+    )
 
     # Check MAF-specific processing
     has_maf_info = "maf_info" in result.get("file_metadata", {})
@@ -244,7 +261,12 @@ def test_parallel_nodes():
 
     start_time = time.time()
     result = run_pipeline(
-        test_file, {"language": "en", "include_technical_details": True, "patient_data": {"age": 45, "sex": "F"}}
+        test_file,
+        {
+            "language": "en",
+            "include_technical_details": True,
+            "patient_data": {"age": 45, "sex": "F"},
+        },
     )
     total_time = time.time() - start_time
 
@@ -314,7 +336,9 @@ def test_node_outputs():
 
         # Report Writer
         if result.get("report_sections"):
-            print(f"✓ report_writer: {len(result['report_sections'])} sections generated")
+            print(
+                f"✓ report_writer: {len(result['report_sections'])} sections generated"
+            )
             checks.append(True)
         else:
             print("✗ report_writer: No report")
@@ -331,7 +355,9 @@ def test_error_handling():
     print("Testing error handling...")
 
     # Test with non-existent file
-    result = run_pipeline("non_existent_file.fastq", {"patient_data": {"age": 45, "sex": "F"}})
+    result = run_pipeline(
+        "non_existent_file.fastq", {"patient_data": {"age": 45, "sex": "F"}}
+    )
 
     # Pipeline should complete but with errors captured
     has_errors = len(result.get("errors", [])) > 0
@@ -345,7 +371,9 @@ def test_error_handling():
     if result.get("errors"):
         print("Error Details (first 3):")
         for error in result["errors"][:3]:
-            print(f"  - {error.get('node', 'unknown')}: {error.get('error', 'unknown error')}")
+            print(
+                f"  - {error.get('node', 'unknown')}: {error.get('error', 'unknown error')}"
+            )
 
     # Pipeline should handle errors gracefully and still complete with a report
     has_report = result.get("report_sections") is not None
@@ -477,7 +505,9 @@ def main():
     suite.print_summary()
 
     print("\n💡 Notes:")
-    print("- LangGraph creates parallel structure but doesn't guarantee concurrent execution")
+    print(
+        "- LangGraph creates parallel structure but doesn't guarantee concurrent execution"
+    )
     print("- For true parallelism, async nodes or parallel executors would be needed")
     print("- Current implementation focuses on correct data flow and processing")
 

@@ -42,9 +42,22 @@ def test_metrics_calculator():
                 }
             ],
             "risk_scores": {"breast": 75.0, "ovarian": 45.0},
-            "risk_details": {"breast": {"model_confidence": 0.85, "gene_count": 1, "pathogenic_count": 1}},
-            "ml_risk_assessment": {"confidence": 0.8, "risk_category": "high", "aggregate_risk_score": 60.0},
-            "risk_genes": {"breast": ["BRCA1", "BRCA2"], "ovarian": ["BRCA1", "BRCA2", "TP53"]},
+            "risk_details": {
+                "breast": {
+                    "model_confidence": 0.85,
+                    "gene_count": 1,
+                    "pathogenic_count": 1,
+                }
+            },
+            "ml_risk_assessment": {
+                "confidence": 0.8,
+                "risk_category": "high",
+                "aggregate_risk_score": 60.0,
+            },
+            "risk_genes": {
+                "breast": ["BRCA1", "BRCA2"],
+                "ovarian": ["BRCA1", "BRCA2", "TP53"],
+            },
             "prs_summary": {"breast": {"prs_score": 1.2, "variants_used": 50}},
         }
 

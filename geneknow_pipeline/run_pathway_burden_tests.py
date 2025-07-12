@@ -24,7 +24,9 @@ def run_command(cmd, description):
 
     start_time = time.time()
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)  # 5 minute timeout
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=300
+        )  # 5 minute timeout
 
         end_time = time.time()
         duration = end_time - start_time
@@ -89,7 +91,7 @@ def check_prerequisites():
             else:
                 print("❌ graph.py missing pathway_burden")
                 checks.append(False)
-    except:
+    except Exception:
         print("❌ graph.py not readable")
         checks.append(False)
 
@@ -108,7 +110,9 @@ def check_prerequisites():
         checks.append(False)
 
     all_good = all(checks)
-    print(f"\n{'✅ All prerequisites met' if all_good else '❌ Some prerequisites missing'}")
+    print(
+        f"\n{'✅ All prerequisites met' if all_good else '❌ Some prerequisites missing'}"
+    )
 
     return all_good
 
@@ -154,7 +158,8 @@ def run_all_tests():
 
     # Syntax Check
     success, duration, stdout, stderr = run_command(
-        "python -m py_compile nodes/pathway_burden.py", "Syntax Check - Code Compilation"
+        "python -m py_compile nodes/pathway_burden.py",
+        "Syntax Check - Code Compilation",
     )
     results["syntax_check"] = success
     total_duration += duration

@@ -39,19 +39,43 @@ def test_pipeline_integration():
             "risk_assessment": {
                 "scores": {"breast": 82.5, "ovarian": 45.2, "colon": 15.3, "lung": 8.7},
                 "high_risk_findings": [
-                    {"cancer_type": "breast", "risk_percentage": 82.5, "affected_genes": ["BRCA1"]},
-                    {"cancer_type": "ovarian", "risk_percentage": 45.2, "affected_genes": ["BRCA1"]},
-                    {"cancer_type": "colon", "risk_percentage": 15.3, "affected_genes": ["TP53"]},
-                    {"cancer_type": "lung", "risk_percentage": 8.7, "affected_genes": ["TP53"]},
+                    {
+                        "cancer_type": "breast",
+                        "risk_percentage": 82.5,
+                        "affected_genes": ["BRCA1"],
+                    },
+                    {
+                        "cancer_type": "ovarian",
+                        "risk_percentage": 45.2,
+                        "affected_genes": ["BRCA1"],
+                    },
+                    {
+                        "cancer_type": "colon",
+                        "risk_percentage": 15.3,
+                        "affected_genes": ["TP53"],
+                    },
+                    {
+                        "cancer_type": "lung",
+                        "risk_percentage": 8.7,
+                        "affected_genes": ["TP53"],
+                    },
                 ],
             },
-            "summary": {"total_variants_found": 1250, "variants_passed_qc": 1250, "high_risk_findings": 4},
+            "summary": {
+                "total_variants_found": 1250,
+                "variants_passed_qc": 1250,
+                "high_risk_findings": 4,
+            },
             "variant_details": [
                 {
                     "gene": "BRCA1",
                     "variant": "chr17:41246747",
                     "consequence": "frameshift_variant",
-                    "quality_metrics": {"quality": 99, "depth": 45, "allele_freq": 0.673},
+                    "quality_metrics": {
+                        "quality": 99,
+                        "depth": 45,
+                        "allele_freq": 0.673,
+                    },
                     "cadd_scores": {"phred": 35.0},
                 }
             ],
@@ -97,8 +121,14 @@ def test_pipeline_integration():
 
             # Check structure
             for key, section in sections.items():
-                if isinstance(section, dict) and "title" in section and "content" in section:
-                    print(f"  ✅ {key}: {section['title']} (severity: {section.get('severity', 'none')})")
+                if (
+                    isinstance(section, dict)
+                    and "title" in section
+                    and "content" in section
+                ):
+                    print(
+                        f"  ✅ {key}: {section['title']} (severity: {section.get('severity', 'none')})"
+                    )
                 else:
                     print(f"  ⚠️ {key}: Invalid section structure")
         else:

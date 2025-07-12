@@ -25,7 +25,9 @@ class OllamaBackend:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                self.available_models = [model["name"] for model in data.get("models", [])]
+                self.available_models = [
+                    model["name"] for model in data.get("models", [])
+                ]
                 logger.info(f"Ollama available with models: {self.available_models}")
                 return True
         except Exception as e:
@@ -46,7 +48,16 @@ class OllamaBackend:
             return preferred
 
         # Priority order for medical/scientific writing
-        priority_models = ["llama3", "llama3:8b", "llama3:70b", "mistral", "mistral:7b", "codellama", "phi3", "gemma"]
+        priority_models = [
+            "llama3",
+            "llama3:8b",
+            "llama3:70b",
+            "mistral",
+            "mistral:7b",
+            "codellama",
+            "phi3",
+            "gemma",
+        ]
 
         for model in priority_models:
             if model in self.available_models:
@@ -55,7 +66,9 @@ class OllamaBackend:
         # Fall back to first available model
         return self.available_models[0]
 
-    def generate(self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000) -> str:
+    def generate(
+        self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000
+    ) -> str:
         """Generate text using Ollama."""
         try:
             payload = {
@@ -65,7 +78,9 @@ class OllamaBackend:
                 "options": {"temperature": temperature, "num_predict": max_tokens},
             }
 
-            response = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=120)
+            response = requests.post(
+                f"{self.base_url}/api/generate", json=payload, timeout=120
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -90,7 +105,9 @@ class OllamaBackend:
                 "options": {"temperature": temperature, "num_predict": max_tokens},
             }
 
-            response = requests.post(f"{self.base_url}/api/generate", json=payload, stream=True, timeout=120)
+            response = requests.post(
+                f"{self.base_url}/api/generate", json=payload, stream=True, timeout=120
+            )
 
             if response.status_code == 200:
                 for line in response.iter_lines():
@@ -149,7 +166,11 @@ class HuggingFaceBackend:
             return preferred
 
         # Priority for medical/scientific writing
-        priority_models = ["microsoft/phi-2", "google/flan-t5-base", "microsoft/DialoGPT-medium"]
+        priority_models = [
+            "microsoft/phi-2",
+            "google/flan-t5-base",
+            "microsoft/DialoGPT-medium",
+        ]
 
         for model in priority_models:
             if model in self.available_models:
@@ -163,14 +184,18 @@ class HuggingFaceBackend:
             try:
                 from transformers import pipeline
 
-                self.pipeline = pipeline("text-generation", model=model_name, max_length=2000)
+                self.pipeline = pipeline(
+                    "text-generation", model=model_name, max_length=2000
+                )
                 logger.info(f"Loaded HuggingFace model: {model_name}")
             except Exception as e:
                 logger.error(f"Failed to load HuggingFace model {model_name}: {e}")
                 return False
         return True
 
-    def generate(self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000) -> str:
+    def generate(
+        self, prompt: str, model: str, temperature: float = 0.3, max_tokens: int = 2000
+    ) -> str:
         """Generate text using HuggingFace."""
         try:
             if not self._load_pipeline(model):
@@ -245,7 +270,9 @@ class ModelInterface:
             if hf.is_available():
                 self.backend = hf
                 self.current_model = hf.get_best_model(self.config.model_name)
-                logger.info(f"Using HuggingFace backend with model: {self.current_model}")
+                logger.info(
+                    f"Using HuggingFace backend with model: {self.current_model}"
+                )
                 return
             else:
                 logger.warning("HuggingFace backend requested but not available")
@@ -258,7 +285,9 @@ class ModelInterface:
         if ollama.is_available():
             self.backend = ollama
             self.current_model = ollama.get_best_model()
-            logger.info(f"Auto-detected Ollama backend with model: {self.current_model}")
+            logger.info(
+                f"Auto-detected Ollama backend with model: {self.current_model}"
+            )
             return
 
         # Try HuggingFace
@@ -266,7 +295,9 @@ class ModelInterface:
         if hf.is_available():
             self.backend = hf
             self.current_model = hf.get_best_model()
-            logger.info(f"Auto-detected HuggingFace backend with model: {self.current_model}")
+            logger.info(
+                f"Auto-detected HuggingFace backend with model: {self.current_model}"
+            )
             return
 
         # No LLM available, use fallback mode
@@ -279,10 +310,22 @@ class ModelInterface:
     def get_backend_info(self) -> Dict[str, Any]:
         """Get information about the current backend."""
         if not self.is_available():
-            return {"backend": "none", "model": None, "available": False, "fallback_mode": True}
+            return {
+                "backend": "none",
+                "model": None,
+                "available": False,
+                "fallback_mode": True,
+            }
 
-        backend_type = "ollama" if isinstance(self.backend, OllamaBackend) else "huggingface"
-        return {"backend": backend_type, "model": self.current_model, "available": True, "fallback_mode": False}
+        backend_type = (
+            "ollama" if isinstance(self.backend, OllamaBackend) else "huggingface"
+        )
+        return {
+            "backend": backend_type,
+            "model": self.current_model,
+            "available": True,
+            "fallback_mode": False,
+        }
 
     def generate(self, prompt: str, stream_callback=None) -> str:
         """Generate text, optionally with streaming."""
@@ -294,14 +337,26 @@ class ModelInterface:
             # Stream generation
             full_response = ""
             for chunk in self.backend.stream_generate(
-                prompt, self.current_model, temperature=self.config.temperature, max_tokens=self.config.max_tokens
+                prompt,
+                self.current_model,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
             ):
                 full_response += chunk
                 # Wrap chunk in structured format for callbacks
-                stream_callback({"section": "generation", "content": chunk, "total_length": len(full_response)})
+                stream_callback(
+                    {
+                        "section": "generation",
+                        "content": chunk,
+                        "total_length": len(full_response),
+                    }
+                )
             return full_response
         else:
             # Regular generation
             return self.backend.generate(
-                prompt, self.current_model, temperature=self.config.temperature, max_tokens=self.config.max_tokens
+                prompt,
+                self.current_model,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
             )

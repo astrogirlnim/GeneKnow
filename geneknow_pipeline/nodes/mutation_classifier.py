@@ -67,7 +67,11 @@ def process(state: Dict) -> Dict:
     except Exception as e:
         logger.error(f"Error in mutation classification: {str(e)}")
         state["errors"] = state.get("errors", []) + [
-            {"node": "mutation_classifier", "error": str(e), "timestamp": datetime.now().isoformat()}
+            {
+                "node": "mutation_classifier",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
         ]
 
     return state

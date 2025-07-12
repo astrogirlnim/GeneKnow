@@ -109,13 +109,17 @@ class GenomicState(TypedDict, total=False):
     report_markdown: Optional[str]  # LLM-generated report
     report_sections: Dict[str, Any]  # Structured report sections for frontend
     report_pdf_path: Optional[str]  # Final PDF location
-    enhanced_report_content: Dict[str, str]  # In-memory report content (markdown, html, txt)
+    enhanced_report_content: Dict[
+        str, str
+    ]  # In-memory report content (markdown, html, txt)
     report_generator_info: Dict[str, Any]  # Report generator metadata and info
 
     # Pipeline control
     pipeline_status: str
     current_node: Optional[str]
-    completed_nodes: Annotated[List[str], merge_completed_nodes]  # Use Annotated for concurrent updates
+    completed_nodes: Annotated[
+        List[str], merge_completed_nodes
+    ]  # Use Annotated for concurrent updates
     errors: List[Dict[str, Any]]
     warnings: List[Dict[str, Any]]
 

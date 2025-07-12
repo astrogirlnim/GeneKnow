@@ -51,7 +51,9 @@ def test_variant(
 
     # Show top contributing factors
     print("Top Contributing Factors:")
-    sorted_factors = sorted(prediction.contributing_factors.items(), key=lambda x: x[1], reverse=True)
+    sorted_factors = sorted(
+        prediction.contributing_factors.items(), key=lambda x: x[1], reverse=True
+    )
     for factor, contribution in sorted_factors[:5]:
         print(f"  {factor}: {contribution:.3f}")
 

@@ -73,9 +73,15 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         # Calculate filtering stats
         total_variants = len(raw_variants)
         passed_variants = len(filtered_variants)
-        filter_rate = (total_variants - passed_variants) / total_variants * 100 if total_variants > 0 else 0
+        filter_rate = (
+            (total_variants - passed_variants) / total_variants * 100
+            if total_variants > 0
+            else 0
+        )
 
-        logger.info(f"QC filtering complete: {passed_variants}/{total_variants} passed ({filter_rate:.1f}% filtered)")
+        logger.info(
+            f"QC filtering complete: {passed_variants}/{total_variants} passed ({filter_rate:.1f}% filtered)"
+        )
 
         # Prepare metadata update
         file_metadata = state.get("file_metadata", {})
@@ -84,7 +90,11 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "passed_qc": passed_variants,
             "failed_qc": total_variants - passed_variants,
             "filter_rate_percent": filter_rate,
-            "thresholds": {"qual": QUAL_THRESHOLD, "depth": DEPTH_THRESHOLD, "allele_freq": ALLELE_FREQ_THRESHOLD},
+            "thresholds": {
+                "qual": QUAL_THRESHOLD,
+                "depth": DEPTH_THRESHOLD,
+                "allele_freq": ALLELE_FREQ_THRESHOLD,
+            },
         }
 
         # Note: Don't append to completed_nodes to avoid concurrent updates
@@ -96,6 +106,8 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"QC filtering failed: {str(e)}")
         return {
-            "errors": [{"node": "qc_filter", "error": str(e), "timestamp": datetime.now()}],
+            "errors": [
+                {"node": "qc_filter", "error": str(e), "timestamp": datetime.now()}
+            ],
             "pipeline_status": "failed",
         }
