@@ -5,6 +5,7 @@ Replaces the existing report_writer.process function with LLM-enhanced report ge
 
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -23,7 +24,7 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
     Generate enhanced genomic risk assessment reports.
 
     This function replaces the original report_writer.process and generates
-    professional clinical reports using LLM enhancement when available,
+    professional reports using LLM enhancement when available,
     with intelligent fallback to template-based generation.
 
     Args:
@@ -348,7 +349,7 @@ def _create_dashboard_report_sections(
             "title": "Variant Analysis",
             "content": f"Key genetic variants identified in {', '.join(key_genes)}. Detailed pathogenicity assessment completed.",
             "severity": "medium",
-            "technical_details": f"CADD scores and clinical significance evaluated for {len(variant_details)} variants.",
+                            "technical_details": f"CADD scores and pathogenicity evaluated for {len(variant_details)} variants.",
         }
 
     # Report generation info
@@ -357,11 +358,57 @@ def _create_dashboard_report_sections(
         if backend_used != "none":
             sections["ai_enhancement"] = {
                 "title": "AI-Enhanced Analysis",
-                "content": f"Report generated using {backend_used} LLM with model {report_info.get('model_used', 'unknown')}. Enhanced clinical interpretations provided.",
+                "content": f"Report generated using {backend_used} LLM with model {report_info.get('model_used', 'unknown')}. Enhanced interpretations provided.",
                 "severity": "low",
             }
 
     return sections
+
+
+def _clean_llm_output(content: str, section_name: str) -> str:
+    """Clean LLM output to remove instruction artifacts and prompt text."""
+    
+    # Remove common instruction phrases
+    instruction_patterns = [
+        r"^Here is the .* section content for.*?:\s*",
+        r"^Here is the .* section content:\s*",
+        r"^Generated content for.*?:\s*",
+        r"^Content for the .* section:\s*",
+        r"^The following is the .* section.*?:\s*",
+        r"^Below is the .* section.*?:\s*",
+        r"^\*\*.*Section.*\*\*\s*",
+        r"^#+ .*Section.*\s*",
+        r"^## .*\s*",  # Remove section headers that start with ##
+        r"^# .*\s*",   # Remove section headers that start with #
+        r"^OUTPUT:\s*",
+        r"^CONTENT:\s*",
+        r"^RESULT:\s*",
+        r"^RESPONSE:\s*",
+    ]
+    
+    # Apply cleaning patterns
+    cleaned_content = content
+    for pattern in instruction_patterns:
+        cleaned_content = re.sub(pattern, "", cleaned_content, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove section name headers that might be at the beginning
+    section_header_patterns = [
+        rf"^{re.escape(section_name)}\s*:?\s*",
+        rf"^\*\*{re.escape(section_name)}\*\*\s*:?\s*",
+        rf"^#{1,6}\s*{re.escape(section_name)}\s*:?\s*",
+    ]
+    
+    for pattern in section_header_patterns:
+        cleaned_content = re.sub(pattern, "", cleaned_content, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Remove any leading/trailing whitespace or newlines
+    cleaned_content = cleaned_content.strip()
+    
+    # If content is significantly reduced, log a warning
+    if len(cleaned_content) < len(content) * 0.5:
+        logger.warning(f"Significant content reduction after cleaning {section_name}: {len(content)} -> {len(cleaned_content)} characters")
+    
+    return cleaned_content
 
 
 def _generate_single_section(section_name: str, 
@@ -386,18 +433,21 @@ def _generate_single_section(section_name: str,
             prompt = prompt_builder.build_key_variants_section_prompt(data)
         elif section_name == "Risk Summary":
             prompt = prompt_builder.build_risk_summary_section_prompt(data)
-        elif section_name == "Clinical Interpretation":
+        elif section_name == "Interpretation":
             prompt = prompt_builder.build_clinical_interpretation_section_prompt(data)
         elif section_name == "Recommendations":
             prompt = prompt_builder.build_recommendations_section_prompt(data)
         else:
-            return section_name, _get_fallback_section_content(section_name, data)
+            logger.warning(f"Unknown section: {section_name}")
+            return section_name, f"Section '{section_name}' not implemented"
         
         # Generate content for this section
         section_content = model_interface.generate(prompt, None)  # No streaming per section
         
         if section_content and section_content.strip():
             content = section_content.strip()
+            # Clean up LLM output artifacts
+            content = _clean_llm_output(content, section_name)
             logger.info(f"Generated {section_name} section: {len(content)} characters")
             return section_name, content
         else:
@@ -423,7 +473,7 @@ def _generate_llm_content(data: Dict[str, Any],
         config = model_interface.config
         
         # Define sections to generate
-        section_names = ["Summary", "Key Variants", "Risk Summary", "Clinical Interpretation", "Recommendations"]
+        section_names = ["Summary", "Key Variants", "Risk Summary", "Interpretation", "Recommendations"]
         sections = {}
         
         # Record start time for performance monitoring
@@ -508,14 +558,14 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
 
     if section_name == "Summary":
         summary = data.get("summary", {})
-        return f"This genomic risk assessment analyzed {summary.get('total_variants_found', 0)} genetic variants, with {summary.get('variants_passed_qc', 0)} variants passing quality control filters. The analysis completed successfully with results available for clinical review."
+        return f"This genomic risk assessment analyzed {summary.get('total_variants_found', 0)} genetic variants, with {summary.get('variants_passed_qc', 0)} variants passing quality control filters. The analysis completed successfully with results available for review."
 
     elif section_name == "Key Variants":
         variant_details = data.get("variant_details", [])
         if not variant_details:
             return "No key pathogenic variants associated with elevated cancer risk were identified in this analysis."
         else:
-            return f"Analysis identified {len(variant_details)} variants for review. Detailed variant interpretation requires clinical genetics expertise."
+            return f"Analysis identified {len(variant_details)} variants for review. Detailed variant interpretation requires genetics expertise."
 
     elif section_name == "Risk Summary":
         risk_assessment = data.get("risk_assessment", {})
@@ -537,14 +587,14 @@ def _get_fallback_section_content(section_name: str, data: Dict[str, Any]) -> st
 
         high_risk_count = sum(1 for score in scores.values() if score > 5.0)
         if high_risk_count > 0:
-            table += "\n\nRisks above 5% are considered elevated and warrant further clinical attention."
+            table += "\n\nRisks above 5% are considered elevated and warrant further attention."
         else:
             table += "\n\nAll risks are within baseline population levels (<5%), indicating no elevated genetic predisposition was detected."
 
         return table
 
-    elif section_name == "Clinical Interpretation":
-        return "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment."
+    elif section_name == "Interpretation":
+        return "This genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and guidelines. These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
 
     elif section_name == "Recommendations":
         risk_assessment = data.get("risk_assessment", {})
@@ -578,10 +628,10 @@ def _combine_sections_into_report(sections: Dict[str, str]) -> str:
     if "Risk Summary" in sections:
         report_parts.append(f"**Risk Summary**\n\n{sections['Risk Summary']}")
 
-    # Clinical Interpretation section
-    if "Clinical Interpretation" in sections:
+    # Interpretation section
+    if "Interpretation" in sections:
         report_parts.append(
-            f"**Clinical Interpretation**\n\n{sections['Clinical Interpretation']}"
+            f"**Interpretation**\n\n{sections['Interpretation']}"
         )
 
     # Recommendations section
