@@ -133,17 +133,17 @@ export interface PipelineResult {
   processing_time_seconds: number;
   structured_json?: {
     shap_validation?: SHAPValidation;
-    patient_data?: any;
-    summary?: any;
-    risk_assessment?: any;
-    variant_details?: any;
-    quality_control?: any;
-    tcga_summary?: any;
-    cadd_summary?: any;
-    metrics?: any;
-    metrics_summary?: any;
-    warnings?: any;
-    report_metadata?: any;
+    patient_data?: Record<string, unknown>;
+    summary?: Record<string, unknown>;
+    risk_assessment?: Record<string, unknown>;
+    variant_details?: Record<string, unknown>;
+    quality_control?: Record<string, unknown>;
+    tcga_summary?: Record<string, unknown>;
+    cadd_summary?: Record<string, unknown>;
+    metrics?: Record<string, unknown>;
+    metrics_summary?: Record<string, unknown>;
+    warnings?: Record<string, unknown>;
+    report_metadata?: Record<string, unknown>;
   };
   enhanced_report_content?: Record<string, string>; // In-memory report content (markdown, html, txt)
   report_generator_info?: {
