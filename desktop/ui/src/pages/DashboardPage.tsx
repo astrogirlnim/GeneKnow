@@ -642,7 +642,6 @@ const DashboardPage: React.FC = () => {
       const hazardScore = highestRisk.score ? (highestRisk.score / 100 * 3).toFixed(1) : "0.0"; // Convert from percentage to hazard score scale
       
       // Extract key metrics from the pipeline results
-      const keyVariants = pipelineResults.variants?.slice(0, 3) || [];
       const variantCount = pipelineResults.variant_count || 0;
       
       // Sort cancer risks by score and filter out baseline risks
