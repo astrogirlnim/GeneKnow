@@ -280,25 +280,25 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
               }}>
                 <MetricCard
                   title="Mean Confidence"
-                  value={userMetrics.confidence.mean_model_confidence?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.mean_model_confidence?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Average confidence of model predictions across all variants"
                 />
                 <MetricCard
                   title="Min Confidence"
-                  value={userMetrics.confidence.min_model_confidence?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.min_model_confidence?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Lowest confidence score for any prediction"
                 />
                 <MetricCard
                   title="Max Confidence"
-                  value={userMetrics.confidence.max_model_confidence?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.max_model_confidence?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Highest confidence score for any prediction"
                 />
                 <MetricCard
                   title="ML Fusion Confidence"
-                  value={userMetrics.confidence.ml_fusion_confidence?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.ml_fusion_confidence?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Confidence score from the ML fusion layer"
                 />
@@ -323,25 +323,25 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
               }}>
                 <MetricCard
                   title="Mean Risk Score"
-                  value={userMetrics.confidence.risk_score_mean?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.risk_score_mean?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Average risk score across all cancer types"
                 />
                 <MetricCard
                   title="Risk Score StdDev"
-                  value={userMetrics.confidence.risk_score_std?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.risk_score_std?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Standard deviation of risk scores"
                 />
                 <MetricCard
                   title="Max Risk Score"
-                  value={userMetrics.confidence.max_risk_score?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.max_risk_score?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Highest risk score detected"
                 />
                 <MetricCard
                   title="Coefficient of Variation"
-                  value={userMetrics.confidence.risk_score_cv?.toFixed(3) || 'N/A'}
+                  value={userMetrics.confidence.risk_score_cv?.toFixed(3) ?? 'N/A'}
                   unit=""
                   description="Risk score variability (std/mean)"
                 />
@@ -366,37 +366,37 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
               }}>
                 <MetricCard
                   title="Total Variants"
-                  value={userMetrics.variant.total_variants || 'N/A'}
+                  value={userMetrics.variant.total_variants ?? 'N/A'}
                   unit="variants"
                   description="Total number of genetic variants identified"
                 />
                 <MetricCard
                   title="Pathogenic Variants"
-                  value={userMetrics.variant.pathogenic_variants || 'N/A'}
+                  value={userMetrics.variant.pathogenic_variants ?? 'N/A'}
                   unit="variants"
                   description="Number of variants classified as pathogenic"
                 />
                 <MetricCard
                   title="Benign Variants"
-                  value={userMetrics.variant.benign_variants || 'N/A'}
+                  value={userMetrics.variant.benign_variants ?? 'N/A'}
                   unit="variants"
                   description="Number of variants classified as benign"
                 />
                 <MetricCard
                   title="Uncertain Variants"
-                  value={userMetrics.variant.uncertain_variants || 'N/A'}
+                  value={userMetrics.variant.uncertain_variants ?? 'N/A'}
                   unit="variants"
                   description="Number of variants with uncertain significance"
                 />
                 <MetricCard
                   title="Mean CADD Score"
-                  value={userMetrics.variant.mean_cadd_score?.toFixed(1) || 'N/A'}
+                  value={userMetrics.variant.mean_cadd_score?.toFixed(1) ?? 'N/A'}
                   unit=""
                   description="Average CADD deleteriousness score"
                 />
                 <MetricCard
                   title="Max CADD Score"
-                  value={userMetrics.variant.max_cadd_score?.toFixed(1) || 'N/A'}
+                  value={userMetrics.variant.max_cadd_score?.toFixed(1) ?? 'N/A'}
                   unit=""
                   description="Highest CADD score detected"
                 />
@@ -421,25 +421,25 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
               }}>
                                  <MetricCard
                    title="PRS Confidence"
-                   value={(userMetrics.integration as any).prs_confidence || 'N/A'}
+                   value={(userMetrics.integration as any).prs_confidence ?? 'N/A'}
                    unit=""
                    description="Polygenic Risk Score confidence level"
                  />
                  <MetricCard
                    title="High-Risk Cancers"
-                   value={(userMetrics.integration as any).prs_high_risk_cancers?.length || 0}
+                   value={(userMetrics.integration as any).prs_high_risk_cancers?.length ?? 0}
                    unit="types"
                    description="Number of cancer types with high PRS risk"
                  />
                  <MetricCard
                    title="Pathway Burden Score"
-                   value={(userMetrics.integration as any).pathway_burden_score?.toFixed(3) || 'N/A'}
+                   value={(userMetrics.integration as any).pathway_burden_score?.toFixed(3) ?? 'N/A'}
                    unit=""
                    description="Overall pathway disruption burden"
                  />
                  <MetricCard
                    title="High-Burden Pathways"
-                   value={(userMetrics.integration as any).high_burden_pathways?.length || 0}
+                   value={(userMetrics.integration as any).high_burden_pathways?.length ?? 0}
                    unit="pathways"
                    description="Number of pathways with high burden"
                  />
