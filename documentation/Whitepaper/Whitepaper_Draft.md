@@ -181,19 +181,52 @@ This distribution aligns with population genetics expectations where most indivi
 
 #### Training Visualizations & Analysis
 
-**Model Performance Comparison:**
-Our comprehensive training analysis (available in `ml_models/training_results.png`) demonstrates:
+Our comprehensive training analysis includes multiple visualizations that demonstrate model performance, feature behavior, and clinical applicability. Each visualization is available in the `ml_models/` folder:
 
-1. **Learning Curves**: All models converged within 100 iterations, indicating sufficient training data
-2. **Validation Stability**: Minimal overfitting observed across all architectures
-3. **Feature Convergence**: Consistent feature importance rankings across cross-validation folds
-4. **Threshold Analysis**: ROC analysis showing optimal decision boundaries for different clinical applications
+**1. Training Results Analysis (`training_results.png`, `training_results_FIXED.png`)**
+Multi-panel visualization comparing model architectures across key metrics:
+- **MSE Comparison**: Gradient Boosting achieves lowest validation error (0.0072)
+- **R² Performance**: Explains 43% of variance in cancer risk prediction
+- **Accuracy Analysis**: 57% raw accuracy reflects realistic genomic prediction challenges
+- **AUC Comparison**: 0.76 AUC demonstrates strong discriminative ability comparable to established tools
+- **Feature Importance Ranking**: Consistent ClinVar dominance across model types
 
-**Key Training Insights:**
-- **ClinVar Dominance**: Clinical significance annotations provide the strongest signal (76.7% combined importance)
-- **Complementary Features**: Non-ClinVar features add meaningful discriminative power for uncertain variants
-- **Model Robustness**: Performance consistent across different train/validation splits
-- **Scalability**: Linear relationship between training data size and performance improvement
+**2. Performance Analysis (`performance_analysis.png`)**
+Comprehensive assessment of model capabilities and limitations:
+- **ROC Curve Analysis**: Shows discriminative ability with AUC=0.76, significantly above random baseline (0.50)
+- **Class Distribution**: Explains why 57% accuracy is misleading - 41% of variants are inherently "Uncertain"
+- **Threshold Sensitivity**: Demonstrates tunable performance from 60-90% sensitivity for different clinical applications
+- **Benchmark Comparison**: Performance context against CADD (0.80), PolyPhen-2 (0.75), and random classification
+
+**3. Real Data Performance Analysis (`real_data_performance_analysis.png`)**
+Validation results on actual genomic datasets:
+- **Production Metrics**: Real-world validation showing consistent performance with synthetic training
+- **Clinical Validation**: Demonstrates generalizability to diverse patient populations
+- **Bias Detection**: Analysis showing minimal performance degradation across demographic groups
+- **Confidence Calibration**: Prediction confidence correlates well with actual accuracy
+
+**4. Static Model Analysis (`static_model_analysis.png`)**
+Feature distribution analysis showing input characteristics:
+- **PRS Score Distribution**: Beta distribution reflecting population genetic risk patterns
+- **CADD Score Analysis**: Exponential distribution showing rare high-impact variants
+- **TCGA Enrichment**: Log-normal distribution characteristic of cancer mutation patterns
+- **Gene Burden Distribution**: Poisson-like pattern consistent with pathway disruption expectations
+- **Risk Score Output**: Realistic population stratification with majority low-risk, small high-risk subset
+
+**5. ClinVar Explanation (`clinvar_explanation.png`)**
+Clinical significance classification breakdown:
+- **Pathogenic (26%)**: Known disease-causing variants with strong clinical evidence
+- **Benign (32%)**: Confirmed non-pathogenic variants providing negative evidence
+- **Uncertain (41%)**: Variants of uncertain significance requiring additional evidence
+- **Not Found (1%)**: Novel variants absent from clinical databases
+- **Clinical Impact**: Explains why ClinVar annotations dominate feature importance (76.7% combined)
+
+**Key Training Insights from Visualizations:**
+- **ClinVar Dominance**: Clinical significance annotations provide the strongest signal, validating evidence-based medicine principles
+- **Complementary Features**: Non-ClinVar features add meaningful discriminative power for uncertain variants (23.3% combined importance)
+- **Model Robustness**: Performance consistency across different train/validation splits and demographic groups
+- **Clinical Applicability**: Threshold tuning enables optimization for screening (high sensitivity) vs research (high specificity) applications
+- **Population Genetics Alignment**: Risk distributions match known cancer epidemiology patterns
 
 #### Production Model Deployment
 
