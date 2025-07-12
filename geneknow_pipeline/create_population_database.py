@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Create Population Database Script
-================================
 Downloads ClinVar data and creates population_variants.db for the GeneKnow pipeline.
 This script ensures reproducibility by recreating the database from source data.
 
