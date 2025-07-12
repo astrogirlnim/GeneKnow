@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiConfig } from '../api/apiConfig'
+import { invoke } from '@tauri-apps/api/core'
 
 interface ReportGeneratorConfig {
   backend: 'ollama' | 'none'
@@ -666,7 +667,17 @@ export const SettingsPage: React.FC = () => {
                       href="https://ollama.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        try {
+                          await invoke('plugin:shell|open', { path: 'https://ollama.com' });
+                        } catch (error) {
+                          console.error('Failed to open URL:', error);
+                          // Fallback to window.open
+                          window.open('https://ollama.com', '_blank', 'noopener,noreferrer');
+                        }
+                      }}
                       style={{
                         padding: '2px 8px',
                         fontSize: '12px',
@@ -675,7 +686,8 @@ export const SettingsPage: React.FC = () => {
                         background: '#E0E7FF',
                         color: '#3730A3',
                         textDecoration: 'none',
-                        transition: 'all 200ms ease'
+                        transition: 'all 200ms ease',
+                        cursor: 'pointer'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = '#C7D2FE';
@@ -780,10 +792,28 @@ export const SettingsPage: React.FC = () => {
               <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.4' }}>
                 <p style={{ margin: '0' }}>
                   <strong>Ollama:</strong> Download and install from{' '}
-                  <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB' }}>
+                  <a 
+                    href="https://ollama.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await invoke('plugin:shell|open', { path: 'https://ollama.com' });
+                      } catch (error) {
+                        console.error('Failed to open URL:', error);
+                        // Fallback to window.open
+                        window.open('https://ollama.com', '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    style={{ 
+                      color: '#2563EB',
+                      cursor: 'pointer'
+                    }}
+                  >
                     ollama.com
                   </a>
-                  , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull llama3</code> in terminal.
+                  , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull [model]</code> in terminal.
                 </p>
               </div>
             </div>
