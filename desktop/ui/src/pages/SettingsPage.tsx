@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Layout from '../components/Layout'
 import { apiConfig } from '../api/apiConfig'
 
 interface ModelConfig {
@@ -14,6 +13,167 @@ interface ModelConfig {
 interface AvailableModels {
   ollama: string[]
   huggingface: string[]
+}
+
+// Custom Dropdown Component
+interface CustomDropdownProps {
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string; description?: string }[]
+  placeholder?: string
+  disabled?: boolean
+}
+
+const CustomDropdown: React.FC<CustomDropdownProps> = ({ 
+  value, 
+  onChange, 
+  options, 
+  placeholder = 'Select an option',
+  disabled = false 
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedOption, setSelectedOption] = useState(
+    options.find(opt => opt.value === value) || null
+  )
+
+  useEffect(() => {
+    setSelectedOption(options.find(opt => opt.value === value) || null)
+  }, [value, options])
+
+  const handleSelect = (option: { value: string; label: string; description?: string }) => {
+    setSelectedOption(option)
+    onChange(option.value)
+    setIsOpen(false)
+  }
+
+  if (disabled) {
+    return (
+      <div style={{
+        width: '100%',
+        padding: '12px 16px',
+        border: '1px solid #E5E7EB',
+        borderRadius: '8px',
+        fontSize: '14px',
+        background: '#F9FAFB',
+        color: '#9CA3AF',
+        cursor: 'not-allowed'
+      }}>
+        {selectedOption?.label || placeholder}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Dropdown Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '12px 16px',
+          border: `1px solid ${isOpen ? '#2563EB' : '#E5E7EB'}`,
+          borderRadius: '8px',
+          fontSize: '14px',
+          background: '#FFFFFF',
+          color: '#111827',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          transition: 'all 200ms ease',
+          outline: 'none',
+          boxShadow: isOpen ? '0 0 0 3px rgba(37, 99, 235, 0.1)' : 'none'
+        }}
+        onMouseEnter={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.borderColor = '#D1D5DB';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.borderColor = '#E5E7EB';
+          }
+        }}
+      >
+        <span>{selectedOption?.label || placeholder}</span>
+        <svg
+          style={{
+            width: '20px',
+            height: '20px',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 200ms ease',
+            color: '#6B7280'
+          }}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: '4px',
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '8px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          zIndex: 50,
+          maxHeight: '300px',
+          overflowY: 'auto'
+        }}>
+          {options.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleSelect(option)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                textAlign: 'left',
+                border: 'none',
+                background: selectedOption?.value === option.value 
+                  ? '#F3F4F6'
+                  : 'transparent',
+                color: '#111827',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                borderRadius: index === 0 ? '8px 8px 0 0' : index === options.length - 1 ? '0 0 8px 8px' : '0',
+                fontSize: '14px',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (selectedOption?.value !== option.value) {
+                  e.currentTarget.style.background = '#F9FAFB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedOption?.value !== option.value) {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+            >
+              <div style={{ fontWeight: selectedOption?.value === option.value ? '600' : '400', marginBottom: option.description ? '4px' : '0' }}>
+                {option.label}
+              </div>
+              {option.description && (
+                <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.4' }}>
+                  {option.description}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const SettingsPage: React.FC = () => {
@@ -126,611 +286,547 @@ const SettingsPage: React.FC = () => {
     return recommendations[backend] || []
   }
 
-    if (isLoading) {
+  const getModelOptions = () => {
+    if (config.backend === 'none') return []
+    
+    const models = availableModels[config.backend] || []
+    const recommended = getRecommendedModels(config.backend)
+    
+    return [
+      { value: 'auto', label: 'Auto-detect best model', description: 'Automatically select the best available model' },
+      ...models.map(model => ({
+        value: model,
+        label: model + (recommended.includes(model) ? ' (Recommended)' : ''),
+        description: recommended.includes(model) ? 'Optimized for medical/scientific writing' : undefined
+      }))
+    ]
+  }
+
+  const getStyleOptions = () => [
+    { 
+      value: 'clinician', 
+      label: 'Clinician', 
+      description: 'Medical professionals - detailed clinical language' 
+    },
+    { 
+      value: 'technical', 
+      label: 'Technical', 
+      description: 'Researchers/Scientists - comprehensive technical details' 
+    },
+    { 
+      value: 'patient', 
+      label: 'Patient', 
+      description: 'General audience - accessible language and explanations' 
+    }
+  ]
+
+  if (isLoading) {
     return (
-      <Layout>
-        <section style={{
-          background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)',
-          padding: '3rem 0',
-          minHeight: 'calc(100vh - 4rem)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+      <div style={{
+        minHeight: '100vh',
+        background: '#F8FAFC',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          textAlign: 'center'
         }}>
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            textAlign: 'center'
-          }}>
-            <div style={{ 
-              fontSize: '1.125rem', 
-              color: '#111827',
-              fontWeight: '600'
-            }}>
-              Loading settings...
-            </div>
+          <div style={{ fontSize: '16px', fontWeight: '500', color: '#111827' }}>
+            Loading Settings...
           </div>
-        </section>
-      </Layout>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Layout>
-      <section style={{
-        background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)',
-        padding: '3rem 0 2rem 0'
+    <div style={{
+      minHeight: '100vh',
+      background: '#F8FAFC'
+    }}>
+      {/* Header */}
+      <div style={{
+        background: '#FFFFFF',
+        borderBottom: '1px solid #E5E7EB',
+        padding: '16px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <button
-              onClick={() => navigate(-1)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#6B7280',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                marginBottom: '1.5rem',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                transition: 'all 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
-                e.currentTarget.style.color = '#111827';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none';
-                e.currentTarget.style.color = '#6B7280';
-              }}
-            >
-              ← Back
-            </button>
-            
-            <span style={{
-              color: '#2563EB',
-              fontWeight: '600',
-              background: '#DBEAFE',
-              borderRadius: '9999px',
-              padding: '0.5rem 1rem',
-              fontSize: '0.875rem',
-              display: 'inline-block',
-              marginBottom: '1rem'
-            }}>
-              AI Model Configuration
-            </span>
-            
-            <h1 style={{
-              fontSize: 'clamp(2.5rem, 5vw, 3.75rem)',
-              fontWeight: 'bold',
-              letterSpacing: '-0.02em',
-              color: '#111827',
-              lineHeight: '1.1',
-              marginBottom: '1rem'
-            }}>
-              Report Generation Settings
-            </h1>
-            
-            <p style={{
-              fontSize: '1.125rem',
-              lineHeight: '1.75',
-              color: '#4B5563',
-              maxWidth: '42rem',
-              margin: '0 auto'
-            }}>
-              Configure your preferred AI model for generating genomic reports. Choose from local models or template-based generation.
-            </p>
-          </div>
-
-          {/* Settings Card */}
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '1rem',
-              padding: '2rem',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6B7280',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: '6px',
               transition: 'all 200ms ease'
-            }}>
-              
-              {/* Backend Selection */}
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '1.125rem', 
-                  fontWeight: '700', 
-                  color: '#111827',
-                  marginBottom: '1rem'
-                }}>
-                  AI Backend
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Ollama Option */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '1.5rem',
-                    border: `2px solid ${config.backend === 'ollama' ? '#2563EB' : '#E5E7EB'}`,
-                    borderRadius: '0.75rem',
-                    background: config.backend === 'ollama' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' : '#FFFFFF',
-                    cursor: 'pointer',
-                    transition: 'all 200ms ease',
-                    boxShadow: config.backend === 'ollama' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-                  }}
-                  onClick={() => handleBackendChange('ollama')}
-                  onMouseEnter={(e) => {
-                    if (config.backend !== 'ollama') {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (config.backend !== 'ollama') {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
-                    }
-                  }}>
-                    <input
-                      type="radio"
-                      name="backend"
-                      value="ollama"
-                      checked={config.backend === 'ollama'}
-                      onChange={() => handleBackendChange('ollama')}
-                      style={{ 
-                        marginRight: '1rem',
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        accentColor: '#2563EB'
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        <span style={{ fontWeight: '700', fontSize: '1.125rem', color: '#111827' }}>
-                          Ollama (Local)
-                        </span>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          borderRadius: '9999px',
-                          background: backendStatus.ollama ? '#DCFCE7' : '#FEF2F2',
-                          color: backendStatus.ollama ? '#166534' : '#991B1B'
-                        }}>
-                          {backendStatus.ollama ? 'Available' : 'Not Available'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '1rem', color: '#6B7280', lineHeight: '1.5' }}>
-                        Run models locally with Ollama. Recommended for privacy and performance.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hugging Face Option */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '1.5rem',
-                    border: `2px solid ${config.backend === 'huggingface' ? '#2563EB' : '#E5E7EB'}`,
-                    borderRadius: '0.75rem',
-                    background: config.backend === 'huggingface' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' : '#FFFFFF',
-                    cursor: 'pointer',
-                    transition: 'all 200ms ease',
-                    boxShadow: config.backend === 'huggingface' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-                  }}
-                  onClick={() => handleBackendChange('huggingface')}
-                  onMouseEnter={(e) => {
-                    if (config.backend !== 'huggingface') {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (config.backend !== 'huggingface') {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
-                    }
-                  }}>
-                    <input
-                      type="radio"
-                      name="backend"
-                      value="huggingface"
-                      checked={config.backend === 'huggingface'}
-                      onChange={() => handleBackendChange('huggingface')}
-                      style={{ 
-                        marginRight: '1rem',
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        accentColor: '#2563EB'
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        <span style={{ fontWeight: '700', fontSize: '1.125rem', color: '#111827' }}>
-                          Hugging Face Transformers
-                        </span>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          borderRadius: '9999px',
-                          background: backendStatus.huggingface ? '#DCFCE7' : '#FEF2F2',
-                          color: backendStatus.huggingface ? '#166534' : '#991B1B'
-                        }}>
-                          {backendStatus.huggingface ? 'Available' : 'Not Available'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '1rem', color: '#6B7280', lineHeight: '1.5' }}>
-                        Use Hugging Face models directly. Requires transformers library.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* None/Fallback Option */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '1.5rem',
-                    border: `2px solid ${config.backend === 'none' ? '#2563EB' : '#E5E7EB'}`,
-                    borderRadius: '0.75rem',
-                    background: config.backend === 'none' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)' : '#FFFFFF',
-                    cursor: 'pointer',
-                    transition: 'all 200ms ease',
-                    boxShadow: config.backend === 'none' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-                  }}
-                  onClick={() => handleBackendChange('none')}
-                  onMouseEnter={(e) => {
-                    if (config.backend !== 'none') {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (config.backend !== 'none') {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
-                    }
-                  }}>
-                    <input
-                      type="radio"
-                      name="backend"
-                      value="none"
-                      checked={config.backend === 'none'}
-                      onChange={() => handleBackendChange('none')}
-                      style={{ 
-                        marginRight: '1rem',
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        accentColor: '#2563EB'
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        <span style={{ fontWeight: '700', fontSize: '1.125rem', color: '#111827' }}>
-                          Template-Based (No AI)
-                        </span>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          borderRadius: '9999px',
-                          background: '#DCFCE7',
-                          color: '#166534'
-                        }}>
-                          Always Available
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '1rem', color: '#6B7280', lineHeight: '1.5' }}>
-                        Generate reports using templates without AI assistance.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Model Selection */}
-              {config.backend !== 'none' && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    fontSize: '1.125rem', 
-                    fontWeight: '700', 
-                    color: '#111827',
-                    marginBottom: '1rem'
-                  }}>
-                    Model Selection
-                  </label>
-                  <select
-                    value={config.model_name || 'auto'}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid #E5E7EB',
-                      borderRadius: '0.75rem',
-                      fontSize: '1rem',
-                      background: '#FFFFFF',
-                      color: '#111827',
-                      transition: 'all 200ms ease',
-                      outline: 'none'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#2563EB';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#E5E7EB';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <option value="auto">Auto-detect best model</option>
-                    {availableModels[config.backend].map(model => (
-                      <option key={model} value={model}>
-                        {model}
-                        {config.backend !== 'none' && getRecommendedModels(config.backend).includes(model) && ' (Recommended)'}
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.75rem', fontStyle: 'italic' }}>
-                    {config.model_name 
-                      ? `Using specific model: ${config.model_name}`
-                      : 'Will automatically select the best available model'
-                    }
-                  </div>
-                </div>
-              )}
-
-              {/* Report Style */}
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '1.125rem', 
-                  fontWeight: '700', 
-                  color: '#111827',
-                  marginBottom: '1rem'
-                }}>
-                  Report Style
-                </label>
-                <select
-                  value={config.style}
-                  onChange={(e) => setConfig(prev => ({ ...prev, style: e.target.value as 'clinician' | 'technical' | 'patient' }))}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid #E5E7EB',
-                    borderRadius: '0.75rem',
-                    fontSize: '1rem',
-                    background: '#FFFFFF',
-                    color: '#111827',
-                    transition: 'all 200ms ease',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#2563EB';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <option value="clinician">Clinician (Medical professionals)</option>
-                  <option value="technical">Technical (Researchers/Scientists)</option>
-                  <option value="patient">Patient (General audience)</option>
-                </select>
-              </div>
-
-              {/* Advanced Settings */}
-              {config.backend !== 'none' && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ 
-                    fontSize: '1.125rem', 
-                    fontWeight: '700', 
-                    color: '#111827',
-                    marginBottom: '1rem'
-                  }}>
-                    Advanced Settings
-                  </h3>
-                  
-                  {/* Temperature */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ 
-                      display: 'block', 
-                      fontSize: '1rem', 
-                      fontWeight: '600', 
-                      color: '#111827',
-                      marginBottom: '0.75rem'
-                    }}>
-                      Temperature: {config.temperature}
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={config.temperature}
-                      onChange={(e) => setConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
-                      style={{ 
-                        width: '100%',
-                        height: '0.5rem',
-                        borderRadius: '0.25rem',
-                        background: '#E5E7EB',
-                        outline: 'none',
-                        accentColor: '#2563EB'
-                      }}
-                    />
-                    <div style={{ 
-                      fontSize: '0.875rem', 
-                      color: '#6B7280', 
-                      marginTop: '0.5rem',
-                      fontStyle: 'italic'
-                    }}>
-                      Lower values = more focused, Higher values = more creative
-                    </div>
-                  </div>
-
-                  {/* Max Tokens */}
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ 
-                      display: 'block', 
-                      fontSize: '1rem', 
-                      fontWeight: '600', 
-                      color: '#111827',
-                      marginBottom: '0.75rem'
-                    }}>
-                      Max Tokens
-                    </label>
-                    <input
-                      type="number"
-                      min="500"
-                      max="4000"
-                      value={config.max_tokens}
-                      onChange={(e) => setConfig(prev => ({ ...prev, max_tokens: parseInt(e.target.value) }))}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        border: '2px solid #E5E7EB',
-                        borderRadius: '0.5rem',
-                        fontSize: '1rem',
-                        background: '#FFFFFF',
-                        color: '#111827',
-                        transition: 'all 200ms ease',
-                        outline: 'none'
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = '#2563EB';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = '#E5E7EB';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    />
-                    <div style={{ 
-                      fontSize: '0.875rem', 
-                      color: '#6B7280', 
-                      marginTop: '0.5rem',
-                      fontStyle: 'italic'
-                    }}>
-                      Maximum length of generated reports
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Save Button */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                paddingTop: '1.5rem',
-                borderTop: '2px solid #F3F4F6'
-              }}>
-                {saveMessage && (
-                  <div style={{
-                    padding: '0.75rem 1rem',
-                    borderRadius: '0.5rem',
-                    background: saveMessage.includes('success') ? '#DCFCE7' : '#FEF2F2',
-                    color: saveMessage.includes('success') ? '#166534' : '#991B1B',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
-                    {saveMessage}
-                  </div>
-                )}
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  style={{
-                    padding: '0.75rem 2rem',
-                    background: isSaving ? '#9CA3AF' : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: isSaving ? 'not-allowed' : 'pointer',
-                    transition: 'all 200ms ease',
-                    marginLeft: 'auto',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSaving) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSaving) {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                    }
-                  }}
-                >
-                  {isSaving ? 'Saving...' : 'Save Settings'}
-                </button>
-              </div>
-            </div>
-
-            {/* Help Section */}
-            <div style={{
-              background: 'rgba(249, 250, 251, 0.8)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(229, 231, 235, 0.5)',
-              borderRadius: '1rem',
-              padding: '2rem',
-              marginTop: '2rem'
-            }}>
-              <h3 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: '700', 
-                color: '#111827',
-                marginBottom: '1rem'
-              }}>
-                🚀 Getting Started
-              </h3>
-              <div style={{ fontSize: '1rem', color: '#4B5563', lineHeight: '1.6' }}>
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong style={{ color: '#111827' }}>Ollama:</strong> Install Ollama and pull models like "llama3" or "mistral" for local AI processing.
-                </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong style={{ color: '#111827' }}>Hugging Face:</strong> Requires the transformers library. Models will be downloaded automatically.
-                </div>
-                <div>
-                  <strong style={{ color: '#111827' }}>Template-Based:</strong> Uses pre-defined templates without AI for basic reports.
-                </div>
-              </div>
-            </div>
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#F3F4F6';
+              e.currentTarget.style.color = '#374151';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'none';
+              e.currentTarget.style.color = '#6B7280';
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          
+          <div style={{
+            background: '#DBEAFE',
+            color: '#2563EB',
+            padding: '4px 12px',
+            borderRadius: '16px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            AI Model Configuration
           </div>
         </div>
-      </section>
-    </Layout>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Page Title */}
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{
+            fontSize: '32px',
+            fontWeight: '700',
+            color: '#111827',
+            marginBottom: '8px'
+          }}>
+            Settings
+          </h1>
+          <p style={{
+            fontSize: '16px',
+            color: '#6B7280',
+            lineHeight: '1.5'
+          }}>
+            Configure your preferred AI model for generating genomic reports.
+          </p>
+        </div>
+
+        {/* Settings Card */}
+        <div style={{
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden'
+        }}>
+          
+          {/* AI Backend Section */}
+          <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+            <h2 style={{ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#111827',
+              marginBottom: '16px'
+            }}>
+              AI Backend
+            </h2>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Ollama Option */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '16px',
+                border: `2px solid ${config.backend === 'ollama' ? '#2563EB' : '#E5E7EB'}`,
+                borderRadius: '8px',
+                background: config.backend === 'ollama' ? '#F0F9FF' : '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 200ms ease'
+              }}
+              onClick={() => handleBackendChange('ollama')}
+              onMouseEnter={(e) => {
+                if (config.backend !== 'ollama') {
+                  e.currentTarget.style.borderColor = '#D1D5DB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (config.backend !== 'ollama') {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                }
+              }}>
+                <input
+                  type="radio"
+                  name="backend"
+                  value="ollama"
+                  checked={config.backend === 'ollama'}
+                  onChange={() => handleBackendChange('ollama')}
+                  style={{ 
+                    marginRight: '12px',
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#2563EB'
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                      Ollama (Local)
+                    </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      borderRadius: '12px',
+                      background: backendStatus.ollama ? '#DCFCE7' : '#FEF2F2',
+                      color: backendStatus.ollama ? '#166534' : '#991B1B'
+                    }}>
+                      {backendStatus.ollama ? 'Available' : 'Not Available'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
+                    Run models locally with Ollama. Recommended for privacy and performance.
+                  </div>
+                </div>
+              </div>
+
+              {/* Hugging Face Option */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '16px',
+                border: `2px solid ${config.backend === 'huggingface' ? '#2563EB' : '#E5E7EB'}`,
+                borderRadius: '8px',
+                background: config.backend === 'huggingface' ? '#F0F9FF' : '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 200ms ease'
+              }}
+              onClick={() => handleBackendChange('huggingface')}
+              onMouseEnter={(e) => {
+                if (config.backend !== 'huggingface') {
+                  e.currentTarget.style.borderColor = '#D1D5DB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (config.backend !== 'huggingface') {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                }
+              }}>
+                <input
+                  type="radio"
+                  name="backend"
+                  value="huggingface"
+                  checked={config.backend === 'huggingface'}
+                  onChange={() => handleBackendChange('huggingface')}
+                  style={{ 
+                    marginRight: '12px',
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#2563EB'
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                      Hugging Face Transformers
+                    </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      borderRadius: '12px',
+                      background: backendStatus.huggingface ? '#DCFCE7' : '#FEF2F2',
+                      color: backendStatus.huggingface ? '#166534' : '#991B1B'
+                    }}>
+                      {backendStatus.huggingface ? 'Available' : 'Not Available'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
+                    Use Hugging Face models directly. Requires transformers library.
+                  </div>
+                </div>
+              </div>
+
+              {/* Template-Based Option */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '16px',
+                border: `2px solid ${config.backend === 'none' ? '#2563EB' : '#E5E7EB'}`,
+                borderRadius: '8px',
+                background: config.backend === 'none' ? '#F0F9FF' : '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 200ms ease'
+              }}
+              onClick={() => handleBackendChange('none')}
+              onMouseEnter={(e) => {
+                if (config.backend !== 'none') {
+                  e.currentTarget.style.borderColor = '#D1D5DB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (config.backend !== 'none') {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                }
+              }}>
+                <input
+                  type="radio"
+                  name="backend"
+                  value="none"
+                  checked={config.backend === 'none'}
+                  onChange={() => handleBackendChange('none')}
+                  style={{ 
+                    marginRight: '12px',
+                    width: '16px',
+                    height: '16px',
+                    accentColor: '#2563EB'
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    marginBottom: '4px'
+                  }}>
+                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                      Template-Based (No AI)
+                    </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      borderRadius: '12px',
+                      background: '#DCFCE7',
+                      color: '#166534'
+                    }}>
+                      Always Available
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
+                    Generate reports using templates without AI assistance.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Model Selection */}
+          {config.backend !== 'none' && (
+            <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: '#111827',
+                marginBottom: '8px'
+              }}>
+                Model Selection
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
+                Choose which specific model to use for report generation.
+              </p>
+              
+              <CustomDropdown
+                value={config.model_name || 'auto'}
+                onChange={handleModelChange}
+                options={getModelOptions()}
+                placeholder="Select a model"
+                disabled={!backendStatus[config.backend]}
+              />
+              
+              <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
+                {config.model_name 
+                  ? `Using specific model: ${config.model_name}`
+                  : 'Will automatically select the best available model'
+                }
+              </div>
+            </div>
+          )}
+
+          {/* Report Style */}
+          <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+            <h2 style={{ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#111827',
+              marginBottom: '8px'
+            }}>
+              Report Style
+            </h2>
+            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
+              Choose the writing style and target audience for your reports.
+            </p>
+            
+            <CustomDropdown
+              value={config.style}
+              onChange={(value) => setConfig(prev => ({ ...prev, style: value as 'clinician' | 'technical' | 'patient' }))}
+              options={getStyleOptions()}
+              placeholder="Select report style"
+            />
+          </div>
+
+          {/* Advanced Settings */}
+          {config.backend !== 'none' && (
+            <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: '#111827',
+                marginBottom: '8px'
+              }}>
+                Advanced Settings
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px' }}>
+                Fine-tune the AI model parameters for optimal results.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                {/* Temperature */}
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#111827',
+                    marginBottom: '8px'
+                  }}>
+                    Temperature: {config.temperature}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={config.temperature}
+                    onChange={(e) => setConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                    style={{ 
+                      width: '100%',
+                      height: '6px',
+                      borderRadius: '3px',
+                      background: '#E5E7EB',
+                      outline: 'none',
+                      accentColor: '#2563EB'
+                    }}
+                  />
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6B7280', 
+                    marginTop: '4px'
+                  }}>
+                    Lower = more focused, Higher = more creative
+                  </div>
+                </div>
+
+                {/* Max Tokens */}
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#111827',
+                    marginBottom: '8px'
+                  }}>
+                    Max Tokens: {config.max_tokens}
+                  </label>
+                  <input
+                    type="range"
+                    min="500"
+                    max="4000"
+                    step="100"
+                    value={config.max_tokens}
+                    onChange={(e) => setConfig(prev => ({ ...prev, max_tokens: parseInt(e.target.value) }))}
+                    style={{ 
+                      width: '100%',
+                      height: '6px',
+                      borderRadius: '3px',
+                      background: '#E5E7EB',
+                      outline: 'none',
+                      accentColor: '#2563EB'
+                    }}
+                  />
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6B7280', 
+                    marginTop: '4px'
+                  }}>
+                    Maximum length of generated text
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Save Section */}
+          <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              {saveMessage && (
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  background: saveMessage.includes('successfully') ? '#DCFCE7' : '#FEF2F2',
+                  color: saveMessage.includes('successfully') ? '#166534' : '#991B1B'
+                }}>
+                  {saveMessage}
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              style={{
+                background: isSaving ? '#9CA3AF' : '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                transition: 'all 200ms ease',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (!isSaving) {
+                  e.currentTarget.style.background = '#1D4ED8';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSaving) {
+                  e.currentTarget.style.background = '#2563EB';
+                }
+              }}
+            >
+              {isSaving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

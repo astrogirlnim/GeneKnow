@@ -1,16 +1,16 @@
 report_generator:
   backend: ollama
   dev_mode_indicator: NON-LLM MODE
+  enable_parallel_generation: true
   enable_streaming: true
   fallback_mode_indicator: Generated without LLM assistance
   include_glossary: true
   include_technical_appendix: true
+  max_parallel_workers: 5
   max_tokens: 2000
-  model_name: null
+  model_name: llama3.1:8b
   output_formats:
   - markdown
   risk_threshold: 5.0
   style: clinician
   temperature: 0.3
-  enable_parallel_generation: true
-  max_parallel_workers: 3
