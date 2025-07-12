@@ -181,45 +181,29 @@ This distribution aligns with population genetics expectations where most indivi
 
 #### Training Visualizations & Analysis
 
-Our comprehensive training analysis includes multiple visualizations that demonstrate model performance, feature behavior, and clinical applicability. Each visualization is available in the `ml_models/` folder:
+Our comprehensive training analysis includes multiple visualizations that demonstrate model performance, feature behavior, and clinical applicability. Each visualization is detailed below with embedded figures:
 
-**1. Training Results Analysis (`training_results.png`, `training_results_FIXED.png`)**
-Multi-panel visualization comparing model architectures across key metrics:
-- **MSE Comparison**: Gradient Boosting achieves lowest validation error (0.0072)
-- **R² Performance**: Explains 43% of variance in cancer risk prediction
-- **Accuracy Analysis**: 57% raw accuracy reflects realistic genomic prediction challenges
-- **AUC Comparison**: 0.76 AUC demonstrates strong discriminative ability comparable to established tools
-- **Feature Importance Ranking**: Consistent ClinVar dominance across model types
+> **Note:** The following figures are stored using Git LFS (Large File Storage). Ensure Git LFS is properly installed and configured to view the embedded images. If images do not display, run `git lfs pull` to download the binary files.
 
-**2. Performance Analysis (`performance_analysis.png`)**
-Comprehensive assessment of model capabilities and limitations:
-- **ROC Curve Analysis**: Shows discriminative ability with AUC=0.76, significantly above random baseline (0.50)
-- **Class Distribution**: Explains why 57% accuracy is misleading - 41% of variants are inherently "Uncertain"
-- **Threshold Sensitivity**: Demonstrates tunable performance from 60-90% sensitivity for different clinical applications
-- **Benchmark Comparison**: Performance context against CADD (0.80), PolyPhen-2 (0.75), and random classification
+**Figure 1: Training Results Analysis**
+![Training Results Analysis](../../geneknow_pipeline/ml_models/training_results_FIXED.png)
+*Figure 1: Multi-panel visualization comparing model architectures across key performance metrics. The analysis shows Gradient Boosting achieving the lowest validation error (MSE: 0.0072), highest R² performance (0.43), and consistent feature importance patterns. AUC comparison demonstrates strong discriminative ability (0.76) comparable to established genomic tools like CADD (0.80) and PolyPhen-2 (0.75). Feature importance ranking shows consistent ClinVar dominance across all model types, validating the clinical significance-driven approach.*
 
-**3. Real Data Performance Analysis (`real_data_performance_analysis.png`)**
-Validation results on actual genomic datasets:
-- **Production Metrics**: Real-world validation showing consistent performance with synthetic training
-- **Clinical Validation**: Demonstrates generalizability to diverse patient populations
-- **Bias Detection**: Analysis showing minimal performance degradation across demographic groups
-- **Confidence Calibration**: Prediction confidence correlates well with actual accuracy
+**Figure 2: Performance Analysis** 
+![Performance Analysis](../../geneknow_pipeline/ml_models/performance_analysis.png)
+*Figure 2: Comprehensive assessment of model capabilities and clinical limitations. ROC curve analysis demonstrates discriminative ability with AUC=0.76, significantly above random baseline (0.50). Class distribution analysis explains why 57% raw accuracy reflects realistic genomic prediction challenges, with 41% of variants classified as "Uncertain" in clinical databases. Threshold sensitivity analysis demonstrates tunable performance from 60-90% sensitivity for different clinical applications. Benchmark comparison provides performance context against established tools: CADD (0.80), PolyPhen-2 (0.75), and random classification baseline.*
 
-**4. Static Model Analysis (`static_model_analysis.png`)**
-Feature distribution analysis showing input characteristics:
-- **PRS Score Distribution**: Beta distribution reflecting population genetic risk patterns
-- **CADD Score Analysis**: Exponential distribution showing rare high-impact variants
-- **TCGA Enrichment**: Log-normal distribution characteristic of cancer mutation patterns
-- **Gene Burden Distribution**: Poisson-like pattern consistent with pathway disruption expectations
-- **Risk Score Output**: Realistic population stratification with majority low-risk, small high-risk subset
+**Figure 3: Real Data Performance Analysis**
+![Real Data Performance Analysis](../../geneknow_pipeline/ml_models/real_data_performance_analysis.png)
+*Figure 3: Validation results on actual genomic datasets demonstrating real-world applicability. Production metrics show consistent performance between synthetic training and real clinical data, validating model generalizability. Clinical validation demonstrates robust performance across diverse patient populations without significant demographic bias. Bias detection analysis shows minimal performance degradation across different population groups. Confidence calibration analysis confirms that prediction confidence scores correlate well with actual prediction accuracy, enabling clinical interpretation of result reliability.*
 
-**5. ClinVar Explanation (`clinvar_explanation.png`)**
-Clinical significance classification breakdown:
-- **Pathogenic (26%)**: Known disease-causing variants with strong clinical evidence
-- **Benign (32%)**: Confirmed non-pathogenic variants providing negative evidence
-- **Uncertain (41%)**: Variants of uncertain significance requiring additional evidence
-- **Not Found (1%)**: Novel variants absent from clinical databases
-- **Clinical Impact**: Explains why ClinVar annotations dominate feature importance (76.7% combined)
+**Figure 4: Static Model Analysis**
+![Static Model Analysis](../../geneknow_pipeline/ml_models/static_model_analysis.png)  
+*Figure 4: Feature distribution analysis showing input characteristics and population patterns. PRS score distribution follows beta distribution patterns reflecting population genetic risk stratification. CADD score analysis shows exponential distribution characteristic of rare high-impact variants. TCGA enrichment displays log-normal distribution typical of cancer mutation frequency patterns. Gene burden distribution exhibits Poisson-like pattern consistent with pathway disruption expectations. Risk score output demonstrates realistic population stratification with majority low-risk individuals and small high-risk subset, aligning with cancer epidemiology.*
+
+**Figure 5: ClinVar Clinical Significance Breakdown**
+![ClinVar Explanation](../../geneknow_pipeline/ml_models/clinvar_explanation.png)
+*Figure 5: Clinical significance classification breakdown explaining feature importance patterns. Distribution shows Pathogenic variants (26%) with strong clinical evidence for disease causation, Benign variants (32%) providing negative evidence, Variants of Uncertain Significance (41%) requiring additional evidence, and Novel variants (1%) absent from clinical databases. This distribution explains why ClinVar annotations dominate feature importance (76.7% combined), validating evidence-based medicine principles. The large proportion of uncertain variants highlights the clinical challenge of genomic interpretation and the value of ensemble approaches.*
 
 **Key Training Insights from Visualizations:**
 - **ClinVar Dominance**: Clinical significance annotations provide the strongest signal, validating evidence-based medicine principles
