@@ -852,7 +852,7 @@ const SmartTooltip = ({ content, isVisible, triggerRef }: {
   useEffect(() => {
     if (isVisible && triggerRef?.current && tooltipRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect();
-      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      // const tooltipRect = tooltipRef.current.getBoundingClientRect(); // Removed: unused variable
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       
@@ -979,44 +979,7 @@ const SmartTooltip = ({ content, isVisible, triggerRef }: {
   );
 };
 
-// Legacy SectionTooltip component for backward compatibility
-const SectionTooltip = ({ content, isVisible }: { content: string; isVisible: boolean }) => (
-  <div style={{
-    position: 'absolute',
-    left: 'calc(100% + 0.5rem)', // Position to the right of the icon
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '18rem',
-    padding: '0.75rem',
-    background: '#1F2937',
-    color: '#FFFFFF',
-    fontSize: '0.75rem',
-    borderRadius: '0.5rem',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-    opacity: isVisible ? 1 : 0,
-    visibility: isVisible ? 'visible' : 'hidden',
-    transition: 'opacity 300ms ease, visibility 300ms ease',
-    zIndex: 1000,
-    pointerEvents: 'none',
-    lineHeight: '1.4',
-    border: '1px solid #374151'
-  }}>
-    <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{content}</p>
-    
-    {/* Tooltip arrow pointing to the left towards the "i" icon */}
-    <div style={{
-      position: 'absolute',
-      left: '-0.5rem',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      width: '0',
-      height: '0',
-      borderTop: '0.5rem solid transparent',
-      borderBottom: '0.5rem solid transparent',
-      borderRight: '0.5rem solid #1F2937'
-    }}></div>
-  </div>
-);
+// Legacy SectionTooltip component removed - was unused
 
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
@@ -1704,7 +1667,7 @@ const ClinicalViewPage: React.FC = () => {
                         {variant.gene}
                       </text>
                       <text x={x} y={y + 25} fill="#4B5563" fontSize="10" textAnchor="middle">
-                        {variant.tcga_best_match.cancer_type}
+                        {(variant.tcga_best_match as { cancer_type?: string })?.cancer_type || 'Unknown'}
                       </text>
                     </g>
                   );
