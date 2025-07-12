@@ -501,11 +501,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "validation_status": validation_structure["validation_ready"],
         }
 
+        # Add to completed nodes
+        completed = state.get("completed_nodes", [])
+        if "metrics_calculator" not in completed:
+            completed.append("metrics_calculator")
+
         # Return only the keys this node updates
         return {
             "metrics": metrics,
             "metrics_calculated": True,
             "metrics_summary": metrics_summary,
+            "completed_nodes": completed,
         }
 
     except Exception as e:

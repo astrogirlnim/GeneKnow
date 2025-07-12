@@ -1,51 +1,63 @@
 {
-  "file_path": "test_minimal.vcf",
-  "file_type": "vcf",
+  "file_path": "test_minimal.vc",
+  "file_type": null,
   "file_metadata": {
-    "format": "VCF",
-    "file_size_mb": 0.0001468658447265625,
-    "qc_stats": {
-      "total_variants": 2,
-      "passed_qc": 0,
-      "failed_qc": 2,
-      "filter_rate_percent": 100.0,
-      "thresholds": {
-        "qual": 30.0,
-        "depth": 10,
-        "allele_freq": 0.01
-      }
+    "tcga_summary": {
+      "variants_matched": 0,
+      "total_variants": 0,
+      "match_rate": 0,
+      "cancer_types_analyzed": [
+        "breast",
+        "colon",
+        "lung",
+        "prostate",
+        "blood"
+      ],
+      "cohort_sizes": {
+        "breast": 1084,
+        "colon": 461,
+        "lung": 585,
+        "prostate": 498,
+        "blood": 200
+      },
+      "highly_enriched_variants": 0
+    },
+    "clinvar_summary": {
+      "total_variants": 0,
+      "variants_annotated": 0,
+      "annotation_rate": 0,
+      "pathogenic_variants": 0,
+      "likely_pathogenic_variants": 0,
+      "benign_variants": 0,
+      "vus_variants": 0,
+      "drug_response_variants": 0,
+      "risk_factor_variants": 0,
+      "high_risk_variants": 0,
+      "cancer_related_variants": 0
+    },
+    "cadd_summary": {
+      "job_id": "cadd_offline_20250712_095925",
+      "total_variants": 0,
+      "variants_scored": 0,
+      "variants_in_cancer_genes": 0,
+      "mean_phred": 0.0,
+      "max_phred": 0.0,
+      "variants_gt20": 0,
+      "scoring_method": "offline_algorithm"
+    },
+    "pathway_burden_summary": {
+      "overall_burden_score": 0.0,
+      "high_burden_pathways": [],
+      "moderate_burden_pathways": [],
+      "primary_concern": null,
+      "total_damaging_variants": 0,
+      "total_variants": 0,
+      "pathways_analyzed": 10,
+      "multi_pathway_genes": {},
+      "pathway_crosstalk": false
     }
   },
-  "raw_variants": [
-    {
-      "chrom": "17",
-      "pos": 43044295,
-      "ref": "G",
-      "alt": "A",
-      "qual": 100,
-      "filter": [],
-      "info": {
-        "GENE": [
-          "BRCA1"
-        ]
-      },
-      "variant_id": "17:43044295:G>A"
-    },
-    {
-      "chrom": "13",
-      "pos": 32914437,
-      "ref": "G",
-      "alt": "A",
-      "qual": 100,
-      "filter": [],
-      "info": {
-        "GENE": [
-          "BRCA2"
-        ]
-      },
-      "variant_id": "13:32914437:G>A"
-    }
-  ],
+  "raw_variants": [],
   "filtered_variants": [],
   "variant_count": 0,
   "tcga_matches": {
@@ -84,7 +96,7 @@
   },
   "cadd_enriched_variants": [],
   "cadd_stats": {
-    "job_id": "cadd_offline_20250710_155624",
+    "job_id": "cadd_offline_20250712_095925",
     "total_variants": 0,
     "variants_scored": 0,
     "variants_in_cancer_genes": 0,
@@ -107,10 +119,6 @@
     "high_risk_variants": 0,
     "cancer_related_variants": 0
   },
-  "clinvar_pathogenic_variants": [],
-  "clinvar_likely_pathogenic_variants": [],
-  "clinvar_benign_variants": [],
-  "clinvar_vus_variants": [],
   "prs_results": {
     "BRCA": {
       "cancer_type": "BRCA",
@@ -204,83 +212,587 @@
       "Low SNP coverage for PANCA PRS (0.0%)"
     ]
   },
-  "risk_scores": {
-    "breast": 3.0,
-    "colon": 1.7,
-    "lung": 2.4,
-    "prostate": 2.9,
-    "blood": 1.7,
-    "bone": 1.9
+  "pathway_burden_results": {
+    "dna_repair": {
+      "pathway_name": "dna_repair",
+      "description": "DNA damage response and homologous recombination",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 13,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.2,
+      "cancer_relevance": 0.9
+    },
+    "mismatch_repair": {
+      "pathway_name": "mismatch_repair",
+      "description": "DNA mismatch repair pathway",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 6,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.3,
+      "cancer_relevance": 0.95
+    },
+    "tumor_suppressors": {
+      "pathway_name": "tumor_suppressors",
+      "description": "Classical tumor suppressor genes",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 10,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.3,
+      "cancer_relevance": 0.95
+    },
+    "oncogenes": {
+      "pathway_name": "oncogenes",
+      "description": "Activated oncogenes",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 12,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.85
+    },
+    "cell_cycle": {
+      "pathway_name": "cell_cycle",
+      "description": "Cell cycle regulation",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.8
+    },
+    "chromatin_remodeling": {
+      "pathway_name": "chromatin_remodeling",
+      "description": "Chromatin modification and remodeling",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.75
+    },
+    "apoptosis": {
+      "pathway_name": "apoptosis",
+      "description": "Programmed cell death pathway",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 10,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.8
+    },
+    "wnt_signaling": {
+      "pathway_name": "wnt_signaling",
+      "description": "Wnt/beta-catenin signaling",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 0.9,
+      "cancer_relevance": 0.7
+    },
+    "pi3k_akt": {
+      "pathway_name": "pi3k_akt",
+      "description": "PI3K/AKT/mTOR signaling pathway",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.0,
+      "cancer_relevance": 0.8
+    },
+    "ras_mapk": {
+      "pathway_name": "ras_mapk",
+      "description": "RAS/MAPK signaling pathway",
+      "total_variants": 0,
+      "damaging_variants": 0,
+      "burden_score": 0.0,
+      "raw_burden": 0.0,
+      "risk_level": "minimal",
+      "genes_in_pathway": 9,
+      "genes_with_variants": 0,
+      "genes_with_damaging": 0,
+      "contributing_genes": [],
+      "damaging_genes": [],
+      "multi_hit_genes": [],
+      "top_variant": null,
+      "gene_variant_counts": {},
+      "gene_damaging_counts": {},
+      "pathway_weight": 1.1,
+      "cancer_relevance": 0.85
+    }
   },
-  "risk_genes": {
-    "breast": [],
-    "colon": [],
-    "lung": [],
-    "prostate": [],
-    "blood": [],
-    "bone": []
+  "pathway_burden_summary": {
+    "overall_burden_score": 0.0,
+    "high_burden_pathways": [],
+    "moderate_burden_pathways": [],
+    "primary_concern": null,
+    "total_damaging_variants": 0,
+    "total_variants": 0,
+    "pathways_analyzed": 10,
+    "multi_pathway_genes": {},
+    "pathway_crosstalk": false
+  },
+  "pathway_enriched_variants": [],
+  "ml_ready_variants": [],
+  "ml_fusion_results": {
+    "error": "No static model inputs",
+    "aggregate_risk_score": 0.0,
+    "risk_category": "unknown"
+  },
+  "ml_fusion_model_instance": null,
+  "ml_fusion_feature_matrix": null,
+  "shap_validation_status": "SKIPPED",
+  "shap_validation_reasons": [
+    "ML fusion model or features not available"
+  ],
+  "shap_top_contributors": [],
+  "shap_feature_importance": {},
+  "shap_validation_details": {},
+  "classified_variants": [],
+  "mutation_type_distribution": null,
+  "mutational_signatures": [
+    {
+      "signature": "SBS1",
+      "name": "Spontaneous deamination",
+      "contribution": 1.0,
+      "description": "C>T transitions at CpG sites",
+      "etiology": "Aging-related mutations"
+    }
+  ],
+  "mutational_signatures_summary": {
+    "total_signatures": 1,
+    "dominant_signature": {
+      "signature": "SBS1",
+      "name": "Spontaneous deamination",
+      "contribution": 1.0,
+      "description": "C>T transitions at CpG sites",
+      "etiology": "Aging-related mutations"
+    },
+    "pattern_weights": {}
+  },
+  "variant_details": [],
+  "variant_transformation_summary": {
+    "total_variants": 0,
+    "nonsense_mutations": 0,
+    "charge_changes": 0,
+    "conservative_changes": 0
+  },
+  "structural_variants": [],
+  "structural_variant_summary": {
+    "total_svs": 0,
+    "deletions": 0,
+    "duplications": 0,
+    "translocations": 0,
+    "pathogenic_svs": 0,
+    "gene_fusions": []
+  },
+  "copy_number_variants": [
+    {
+      "gene": "AR",
+      "chromosome": "chrX",
+      "start": 66763000,
+      "end": 66950000,
+      "size": 187000,
+      "copy_number": 5,
+      "normal_copy_number": 2,
+      "fold_change": 2.5,
+      "depth_ratio": 2.524126854610976,
+      "genes_affected": [
+        "AR"
+      ],
+      "evidence": "depth_analysis",
+      "cancer_relevance": "AR amplification in prostate cancer",
+      "therapeutic_relevance": "Androgen deprivation therapy resistance",
+      "cancer_type": "prostate",
+      "clinical_significance": "likely_pathogenic",
+      "type": "amplification"
+    },
+    {
+      "gene": "CDKN2A",
+      "chromosome": "chr9",
+      "start": 21967000,
+      "end": 21995000,
+      "size": 28000,
+      "copy_number": 1,
+      "normal_copy_number": 2,
+      "fold_change": 0.5,
+      "depth_ratio": 0.506184768933029,
+      "genes_affected": [
+        "CDKN2A"
+      ],
+      "evidence": "depth_analysis",
+      "cancer_relevance": "CDKN2A deletion in melanoma",
+      "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
+      "cancer_type": "melanoma",
+      "clinical_significance": "likely_pathogenic",
+      "type": "heterozygous_deletion"
+    }
+  ],
+  "cnv_summary": {
+    "total_cnvs": 2,
+    "amplifications": 1,
+    "deletions": 1,
+    "pathogenic_cnvs": 2,
+    "cancer_associated": 2,
+    "therapeutic_targets": [
+      "AR",
+      "CDKN2A"
+    ]
+  },
+  "genomic_alterations": {
+    "structural_variants": [],
+    "copy_number_variants": [
+      {
+        "gene": "AR",
+        "chromosome": "chrX",
+        "start": 66763000,
+        "end": 66950000,
+        "size": 187000,
+        "copy_number": 5,
+        "normal_copy_number": 2,
+        "fold_change": 2.5,
+        "depth_ratio": 2.524126854610976,
+        "genes_affected": [
+          "AR"
+        ],
+        "evidence": "depth_analysis",
+        "cancer_relevance": "AR amplification in prostate cancer",
+        "therapeutic_relevance": "Androgen deprivation therapy resistance",
+        "cancer_type": "prostate",
+        "clinical_significance": "likely_pathogenic",
+        "type": "amplification"
+      },
+      {
+        "gene": "CDKN2A",
+        "chromosome": "chr9",
+        "start": 21967000,
+        "end": 21995000,
+        "size": 28000,
+        "copy_number": 1,
+        "normal_copy_number": 2,
+        "fold_change": 0.5,
+        "depth_ratio": 0.506184768933029,
+        "genes_affected": [
+          "CDKN2A"
+        ],
+        "evidence": "depth_analysis",
+        "cancer_relevance": "CDKN2A deletion in melanoma",
+        "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
+        "cancer_type": "melanoma",
+        "clinical_significance": "likely_pathogenic",
+        "type": "heterozygous_deletion"
+      }
+    ],
+    "total_alterations": 2
+  },
+  "pathway_analysis": null,
+  "survival_analysis": {
+    "survival_curves": {},
+    "prognostic_factors": {
+      "positive_prognostic_factors": [],
+      "negative_prognostic_factors": [],
+      "factor_summary": {
+        "positive_count": 0,
+        "negative_count": 0,
+        "overall_prognosis": "unfavorable"
+      }
+    },
+    "clinical_interpretation": {
+      "mutations_analyzed": 0,
+      "pathways_analyzed": 0,
+      "recommendation": "Standard surveillance recommended"
+    },
+    "methodology_note": "Survival estimates based on genomic features and published hazard ratios"
+  },
+  "clinical_recommendations": {
+    "screening_recommendations": [],
+    "targeted_therapy_options": [],
+    "prevention_strategies": {
+      "lifestyle_modifications": [
+        "Maintain healthy weight (BMI 18.5-24.9)",
+        "Regular physical activity (150 min/week moderate intensity)",
+        "Limit alcohol consumption",
+        "Avoid tobacco products",
+        "Healthy diet rich in fruits and vegetables",
+        "Limit processed meat consumption",
+        "Sun protection measures"
+      ],
+      "chemoprevention_options": [],
+      "surgical_options": []
+    },
+    "clinical_trial_eligibility": [],
+    "monitoring_plan": {
+      "biomarkers": [],
+      "imaging": [],
+      "clinical_assessments": [
+        {
+          "assessment": "Genetic counseling",
+          "frequency": "Initial consultation recommended",
+          "indication": "Hereditary cancer risk assessment"
+        },
+        {
+          "assessment": "Annual cancer risk assessment",
+          "frequency": "Yearly",
+          "indication": "Update risk profile and screening plan"
+        }
+      ]
+    },
+    "summary": {
+      "high_risk_cancers": [],
+      "actionable_variants": 0,
+      "priority_actions": [],
+      "follow_up_timeline": {
+        "immediate": [
+          "Genetic counseling consultation"
+        ],
+        "short_term": [],
+        "medium_term": [
+          "Establish care team and monitoring plan"
+        ],
+        "long_term": [
+          "Annual risk reassessment"
+        ]
+      }
+    }
+  },
+  "risk_scores": {},
+  "risk_genes": {},
+  "risk_details": {},
+  "ml_risk_assessment": {},
+  "metrics": {
+    "timestamp": "2025-07-12T09:59:25.126133",
+    "pipeline_version": "1.0.0",
+    "confidence_metrics": {},
+    "variant_metrics": {
+      "total_variants": 0,
+      "pathogenic_variants": 0,
+      "benign_variants": 0,
+      "uncertain_variants": 0,
+      "pathogenic_ratio": 0,
+      "genes_affected": 0,
+      "cancer_genes_affected": 0,
+      "high_impact_genes": 0
+    },
+    "prediction_metrics": {},
+    "validation_structure": {
+      "validation_ready": false,
+      "ground_truth_available": false,
+      "metrics_placeholder": {
+        "auc_roc": null,
+        "sensitivity": null,
+        "specificity": null,
+        "f1_score": null,
+        "matthews_corrcoe": null,
+        "balanced_accuracy": null,
+        "mae": null,
+        "rmse": null,
+        "r2_score": null,
+        "concordance_rate": null,
+        "cohen_kappa": null,
+        "c_index": null,
+        "log_rank_p": null
+      },
+      "validation_note": "These metrics require ground truth labels or TCGA validation data"
+    },
+    "integration_metrics": {
+      "prs_confidence": "low",
+      "prs_high_risk_cancers": [],
+      "pathway_burden_score": 0.0,
+      "high_burden_pathways": []
+    },
+    "performance_indicators": {
+      "mean_confidence": 0.0,
+      "mean_risk_score": 0.0,
+      "high_confidence_ratio": 0.0,
+      "variant_quality_score": 0.0
+    }
+  },
+  "metrics_calculated": true,
+  "metrics_summary": {
+    "key_findings": {
+      "highest_risk_cancer": null,
+      "highest_risk_score": 0,
+      "pathogenic_variant_count": 0,
+      "confidence_level": "moderate"
+    },
+    "quality_indicators": {
+      "mean_confidence": 0.0,
+      "mean_risk_score": 0.0,
+      "high_confidence_ratio": 0.0,
+      "variant_quality_score": 0.0
+    },
+    "validation_status": false
   },
   "structured_json": {
     "report_metadata": {
       "pipeline_version": "1.0.0",
-      "processing_time_seconds": 0.006222,
-      "generated_at": "2025-07-10T15:56:24.155608",
+      "processing_time_seconds": 0.01046,
+      "generated_at": "2025-07-12T09:59:25.126840",
       "language": "en"
     },
     "patient_data": {
-      "file_type": "vcf",
+      "file_type": null,
       "file_metadata": {
-        "format": "VCF",
-        "file_size_mb": 0.0001468658447265625,
-        "qc_stats": {
-          "total_variants": 2,
-          "passed_qc": 0,
-          "failed_qc": 2,
-          "filter_rate_percent": 100.0,
-          "thresholds": {
-            "qual": 30.0,
-            "depth": 10,
-            "allele_freq": 0.01
-          }
+        "tcga_summary": {
+          "variants_matched": 0,
+          "total_variants": 0,
+          "match_rate": 0,
+          "cancer_types_analyzed": [
+            "breast",
+            "colon",
+            "lung",
+            "prostate",
+            "blood"
+          ],
+          "cohort_sizes": {
+            "breast": 1084,
+            "colon": 461,
+            "lung": 585,
+            "prostate": 498,
+            "blood": 200
+          },
+          "highly_enriched_variants": 0
+        },
+        "clinvar_summary": {
+          "total_variants": 0,
+          "variants_annotated": 0,
+          "annotation_rate": 0,
+          "pathogenic_variants": 0,
+          "likely_pathogenic_variants": 0,
+          "benign_variants": 0,
+          "vus_variants": 0,
+          "drug_response_variants": 0,
+          "risk_factor_variants": 0,
+          "high_risk_variants": 0,
+          "cancer_related_variants": 0
+        },
+        "cadd_summary": {
+          "job_id": "cadd_offline_20250712_095925",
+          "total_variants": 0,
+          "variants_scored": 0,
+          "variants_in_cancer_genes": 0,
+          "mean_phred": 0.0,
+          "max_phred": 0.0,
+          "variants_gt20": 0,
+          "scoring_method": "offline_algorithm"
+        },
+        "pathway_burden_summary": {
+          "overall_burden_score": 0.0,
+          "high_burden_pathways": [],
+          "moderate_burden_pathways": [],
+          "primary_concern": null,
+          "total_damaging_variants": 0,
+          "total_variants": 0,
+          "pathways_analyzed": 10,
+          "multi_pathway_genes": {},
+          "pathway_crosstalk": false
         }
       }
     },
     "summary": {
-      "total_variants_found": 0,
-      "variants_passed_qc": 0,
-      "high_risk_findings": 0
+      "total_pathways_disrupted": 0,
+      "highly_disrupted_pathways": 0,
+      "total_genes_affected": 0,
+      "pathway_interaction_count": 0,
+      "overall_burden_score": 0.0,
+      "high_burden_pathways": []
     },
-    "risk_assessment": {
-      "scores": {
-        "breast": 3.0,
-        "colon": 1.7,
-        "lung": 2.4,
-        "prostate": 2.9,
-        "blood": 1.7,
-        "bone": 1.9
-      },
-      "high_risk_findings": [],
-      "risk_genes": {
-        "breast": [],
-        "colon": [],
-        "lung": [],
-        "prostate": [],
-        "blood": [],
-        "bone": []
-      }
-    },
+    "risk_assessment": null,
     "variant_details": [],
-    "quality_control": {
-      "total_variants": 2,
-      "passed_qc": 0,
-      "failed_qc": 2,
-      "filter_rate_percent": 100.0,
-      "thresholds": {
-        "qual": 30.0,
-        "depth": 10,
-        "allele_freq": 0.01
-      }
-    },
+    "quality_control": {},
     "tcga_summary": {
       "cancer_types_analyzed": [
         "breast",
@@ -305,32 +817,286 @@
       "high_impact_variants": 0,
       "cancer_gene_variants": 0
     },
-    "warnings": [
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
-      "CADD scoring did not complete successfully",
-      "ClinVar annotation did not complete successfully",
-      "Pathway burden analysis did not complete successfully",
+    "shap_validation": {
+      "status": "SKIPPED",
+      "reasons": [
+        "ML fusion model or features not available"
+      ],
+      "top_contributors": [],
+      "feature_importance": {},
+      "details": {}
+    },
+    "metrics": {
+      "timestamp": "2025-07-12T09:59:25.126133",
+      "pipeline_version": "1.0.0",
+      "confidence_metrics": {},
+      "variant_metrics": {
+        "total_variants": 0,
+        "pathogenic_variants": 0,
+        "benign_variants": 0,
+        "uncertain_variants": 0,
+        "pathogenic_ratio": 0,
+        "genes_affected": 0,
+        "cancer_genes_affected": 0,
+        "high_impact_genes": 0
+      },
+      "prediction_metrics": {},
+      "validation_structure": {
+        "validation_ready": false,
+        "ground_truth_available": false,
+        "metrics_placeholder": {
+          "auc_roc": null,
+          "sensitivity": null,
+          "specificity": null,
+          "f1_score": null,
+          "matthews_corrcoe": null,
+          "balanced_accuracy": null,
+          "mae": null,
+          "rmse": null,
+          "r2_score": null,
+          "concordance_rate": null,
+          "cohen_kappa": null,
+          "c_index": null,
+          "log_rank_p": null
+        },
+        "validation_note": "These metrics require ground truth labels or TCGA validation data"
+      },
+      "integration_metrics": {
+        "prs_confidence": "low",
+        "prs_high_risk_cancers": [],
+        "pathway_burden_score": 0.0,
+        "high_burden_pathways": []
+      },
+      "performance_indicators": {
+        "mean_confidence": 0.0,
+        "mean_risk_score": 0.0,
+        "high_confidence_ratio": 0.0,
+        "variant_quality_score": 0.0
+      }
+    },
+    "metrics_summary": {
+      "key_findings": {
+        "highest_risk_cancer": null,
+        "highest_risk_score": 0,
+        "pathogenic_variant_count": 0,
+        "confidence_level": "moderate"
+      },
+      "quality_indicators": {
+        "mean_confidence": 0.0,
+        "mean_risk_score": 0.0,
+        "high_confidence_ratio": 0.0,
+        "variant_quality_score": 0.0
+      },
+      "validation_status": false
+    },
+    "warnings": [],
+    "mutation_signatures": [
       {
-        "node": "risk_model",
-        "warning": "Using simple risk calculation - ML models not available",
-        "timestamp": 
+        "signature": "SBS1",
+        "name": "Spontaneous deamination",
+        "contribution": 1.0,
+        "description": "C>T transitions at CpG sites",
+        "etiology": "Aging-related mutations"
+      }
+    ],
+    "structural_variants": [],
+    "copy_number_variants": [
+      {
+        "gene": "AR",
+        "chromosome": "chrX",
+        "start": 66763000,
+        "end": 66950000,
+        "size": 187000,
+        "copy_number": 5,
+        "normal_copy_number": 2,
+        "fold_change": 2.5,
+        "depth_ratio": 2.524126854610976,
+        "genes_affected": [
+          "AR"
+        ],
+        "evidence": "depth_analysis",
+        "cancer_relevance": "AR amplification in prostate cancer",
+        "therapeutic_relevance": "Androgen deprivation therapy resistance",
+        "cancer_type": "prostate",
+        "clinical_significance": "likely_pathogenic",
+        "type": "amplification"
+      },
+      {
+        "gene": "CDKN2A",
+        "chromosome": "chr9",
+        "start": 21967000,
+        "end": 21995000,
+        "size": 28000,
+        "copy_number": 1,
+        "normal_copy_number": 2,
+        "fold_change": 0.5,
+        "depth_ratio": 0.506184768933029,
+        "genes_affected": [
+          "CDKN2A"
+        ],
+        "evidence": "depth_analysis",
+        "cancer_relevance": "CDKN2A deletion in melanoma",
+        "therapeutic_relevance": "CDK4/6 inhibitor sensitivity",
+        "cancer_type": "melanoma",
+        "clinical_significance": "likely_pathogenic",
+        "type": "heterozygous_deletion"
+      }
+    ],
+    "pathway_analysis": {
+      "disrupted_pathways": [],
+      "cancer_pathway_associations": {},
+      "pathway_interactions": [],
+      "clinical_recommendations": [],
+      "summary": {
+        "total_pathways_disrupted": 0,
+        "highly_disrupted_pathways": 0,
+        "total_genes_affected": 0,
+        "pathway_interaction_count": 0,
+        "overall_burden_score": 0.0,
+        "high_burden_pathways": []
+      }
+    },
+    "survival_analysis": {
+      "survival_curves": {},
+      "prognostic_factors": {
+        "positive_prognostic_factors": [],
+        "negative_prognostic_factors": [],
+        "factor_summary": {
+          "positive_count": 0,
+          "negative_count": 0,
+          "overall_prognosis": "unfavorable"
+        }
+      },
+      "clinical_interpretation": {
+        "mutations_analyzed": 0,
+        "pathways_analyzed": 0,
+        "recommendation": "Standard surveillance recommended"
+      },
+      "methodology_note": "Survival estimates based on genomic features and published hazard ratios"
+    },
+    "clinical_recommendations": {
+      "screening_recommendations": [],
+      "targeted_therapy_options": [],
+      "prevention_strategies": {
+        "lifestyle_modifications": [
+          "Maintain healthy weight (BMI 18.5-24.9)",
+          "Regular physical activity (150 min/week moderate intensity)",
+          "Limit alcohol consumption",
+          "Avoid tobacco products",
+          "Healthy diet rich in fruits and vegetables",
+          "Limit processed meat consumption",
+          "Sun protection measures"
+        ],
+        "chemoprevention_options": [],
+        "surgical_options": []
+      },
+      "clinical_trial_eligibility": [],
+      "monitoring_plan": {
+        "biomarkers": [],
+        "imaging": [],
+        "clinical_assessments": [
+          {
+            "assessment": "Genetic counseling",
+            "frequency": "Initial consultation recommended",
+            "indication": "Hereditary cancer risk assessment"
+          },
+          {
+            "assessment": "Annual cancer risk assessment",
+            "frequency": "Yearly",
+            "indication": "Update risk profile and screening plan"
+          }
+        ]
+      },
+      "summary": {
+        "high_risk_cancers": [],
+        "actionable_variants": 0,
+        "priority_actions": [],
+        "follow_up_timeline": {
+          "immediate": [
+            "Genetic counseling consultation"
+          ],
+          "short_term": [],
+          "medium_term": [
+            "Establish care team and monitoring plan"
+          ],
+          "long_term": [
+            "Annual risk reassessment"
+          ]
+        }
+      }
+    }
+  },
+  "report_markdown": "",
+  "report_sections": {
+    "overview": {
+      "title": "Analysis Overview",
+      "content": "Genomic analysis completed successfully. All cancer risk levels are within normal baseline ranges.",
+      "severity": "low"
+    },
+    "ai_enhancement": {
+      "title": "AI-Enhanced Analysis",
+      "content": "Report generated using huggingface LLM with model microsoft/phi-2. Enhanced clinical interpretations provided.",
+      "severity": "low"
+    }
+  },
+  "enhanced_report_content": {
+    "markdown": "# Genomic Risk Assessment Report\n\n**Generated:** {datetime.now().strftime('%B %d, %Y at %H:%M')}\n**Analysis Type:** AI-Enhanced Clinical Report  \n\n---\n\n## Clinical Assessment\n\n**Summary**\n\nThis genomic risk assessment analyzed 0 genetic variants, with 0 variants passing quality control filters. The analysis completed successfully with results available for clinical review.\n\n**Key Variants**\n\nNo key pathogenic variants associated with elevated cancer risk were identified in this analysis.\n\n**Risk Summary**\n\n| Cancer Type | Risk (%) |\n|-------------|----------|\n| No data | N/A |\n\nRisk assessment data not available for this analysis.\n\n**Clinical Interpretation**\n\nThis genomic risk assessment utilized multiple computational approaches including population frequency analysis, TCGA tumor database comparison, pathogenicity prediction algorithms, polygenic risk scoring, and machine learning risk models. The analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and clinical guidelines. These findings should be correlated with family history, lifestyle factors, and clinical presentation for comprehensive risk assessment.\n\n**Recommendations**\n\n- Adhere to standard age-appropriate cancer screening protocols\n- Maintain healthy lifestyle including regular exercise and balanced diet\n- Continue routine preventive care and health maintenance\n- Consider genetic counseling if strong family history of cancer emerges\n- Consult a qualified healthcare provider for personalized guidance.\n\n## Technical Appendix\n\n### Analysis Methods\n\nThis report was generated using the GeneKnow genomic analysis pipeline, which includes:\n\n- **Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency\n- **Population Analysis:** Comparison with reference populations and allele frequencies\n- **TCGA Integration:** Matching variants against The Cancer Genome Atlas database\n- **CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction\n- **Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment\n- **Machine Learning:** Advanced risk models trained on cancer genomics data\n\n### Quality Metrics\n\n- **Total Variants Identified:** {total_variants}\n- **Variants Passing QC:** {qc_variants}\n- **QC Pass Rate:** {qc_rate:.1f}%\n\n### Database Coverage\n\n- **TCGA Cancer Types:** 5 (breast, colon, lung, prostate, blood)\n- **Variants with TCGA Data:** {tcga_summary.get('variants_with_tcga_data', 0)}\n\n### Limitations\n\n- This analysis is based on current scientific knowledge and databases\n- Risk estimates are population-based and may not apply to all individuals\n- Not all genetic variants associated with cancer risk are included\n- Results should be interpreted by qualified healthcare professionals\n- This analysis is for research purposes and not for clinical diagnosis\n\n## Glossary\n\n**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n**Pathogenic:** A genetic variant that is known to cause disease.\n\n---\n\n## Important Disclaimers\n\n- This report is for research and educational purposes only\n- Results should not be used for clinical decision-making without consultation with qualified healthcare providers\n- Genetic risk assessment is based on current scientific understanding and may change as research evolves\n- Not all genetic variants associated with disease risk are included in this analysis\n- Environmental and lifestyle factors also contribute significantly to cancer risk\n\n## Contact Information\n\nFor questions about this report or genetic counseling resources, please consult with your healthcare provider or a certified genetic counselor.\n\n*Report generated by GeneKnow Pipeline - Report ID: {report_id}*"
+  },
+  "report_generator_info": {
+    "report_id": "report_20250712_095925",
+    "backend_used": "huggingface",
+    "model_used": "microsoft/phi-2",
+    "llm_enhanced": true,
+    "generation_time": "2025-07-12T09:59:25.137750",
+    "high_risk_findings_count": 0,
+    "available_formats": [
+      "markdown"
+    ],
+    "content_length": 3815
+  },
+  "pipeline_status": "completed",
+  "current_node": "clinical_recommendations",
+  "completed_nodes": [
+    "tcga_mapper",
+    "cadd_scoring",
+    "clinvar_annotator",
+    "prs_calculator",
+    "pathway_burden",
+    "merge_static_models",
+    "mutation_classifier",
+    "mutational_signatures",
+    "variant_transformer",
+    "structural_variant_detector",
+    "cnv_detector",
+    "merge_variant_analysis",
+    "survival_analyzer",
+    "clinical_recommendations",
+    "metrics_calculator"
+  ],
+  "errors": [
+    {
+      "node": "variant_calling",
+      "error": "'aligned_bam_path'",
+      "timestamp": "2025-07-12T09:59:25.119404"
+    }
+  ],
+  "warnings": [],
+  "preferences": {
+    "patient_data": {
+      "age": 45,
+      "sex": "F"
+    },
+    "include_technical": true,
+    "language": "en"
+  },
+  "patient_data": {
+    "age": 45,
+    "sex": "F"
+  },
+  "include_technical_details": true,
+  "language": "en",
+  "pipeline_start_time": "2025-07-12T09:59:25.115846",
+  "_merge_call_count": 1,
+  "pipeline_end_time": "2025-07-12T09:59:25.138482",
+  "processing_time_seconds": 0.022636
+}

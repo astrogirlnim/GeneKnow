@@ -334,6 +334,8 @@ def process_file_async(job_id: str):
                             "structured_json": result.get("structured_json", {}),
                             "ml_fusion_results": result.get("ml_fusion_results", {}),
                             "ml_risk_assessment": result.get("ml_risk_assessment", {}),
+                            "metrics": result.get("metrics", {}),
+                            "metrics_summary": result.get("metrics_summary", {}),
                             "completed_nodes": result.get("completed_nodes", []),
                             "warnings": result.get("warnings", []),
                             "enhanced_report_content": result.get(
