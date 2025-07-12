@@ -70,11 +70,15 @@ def calculate_variant_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     variant_metrics = {}
 
+    # Use cadd_enriched_variants if available (contains CADD scores), otherwise fall back to filtered_variants
+    cadd_enriched_variants = state.get("cadd_enriched_variants", [])
     filtered_variants = state.get("filtered_variants", [])
-    state.get("ml_ready_variants", [])
-
+    
+    # Use the most enriched variant data available
+    variants_for_analysis = cadd_enriched_variants if cadd_enriched_variants else filtered_variants
+    
     # Basic counts
-    variant_metrics["total_variants"] = len(filtered_variants)
+    variant_metrics["total_variants"] = len(variants_for_analysis)
 
     # Clinical significance distribution
     clinical_sig_counts = defaultdict(int)
@@ -82,7 +86,7 @@ def calculate_variant_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
     benign_count = 0
     uncertain_count = 0
 
-    for variant in filtered_variants:
+    for variant in variants_for_analysis:
         clinical_sig = variant.get("clinical_significance", "Unknown").lower()
         if "pathogenic" in clinical_sig:
             pathogenic_count += 1
@@ -98,12 +102,12 @@ def calculate_variant_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
     variant_metrics["benign_variants"] = benign_count
     variant_metrics["uncertain_variants"] = uncertain_count
     variant_metrics["pathogenic_ratio"] = (
-        pathogenic_count / len(filtered_variants) if filtered_variants else 0
+        pathogenic_count / len(variants_for_analysis) if variants_for_analysis else 0
     )
 
     # CADD score distribution
     cadd_scores = [
-        v.get("cadd_phred", 0) for v in filtered_variants if "cadd_phred" in v
+        v.get("cadd_phred", 0) for v in variants_for_analysis if "cadd_phred" in v
     ]
     if cadd_scores:
         variant_metrics["mean_cadd_score"] = np.mean(cadd_scores)
@@ -121,7 +125,7 @@ def calculate_variant_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
     for genes in risk_genes.values():
         all_cancer_genes.update(genes)
 
-    for variant in filtered_variants:
+    for variant in variants_for_analysis:
         gene = variant.get("gene", "")
         if gene:
             genes_affected.add(gene)
@@ -501,11 +505,17 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
             "validation_status": validation_structure["validation_ready"],
         }
 
+        # Add to completed nodes
+        completed = state.get("completed_nodes", [])
+        if "metrics_calculator" not in completed:
+            completed.append("metrics_calculator")
+
         # Return only the keys this node updates
         return {
             "metrics": metrics,
             "metrics_calculated": True,
             "metrics_summary": metrics_summary,
+            "completed_nodes": completed,
         }
 
     except Exception as e:

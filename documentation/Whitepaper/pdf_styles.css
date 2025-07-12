@@ -1,0 +1,394 @@
+/* Professional LaTeX-style PDF Styling for Whitepaper */
+@page {
+    size: A4;
+    margin: 2.5cm 2cm 2.5cm 2cm;
+    @bottom-center {
+        content: counter(page);
+        font-family: 'Computer Modern', 'Times New Roman', serif;
+        font-size: 10pt;
+        color: #333;
+    }
+}
+
+body {
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    text-align: justify;
+    hyphens: auto;
+    font-feature-settings: "liga", "kern";
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* LaTeX-style headings */
+h1 {
+    font-size: 16pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 24pt 0 18pt 0;
+    page-break-after: avoid;
+    color: #000;
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+}
+
+h2 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin: 18pt 0 12pt 0;
+    page-break-after: avoid;
+    color: #000;
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+}
+
+h3 {
+    font-size: 11.5pt;
+    font-weight: bold;
+    margin: 14pt 0 8pt 0;
+    page-break-after: avoid;
+    page-break-before: avoid;
+    color: #000;
+    font-family: 'Computer Modern', 'Times New Roman', serif;
+}
+
+h4 {
+    font-size: 11pt;
+    font-weight: bold;
+    margin: 12pt 0 6pt 0;
+    page-break-after: avoid;
+    color: #000;
+    font-style: italic;
+}
+
+/* Paragraphs with LaTeX-style spacing */
+p {
+    margin: 0 0 6pt 0;
+    text-indent: 0;
+    orphans: 3;
+    widows: 3;
+    text-align: justify;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* First paragraph after headings - no indent */
+h1 + p, h2 + p, h3 + p, h4 + p {
+    text-indent: 0;
+}
+
+/* Lists with tighter spacing */
+ul, ol {
+    margin: 8pt 0;
+    padding-left: 20pt;
+}
+
+li {
+    margin: 3pt 0;
+    orphans: 2;
+    widows: 2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Code styling with proper wrapping */
+code {
+    font-family: 'Computer Modern Typewriter', 'Courier New', monospace;
+    font-size: 9.5pt;
+    background-color: #f5f5f5;
+    padding: 1pt 3pt;
+    border-radius: 1pt;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+}
+
+pre {
+    font-family: 'Computer Modern Typewriter', 'Courier New', monospace;
+    font-size: 9pt;
+    background-color: #f8f8f8;
+    padding: 8pt;
+    border: 0.5pt solid #ccc;
+    margin: 12pt 0;
+    line-height: 1.3;
+    page-break-inside: avoid;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: inherit;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* LaTeX-style tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12pt 0;
+    font-size: 9pt;
+    page-break-inside: auto;
+    word-wrap: break-word;
+    table-layout: auto;
+}
+
+th, td {
+    border: none;
+    border-top: 1pt solid #000;
+    border-bottom: 1pt solid #000;
+    padding: 3pt 6pt;
+    text-align: left;
+    vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Specific column widths for node table */
+table th:first-child,
+table td:first-child {
+    width: 12%;
+    font-weight: bold;
+}
+
+table th:nth-child(2),
+table td:nth-child(2) {
+    width: 20%;
+}
+
+table th:nth-child(3),
+table td:nth-child(3) {
+    width: 28%;
+    font-family: 'Computer Modern Typewriter', 'Courier New', monospace;
+    font-size: 8pt;
+}
+
+table th:last-child,
+table td:last-child {
+    width: 40%;
+}
+
+th {
+    font-weight: bold;
+    border-bottom: 1pt solid #000;
+}
+
+/* First and last rows get full borders */
+table tr:first-child th,
+table tr:first-child td {
+    border-top: 1pt solid #000;
+}
+
+table tr:last-child th,
+table tr:last-child td {
+    border-bottom: 1pt solid #000;
+}
+
+/* Abstract styling */
+body > blockquote:first-of-type {
+    margin: 18pt 0;
+    padding: 12pt;
+    background-color: #f9f9f9;
+    border: 1pt solid #ddd;
+    border-radius: 0;
+    font-size: 10.5pt;
+    line-height: 1.3;
+}
+
+/* Disclaimer styling */
+blockquote {
+    margin: 12pt 0;
+    padding: 8pt 12pt;
+    background-color: #fffbf0;
+    border-left: 3pt solid #ffa500;
+    font-style: italic;
+    font-size: 10pt;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Figure and image styling - prevent page breaks */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 8pt auto;
+    page-break-inside: avoid;
+    page-break-before: auto;
+}
+
+/* Large diagrams should fit well with text */
+img[src*="langgraph_pipeline"], img[src*="mermaid-07-12"] {
+    max-width: 90%;
+    max-height: 22cm;
+    margin: 4pt auto 8pt auto;
+    page-break-before: auto;
+    page-break-after: avoid;
+    object-fit: contain;
+}
+
+/* Specific styling for the tall mermaid diagram */
+img[src*="mermaid-07-12"] {
+    max-width: 80%;
+    max-height: 23cm;
+    margin: 6pt auto 20pt auto;
+    page-break-before: auto;
+    page-break-after: avoid;
+    object-fit: contain;
+    width: auto;
+    height: auto;
+}
+
+/* Keep diagram caption with following content */
+img[src*="langgraph_pipeline"] + p, img[src*="mermaid-07-12"] + p {
+    page-break-after: avoid;
+    margin-bottom: 8pt;
+}
+
+/* Figure captions - keep with images */
+p img {
+    page-break-after: avoid;
+}
+
+/* Style for figure captions (italicized text after images) */
+p:has(img) {
+    page-break-inside: avoid;
+    page-break-after: avoid;
+}
+
+p:has(img) + p {
+    page-break-before: avoid;
+    margin-top: 6pt;
+    margin-bottom: 12pt;
+    font-style: italic;
+    font-size: 10pt;
+    text-align: center;
+    color: #333;
+}
+
+/* Ensure figure blocks stay together */
+p:has(img),
+p:has(img) + p {
+    page-break-inside: avoid;
+}
+
+/* Strong and emphasis */
+strong {
+    font-weight: bold;
+}
+
+em {
+    font-style: italic;
+}
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Reference styling */
+ol li {
+    margin: 4pt 0;
+    font-size: 10pt;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Prevent orphaned headers */
+h1, h2, h3, h4, h5, h6 {
+    page-break-inside: avoid;
+    page-break-after: avoid;
+}
+
+/* Keep next element with heading */
+h1 + *, h2 + *, h3 + *, h4 + * {
+    page-break-before: avoid;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+    text-align: center;
+    margin: 15pt 0;
+    page-break-inside: avoid;
+}
+
+/* Professional spacing adjustments */
+body {
+    word-spacing: 0.05em;
+    letter-spacing: 0.01em;
+}
+
+/* Section spacing */
+h2 {
+    margin-top: 24pt;
+}
+
+h3 {
+    margin-top: 18pt;
+}
+
+/* Ensure mathematical expressions and code don't break unnecessarily */
+code {
+    hyphens: none;
+}
+
+/* Professional title page styling */
+body > h1:first-of-type {
+    margin-top: 48pt;
+    margin-bottom: 24pt;
+    font-size: 18pt;
+    line-height: 1.2;
+}
+
+/* Compact list styling for references */
+ol {
+    padding-left: 18pt;
+}
+
+/* Tighter spacing for nested lists */
+ul ul, ol ol, ul ol, ol ul {
+    margin: 3pt 0;
+}
+
+/* Figure numbering and captions */
+figure {
+    page-break-inside: avoid;
+    margin: 12pt 0;
+}
+
+figcaption {
+    font-style: italic;
+    font-size: 10pt;
+    text-align: center;
+    margin-top: 6pt;
+    color: #333;
+}
+
+/* Special handling for file paths and long technical terms */
+td code, li code {
+    word-break: break-all;
+    hyphens: none;
+}
+
+/* Bullet point styling for long technical lists */
+li strong {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* End of CSS file */ 

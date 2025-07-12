@@ -263,10 +263,51 @@ def _ml_fusion_risk_calculation(
 
         logger.info("Risk model complete (ML fusion)")
 
+        # Create risk_details with confidence values for each cancer type
+        risk_details = {}
+        for cancer_type, risk_score in risk_scores.items():
+            # Calculate individual confidence based on:
+            # 1. Overall ML fusion confidence
+            # 2. Risk score magnitude (higher risk = higher confidence)
+            # 3. Number of genes affected
+            
+            # Base confidence from ML fusion
+            base_confidence = confidence
+            
+            # Risk score confidence modifier (higher risk = higher confidence)
+            risk_confidence_modifier = min(risk_score / 100.0, 1.0)
+            
+            # Gene count confidence modifier (more genes = higher confidence)
+            gene_count = len(risk_genes.get(cancer_type, []))
+            gene_confidence_modifier = min(gene_count / 3.0, 1.0)  # Max confidence with 3+ genes
+            
+            # Combined confidence (weighted average)
+            individual_confidence = (
+                base_confidence * 0.6 + 
+                risk_confidence_modifier * 0.3 + 
+                gene_confidence_modifier * 0.1
+            )
+            
+            # Ensure confidence is between 0 and 1
+            individual_confidence = max(0.0, min(1.0, individual_confidence))
+            
+            risk_details[cancer_type] = {
+                "model_confidence": individual_confidence,
+                "risk_score": risk_score,
+                "gene_count": gene_count,
+                "contributing_genes": risk_genes.get(cancer_type, []),
+                "risk_category": (
+                    "high" if risk_score >= 50 else
+                    "moderate" if risk_score >= 20 else
+                    "low"
+                ),
+            }
+
         # Return only the keys this node updates
         return {
             "risk_scores": risk_scores,
             "risk_genes": risk_genes,
+            "risk_details": risk_details,  # Add missing risk_details
             "ml_risk_assessment": {
                 "method": "ml_fusion",
                 "aggregate_risk_score": aggregate_risk_score,
@@ -500,10 +541,55 @@ def _simple_risk_calculation(
                 f"{cancer}: {score:.1f}% (genes: {risk_genes[cancer]}, pathogenic: {pathogenic_genes[cancer]}, benign: {benign_genes[cancer]})"
             )
 
+    # Create risk_details with confidence values for each cancer type
+    risk_details = {}
+    for cancer_type, risk_score in risk_scores.items():
+        # Calculate individual confidence based on:
+        # 1. Number of pathogenic variants (higher = higher confidence)
+        # 2. Risk score magnitude (higher risk = higher confidence)
+        # 3. Gene count (more genes = higher confidence)
+        
+        # Base confidence from pathogenic variants
+        pathogenic_count = len(pathogenic_genes.get(cancer_type, []))
+        pathogenic_confidence = min(pathogenic_count / 2.0, 1.0)  # Max confidence with 2+ pathogenic variants
+        
+        # Risk score confidence modifier (higher risk = higher confidence)
+        risk_confidence_modifier = min(risk_score / 100.0, 1.0)
+        
+        # Gene count confidence modifier (more genes = higher confidence)
+        gene_count = len(risk_genes.get(cancer_type, []))
+        gene_confidence_modifier = min(gene_count / 3.0, 1.0)  # Max confidence with 3+ genes
+        
+        # Combined confidence (weighted average)
+        # Simple risk calculation has lower base confidence than ML fusion
+        individual_confidence = (
+            pathogenic_confidence * 0.5 + 
+            risk_confidence_modifier * 0.3 + 
+            gene_confidence_modifier * 0.2
+        )
+        
+        # Ensure confidence is between 0 and 1, but cap at 0.7 for simple calculation
+        individual_confidence = max(0.0, min(0.7, individual_confidence))
+        
+        risk_details[cancer_type] = {
+            "model_confidence": individual_confidence,
+            "risk_score": risk_score,
+            "gene_count": gene_count,
+            "pathogenic_count": pathogenic_count,
+            "contributing_genes": risk_genes.get(cancer_type, []),
+            "pathogenic_genes": pathogenic_genes.get(cancer_type, []),
+            "risk_category": (
+                "high" if risk_score >= 50 else
+                "moderate" if risk_score >= 20 else
+                "low"
+            ),
+        }
+
     # Build result dictionary
     result = {
         "risk_scores": risk_scores,
         "risk_genes": risk_genes,
+        "risk_details": risk_details,  # Add missing risk_details
         "pathogenic_risk_genes": pathogenic_genes,
         "benign_risk_genes": benign_genes,
         "warnings": [
