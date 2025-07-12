@@ -243,7 +243,7 @@ const HowItWorksPage = () => (
     </section>
 
     <section style={{ background: '#F3F4F6', padding: '5rem 0' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+      <div style={{ maxWidth: '1900px', margin: '0 auto', padding: '0 1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', letterSpacing: '-0.02em', color: '#111827' }}>
             Technical Pipeline Architecture
@@ -262,7 +262,9 @@ const HowItWorksPage = () => (
           border: '1px solid #E5E7EB',
           marginBottom: '3rem',
           overflowX: 'auto',
-          minWidth: '100%'
+          width: '100%',
+          maxWidth: '1800px',
+          margin: '0 auto 3rem auto'
         }}>
           <div style={{
             display: 'flex',
@@ -283,10 +285,12 @@ const HowItWorksPage = () => (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '1rem',
-              minWidth: '1600px',
-              padding: '2rem',
-              justifyContent: 'center'
+              gap: '0.8rem',
+              minWidth: '1400px',
+              padding: '1rem',
+              justifyContent: 'flex-start',
+              margin: '0',
+              paddingLeft: '1rem'
             }}>
               {/* Preprocess */}
               <div style={{
@@ -352,27 +356,27 @@ const HowItWorksPage = () => (
               </div>
 
               {/* Branching Arrow - Fixed to not overextend */}
-              <div style={{ position: 'relative', width: '40px', height: '200px', display: 'flex', alignItems: 'center' }}>
-                <svg width="40" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
+              <div style={{ position: 'relative', width: '30px', height: '200px', display: 'flex', alignItems: 'center' }}>
+                <svg width="30" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
                   {/* Main horizontal line from Population Mapper */}
-                  <line x1="0" y1="100" x2="20" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  {/* Vertical distribution line */}
-                  <line x1="20" y1="20" x2="20" y2="180" stroke="#1976D2" strokeWidth="2" />
-                  {/* Branches to each parallel node - shortened to not overextend */}
-                  <line x1="20" y1="36" x2="32" y2="36" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,32 40,36 32,40" fill="#1976D2" />
+                  <line x1="0" y1="100" x2="15" y2="100" stroke="#1976D2" strokeWidth="2" />
+                  {/* Vertical distribution line - only between arrows */}
+                  <line x1="15" y1="20" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  {/* Branches to each parallel node - precisely centered on each node */}
+                  <line x1="15" y1="20" x2="25" y2="20" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,16 30,20 25,24" fill="#1976D2" />
                   
-                  <line x1="20" y1="68" x2="32" y2="68" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,64 40,68 32,72" fill="#1976D2" />
+                  <line x1="15" y1="60" x2="25" y2="60" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,56 30,60 25,64" fill="#1976D2" />
                   
-                  <line x1="20" y1="100" x2="32" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,96 40,100 32,104" fill="#1976D2" />
+                  <line x1="15" y1="100" x2="25" y2="100" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,96 30,100 25,104" fill="#1976D2" />
                   
-                  <line x1="20" y1="132" x2="32" y2="132" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,128 40,132 32,136" fill="#1976D2" />
+                  <line x1="15" y1="140" x2="25" y2="140" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,136 30,140 25,144" fill="#1976D2" />
                   
-                  <line x1="20" y1="164" x2="32" y2="164" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,160 40,164 32,168" fill="#1976D2" />
+                  <line x1="15" y1="180" x2="25" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,176 30,180 25,184" fill="#1976D2" />
                 </svg>
               </div>
 
@@ -464,34 +468,21 @@ const HowItWorksPage = () => (
                 </div>
               </div>
 
-              {/* Merging Arrow - Fixed to not overextend */}
-              <div style={{ position: 'relative', width: '40px', height: '200px', display: 'flex', alignItems: 'center' }}>
-                <svg width="40" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
-                  {/* Branches from each parallel node */}
-                  <line x1="0" y1="36" x2="20" y2="36" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="68" x2="20" y2="68" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="100" x2="20" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="132" x2="20" y2="132" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="164" x2="20" y2="164" stroke="#1976D2" strokeWidth="2" />
-                  {/* Vertical collection line */}
-                  <line x1="20" y1="20" x2="20" y2="180" stroke="#1976D2" strokeWidth="2" />
-                  {/* Main horizontal line to Merge node with arrow head */}
-                  <line x1="20" y1="100" x2="32" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="32,96 40,100 32,104" fill="#1976D2" />
+              {/* Merging Arrow - Direct to ML Risk Model */}
+              <div style={{ position: 'relative', width: '30px', height: '200px', display: 'flex', alignItems: 'center' }}>
+                <svg width="30" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
+                  {/* Branches from each parallel node - precisely centered on each node */}
+                  <line x1="0" y1="20" x2="15" y2="20" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="60" x2="15" y2="60" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="100" x2="15" y2="100" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="140" x2="15" y2="140" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="180" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  {/* Vertical collection line - only between first and last arrows */}
+                  <line x1="15" y1="20" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  {/* Main horizontal line to ML Risk Model with arrow head */}
+                  <line x1="15" y1="100" x2="25" y2="100" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="25,96 30,100 25,104" fill="#1976D2" />
                 </svg>
-              </div>
-
-              {/* Merge Static Models */}
-              <div style={{
-                background: '#E3F2FD',
-                border: '2px solid #1976D2',
-                borderRadius: '0.5rem',
-                padding: '1rem',
-                textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
-              }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Merge<br/>Static Models</div>
               </div>
 
               {/* Arrow */}
@@ -517,6 +508,31 @@ const HowItWorksPage = () => (
                 width: '120px'
               }}>
                 <div style={{ fontWeight: '600', color: '#7B1FA2', fontSize: '0.8rem' }}>ML Risk<br/>Model</div>
+              </div>
+
+              {/* Arrow */}
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ 
+                  width: '0', 
+                  height: '0', 
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderLeft: '8px solid #1976D2'
+                }} />
+              </div>
+
+              {/* Validation and Metric */}
+              <div style={{
+                background: '#E3F2FD',
+                border: '2px solid #1976D2',
+                borderRadius: '0.5rem',
+                padding: '1rem',
+                textAlign: 'center',
+                minWidth: '120px',
+                width: '120px'
+              }}>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Validation<br/>and Metric</div>
               </div>
 
               {/* Arrow */}
