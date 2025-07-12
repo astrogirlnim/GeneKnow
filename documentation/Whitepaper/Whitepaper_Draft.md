@@ -25,7 +25,7 @@ The platform analyzes multiple genomic data formats (FASTQ, BAM, VCF, MAF) throu
 ## 2. Introduction & Motivation
 
 **Narrative Overview:**
-The landscape of genomic medicine faces a critical paradox: as our ability to sequence and analyze genetic data expands exponentially, so do the privacy risks associated with centralized processing. Recent breaches affecting millions of genetic profiles at major genomic companies underscore the vulnerability of cloud-based solutions, while regulatory frameworks like GDPR and HIPAA demand increasingly stringent data protection measures [1]. 
+The landscape of genomic medicine faces a critical paradox: as our ability to sequence and analyze genetic data expands exponentially, so do the privacy risks associated with centralized processing. Recent breaches affecting millions of genetic profiles at major genomic companies underscore the vulnerability of cloud-based solutions, while regulatory frameworks like GDPR demand increasingly stringent data protection measures [1]. 
 
 Traditional genomic analysis platforms require uploading sensitive patient data to external servers, creating multiple points of vulnerability: data interception during transmission, server breaches, insider threats, and long-term storage risks [2]. Studies have documented extensive healthcare cybersecurity threats, with genomic data being particularly vulnerable due to its immutable nature and familial implications [3]. Moreover, many clinical settings—particularly in rural areas or developing nations—lack reliable high-speed internet, making cloud-dependent tools impractical.
 
@@ -33,7 +33,7 @@ Geneknow addresses these challenges through a fundamentally different approach: 
 
 **Technical/Implementation Details:**
 - **Privacy by Design:** All processing occurs on-device; the only network activity is the initial software download
-- **Regulatory Compliance:** Architecture inherently complies with GDPR Article 25 (data protection by design) and HIPAA security requirements
+- **Regulatory Compliance:** Architecture inherently complies with GDPR Article 25 (data protection by design)
 - **Use Cases:** Hereditary cancer syndrome assessment, pharmacogenomic screening, research cohort analysis
 - **Global Accessibility:** Offline capability enables deployment in low-resource settings without compromising analytical quality
 
@@ -464,15 +464,6 @@ This architecture ensures robust, private, and fully local operation, with no ex
 - **Memory Clearing:** Explicit zeroing of sensitive data structures before deallocation
 - **Audit Logging:** Comprehensive logs exclude patient data while maintaining traceability
 
-### 5.3 Compliance and Validation
-
-**Regulatory Alignment:**
-- **GDPR Article 32:** Technical measures ensure ongoing confidentiality
-- **HIPAA §164.312:** Access controls and encryption satisfy technical safeguards
-- **ISO 27001:** Information security management principles incorporated
-
-**Third-Party Validation:** Architecture reviewed by security researchers (findings available in repository)
-
 ## 6. User Interface and Experience
 
 **Narrative Overview:**
@@ -512,110 +503,67 @@ Each tab includes dedicated export functionality with PDF generation capabilitie
 ### 7.1 Model Training and Validation
 
 **Training Dataset:**
-- **TCGA Cohort:** 10,467 tumor samples across 33 cancer types
-- **Variant Dataset:** 200,000+ variants processed with rigorous quality control
-- **Data Splits:** 60% training (120,000 variants), 20% validation (40,000 variants), 20% test (40,000 variants)
+- **TCGA Cohort:** Reference data from public genomic databases
+- **Variant Dataset:** Synthetic and public variants for model training and validation
+- **Data Splits:** Standard 60/20/20 training/validation/test methodology
 - **Feature Engineering:** 8 primary features derived from static model outputs
 - **Leakage Prevention:** Clinical significance labels excluded from training features to prevent overfitting
-- **Temporal Validation:** Cross-validation with temporal splits to simulate real-world deployment
+- **Cross-Validation:** 5-fold stratified cross-validation for robust performance estimation
 
 ### 7.2 Performance Metrics
 
-**Primary Metrics (Final Test Set Results):**
-- **AUC-ROC:** 0.76 (95% CI: 0.74-0.78) - Strong discriminative ability, comparable to established tools
-- **Accuracy:** 0.57 - Reflects realistic genomic prediction with class imbalance
-- **Balanced Accuracy:** 0.57 - Accounts for uneven distribution of pathogenic variants
-- **F1-Score:** 0.63 - Balanced precision-recall performance
-- **Matthews Correlation Coefficient:** 0.42 - Robust correlation measure for imbalanced datasets
-- **Mean Squared Error:** 0.079 - Low prediction error on probability scale
-- **R² Score:** 0.43 - Explains 43% of variance in risk prediction
-
-**Clinical Performance Metrics:**
-- **Sensitivity at 10% FPR:** 42% - Suitable for high-specificity research applications
-- **Sensitivity at 30% FPR:** 68% - Balanced screening performance
-- **Precision at 50% Recall:** 0.64 - Practical clinical operating point
-- **Negative Predictive Value:** 0.78 - Important for ruling out pathogenic variants
+**Model Performance (Validation Results):**
+- **AUC-ROC:** 0.76 - Demonstrates discriminative ability for variant classification
+- **F1-Score:** 0.63 - Balanced precision-recall performance on test data
+- **Matthews Correlation Coefficient:** 0.42 - Correlation measure accounting for class imbalance
+- **Balanced Accuracy:** 0.57 - Performance metric adjusted for uneven class distribution
 
 **Performance Context:**
-Our AUC of 0.76 compares favorably to established genomic tools:
-- **CADD:** AUC 0.80 for general variant pathogenicity [6]
-- **PolyPhen-2:** AUC 0.75 for missense variants [7]
-- **SIFT:** AUC 0.70 for protein-altering variants [8]
-- **Our Model:** AUC 0.76 for cancer-specific risk assessment
+Our results are comparable to established genomic prediction tools:
+- **CADD:** AUC ~0.80 for general variant pathogenicity [6]
+- **PolyPhen-2:** AUC ~0.75 for missense variants [7]
+- **SIFT:** AUC ~0.70 for protein-altering variants [8]
 
-**Threshold Optimization Examples:**
-1. **Cancer Screening Mode:** Threshold=0.3, Sensitivity=90%, Specificity=45%
-2. **Research Prioritization:** Threshold=0.7, Sensitivity=35%, Specificity=92%
-3. **Balanced Clinical Use:** Threshold=0.5, Sensitivity=68%, Specificity=71%
+**Threshold Configuration Examples:**
+1. **High Sensitivity Mode:** Threshold=0.3, optimized for screening applications
+2. **High Specificity Mode:** Threshold=0.7, optimized for research prioritization
+3. **Balanced Mode:** Threshold=0.5, general-purpose clinical application
 
 ### 7.3 Computational Performance
 
-**Benchmarking Results (M1 MacBook Pro):**
+**Benchmarking Results (Development Testing):**
 - **FASTQ Processing:** 0.7-1.0s for 500 reads (includes alignment simulation)
 - **VCF Direct Load:** 0.02s for 1000 variants
 - **Full Pipeline:** <1s for typical clinical VCF
 - **Memory Usage:** <500MB peak for standard analysis
 
 **Scalability Testing:**
-- Linear scaling up to 100,000 variants
-- Parallel processing reduces time by 40% for multi-sample VCFs
-- Plugin overhead: <5% for Python-based extensions
+- Linear scaling performance up to 100,000 variants
+- Parallel processing capabilities for multi-sample analysis
+- Plugin system overhead: <5% for Python-based extensions
 
-## 8. Applications & Case Studies
+## 8. Future Directions
 
-### 8.1 Clinical Research Applications
-
-**Hereditary Cancer Syndrome Assessment:**
-- Analyzed 500 patients with family history of breast/ovarian cancer
-- Identified pathogenic BRCA1/2 variants with 94% concordance to clinical testing
-- Pathway analysis revealed secondary risk factors in 23% of cases
-
-**Pharmacogenomic Screening:**
-- Processed 1,200 patients for chemotherapy response markers
-- Detected actionable variants affecting drug metabolism in 67% of cohort
-- Results influenced treatment selection for 45% of patients
-
-### 8.2 Global Health Deployment
-
-**Rural Clinic Implementation (Southeast Asia):**
-- Deployed in 15 clinics with intermittent internet connectivity
-- Processed 3,000+ samples over 6 months
-- Enabled genetic counseling services previously unavailable
-
-**Research Consortium (Sub-Saharan Africa):**
-- Analyzed population-specific variants underrepresented in global databases
-- Identified novel risk alleles in 12% of samples
-- Results contributed to expanding diversity in genomic databases
-
-## 9. Future Directions
-
-### 9.1 Planned Enhancements
+### 8.1 Planned Enhancements
 
 **Additional Cancer Types:**
-- Pancreatic and ovarian cancers (Q2 2024) - Leveraging recent advances in multi-cancer PRS [9]
-- Expanded rare cancer support (Q3 2024) - Utilizing rare variant burden analysis methods [10]
-- Multi-cancer risk panels (Q4 2024) - Implementing pan-cancer genomic signatures [11]
+- Pancreatic and ovarian cancers - Leveraging recent advances in multi-cancer PRS [9]
+- Expanded rare cancer support - Utilizing rare variant burden analysis methods [10]
+- Multi-cancer risk panels - Implementing pan-cancer genomic signatures [11]
 
 **Technical Improvements:**
-- GPU acceleration for large cohort analysis - Enabling real-time analysis of population-scale datasets
-- Federated learning for model updates without data sharing - Following privacy-preserving ML frameworks [12]
-- Advanced visualization including 3D protein structure impact - Integrating structural genomics insights [13]
-- Edge-device optimization for mobile genomics - Adapting compressed models for resource-constrained environments
+- GPU acceleration for large cohort analysis - Enabling analysis of larger datasets
+- Advanced visualization including 3D protein structure impact - Integrating structural genomics insights [12]
+- Edge-device optimization for mobile genomics - Adapting models for resource-constrained environments
+- Plugin system expansion for specialized analysis workflows
 
-### 9.2 Research Collaborations
-
-Active partnerships with academic institutions to:
-- Validate models on diverse populations
-- Integrate novel biomarkers as they emerge
-- Develop specialized plugins for rare diseases
-
-## 10. Conclusion
+## 9. Conclusion
 
 Geneknow demonstrates that privacy and analytical power need not be mutually exclusive in genomic medicine. By combining established genomic databases, validated ML methods, and modern software architecture, we provide a tool that empowers clinicians and researchers while absolutely protecting patient privacy.
 
-Our open-source approach ensures transparency, enables community contributions, and removes financial barriers to advanced genomic analysis. With validated performance metrics (AUC 0.76) comparable to established tools like CADD (0.80) [6] and PolyPhen-2 (0.75) [7], and comprehensive ML training methodology with detailed performance analysis, Geneknow makes sophisticated genomic risk assessment accessible to any healthcare setting worldwide.
+Our open-source approach ensures transparency, enables community contributions, and removes financial barriers to advanced genomic analysis. With performance metrics (AUC 0.76) comparable to established tools like CADD (~0.80) [6] and PolyPhen-2 (~0.75) [7], and comprehensive ML training methodology with detailed performance analysis, Geneknow makes sophisticated genomic risk assessment accessible to researchers and clinicians worldwide.
 
-The platform's impact extends beyond individual patient care to enabling genomic research in previously underserved populations, contributing to a more equitable future for precision medicine. As genomic medicine continues to evolve, Geneknow's privacy-first architecture and open-source foundation position it as a sustainable, scalable solution for the next generation of genomic healthcare.
+The platform's privacy-first architecture and open-source foundation position it as a sustainable solution for the growing field of local genomic analysis. As genomic medicine continues to evolve, Geneknow provides a foundation for privacy-preserving genomic research and clinical applications.
 
 ## References
 
@@ -633,7 +581,7 @@ The platform's impact extends beyond individual patient care to enabling genomic
 - **Architecture:** Tauri 2.x + React 19 + Rust 1.88 + Python 3.11
 - **Dependencies:** Bundled Python runtime with scientific stack (NumPy, scikit-learn, pandas)
 - **ML Models:** Gradient Boosting (primary), Random Forest, Linear Regression fusion layers
-- **Training Artifacts:** 5,000-sample validation, MSE 0.0072, feature importance analysis
+- **Training Artifacts:** Validation metrics documented, feature importance analysis
 - **Visualizations:** Performance analysis, ROC curves, training results (see `ml_models/` folder)
 
 ### 10.3 API Documentation
@@ -666,9 +614,7 @@ The platform's impact extends beyond individual patient care to enabling genomic
 
 11. Bailey MH, Tokheim C, Porta-Pardo E, Sengupta S, Bertrand D, Weerasinghe A, Colaprico A, Wendl MC, Kim J, Reardon B, Ng PK, Jeong KJ, Cao S, Wang Z, Gao J, Gao Q, Wang F, Liu EM, Mularoni L, Rubio-Perez C, Nagarajan N, Cortés-Ciriano I, Zhou DC, Liang WW, Hess JM, Yellapantula VD, Tamborero D, Gonzalez-Perez A, Suphavilai C, Ko JY, Khurana E, Park PJ, Van Allen EM, Liang H; MC3 Working Group; Cancer Genome Atlas Research Network; Lawrence MS, Godzik A, Lopez-Bigas N, Stuart J, Wheeler D, Getz G, Chen K, Lazar AJ, Mills GB, Karchin R, Ding L. Comprehensive Characterization of Cancer Driver Genes and Mutations. Cell. 2018 Apr 5;173(2):371-385.e18. doi:10.1016/j.cell.2018.02.060. [Link](https://doi.org/10.1016/j.cell.2018.02.060)
 
-12. Li T, Sahu AK, Talwalkar A, Smith V. Federated Learning: Challenges, Methods, and Future Directions. IEEE Signal Process Mag. 2020 May;37(3):50-60. doi:10.1109/MSP.2020.2975749. [Link](https://doi.org/10.1109/MSP.2020.2975749)
-
-13. Porta-Pardo E, Garcia-Alonso L, Hrabe T, Dopazo J, Godzik A. A Pan-Cancer Catalogue of Cancer Driver Protein Interaction Interfaces. PLoS Comput Biol. 2015 Oct 22;11(10):e1004518. doi:10.1371/journal.pcbi.1004518. [Link](https://doi.org/10.1371/journal.pcbi.1004518)
+12. Porta-Pardo E, Garcia-Alonso L, Hrabe T, Dopazo J, Godzik A. A Pan-Cancer Catalogue of Cancer Driver Protein Interaction Interfaces. PLoS Comput Biol. 2015 Oct 22;11(10):e1004518. doi:10.1371/journal.pcbi.1004518. [Link](https://doi.org/10.1371/journal.pcbi.1004518)
 
 14. Hoadley KA, Yau C, Hinoue T, Wolf DM, Lazar AJ, Drill E, Shen R, Taylor AM, Cherniack AD, Thorsson V, Akbani R, Bowlby R, Wong CK, Wiznerowicz M, Sanchez-Vega F, Robertson AG, Schneider BG, Lawrence MS, Noushmehr H, Malta TM; Cancer Genome Atlas Network; Stuart JM, Benz CC, Laird PW. Cell-of-Origin Patterns Dominate the Molecular Classification of 10,000 Tumors from 33 Types of Cancer. Cell. 2018 Apr 5;173(2):291-304.e6. doi:10.1016/j.cell.2018.03.022. [Link](https://doi.org/10.1016/j.cell.2018.03.022)
 
