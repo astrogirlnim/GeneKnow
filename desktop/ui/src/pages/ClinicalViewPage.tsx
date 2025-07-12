@@ -1260,6 +1260,40 @@ const ClinicalViewPage: React.FC = () => {
   // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
+  // Get real data for sidebar when available
+  const getSidebarData = () => {
+    if (pipelineResults) {
+      // Calculate real risk level and score from pipeline results
+      const riskScores = Object.entries(pipelineResults.risk_scores || {});
+      const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
+        score > prev.score ? { cancer, score } : prev,
+        { cancer: '', score: 0 }
+      );
+      
+      const overallRiskScore = Math.round(highestRisk.score);
+      const riskCategory = overallRiskScore >= 30 ? 'High Risk' : 
+                          overallRiskScore >= 15 ? 'Moderate Risk' : 'Low Risk';
+      
+      // Get top genes from variant details
+      const structuredJson = pipelineResults.structured_json || {};
+      const variantDetails = Array.isArray(structuredJson.variant_details) ? structuredJson.variant_details : [];
+      const topGenes = variantDetails.slice(0, 3).map(v => v.gene).filter(Boolean);
+      
+      return {
+        riskLevel: riskCategory,
+        riskScore: `${overallRiskScore}/100`,
+        condition: `${highestRisk.cancer} Cancer Risk Assessment`,
+        details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
+        alerts: currentData.alerts // Keep mock alerts for now since we don't have real alert data
+      };
+    }
+    
+    // Fallback to mock data if no pipeline results
+    return currentData;
+  };
+
+  const sidebarData = getSidebarData();
+
   // Function to convert pipeline results to the format expected by the clinical view
   const getGenomicData = () => {
     if (pipelineResults) {
@@ -4235,14 +4269,14 @@ const ClinicalViewPage: React.FC = () => {
                   marginBottom: '0.5rem',
                   color: '#111827'
                 }}>
-                  {currentData.riskLevel}
+                  {sidebarData.riskLevel}
                 </div>
                 <div style={{ 
                   fontSize: '0.875rem',
                   lineHeight: '1.4',
                   color: '#4B5563'
                 }}>
-                  <span dangerouslySetInnerHTML={{ __html: currentData.details }} />
+                  <span dangerouslySetInnerHTML={{ __html: sidebarData.details }} />
                 </div>
                 <div style={{
                   background: '#DBEAFE',
@@ -4254,7 +4288,7 @@ const ClinicalViewPage: React.FC = () => {
                   fontWeight: '500',
                   textAlign: 'center'
                 }}>
-                  Risk Score: {currentData.riskScore}
+                  Risk Score: {sidebarData.riskScore}
                 </div>
               </div>
 
@@ -4323,7 +4357,7 @@ const ClinicalViewPage: React.FC = () => {
                   Clinical Alerts
                 </div>
                 
-                {currentData.alerts.map((alert: Alert, index: number) => (
+                {sidebarData.alerts.map((alert: Alert, index: number) => (
                   <div 
                     key={index}
                     style={{
