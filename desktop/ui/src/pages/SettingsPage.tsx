@@ -309,7 +309,6 @@ export const SettingsPage: React.FC = () => {
       })
 
       if (response.ok) {
-        const data = await response.json()
         setModelWarmingStatus(prev => ({
           ...prev,
           isWarming: false,
@@ -383,8 +382,6 @@ export const SettingsPage: React.FC = () => {
   }
 
   const handleBackendChange = (backend: 'ollama' | 'none') => {
-    const previousBackend = config.backend
-    const previousModel = config.model_name
     
     setConfig(prev => ({
       ...prev,
