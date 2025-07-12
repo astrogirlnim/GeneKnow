@@ -618,12 +618,22 @@ const DashboardPage: React.FC = () => {
   // Use real data if available, otherwise use mock data
   const displayData: DisplayData = React.useMemo(() => {
     if (pipelineResults) {
+      // DEBUG: Log the actual pipeline results structure
+      console.log('🔍 DASHBOARD DEBUG: pipelineResults received:', pipelineResults);
+      console.log('🔍 DASHBOARD DEBUG: pipelineResults.risk_scores:', pipelineResults.risk_scores);
+      console.log('🔍 DASHBOARD DEBUG: pipelineResults.variant_count:', pipelineResults.variant_count);
+      console.log('🔍 DASHBOARD DEBUG: pipelineResults keys:', Object.keys(pipelineResults));
+      
       // Extract the highest risk score for display
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
+      console.log('🔍 DASHBOARD DEBUG: riskScores entries:', riskScores);
+      
       const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
         score > prev.score ? { cancer, score } : prev,
         { cancer: '', score: 0 }
       );
+      
+      console.log('🔍 DASHBOARD DEBUG: highestRisk calculated:', highestRisk);
       
       // Use pipeline results directly (already in percentage format)
       const probability = parseFloat(highestRisk.score.toFixed(1));

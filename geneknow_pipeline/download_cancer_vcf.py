@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Download real VCF file with known cancer variants from ClinVar.
-This will get pathogenic variants in well-known cancer genes.
+This will download the actual ClinVar database and filter for pathogenic cancer variants.
 """
 
 import os
@@ -9,6 +9,7 @@ import requests
 import gzip
 import shutil
 from datetime import datetime
+import tempfile
 
 def download_cancer_vcf():
     """Download and filter ClinVar VCF for cancer variants."""
@@ -18,25 +19,123 @@ def download_cancer_vcf():
     # Create directory for test data
     os.makedirs('real_test_data', exist_ok=True)
     
-    # Option 1: Use the mini test file we'll create
-    # For large-scale testing, you can download the full ClinVar file (157MB)
-    # clinvar_url = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
+    # Option 1: Download full ClinVar file (large - 157MB)
+    print("Downloading ClinVar VCF file...")
+    clinvar_url = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
     
-    # Option 2: Create a curated test file with known cancer variants
-    print("Creating curated cancer variant VCF file...")
-    create_comprehensive_cancer_vcf()
-    
-    # Option 3: Download a smaller subset from gnomAD (if needed)
-    # This would contain population frequencies for cancer genes
-    
-    # Also create the mini test file
-    create_mini_test_vcf()
+    try:
+        # Download to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.vcf.gz') as tmp_file:
+            print(f"Downloading from {clinvar_url}...")
+            response = requests.get(clinvar_url, stream=True)
+            response.raise_for_status()
+            
+            # Show progress
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded = 0
+            
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    tmp_file.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        percent = (downloaded / total_size) * 100
+                        print(f"\rProgress: {percent:.1f}%", end='', flush=True)
+            
+            print(f"\nDownload complete: {tmp_file.name}")
+            
+            # Filter for cancer variants
+            print("Filtering for cancer-related pathogenic variants...")
+            filter_cancer_variants(tmp_file.name)
+            
+            # Clean up temporary file
+            os.unlink(tmp_file.name)
+            
+    except requests.RequestException as e:
+        print(f"❌ Failed to download ClinVar: {e}")
+        print("Creating fallback test files with known cancer variants...")
+        create_fallback_cancer_vcf()
     
     return True
 
-def create_comprehensive_cancer_vcf():
-    """Create a comprehensive VCF with various cancer-related variants."""
+def filter_cancer_variants(clinvar_file):
+    """Filter ClinVar VCF for cancer-related pathogenic variants."""
     
+    cancer_genes = {
+        'BRCA1', 'BRCA2', 'TP53', 'PTEN', 'ATM', 'CHEK2', 'PALB2', 
+        'MLH1', 'MSH2', 'MSH6', 'PMS2', 'APC', 'CDKN2A', 'CDH1',
+        'VHL', 'RB1', 'NF1', 'NF2', 'SDHB', 'SDHC', 'SDHD'
+    }
+    
+    pathogenic_terms = {'Pathogenic', 'Likely_pathogenic', 'Pathogenic/Likely_pathogenic'}
+    
+    comprehensive_variants = []
+    mini_variants = []
+    
+    with gzip.open(clinvar_file, 'rt') as f:
+        for line in f:
+            if line.startswith('#'):
+                # Keep header lines
+                if line.startswith('##'):
+                    comprehensive_variants.append(line)
+                    mini_variants.append(line)
+                elif line.startswith('#CHROM'):
+                    comprehensive_variants.append(line)
+                    mini_variants.append(line)
+                continue
+            
+            # Parse variant line
+            fields = line.strip().split('\t')
+            if len(fields) < 8:
+                continue
+            
+            info = fields[7]
+            
+            # Check for cancer genes
+            gene_found = False
+            for gene in cancer_genes:
+                if f'GENEINFO={gene}:' in info:
+                    gene_found = True
+                    break
+            
+            if not gene_found:
+                continue
+            
+            # Check for pathogenic significance
+            pathogenic_found = False
+            for term in pathogenic_terms:
+                if f'CLNSIG={term}' in info or f'CLNSIG=.*{term}' in info:
+                    pathogenic_found = True
+                    break
+            
+            if pathogenic_found:
+                comprehensive_variants.append(line)
+                if len(mini_variants) < 50:  # Keep mini file small
+                    mini_variants.append(line)
+    
+    # Write filtered files
+    with open('real_test_data/comprehensive_cancer_test.vcf', 'w') as f:
+        f.writelines(comprehensive_variants)
+    
+    with open('real_test_data/mini_cancer_test.vcf', 'w') as f:
+        f.writelines(mini_variants[:50])  # Limit to first 50 variants
+    
+    print(f"\n📁 Created comprehensive cancer VCF: real_test_data/comprehensive_cancer_test.vcf")
+    print(f"   Contains {len(comprehensive_variants) - count_header_lines(comprehensive_variants)} pathogenic cancer variants")
+    print(f"\n📁 Created mini test file: real_test_data/mini_cancer_test.vcf")
+    print(f"   Contains {len(mini_variants) - count_header_lines(mini_variants)} pathogenic cancer variants")
+
+def count_header_lines(lines):
+    """Count header lines in VCF."""
+    return sum(1 for line in lines if line.startswith('#'))
+
+def create_fallback_cancer_vcf():
+    """Create fallback test files if download fails."""
+    
+    print("Creating fallback test files with curated cancer variants...")
+    
+    # This is the fallback - still uses known real variant IDs from ClinVar
+    # but doesn't require downloading the full database
     cancer_vcf = """##fileformat=VCFv4.2
 ##fileDate=20240112
 ##source=ClinVar
@@ -67,16 +166,7 @@ def create_comprehensive_cancer_vcf():
     with open('real_test_data/comprehensive_cancer_test.vcf', 'w') as f:
         f.write(cancer_vcf)
     
-    print("\n📁 Created comprehensive cancer VCF: real_test_data/comprehensive_cancer_test.vcf")
-    print("   This file contains 10 pathogenic variants:")
-    print("   - 5 BRCA1 variants (breast/ovarian cancer)")
-    print("   - 3 TP53 variants (Li-Fraumeni syndrome)")
-    print("   - 2 BRCA2 variants (breast/ovarian cancer)")
-    print("   - All with realistic quality scores and allele frequencies")
-
-def create_mini_test_vcf():
-    """Create a minimal VCF with known cancer variants for quick testing."""
-    
+    # Create mini version
     mini_vcf = """##fileformat=VCFv4.2
 ##fileDate=20240112
 ##source=ClinVar
@@ -98,7 +188,13 @@ def create_mini_test_vcf():
     with open('real_test_data/mini_cancer_test.vcf', 'w') as f:
         f.write(mini_vcf)
     
-    print("\n📁 Also created mini test file: real_test_data/mini_cancer_test.vcf")
+    print("\n📁 Created fallback comprehensive cancer VCF: real_test_data/comprehensive_cancer_test.vcf")
+    print("   This file contains 10 pathogenic variants from ClinVar:")
+    print("   - 5 BRCA1 variants (breast/ovarian cancer)")
+    print("   - 3 TP53 variants (Li-Fraumeni syndrome)")
+    print("   - 2 BRCA2 variants (breast/ovarian cancer)")
+    print("   - All with realistic quality scores and allele frequencies")
+    print("\n📁 Created fallback mini test file: real_test_data/mini_cancer_test.vcf")
     print("   This file contains 5 pathogenic variants in BRCA1 and TP53")
 
 if __name__ == "__main__":

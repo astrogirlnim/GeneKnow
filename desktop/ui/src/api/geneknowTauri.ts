@@ -105,8 +105,11 @@ export class GeneKnowTauriClient {
     try {
       console.log('Getting job results for job ID:', jobId);
       const results = await invoke<PipelineResult>('get_job_results', { jobId });
-      console.log('Raw results from invoke:', results);
-      console.log('Results keys:', results ? Object.keys(results) : 'no results');
+      console.log('🔍 TAURI DEBUG: Raw results from invoke:', results);
+      console.log('🔍 TAURI DEBUG: Results keys:', results ? Object.keys(results) : 'no results');
+      console.log('🔍 TAURI DEBUG: Results.risk_scores:', results?.risk_scores);
+      console.log('🔍 TAURI DEBUG: Results.variant_count:', results?.variant_count);
+      console.log('🔍 TAURI DEBUG: Results.processing_time_seconds:', results?.processing_time_seconds);
       
       if (!results) {
         throw new Error('No results returned from API');

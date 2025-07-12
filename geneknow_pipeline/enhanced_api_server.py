@@ -205,6 +205,68 @@ def convert_numpy_types(obj):
     return obj
 
 
+def format_pipeline_results_for_frontend(pipeline_state: dict) -> dict:
+    """
+    Transform full pipeline state into frontend-compatible PipelineResult format.
+    
+    This function extracts the key fields that the frontend expects and formats
+    them according to the TypeScript PipelineResult interface.
+    """
+    # Extract core fields that frontend expects
+    formatted_result = {
+        "pipeline_status": pipeline_state.get("pipeline_status", "completed"),
+        "variant_count": pipeline_state.get("variant_count", 0),
+        "risk_scores": pipeline_state.get("risk_scores", {}),
+        "risk_genes": pipeline_state.get("risk_genes", {}),
+        "processing_time_seconds": pipeline_state.get("processing_time_seconds", 0),
+        
+        # Report sections - transform if needed
+        "report_sections": pipeline_state.get("report_sections", {}),
+        
+        # Enhanced report content
+        "enhanced_report_content": pipeline_state.get("enhanced_report_content", {}),
+        
+        # Report generator info
+        "report_generator_info": pipeline_state.get("report_generator_info", {}),
+        
+        # TCGA and analysis data
+        "tcga_matches": pipeline_state.get("tcga_matches", {}),
+        "cadd_stats": pipeline_state.get("cadd_stats", {}),
+        
+        # Pathway burden results
+        "pathway_burden_results": pipeline_state.get("pathway_burden_results", {}),
+        "pathway_burden_summary": pipeline_state.get("pathway_burden_summary", {}),
+        
+        # Structured JSON for detailed frontend components
+        "structured_json": pipeline_state.get("structured_json", {}),
+        
+        # Variant details for tables
+        "variants": format_variants_for_frontend(pipeline_state.get("variant_details", []))
+    }
+    
+    return formatted_result
+
+
+def format_variants_for_frontend(variant_details: list) -> list:
+    """Format variant details for frontend consumption."""
+    if not variant_details:
+        return []
+    
+    formatted_variants = []
+    for variant in variant_details[:10]:  # Limit to top 10 variants
+        formatted_variant = {
+            "gene": variant.get("gene", "Unknown"),
+            "position": variant.get("position", 0),
+            "type": variant.get("mutation_type", variant.get("consequence", "Unknown")),
+            "impact": variant.get("functional_impact", "Unknown"),
+            "quality_score": variant.get("quality_metrics", {}).get("quality", 0),
+            "clinical_significance": variant.get("clinical_significance", "Unknown")
+        }
+        formatted_variants.append(formatted_variant)
+    
+    return formatted_variants
+
+
 def create_job(file_path: str, preferences: dict) -> str:
     """Create a new job entry."""
     job_id = str(uuid.uuid4())
@@ -694,13 +756,23 @@ def job_results(job_id: str):
 
         # Read full results from file
         result_file = job["result"].get("result_file")
+        logger.info(f"Looking for result file: {result_file}")
+        logger.info(f"Result file exists: {result_file and os.path.exists(result_file)}")
+        
         if result_file and os.path.exists(result_file):
+            logger.info("Reading full results from file and formatting for frontend")
             with open(result_file, "r") as f:
                 full_results = json.load(f)
+            
+            # Transform full pipeline state into frontend-compatible format
+            formatted_results = format_pipeline_results_for_frontend(full_results)
+            logger.info(f"Formatted results keys: {list(formatted_results.keys())}")
+            
             # Ensure all numpy types are converted before returning
-            converted_results = convert_numpy_types(full_results)
+            converted_results = convert_numpy_types(formatted_results)
             return jsonify(converted_results)
         else:
+            logger.info("Using fallback job result")
             # Fallback to job result, ensure it's converted
             converted_result = convert_numpy_types(job["result"])
             return jsonify(converted_result)
