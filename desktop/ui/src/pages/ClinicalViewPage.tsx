@@ -823,6 +823,45 @@ interface ClinicalRecommendation {
   prevention_options?: string[];
 }
 
+interface PathwayMutation {
+  gene: string;
+  type: string;
+  effect: string;
+}
+
+interface DisruptedPathway {
+  name: string;
+  pathway_id: string;
+  significance: number;
+  affected_genes: string[];
+  mutations: PathwayMutation[];
+  description: string;
+  genes_affected_ratio: string;
+}
+
+interface PathwayAnalysisSummary {
+  total_pathways_disrupted: number;
+  highly_disrupted_pathways: number;
+  total_genes_affected: number;
+  pathway_interaction_count: number;
+  overall_burden_score: number;
+  high_burden_pathways: string[];
+}
+
+interface PathwayAnalysisData {
+  disrupted_pathways: DisruptedPathway[];
+  cancer_pathway_associations: Record<string, string[]>;
+  summary: PathwayAnalysisSummary;
+}
+
+interface PathwayBurdenResult {
+  burden_score: number;
+  damaging_genes?: string[];
+  genes_with_damaging?: number;
+  genes_in_pathway?: number;
+  description?: string;
+}
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -3387,7 +3426,7 @@ const ClinicalViewPage: React.FC = () => {
             {/* Check if pathway analysis data is available */}
             {(() => {
                              // First check structured_json for pathway analysis
-               let pathwayData: any = pipelineResults?.structured_json?.pathway_analysis;
+               let pathwayData: PathwayAnalysisData | null = pipelineResults?.structured_json?.pathway_analysis;
               
               // If not found in structured_json, try to construct from pathway_burden_results
               if (!pathwayData && pipelineResults?.pathway_burden_results) {
@@ -3397,17 +3436,18 @@ const ClinicalViewPage: React.FC = () => {
                 const pathwayBurdenSummary = pipelineResults.pathway_burden_summary;
                 
                                  // Transform pathway burden results into the format expected by frontend
-                 const disrupted_pathways: any[] = [];
+                 const disrupted_pathways: DisruptedPathway[] = [];
                  const cancer_pathway_associations: Record<string, string[]> = {};
                  
                  // Convert pathway burden results to disrupted pathways format
                  for (const [pathway_name, burden_result] of Object.entries(pathwayBurdenResults)) {
-                   const burden_score = (burden_result as any).burden_score || 0;
+                   const typedBurdenResult = burden_result as PathwayBurdenResult;
+                   const burden_score = typedBurdenResult.burden_score || 0;
                    if (burden_score > 0.1) {
                      // Create mutations list from damaging genes
-                     const mutations: Array<{gene: string; type: string; effect: string}> = [];
-                     if ((burden_result as any).damaging_genes) {
-                       (burden_result as any).damaging_genes.forEach((gene: string) => {
+                     const mutations: PathwayMutation[] = [];
+                     if (typedBurdenResult.damaging_genes) {
+                       typedBurdenResult.damaging_genes.forEach((gene: string) => {
                          mutations.push({
                            gene: gene,
                            type: "missense",
@@ -3420,10 +3460,10 @@ const ClinicalViewPage: React.FC = () => {
                        name: pathway_name.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase()),
                        pathway_id: pathway_name,
                        significance: Math.round(burden_score * 100 * 10) / 10, // Convert to percentage
-                       affected_genes: (burden_result as any).damaging_genes || [],
+                       affected_genes: typedBurdenResult.damaging_genes || [],
                        mutations: mutations,
-                       description: (burden_result as any).description || `${pathway_name} pathway`,
-                       genes_affected_ratio: `${(burden_result as any).genes_with_damaging || 0}/${(burden_result as any).genes_in_pathway || 0}`
+                       description: typedBurdenResult.description || `${pathway_name} pathway`,
+                       genes_affected_ratio: `${typedBurdenResult.genes_with_damaging || 0}/${typedBurdenResult.genes_in_pathway || 0}`
                      });
                    }
                  }
@@ -3462,11 +3502,11 @@ const ClinicalViewPage: React.FC = () => {
                    cancer_pathway_associations: cancer_pathway_associations,
                    summary: {
                      total_pathways_disrupted: disrupted_pathways.length,
-                     highly_disrupted_pathways: disrupted_pathways.filter((p: any) => p.significance > 50).length,
-                     total_genes_affected: [...new Set(disrupted_pathways.flatMap((p: any) => p.affected_genes))].length,
+                     highly_disrupted_pathways: disrupted_pathways.filter((p: DisruptedPathway) => p.significance > 50).length,
+                     total_genes_affected: [...new Set(disrupted_pathways.flatMap((p: DisruptedPathway) => p.affected_genes))].length,
                      pathway_interaction_count: 0,
-                     overall_burden_score: pathwayBurdenSummary?.overall_burden_score || 0,
-                     high_burden_pathways: high_burden_pathways
+                     overall_burden_score: (pathwayBurdenSummary?.overall_burden_score ?? 0) as number,
+                     high_burden_pathways: high_burden_pathways as string[]
                    }
                  };
                 
@@ -3555,7 +3595,7 @@ const ClinicalViewPage: React.FC = () => {
                     
                     {/* Pathway Disruption Analysis */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                      {pathwayData.disrupted_pathways.map((pathway: any, index: number) => (
+                      {pathwayData.disrupted_pathways.map((pathway: DisruptedPathway, index: number) => (
                         <div key={index} style={{
                           background: '#FFFFFF',
                           padding: '1.5rem',
@@ -3601,7 +3641,7 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {pathway.mutations.map((mutation: any, mutIndex: number) => (
+                            {pathway.mutations.map((mutation: PathwayMutation, mutIndex: number) => (
                               <div key={mutIndex} style={{
                                 display: 'flex',
                                 alignItems: 'center',
