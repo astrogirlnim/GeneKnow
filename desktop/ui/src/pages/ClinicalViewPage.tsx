@@ -5,36 +5,7 @@ import ConfidenceCheck from '../components/ConfidenceCheck';
 import type { PipelineResult } from '../api/geneknowPipeline';
 
 // Type definitions for genomic data structures
-interface StructuralVariant {
-  type: string;
-  chromosome: string;
-  start: number;
-  end: number;
-  size: number;
-  genes_affected: string[];
-  clinical_significance: string;
-  functional_impact: string;
-  transformation: {
-    original: string;
-    mutated: string;
-    effect: string;
-  };
-}
-
-interface CopyNumberVariant {
-  gene: string;
-  chromosome: string;
-  copy_number: number;
-  normal_copy_number: number;
-  fold_change: number;
-  clinical_significance: string;
-  cancer_relevance: string;
-  transformation: {
-    original: string;
-    mutated: string;
-    effect: string;
-  };
-}
+// (Structural and Copy Number variant interfaces removed as they're not currently used)
 
 // Type definitions for external libraries
 interface JsPDFConstructor {
