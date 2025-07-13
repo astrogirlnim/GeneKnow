@@ -139,12 +139,13 @@ const Header = () => (
     padding: '1rem 0',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
   }}>
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0.75rem 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <Link to="/" style={{ 
         textDecoration: 'none', 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '0.1rem' 
+        gap: '0.1rem',
+        marginLeft: '-0.5rem'
       }}>
         <GeneKnowLogo />
         <h1 style={{ 
