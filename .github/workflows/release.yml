@@ -931,13 +931,106 @@ jobs:
               exit 1
             fi
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            # Linux AppImage or deb
+            # Linux AppImage or deb verification
             echo "🐧 Checking Linux build artifacts..."
-            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*" -type f | head -5
+            
+            # Find .deb package
+            DEB_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/deb/ -name "*.deb" -type f 2>/dev/null | head -1)
+            if [ -n "$DEB_PATH" ]; then
+              echo "✅ Found Linux DEB package: $DEB_PATH"
+              echo "📊 DEB size: $(du -sh "$DEB_PATH" | cut -f1)"
+              
+              # Extract and verify DEB contents
+              TEMP_EXTRACT_DIR=$(mktemp -d)
+              echo "📦 Extracting DEB to verify bundled resources..."
+              
+              if dpkg-deb --extract "$DEB_PATH" "$TEMP_EXTRACT_DIR" 2>/dev/null; then
+                echo "✅ DEB extracted successfully"
+                
+                # Look for bundled resources in the extracted package
+                BUNDLED_PATH_CANDIDATES=(
+                  "$TEMP_EXTRACT_DIR/usr/bin/bundled_resources"
+                  "$TEMP_EXTRACT_DIR/usr/share/*/bundled_resources"
+                  "$TEMP_EXTRACT_DIR/opt/*/bundled_resources"
+                )
+                
+                BUNDLED_FOUND=false
+                for path in "${BUNDLED_PATH_CANDIDATES[@]}"; do
+                  if [ -d "$path" ]; then
+                    echo "✅ bundled_resources found in DEB at: $path"
+                    echo "📊 Bundle size in DEB: $(du -sh "$path" | cut -f1)"
+                    
+                    # Check for critical files
+                    if [ -f "$path/start_api_server.sh" ]; then
+                      echo "   ✅ start_api_server.sh found in DEB"
+                    else
+                      echo "   ⚠️  start_api_server.sh not found in DEB"
+                    fi
+                    
+                    if [ -d "$path/python_runtime" ]; then
+                      echo "   ✅ python_runtime found in DEB"
+                    else
+                      echo "   ⚠️  python_runtime not found in DEB"
+                    fi
+                    
+                    if [ -d "$path/geneknow_pipeline" ]; then
+                      echo "   ✅ geneknow_pipeline found in DEB"
+                    else
+                      echo "   ⚠️  geneknow_pipeline not found in DEB"
+                    fi
+                    
+                    BUNDLED_FOUND=true
+                    break
+                  fi
+                done
+                
+                if [ "$BUNDLED_FOUND" = false ]; then
+                  echo "⚠️  bundled_resources not found in expected locations"
+                  echo "📂 DEB structure preview:"
+                  find "$TEMP_EXTRACT_DIR" -type d -name "*bundled*" 2>/dev/null || echo "   No bundled directories found"
+                  find "$TEMP_EXTRACT_DIR" -type f -name "start_api_server.sh" 2>/dev/null || echo "   No start_api_server.sh found"
+                fi
+                
+                # Clean up
+                rm -rf "$TEMP_EXTRACT_DIR"
+              else
+                echo "⚠️  Failed to extract DEB for verification"
+              fi
+            else
+              echo "⚠️  Could not find Linux DEB package"
+              echo "📂 Looking for DEB in:"
+              find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.deb" -type f 2>/dev/null || echo "   No DEB files found"
+            fi
+            
+            # Show first few build artifacts safely (avoiding broken pipe)
+            echo "📂 First few build artifacts:"
+            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5 || echo "   No artifacts found"
+            
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            # Windows executable
+            # Windows MSI/EXE verification
             echo "🪟 Checking Windows build artifacts..."
-            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*" -type f | head -5
+            
+            # Find MSI installer
+            MSI_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/msi/ -name "*.msi" -type f 2>/dev/null | head -1)
+            if [ -n "$MSI_PATH" ]; then
+              echo "✅ Found Windows MSI installer: $MSI_PATH"
+              echo "📊 MSI size: $(du -sh "$MSI_PATH" | cut -f1)"
+            else
+              echo "⚠️  Could not find Windows MSI installer"
+            fi
+            
+            # Find EXE installer
+            EXE_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/nsis/ -name "*.exe" -type f 2>/dev/null | head -1)
+            if [ -n "$EXE_PATH" ]; then
+              echo "✅ Found Windows EXE installer: $EXE_PATH"
+              echo "📊 EXE size: $(du -sh "$EXE_PATH" | cut -f1)"
+            else
+              echo "⚠️  Could not find Windows EXE installer"
+            fi
+            
+            # Show first few build artifacts safely (avoiding broken pipe)
+            echo "📂 First few build artifacts:"
+            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5 || echo "   No artifacts found"
           fi
           
           echo "✅ Build artifact verification completed"
@@ -950,8 +1043,16 @@ jobs:
           echo "📂 Locating build artifacts..."
           echo "🔍 Searching in desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/"
           
-          # Find all bundle files
-          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f -name "*" | sort
+          # Find all bundle files safely (avoiding broken pipe)
+          echo "📦 Build artifacts found:"
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f -name "*" 2>/dev/null | sort || echo "   No artifacts found"
+          
+          # Count artifacts by type
+          echo "📊 Artifact summary:"
+          DMG_COUNT=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" -type f 2>/dev/null | wc -l)
+          DEB_COUNT=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.deb" -type f 2>/dev/null | wc -l)
+          echo "   🍎 DMG files: $DMG_COUNT"
+          echo "   🐧 DEB files: $DEB_COUNT"
           
           echo "✅ Build artifacts located"
 
