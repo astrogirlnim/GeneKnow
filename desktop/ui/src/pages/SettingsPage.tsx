@@ -206,7 +206,6 @@ export const SettingsPage: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<AvailableModels>({
     ollama: []
   })
-  const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [backendStatus, setBackendStatus] = useState<{
