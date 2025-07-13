@@ -3340,29 +3340,27 @@ const ClinicalViewPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
-                </div>
-              </div>
-              
+                </div>              
               {/* Pagination Controls */}
               {totalPages > 1 && <PaginationControls />}
             </div>
             
             {/* Structural Variants */}
-              <div style={{
-                background: '#F9FAFB',
-                padding: '1.5rem',
-                borderRadius: '0.5rem',
-                marginTop: '2rem',
-                border: '1px solid #E5E7EB'
+            <div style={{
+              background: '#F9FAFB',
+              padding: '1.5rem',
+              borderRadius: '0.5rem',
+              marginTop: '2rem',
+              border: '1px solid #E5E7EB'
+            }}>
+              <h4 style={{ 
+                color: '#111827',
+                fontSize: '1rem',
+                fontWeight: '600',
+                marginBottom: '1rem'
               }}>
-                <h4 style={{ 
-                  color: '#111827',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  marginBottom: '1rem'
-                }}>
-                  Structural Variants
-                </h4>
+                Structural Variants
+              </h4>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {genomicData.structural_variants.length === 0 ? (
