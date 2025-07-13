@@ -2,7 +2,6 @@ import type { ReactNode, FC } from 'react'
 import { Link } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useState, useEffect } from 'react'
-import DesktopIcon from '../assets/Desktop_icon_geneknow.png'
 
 const GeneKnowLogo = () => (
   <div 
@@ -14,15 +13,47 @@ const GeneKnowLogo = () => (
       justifyContent: 'center'
     }}
   >
-    <img 
-      src={DesktopIcon} 
-      alt="GeneKnow Logo" 
-      style={{
-        width: '52px',
-        height: '52px',
-        objectFit: 'contain'
-      }}
-    />
+    <svg width="36" height="36" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Enhanced gradients with blue and green */}
+        <linearGradient id="dnaGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#0ea5e9', stopOpacity:1}} />
+          <stop offset="50%" style={{stopColor:'#0284c7', stopOpacity:1}} />
+          <stop offset="100%" style={{stopColor:'#0369a1', stopOpacity:1}} />
+        </linearGradient>
+        <linearGradient id="dnaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor:'#10b981', stopOpacity:1}} />
+          <stop offset="50%" style={{stopColor:'#059669', stopOpacity:1}} />
+          <stop offset="100%" style={{stopColor:'#047857', stopOpacity:1}} />
+        </linearGradient>
+      </defs>
+      
+      {/* Main DNA Structure - Made Larger */}
+      <g transform="translate(120, 120)">
+        {/* DNA Double Helix - Larger structure */}
+        <g>
+          {/* Primary strand (Blue) */}
+          <path d="M -35,-90 C -35,-65 35,-50 35,-25 C 35,0 -35,15 -35,40 C -35,65 35,80 35,105" 
+                fill="none" stroke="url(#dnaGradient1)" strokeWidth="8" strokeLinecap="round"/>
+          
+          {/* Secondary strand (Green) */}
+          <path d="M 35,-90 C 35,-65 -35,-50 -35,-25 C -35,0 35,15 35,40 C 35,65 -35,80 -35,105" 
+                fill="none" stroke="url(#dnaGradient2)" strokeWidth="8" strokeLinecap="round"/>
+          
+          {/* Base pairs - Larger and more colorful */}
+          <line x1="-35" y1="-77" x2="35" y2="-77" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="-58" x2="20" y2="-58" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="-38" x2="35" y2="-38" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="-19" x2="20" y2="-19" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="0" x2="35" y2="0" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="19" x2="20" y2="19" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="38" x2="35" y2="38" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="58" x2="20" y2="58" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+          <line x1="-35" y1="77" x2="35" y2="77" stroke="url(#dnaGradient1)" strokeWidth="4"/>
+          <line x1="-20" y1="96" x2="20" y2="96" stroke="url(#dnaGradient2)" strokeWidth="4"/>
+        </g>
+      </g>
+    </svg>
   </div>
 )
 
