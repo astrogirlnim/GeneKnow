@@ -1,4 +1,4 @@
-# bundle-python.ps1 - Bundle Python runtime and dependencies for GenePredict (Windows)
+# bundle-python.ps1 - Bundle Python runtime and dependencies for GeneKnow (Windows)
 # This script prepares a complete Python environment for distribution with the Tauri app
 
 $ErrorActionPreference = "Stop"
@@ -11,7 +11,7 @@ $PROJECT_ROOT = Split-Path -Parent (Split-Path -Parent $SCRIPT_DIR)
 $DESKTOP_DIR = Join-Path $PROJECT_ROOT "desktop"
 $BUNDLE_DIR = Join-Path $DESKTOP_DIR "bundled_resources"
 
-Write-Host "🐍 GenePredict Python Bundling Script (Windows)" -ForegroundColor Cyan
+Write-Host "🐍 GeneKnow Python Bundling Script (Windows)" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host "Python Version: $PYTHON_VERSION"
 Write-Host "Bundle Directory: $BUNDLE_DIR"

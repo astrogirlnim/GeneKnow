@@ -1,5 +1,5 @@
 #!/bin/bash
-# bundle-python-optimized.sh - Optimized Python bundling for GenePredict
+# bundle-python-optimized.sh - Optimized Python bundling for GeneKnow
 # This script reduces app size from 1.9GB to ~400MB by using lightweight dependencies
 
 set -e  # Exit on error
@@ -16,7 +16,7 @@ BUNDLE_DIR="$DESKTOP_DIR/bundled_resources"
 OS_TYPE=$(uname -s)
 ARCH_TYPE=$(uname -m)
 
-echo "🚀 GenePredict Optimized Python Bundling Script"
+echo "🚀 GeneKnow Optimized Python Bundling Script"
 echo "=============================================="
 echo "Platform: $OS_TYPE ($ARCH_TYPE)"
 echo "Python Version: $PYTHON_VERSION"

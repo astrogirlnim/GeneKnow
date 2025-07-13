@@ -1135,7 +1135,7 @@ pub fn run() {
           .targets([
             tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
             tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir { 
-              file_name: Some("GenePredict.log".to_string()) 
+              file_name: Some("GeneKnow.log".to_string()) 
             }),
           ])
           .build(),
@@ -1144,7 +1144,7 @@ pub fn run() {
       // Enable shell plugin for opening external links
       app.handle().plugin(tauri_plugin_shell::init())?;
       
-      log::info!("=== GenePredict Starting ===");
+      log::info!("=== GeneKnow Starting ===");
       log::info!("Build mode: {}", if cfg!(debug_assertions) { "DEBUG" } else { "RELEASE" });
       log::info!("Executable path: {:?}", std::env::current_exe());
       
