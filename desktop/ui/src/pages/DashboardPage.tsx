@@ -709,7 +709,7 @@ const DashboardPage: React.FC = () => {
     const currentTime = new Date().toLocaleTimeString();
     
     let markdown = `**Generated:** ${currentDate} at ${currentTime}  
-**Analysis Type:** Clinical Genomic Analysis  
+**Analysis Type:** In-Depth Genomic Analysis  
 **File Analyzed:** ${fileName || 'Unknown'}
 
 ---
@@ -772,7 +772,7 @@ The analysis evaluated risk across multiple cancer types using polygenic risk sc
 ### Significant Variants
 
 All variants have been evaluated for:
-- **Clinical Significance**: Using ClinVar database annotations
+- **Research Significance**: Using ClinVar database annotations
 - **Population Frequency**: Compared against 1000 Genomes and gnomAD databases  
 - **Pathogenicity Prediction**: CADD scores and ensemble predictions
 - **Literature Evidence**: Cross-referenced with TCGA and published studies
@@ -794,7 +794,7 @@ All variants have been evaluated for:
 
     markdown += `## Recommendations
 
-### Clinical Follow-up
+### Recommended Follow-up
 
 1. **Routine Screening**: Continue standard screening protocols for your age group
 2. **Family History**: Consider family history in risk assessment
@@ -818,7 +818,7 @@ Consider genetic counseling if:
 
 ### Data Sources
 
-- **ClinVar**: Clinical variant interpretation
+- **ClinVar**: Research variant interpretation
 - **TCGA**: Cancer genomics reference
 - **1000 Genomes**: Population frequency data
 - **PRS Catalog**: Polygenic risk scores
@@ -826,7 +826,7 @@ Consider genetic counseling if:
 ## Glossary
 
 **Variant**: A genetic difference from the reference genome  
-**ClinVar**: Database of genetic variants and their clinical significance  
+**ClinVar**: Database of genetic variants and their research significance  
 **CADD Score**: Combined Annotation Dependent Depletion score for variant pathogenicity  
 **Polygenic Risk Score (PRS)**: Combined effect of multiple genetic variants on disease risk  
 
@@ -1292,7 +1292,7 @@ ${content}`;
                   color: '#111827',
                   margin: 0
                 }}>
-                  Clinical Reports
+                  In-Depth Reports
                 </h3>
                 
 {/* Download PDF Button */}

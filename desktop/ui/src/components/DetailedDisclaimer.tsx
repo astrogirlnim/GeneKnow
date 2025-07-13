@@ -77,7 +77,7 @@ const DetailedDisclaimer: React.FC = () => {
           </p>
           <ul style={{ paddingLeft: '1.25rem', margin: 0 }}>
             <li style={{ marginBottom: '1rem' }}>
-              <strong>Scope of Analysis:</strong> This report is based exclusively on the variant calls from the provided data file. It does not incorporate essential clinical information such as patient demographics, family history, lifestyle, or environmental factors, all of which are critical for a comprehensive risk assessment.
+              <strong>Scope of Analysis:</strong> This report is based exclusively on the variant calls from the provided data file. It does not incorporate essential medical information such as patient demographics, family history, lifestyle, or environmental factors, all of which are critical for a comprehensive risk assessment.
             </li>
             <li style={{ marginBottom: '1rem' }}>
               <strong>Model Knowledge:</strong> The underlying risk model is limited to genetic associations that are well-documented in our training data. Its ability to accurately assess risk from novel, rare, or uncharacterized genetic variants is not validated.
@@ -94,7 +94,7 @@ const DetailedDisclaimer: React.FC = () => {
             fontSize: '0.8rem',
             color: '#6B7280'
           }}>
-            For Investigational Use Only. All findings must be correlated with clinical findings and confirmed by an independent, certified laboratory.
+            For Investigational Use Only. All findings must be correlated with medical findings and confirmed by an independent, certified laboratory.
           </p>
         </div>
       )}

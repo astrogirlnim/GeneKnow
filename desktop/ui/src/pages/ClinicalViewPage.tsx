@@ -1282,7 +1282,7 @@ const AlertTooltip = ({ alert, isVisible }: { alert: Alert; isVisible: boolean }
         marginBottom: '0.25rem',
         fontSize: '0.8rem'
       }}>
-        Clinical significance:
+        Research significance:
       </h4>
       <p style={{ color: '#D1D5DB', marginBottom: '0' }}>{alert.detailedInfo.clinicalSignificance}</p>
     </div>
@@ -1444,7 +1444,7 @@ const ClinicalViewPage: React.FC = () => {
     },
     clinical: {
       id: 'clinical',
-      title: 'Clinical Report',
+      title: 'In-Depth Report',
       elementIds: ['survival-analysis', 'clinical-recommendations']
     }
   };
@@ -3007,7 +3007,7 @@ const ClinicalViewPage: React.FC = () => {
                               pointerEvents: 'none',
                               border: '1px solid #374151'
                             }}>
-                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different clinical implications.</p>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Mutation type: SNV (Single Nucleotide Variant - blue), INDEL (Insertion/Deletion - red), or CNV (Copy Number Variant - yellow). Different types have different research implications.</p>
                               <div style={{
                                 position: 'absolute',
                                 bottom: '100%',
@@ -3199,7 +3199,7 @@ const ClinicalViewPage: React.FC = () => {
                               pointerEvents: 'none',
                               border: '1px solid #374151'
                             }}>
-                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Clinical significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown clinical impact.</p>
+                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Research significance based on ClinVar and population data. Pathogenic (red) = disease-causing, Likely pathogenic (orange) = probably disease-causing, Uncertain significance (green) = unknown research impact.</p>
                               <div style={{
                                 position: 'absolute',
                                 bottom: '100%',
@@ -4135,7 +4135,7 @@ const ClinicalViewPage: React.FC = () => {
                 fontWeight: '600',
                 margin: 0
               }}>
-                Clinical Report & Recommendations
+                In-Depth Report & Recommendations
               </h2>
               <div 
                 style={{ position: 'relative', display: 'inline-flex' }}
@@ -4154,7 +4154,7 @@ const ClinicalViewPage: React.FC = () => {
                     e.currentTarget.style.borderColor = '#D1D5DB';
                   }}
                 />
-                <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
+                <SmartTooltip content="Comprehensive in-depth analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based research guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
               </div>
               </div>
               <SubtabDownloadButton 
@@ -4354,7 +4354,7 @@ const ClinicalViewPage: React.FC = () => {
                   fontWeight: '600',
                   margin: 0
                 }}>
-                  Clinical Recommendations
+                  In-Depth Recommendations
                 </h3>
                 <div 
                   style={{ position: 'relative', display: 'inline-flex' }}

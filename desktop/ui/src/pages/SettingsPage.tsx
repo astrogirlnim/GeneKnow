@@ -468,8 +468,8 @@ export const SettingsPage: React.FC = () => {
   const getStyleOptions = () => [
     { 
       value: 'clinician', 
-      label: 'Clinical', 
-      description: 'Medical professionals - detailed clinical language' 
+      label: 'In-Depth', 
+      description: 'Medical professionals - detailed research language' 
     },
     { 
       value: 'technical', 
@@ -976,7 +976,7 @@ export const SettingsPage: React.FC = () => {
                     }}
                     style={{ marginRight: '8px' }}
                   />
-                  <span style={{ color: '#374151', fontWeight: '500' }}>Include Clinical Recommendations</span>
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Include In-Depth Recommendations</span>
                 </label>
 
                 {/* Include Glossary */}
