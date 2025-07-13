@@ -1,5 +1,5 @@
 #!/bin/bash
-# bundle-python.sh - Bundle Python runtime and dependencies for GenePredict
+# bundle-python.sh - Bundle Python runtime and dependencies for GeneKnow
 # This script prepares a complete Python environment for distribution with the Tauri app
 
 set -e  # Exit on error
@@ -16,7 +16,7 @@ BUNDLE_DIR="$DESKTOP_DIR/bundled_resources"
 OS_TYPE=$(uname -s)
 ARCH_TYPE=$(uname -m)
 
-echo "🐍 GenePredict Python Bundling Script"
+echo "🐍 GeneKnow Python Bundling Script"
 echo "===================================="
 echo "Platform: $OS_TYPE ($ARCH_TYPE)"
 echo "Python Version: $PYTHON_VERSION"

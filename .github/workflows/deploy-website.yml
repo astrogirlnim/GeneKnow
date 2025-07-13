@@ -7,6 +7,13 @@ on:
       - 'download_website/**'
       - '.github/workflows/deploy-website.yml'
   workflow_dispatch:
+  workflow_run:
+    # Automatically update website when new releases are created
+    workflows: ["🚀 Release Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -24,6 +31,8 @@ jobs:
   build:
     name: 🔨 Build Website
     runs-on: ubuntu-latest
+    # Only run on successful release completions or direct triggers
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -79,6 +88,11 @@ jobs:
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployed at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "- **Trigger:** Automatic (New release created)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Trigger:** Manual or code change" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🧪 Testing" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

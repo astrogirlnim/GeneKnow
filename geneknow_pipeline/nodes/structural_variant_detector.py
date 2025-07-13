@@ -262,6 +262,12 @@ def process(state: Dict) -> Dict:
             state.get("classified_variants", state.get("filtered_variants", [])),
         )
 
+        logger.info(f"📊 Analyzing {len(variants)} variants for structural variants")
+        logger.info("🔍 SV Detection Criteria:")
+        logger.info("  • Large indels: >50bp size difference")
+        logger.info("  • Known fusion genes: BCR-ABL1, EML4-ALK, TMPRSS2-ERG, MYC-IGH")
+        logger.info("  • Gene clustering: ≥3 variants in same oncogene/tumor suppressor")
+
         structural_variants = []
 
         # Check if we have a BAM file for proper SV detection
@@ -273,8 +279,23 @@ def process(state: Dict) -> Dict:
             structural_variants.extend(simulate_sv_detection(variants))
 
         # Always check for large indels in VCF
+        logger.info("🔬 Checking for large indels in VCF data...")
         vcf_svs = detect_from_vcf_variants(variants)
         structural_variants.extend(vcf_svs)
+        logger.info(f"📈 Found {len(vcf_svs)} large indels")
+
+        # Log gene variant distribution
+        gene_variant_counts = {}
+        for variant in variants:
+            gene = variant.get("gene")
+            if gene:
+                gene_variant_counts[gene] = gene_variant_counts.get(gene, 0) + 1
+        
+        high_variant_genes = {gene: count for gene, count in gene_variant_counts.items() if count >= 3}
+        if high_variant_genes:
+            logger.info(f"🧬 Genes with ≥3 variants: {high_variant_genes}")
+        else:
+            logger.info("🧬 No genes with ≥3 variants found")
 
         # Remove duplicates
         seen = set()
@@ -317,7 +338,13 @@ def process(state: Dict) -> Dict:
         if "structural_variant_detector" not in completed:
             completed.append("structural_variant_detector")
 
-        logger.info(f"Detected {len(unique_svs)} structural variants")
+        logger.info(f"✅ Detected {len(unique_svs)} structural variants")
+        if len(unique_svs) == 0:
+            logger.info("ℹ️  No structural variants detected - this is normal for most genomic analyses")
+            logger.info("ℹ️  Structural variants are rare and typically found in:")
+            logger.info("    • Cancer genomes with extensive rearrangements")
+            logger.info("    • Inherited disorders with large genomic changes")
+            logger.info("    • Samples with known fusion genes")
 
         # Return only the keys this node updates
         return {

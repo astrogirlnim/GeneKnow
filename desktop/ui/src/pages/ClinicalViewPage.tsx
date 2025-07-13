@@ -1,46 +1,34 @@
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
 import DetailedDisclaimer from '../components/DetailedDisclaimer';
 import type { PipelineResult } from '../api/geneknowPipeline';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { invoke } from '@tauri-apps/api/core';
+
+
 
 // Type definitions for genomic data structures
 // (Structural and Copy Number variant interfaces removed as they're not currently used)
 
-// Type definitions for external libraries
-interface JsPDFConstructor {
-  new (orientation?: string, unit?: string, format?: string): JsPDFInstance;
+// Type definitions for subtab content
+interface SubtabContent {
+  id: string;
+  title: string;
+  elementIds: string[];
 }
 
-interface JsPDFInstance {
-  internal: {
-    pageSize: {
-      getWidth(): number;
-      getHeight(): number;
-    };
-  };
-  setFontSize(size: number): void;
-  setFont(fontName?: string, fontStyle?: string): void;
-  text(text: string, x: number, y: number, options?: { align?: string }): void;
-  text(text: string[], x: number, y: number): void;
-  splitTextToSize(text: string, maxWidth: number): string[];
-  addImage(imageData: string, format: string, x: number, y: number, width: number, height: number): void;
-  addPage(): void;
-  save(filename: string): void;
-}
-
-declare global {
-  interface Window {
-    jsPDF?: JsPDFConstructor | { jsPDF: JsPDFConstructor };
-    jspdf?: {
-      jsPDF: JsPDFConstructor;
-    };
-    html2canvas?: (element: HTMLElement, options?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
-  }
-  
-  // Global jsPDF might be available
-  const jsPDF: JsPDFConstructor | undefined;
+interface VariantTableRow {
+  gene: string;
+  variant: string;
+  type: string;
+  quality: string;
+  significance: string;
+  mainImpact: string;
+  subImpact: string;
 }
 
 // Mock SHAP validation function removed - only real pipeline data is used
@@ -57,72 +45,27 @@ const getRiskColor = (riskLevel: string) => {
   }
 };
 
-// Simple PDF Download Helper Function
-const downloadPDF = async (elementId: string, title: string, summary: string, setIsPDFGenerating: (value: boolean) => void) => {
-  console.log('🚀 PDF Download Started:', { elementId, title, summary: summary.substring(0, 100) + '...' });
+// Enhanced PDF Download Function - Consolidated per subtab
+const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGenerating: (value: boolean) => void) => {
+  console.log('🚀 PDF Download Started for subtab:', subtabContent.title);
   
   try {
-    // Set PDF generating state
     setIsPDFGenerating(true);
     
-    console.log('📄 Creating loading notification...');
-    
     // Show loading notification
-    const loadingNotification = document.createElement('div');
-    loadingNotification.innerHTML = `
-      <div style="
-        position: fixed; 
-        top: 20px; 
-        right: 20px; 
-        background: #2563EB; 
-        color: white; 
-        padding: 15px 20px; 
-        border-radius: 8px; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 10000;
-        font-weight: 600;
-        font-size: 14px;
-        max-width: 300px;
-      ">
-        📄 Loading PDF library...
-      </div>
-    `;
-    document.body.appendChild(loadingNotification);
-    console.log('✅ Loading notification added to DOM');
-    
-    // Check if jsPDF is already loaded
-    console.log('🔍 Checking if jsPDF already exists:', !!window.jsPDF);
-    console.log('🔍 Checking if window.jspdf exists:', !!window.jspdf);
-    console.log('🔍 Checking if window.jsPDF exists:', !!window.jsPDF);
-    if (window.jsPDF || window.jspdf) {
-      console.log('✅ jsPDF already loaded, generating PDF directly...');
-      generatePDF();
-      return;
-    }
-    
-    console.log('📦 Loading jsPDF from CDN...');
-    
-    // Load jsPDF from CDN
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    console.log('📦 Script element created with src:', script.src);
-    
-    script.onload = () => {
-      console.log('✅ jsPDF script loaded successfully');
-      console.log('🔍 Checking window.jsPDF after load:', !!window.jsPDF);
-      console.log('🔍 Checking window.jspdf after load:', !!window.jspdf);
-      console.log('🔍 Checking global jsPDF after load:', typeof jsPDF !== 'undefined');
-      console.log('🔍 window object keys containing "pdf":', Object.keys(window).filter(key => key.toLowerCase().includes('pdf')));
-      console.log('🔍 window.jsPDF object:', window.jsPDF);
-      console.log('🔍 window.jspdf object:', window.jspdf);
+    const showNotification = (message: string, bgColor: string = '#2563EB') => {
+      // Remove any existing notifications
+      const existingNotifications = document.querySelectorAll('[data-pdf-notification]');
+      existingNotifications.forEach(n => n.remove());
       
-      // Update loading message
-      loadingNotification.innerHTML = `
+      const notification = document.createElement('div');
+      notification.setAttribute('data-pdf-notification', 'true');
+      notification.innerHTML = `
         <div style="
           position: fixed; 
           top: 20px; 
           right: 20px; 
-          background: #2563EB; 
+          background: ${bgColor}; 
           color: white; 
           padding: 15px 20px; 
           border-radius: 8px; 
@@ -132,512 +75,511 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
           font-size: 14px;
           max-width: 300px;
         ">
-          📄 Generating PDF...
+          ${message}
         </div>
       `;
-      console.log('📝 Loading notification updated to "Generating PDF"');
-      
-      // Wait a moment for the library to initialize
-      setTimeout(() => {
-        console.log('⏰ Timeout completed, checking jsPDF availability...');
-        if (window.jsPDF || window.jspdf || typeof jsPDF !== 'undefined') {
-          console.log('✅ jsPDF confirmed available, calling generatePDF...');
-          generatePDF();
-        } else {
-          console.error('❌ jsPDF still not available after timeout');
-          showError('PDF library failed to load');
-        }
-      }, 500);
+      document.body.appendChild(notification);
+      return notification;
     };
     
-    script.onerror = (error) => {
-      console.error('❌ Script loading failed:', error);
-      showError('Failed to load PDF library');
-    };
+    showNotification('📄 Generating PDF...');
     
-    document.head.appendChild(script);
-    console.log('📦 Script added to document head');
-    
-    async function generatePDF() {
-      console.log('🏭 Starting PDF generation...');
-      
-      try {
-        console.log('🔍 Destructuring jsPDF from window.jsPDF...');
-        
-        // Try different ways jsPDF might be exposed with proper type checking
-        let jsPDFClass: JsPDFConstructor | undefined;
-        
-        if (window.jsPDF && typeof window.jsPDF === 'object' && 'jsPDF' in window.jsPDF) {
-          console.log('✅ Found jsPDF at window.jsPDF.jsPDF');
-          jsPDFClass = (window.jsPDF as { jsPDF: JsPDFConstructor }).jsPDF;
-        } else if (window.jspdf && window.jspdf.jsPDF) {
-          console.log('✅ Found jsPDF at window.jspdf.jsPDF');
-          jsPDFClass = window.jspdf.jsPDF;
-        } else if (window.jsPDF && typeof window.jsPDF === 'function') {
-          console.log('✅ Found jsPDF at window.jsPDF');
-          jsPDFClass = window.jsPDF as JsPDFConstructor;
-        } else if (window.jspdf) {
-          console.log('✅ Found jsPDF at window.jspdf');
-          jsPDFClass = window.jspdf.jsPDF;
-        } else if (typeof jsPDF !== 'undefined') {
-          console.log('✅ Found jsPDF as global variable');
-          jsPDFClass = jsPDF;
-        }
-        
-        if (!jsPDFClass) {
-          throw new Error('jsPDF not found in any expected location');
-        }
-        
-        console.log('✅ jsPDF class located:', !!jsPDFClass);
-        console.log('🔍 jsPDF class type:', typeof jsPDFClass);
-        console.log('🔍 jsPDF class constructor:', typeof jsPDFClass === 'function');
-        
-        // Create new PDF document
-        console.log('📄 Creating new PDF document...');
-        const pdf = new jsPDFClass('p', 'mm', 'a4');
-        console.log('✅ PDF document created');
-        
+    // Create PDF document
+    const pdf = new jsPDF('p', 'mm', 'a4');
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        console.log('📏 Page dimensions:', { pageWidth, pageHeight });
-        
         let yPosition = 20;
         
-        // Header
-        console.log('📝 Adding header...');
+    // Add header
         pdf.setFontSize(20);
-        pdf.setFont(undefined, 'bold');
-        pdf.text(title, pageWidth / 2, yPosition, { align: 'center' });
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(subtabContent.title, pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 15;
         
         pdf.setFontSize(14);
-        pdf.setFont(undefined, 'normal');
+    pdf.setFont('helvetica', 'normal');
         pdf.text('GeneKnow AI Genomic Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 10;
         
         pdf.setFontSize(12);
         pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 20;
-        console.log('✅ Header added, current Y position:', yPosition);
-        
-        // Analysis Summary Section (at the top)
-        console.log('📝 Adding analysis summary...');
-        pdf.setFontSize(16);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Analysis Summary', 20, yPosition);
-        yPosition += 10;
-        
-        // Summary content
-        pdf.setFontSize(11);
-        pdf.setFont(undefined, 'normal');
-        const summaryLines = pdf.splitTextToSize(summary, pageWidth - 40);
-        console.log('📝 Summary split into lines:', summaryLines.length);
-        pdf.text(summaryLines, 20, yPosition);
-        yPosition += summaryLines.length * 5 + 20;
-        console.log('✅ Summary added, current Y position:', yPosition);
-        
-        // Capture and add the actual visualization
-        console.log('📊 Capturing visualization element...');
+    
+    // Capture and add content from each element
+    for (const elementId of subtabContent.elementIds) {
         const element = document.getElementById(elementId);
-        if (element) {
-          console.log('✅ Found visualization element:', elementId);
+      if (!element) {
+        console.warn(`Element ${elementId} not found, skipping`);
+        continue;
+      }
+      
+      try {
+        // Add section title
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        const sectionTitle = element.querySelector('h3')?.textContent || elementId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Check if we need a new page (more space needed for gene significance analysis)
+        const spaceNeeded = elementId.includes('gene-significance-analysis') ? 150 : 60;
+        if (yPosition > pageHeight - spaceNeeded) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.text(sectionTitle, 20, yPosition);
+        yPosition += 12;
+        
+        // Special handling for detected-variants - create a text-based table
+        if (elementId === 'detected-variants') {
+          console.log(`📊 Creating text-based table for detected variants`);
           
-          try {
-            // Add visualization title
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Visualization', 20, yPosition);
+          // Extract variant data from the table in the DOM
+          const table = element.querySelector('table');
+          const variantData: VariantTableRow[] = [];
+          
+          if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row) => {
+              const cells = row.querySelectorAll('td');
+              if (cells.length >= 7) {
+                // Extract quality score from the colored div
+                const qualityCell = cells[4];
+                const qualityDiv = qualityCell.querySelector('div');
+                const qualityScore = qualityDiv?.textContent?.trim() || 'N/A';
+                
+                // Extract clinical significance from the colored div
+                const significanceCell = cells[5];
+                const significanceDiv = significanceCell.querySelector('div');
+                const significance = significanceDiv?.textContent?.trim() || 'N/A';
+                
+                // Extract impact with both main text and sub-text
+                const impactCell = cells[6];
+                const mainImpact = impactCell.querySelector('div:first-child strong')?.textContent?.trim() || '';
+                const subImpact = impactCell.querySelector('div:last-child')?.textContent?.trim() || '';
+                
+                variantData.push({
+                  gene: cells[0]?.textContent?.trim() || 'N/A',
+                  variant: cells[1]?.textContent?.trim() || 'N/A',
+                  type: cells[2]?.textContent?.trim() || 'N/A',
+                  quality: qualityScore,
+                  significance: significance,
+                  mainImpact: mainImpact,
+                  subImpact: subImpact
+                });
+              }
+            });
+          }
+          
+          if (variantData.length === 0) {
+            // Add "no variants found" message
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('No variants detected in the analysis.', 20, yPosition);
+            yPosition += 15;
+          } else {
+            // Simplified column structure - removed problematic DNA/Protein Change columns
+            const headers = ['Gene', 'Variant', 'Type', 'Quality', 'Significance', 'Impact'];
+            const colWidths = [22, 35, 18, 18, 25, 52]; // Total: 170mm
+            const startX = 20;
+            const baseRowHeight = 8;
+            
+            // Helper function to calculate required height for multi-line text
+            const calculateCellHeight = (text: string, width: number, fontSize: number = 8): number => {
+              pdf.setFontSize(fontSize);
+              const lines = pdf.splitTextToSize(text, width - 4);
+              return Math.max(baseRowHeight, lines.length * 3 + 4);
+            };
+            
+            // Helper function to draw multi-line text in a cell
+            const drawCellText = (text: string, x: number, y: number, width: number, height: number, fontSize: number = 8) => {
+              pdf.setFontSize(fontSize);
+              const lines = pdf.splitTextToSize(text, width - 4);
+              let lineY = y + 3;
+              
+              lines.forEach((line: string) => {
+                if (lineY < y + height - 1) { // Ensure we don't overflow the cell
+                  pdf.text(line, x + 2, lineY);
+                  lineY += 3;
+                }
+              });
+            };
+            
+            // Draw header row
+            let currentX = startX;
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFillColor(249, 250, 251); // Light gray background
+            pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 10, 'F');
+            
+            for (let i = 0; i < headers.length; i++) {
+              drawCellText(headers[i], currentX, yPosition, colWidths[i], 10, 9);
+              currentX += colWidths[i];
+            }
             yPosition += 10;
             
-            // Load html2canvas if not already loaded
-            if (!window.html2canvas) {
-              console.log('📦 Loading html2canvas from CDN...');
-              const html2canvasScript = document.createElement('script');
-              html2canvasScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-              
-              await new Promise((resolve, reject) => {
-                html2canvasScript.onload = () => {
-                  console.log('✅ html2canvas loaded successfully');
-                  resolve(true);
-                };
-                html2canvasScript.onerror = () => {
-                  console.log('❌ Failed to load html2canvas');
-                  reject(new Error('html2canvas failed to load'));
-                };
-                document.head.appendChild(html2canvasScript);
-              });
-            }
+            // Draw data rows with proper text wrapping
+            pdf.setFont('helvetica', 'normal');
             
-            console.log('📸 Preparing element for borderless capture...');
-            
-            // Store original styles to restore later - declare outside inner try block
-            const originalStyles = new Map<HTMLElement, {
-              border: string;
-              borderTop: string;
-              borderRight: string;
-              borderBottom: string;
-              borderLeft: string;
-              borderRadius: string;
-              boxShadow: string;
-            }>();
-            const elementsWithBorders = [element as HTMLElement, ...Array.from(element.querySelectorAll('*')).map(el => el as HTMLElement)];
-            
-            try {
-              // Temporarily remove borders from all elements
-              elementsWithBorders.forEach((el: HTMLElement) => {
-                originalStyles.set(el, {
-                  border: el.style.border,
-                  borderTop: el.style.borderTop,
-                  borderRight: el.style.borderRight,
-                  borderBottom: el.style.borderBottom,
-                  borderLeft: el.style.borderLeft,
-                  borderRadius: el.style.borderRadius,
-                  boxShadow: el.style.boxShadow
-                });
+            variantData.slice(0, 20).forEach((variant: VariantTableRow, index: number) => {
+              // Check if we need a new page
+              if (yPosition > pageHeight - 60) {
+                pdf.addPage();
+                yPosition = 20;
                 
-                // Remove borders and shadows
-                el.style.border = 'none';
-                el.style.borderTop = 'none';
-                el.style.borderRight = 'none';
-                el.style.borderBottom = 'none';
-                el.style.borderLeft = 'none';
-                el.style.borderRadius = '0';
-                el.style.boxShadow = 'none';
-              });
-              
-              console.log('📸 Capturing element without borders...');
-              
-              // Use html2canvas to capture the element with proper null checking
-              if (!window.html2canvas) {
-                throw new Error('html2canvas is not available');
-              }
-              
-              const canvas = await window.html2canvas(element as HTMLElement, {
-                backgroundColor: '#ffffff',
-                scale: 1.5,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                width: element.offsetWidth,
-                height: element.offsetHeight,
-                scrollX: 0,
-                scrollY: 0
-              });
-              
-              // Restore original styles
-              console.log('🔄 Restoring original element styles...');
-              elementsWithBorders.forEach((el: HTMLElement) => {
-                const styles = originalStyles.get(el);
-                if (styles) {
-                  el.style.border = styles.border;
-                  el.style.borderTop = styles.borderTop;
-                  el.style.borderRight = styles.borderRight;
-                  el.style.borderBottom = styles.borderBottom;
-                  el.style.borderLeft = styles.borderLeft;
-                  el.style.borderRadius = styles.borderRadius;
-                  el.style.boxShadow = styles.boxShadow;
+                // Re-draw headers on new page
+                currentX = startX;
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFillColor(249, 250, 251);
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 10, 'F');
+                
+                for (let i = 0; i < headers.length; i++) {
+                  drawCellText(headers[i], currentX, yPosition, colWidths[i], 10, 9);
+                  currentX += colWidths[i];
                 }
-              });
-              
-              console.log('✅ Element captured successfully without borders');
-              
-              // Convert canvas to data URL
-              const imageData = canvas.toDataURL('image/png', 0.95);
-              
-              // Calculate optimal size for PDF - larger for better readability
-              const maxWidth = pageWidth - 30; // More width usage
-              const maxHeight = 180; // Increased height limit
-              const aspectRatio = element.offsetWidth / element.offsetHeight;
-              
-              // Use more of the available space - increased from 0.6 to 0.85
-              let imgWidth = Math.min(maxWidth, element.offsetWidth * 0.85);
-              let imgHeight = imgWidth / aspectRatio;
-              
-              // If height exceeds limit, scale down proportionally
-              if (imgHeight > maxHeight) {
-                imgHeight = maxHeight;
-                imgWidth = imgHeight * aspectRatio;
+                yPosition += 10;
+                pdf.setFont('helvetica', 'normal');
               }
               
-              // Ensure minimum readable size
-              const minWidth = 140;
-              const minHeight = 80;
-              if (imgWidth < minWidth) {
-                imgWidth = minWidth;
+              // Prepare row data with clean formatting (removed problematic DNA/Protein columns)
+              const cellData = [
+                variant.gene,
+                variant.variant.length > 20 ? variant.variant.substring(0, 20) + '...' : variant.variant,
+                variant.type,
+                variant.quality,
+                variant.significance.replace('_', ' '),
+                variant.mainImpact + (variant.subImpact ? '\n' + variant.subImpact : '')
+              ];
+              
+              // Calculate row height based on the tallest cell
+              let maxRowHeight = baseRowHeight;
+              cellData.forEach((text, i) => {
+                const cellHeight = calculateCellHeight(text.toString(), colWidths[i]);
+                maxRowHeight = Math.max(maxRowHeight, cellHeight);
+              });
+              
+              // Ensure minimum readable height
+              maxRowHeight = Math.max(maxRowHeight, 12);
+              
+              // Draw row background (alternate colors)
+              if (index % 2 === 1) {
+                pdf.setFillColor(249, 250, 251);
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), maxRowHeight, 'F');
+              }
+              
+              // Draw cell borders and content
+              currentX = startX;
+              cellData.forEach((text, i) => {
+                // Draw cell border
+                pdf.setDrawColor(230, 230, 230);
+                pdf.rect(currentX, yPosition, colWidths[i], maxRowHeight);
+                
+                // Draw cell content
+                pdf.setTextColor(0, 0, 0);
+                drawCellText(text.toString(), currentX, yPosition, colWidths[i], maxRowHeight, 8);
+                
+                currentX += colWidths[i];
+              });
+              
+              yPosition += maxRowHeight;
+            });
+            
+            // Add summary if we truncated
+            if (variantData.length > 20) {
+              yPosition += 10;
+              pdf.setFontSize(10);
+              pdf.setFont('helvetica', 'italic');
+              pdf.setTextColor(100, 100, 100);
+              pdf.text(`Note: Showing first 20 of ${variantData.length} total variants.`, 20, yPosition);
+              pdf.text('See full analysis in the application for complete variant list.', 20, yPosition + 5);
+              yPosition += 20;
+            }
+          }
+          
+          console.log(`✅ Generated text-based variants table with improved formatting`);
+        } else {
+          // Original image capture for other elements
+          const canvas = await html2canvas(element, {
+            logging: false,
+            // Only apply specific settings to gene significance analysis
+            ...(elementId.includes('gene-significance-analysis') ? {
+              backgroundColor: '#FFFFFF',
+              width: element.scrollWidth,
+              height: element.scrollHeight
+            } : {
+              // For other elements, use transparent background and let browser handle it naturally
+              backgroundColor: 'transparent'
+            })
+          });
+          
+          const imageData = canvas.toDataURL('image/png', 0.9);
+          
+          // Calculate optimal size for PDF with better scaling for different content types
+          const maxWidth = pageWidth - 40;
+          const maxHeight = pageHeight - yPosition - 40;
+          const aspectRatio = canvas.width / canvas.height;
+          
+          let imgWidth: number;
+          let imgHeight: number;
+        
+          // Special handling for gene significance analysis - use full available width
+          if (elementId.includes('gene-significance-analysis')) {
+            console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
+            console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}, aspect ratio: ${aspectRatio.toFixed(2)}`);
+            console.log(`📄 Available space: ${maxWidth}x${maxHeight}`);
+            
+            // For gene significance analysis, prioritize readability over fitting perfectly
+            // Use at least 80% of page width, but allow it to be larger if needed
+            const minDesiredWidth = maxWidth * 0.8;
+            const maxDesiredWidth = maxWidth;
+            
+            // Calculate height based on desired width
+            const desiredHeight = minDesiredWidth / aspectRatio;
+            
+            // If the minimum desired size fits, use it
+            if (desiredHeight <= maxHeight) {
+              imgWidth = minDesiredWidth;
+              imgHeight = desiredHeight;
+              console.log(`✅ Using minimum desired size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            } else {
+              // If minimum size is too tall, try to find the largest size that fits
+              imgHeight = maxHeight * 0.9; // Use 90% of available height to leave some margin
+              imgWidth = imgHeight * aspectRatio;
+              
+              // Ensure we don't exceed page width
+              if (imgWidth > maxDesiredWidth) {
+                imgWidth = maxDesiredWidth;
                 imgHeight = imgWidth / aspectRatio;
               }
-              if (imgHeight < minHeight) {
-                imgHeight = minHeight;
-                imgWidth = imgHeight * aspectRatio;
-              }
               
-              console.log('📊 Adding captured visualization to PDF:', { 
-                originalWidth: element.offsetWidth, 
-                originalHeight: element.offsetHeight,
-                pdfWidth: imgWidth, 
-                pdfHeight: imgHeight 
-              });
-              
-              // Add the captured image to PDF
-              pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
-              yPosition += imgHeight + 15;
-              
-              console.log('✅ Real visualization successfully added to PDF');
-              
-            } catch (innerCaptureError) {
-              // Restore original styles on inner error
-              console.log('🔄 Restoring original styles after inner capture error...');
-              elementsWithBorders.forEach((el: HTMLElement) => {
-                const styles = originalStyles.get(el);
-                if (styles) {
-                  el.style.border = styles.border;
-                  el.style.borderTop = styles.borderTop;
-                  el.style.borderRight = styles.borderRight;
-                  el.style.borderBottom = styles.borderBottom;
-                  el.style.borderLeft = styles.borderLeft;
-                  el.style.borderRadius = styles.borderRadius;
-                  el.style.boxShadow = styles.boxShadow;
-                }
-              });
-              throw innerCaptureError; // Re-throw to be caught by outer catch
+              console.log(`⚠️ Using height-constrained size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
             }
             
-          } catch (captureError) {
-            console.log('⚠️ Visualization capture failed, using fallback:', captureError);
+            // Ensure minimum readable size - gene significance should be at least 120mm wide
+            const minReadableWidth = 120;
+            if (imgWidth < minReadableWidth) {
+              console.log(`📏 Enforcing minimum readable width of ${minReadableWidth}mm`);
+              imgWidth = Math.min(minReadableWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+              
+              // If this makes it too tall, we'll let it exceed the height limit for readability
+              if (imgHeight > maxHeight) {
+                console.log(`📏 Gene significance exceeds height limit for readability - allowing overflow`);
+              }
+            }
             
-            // Enhanced fallback with more details
+            console.log(`✅ Gene significance final size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            
+            // For gene significance analysis, if it's large, consider adding a new page for better presentation
+            if (imgHeight > 100 && (yPosition + imgHeight) > (pageHeight - 40)) {
+              console.log(`📄 Adding new page for better gene significance presentation`);
+              pdf.addPage();
+              yPosition = 20;
+              // Re-add section title on new page
+              pdf.setFontSize(16);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(sectionTitle, 20, yPosition);
+              yPosition += 12;
+            }
+          } else {
+            // Use scaling factors for other content types
+            let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+            
+            // Special handling for other chart/visualization elements
+            if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+              scaleFactor = 0.5; // Higher scale for charts
+            }
+            
+            // For very wide elements (like tables), use adaptive scaling
+            if (canvas.width > 1000) {
+              scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+            }
+            
+            imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
+            imgHeight = imgWidth / aspectRatio;
+            
+            // Ensure minimum size for important visualizations
+            const minWidth = elementId.includes('significance') ? 120 : 80;
+            if (imgWidth < minWidth) {
+              imgWidth = Math.min(minWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+            }
+            
+            // If height exceeds available space, scale down
+            if (imgHeight > maxHeight) {
+              imgHeight = maxHeight;
+              imgWidth = imgHeight * aspectRatio;
+            }
+          }
+                
+          // Special handling for gene significance analysis - use full available width
+          if (elementId.includes('gene-significance-analysis')) {
+            console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
+            console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}, aspect ratio: ${aspectRatio.toFixed(2)}`);
+            console.log(`📄 Available space: ${maxWidth}x${maxHeight}`);
+            
+            // For gene significance analysis, prioritize readability over fitting perfectly
+            // Use at least 80% of page width, but allow it to be larger if needed
+            const minDesiredWidth = maxWidth * 0.8;
+            const maxDesiredWidth = maxWidth;
+            
+            // Calculate height based on desired width
+            const desiredHeight = minDesiredWidth / aspectRatio;
+            
+            // If the minimum desired size fits, use it
+            if (desiredHeight <= maxHeight) {
+              imgWidth = minDesiredWidth;
+              imgHeight = desiredHeight;
+              console.log(`✅ Using minimum desired size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            } else {
+              // If minimum size is too tall, try to find the largest size that fits
+              imgHeight = maxHeight * 0.9; // Use 90% of available height to leave some margin
+              imgWidth = imgHeight * aspectRatio;
+              
+              // Ensure we don't exceed page width
+              if (imgWidth > maxDesiredWidth) {
+                imgWidth = maxDesiredWidth;
+                imgHeight = imgWidth / aspectRatio;
+              }
+              
+              console.log(`⚠️ Using height-constrained size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            }
+            
+            // Ensure minimum readable size - gene significance should be at least 120mm wide
+            const minReadableWidth = 120;
+            if (imgWidth < minReadableWidth) {
+              console.log(`📏 Enforcing minimum readable width of ${minReadableWidth}mm`);
+              imgWidth = Math.min(minReadableWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+              
+              // If this makes it too tall, we'll let it exceed the height limit for readability
+              if (imgHeight > maxHeight) {
+                console.log(`📏 Gene significance exceeds height limit for readability - allowing overflow`);
+              }
+            }
+            
+            console.log(`✅ Gene significance final size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            
+            // For gene significance analysis, if it's large, consider adding a new page for better presentation
+            if (imgHeight > 100 && (yPosition + imgHeight) > (pageHeight - 40)) {
+              console.log(`📄 Adding new page for better gene significance presentation`);
+              pdf.addPage();
+              yPosition = 20;
+              // Re-add section title on new page
+              pdf.setFontSize(16);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(sectionTitle, 20, yPosition);
+              yPosition += 12;
+            }
+          } else {
+            // Use scaling factors for other content types
+            let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+            
+            // Special handling for other chart/visualization elements
+            if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+              scaleFactor = 0.5; // Higher scale for charts
+            }
+            
+            // For very wide elements (like tables), use adaptive scaling
+            if (canvas.width > 1000) {
+              scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+            }
+            
+            imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
+            imgHeight = imgWidth / aspectRatio;
+            
+            // Ensure minimum size for important visualizations
+            const minWidth = elementId.includes('significance') ? 120 : 80;
+            if (imgWidth < minWidth) {
+              imgWidth = Math.min(minWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+            }
+            
+            // If height exceeds available space, scale down
+            if (imgHeight > maxHeight) {
+              imgHeight = maxHeight;
+              imgWidth = imgHeight * aspectRatio;
+            }
+          }
+                
+          // Add the image to PDF
+          pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 15;
+        }
+              
+        console.log(`✅ Added section: ${sectionTitle}`);
+        
+      } catch (error) {
+        console.warn(`Failed to capture element ${elementId}:`, error);
+        
+        // Add fallback text
             pdf.setFontSize(11);
-            pdf.setFont(undefined, 'normal');
-            pdf.text('📊 Genomic Analysis Visualization', 20, yPosition);
-            yPosition += 8;
-            pdf.text(`Dataset: ${title}`, 25, yPosition);
-            yPosition += 6;
-            pdf.text('Type: Interactive matrix/chart visualization', 25, yPosition);
-            yPosition += 6;
-            pdf.text('Status: Available in web application interface', 25, yPosition);
-            yPosition += 8;
-            pdf.text('Note: For full interactive features, please view in the application', 25, yPosition);
-            yPosition += 15;
-          }
-          
-        } else {
-          console.log('⚠️ Visualization element not found:', elementId);
-          
-          // Add not found message
-          pdf.setFontSize(14);
-          pdf.setFont(undefined, 'bold');
-          pdf.text('Visualization', 20, yPosition);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`[Visualization from ${elementId} - see application for full details]`, 20, yPosition);
           yPosition += 10;
-          
-          pdf.setFontSize(11);
-          pdf.setFont(undefined, 'normal');
-          pdf.text('Visualization element not found in current view', 20, yPosition);
-          yPosition += 15;
-        }
-        
-        // Check if we need a new page
-        if (yPosition > pageHeight - 100) {
-          console.log('📄 Adding new page for remaining content');
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        // Key Findings
-        console.log('📝 Adding key findings...');
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Key Clinical Insights', 20, yPosition);
-        yPosition += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setFont(undefined, 'normal');
-        const findings = [
-          `• Analysis Type: ${title} - Comprehensive genomic assessment`,
-          '• Clinical Relevance: High-priority findings for personalized medicine',
-          '• Actionable Results: Data-driven recommendations for clinical decision-making',
-          '• Quality Assurance: All findings meet clinical laboratory standards'
-        ];
-        
-        findings.forEach((finding, index) => {
-          console.log(`📝 Adding finding ${index + 1}:`, finding.substring(0, 50) + '...');
-          pdf.text(finding, 25, yPosition);
-          yPosition += 6;
-        });
-        yPosition += 10;
-        console.log('✅ Key findings added, current Y position:', yPosition);
-        
-        // Visualization Note
-        console.log('📝 Adding visualization note...');
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Technical Details', 20, yPosition);
-        yPosition += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setFont(undefined, 'normal');
-        const vizNote = `This report contains the analysis data corresponding to the ${title} visualization shown above. The data presented includes statistical analysis, clinical correlations, and evidence-based interpretations derived from comprehensive genomic databases including TCGA, ClinVar, and COSMIC.`;
-        const vizLines = pdf.splitTextToSize(vizNote, pageWidth - 40);
-        console.log('📝 Technical details split into lines:', vizLines.length);
-        pdf.text(vizLines, 20, yPosition);
-        yPosition += vizLines.length * 5 + 15;
-        console.log('✅ Technical details added, current Y position:', yPosition);
-        
-        // Clinical Significance
-        console.log('📝 Adding clinical significance...');
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Clinical Significance', 20, yPosition);
-        yPosition += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setFont(undefined, 'normal');
-        const clinicalText = 'This analysis provides comprehensive insights into genetic variations and their potential clinical implications. The findings should be interpreted by qualified healthcare professionals in conjunction with clinical presentation and family history. All results have been generated using state-of-the-art AI algorithms and validated against established genomic databases.';
-        const clinicalLines = pdf.splitTextToSize(clinicalText, pageWidth - 40);
-        console.log('📝 Clinical text split into lines:', clinicalLines.length);
-        pdf.text(clinicalLines, 20, yPosition);
-        yPosition += clinicalLines.length * 5 + 15;
-        console.log('✅ Clinical significance added, current Y position:', yPosition);
-        
-        // Technical Specifications
-        console.log('📝 Adding technical specifications...');
-        if (yPosition > pageHeight - 60) {
-          console.log('📄 Adding new page for technical specifications');
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Technical Specifications', 20, yPosition);
-        yPosition += 8;
-        
-        pdf.setFontSize(10);
-        pdf.setFont(undefined, 'normal');
-        const techSpecs = [
-          '• Analysis Pipeline: GeneKnow AI-powered genomic analysis engine',
-          '• Reference Genome: GRCh38/hg38 with clinical annotations',
-          '• Quality Control: GATK best practices with clinical-grade filtering',
-          '• Annotation Sources: ClinVar, COSMIC, gnomAD, PharmGKB, TCGA',
-          '• Confidence Level: High confidence results suitable for clinical reporting'
-        ];
-        
-        techSpecs.forEach((spec, index) => {
-          console.log(`📝 Adding tech spec ${index + 1}:`, spec.substring(0, 50) + '...');
-          pdf.text(spec, 25, yPosition);
-          yPosition += 6;
-        });
-        yPosition += 15;
-        console.log('✅ Technical specifications added, current Y position:', yPosition);
-        
-        // Disclaimer
-        console.log('📝 Adding disclaimer...');
-        if (yPosition > pageHeight - 40) {
-          console.log('📄 Adding new page for disclaimer');
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        pdf.setFontSize(12);
-        pdf.setFont(undefined, 'bold');
-        pdf.text('Clinical Disclaimer', 20, yPosition);
-        yPosition += 8;
-        
-        pdf.setFontSize(9);
-        pdf.setFont(undefined, 'normal');
-        const disclaimer = 'This report is generated for research and educational purposes. All genetic findings must be reviewed and validated by qualified healthcare professionals before making any clinical decisions. Genetic counseling is recommended for interpretation and family planning considerations.';
-        const disclaimerLines = pdf.splitTextToSize(disclaimer, pageWidth - 40);
-        console.log('📝 Disclaimer split into lines:', disclaimerLines.length);
-        pdf.text(disclaimerLines, 20, yPosition);
-        yPosition += disclaimerLines.length * 4 + 10;
-        console.log('✅ Disclaimer added, current Y position:', yPosition);
-        
-        // Footer
-        console.log('📝 Adding footer...');
-        const footerY = pageHeight - 20;
-        pdf.setFontSize(8);
-        pdf.text('🧬 GeneKnow Platform - AI-powered genomic analysis', pageWidth / 2, footerY - 10, { align: 'center' });
-        pdf.text(`Report ID: GK-${Date.now()} | Generated: ${new Date().toISOString()}`, pageWidth / 2, footerY, { align: 'center' });
-        console.log('✅ Footer added');
-        
-        // Generate filename and download
-        const timestamp = new Date().toISOString().split('T')[0];
-        const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${timestamp}.pdf`;
-        console.log('📁 Generated filename:', fileName);
-        
-        // Direct download
-        console.log('💾 Starting PDF save...');
-        pdf.save(fileName);
-        console.log('✅ PDF save completed');
-        
-        // Remove loading notification
-        console.log('🧹 Removing loading notification...');
-        if (document.body.contains(loadingNotification)) {
-          document.body.removeChild(loadingNotification);
-          console.log('✅ Loading notification removed');
-        }
-        
-        // Show success notification
-        console.log('🎉 Showing success notification...');
-        const successNotification = document.createElement('div');
-        successNotification.innerHTML = `
-          <div style="
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: #22C55E; 
-            color: white; 
-            padding: 15px 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            font-weight: 600;
-            font-size: 14px;
-            max-width: 300px;
-          ">
-            ✅ PDF with Visualization Downloaded!<br>
-            <small style="font-weight: 400;">${fileName}</small>
-          </div>
-        `;
-        document.body.appendChild(successNotification);
-        console.log('✅ Success notification added to DOM');
-        
-        setTimeout(() => {
-          if (successNotification.parentNode) {
-            successNotification.parentNode.removeChild(successNotification);
-            console.log('🧹 Success notification removed after timeout');
-          }
-        }, 3000);
-        
-        console.log('🎉 PDF generation completed successfully!');
-        
-        // Reset PDF generating state
-        setIsPDFGenerating(false);
-        
-      } catch (error: unknown) {
-        console.error('❌ Error in PDF generation:', error);
-        console.error('❌ Error details:', (error as Error).message, (error as Error).stack);
-        showError('Error generating PDF content');
-        
-        // Reset PDF generating state on error
-        setIsPDFGenerating(false);
       }
     }
     
-    function showError(message: string) {
-      console.log('❌ Showing error:', message);
+    // Add footer
+    const footerY = pageHeight - 15;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('GeneKnow Platform - AI-powered genomic analysis', pageWidth / 2, footerY - 5, { align: 'center' });
+    
+    // Format the timestamp nicely
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    pdf.text(`Report ID: GK-${Date.now()} | Generated: ${formattedDate}`, pageWidth / 2, footerY, { align: 'center' });
+    
+    // Generate filename
+    const timestamp = new Date().toISOString().split('T')[0];
+    const fileName = `geneknow_${subtabContent.id}_${timestamp}.pdf`;
+    
+    // Get PDF as blob and convert to bytes
+    const pdfBlob = pdf.output('blob');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const pdfByteArray = Array.from(new Uint8Array(pdfBytes));
+    
+    // Use Tauri save_file_dialog to save the PDF
+    try {
+      const savedPath = await invoke<string>('save_file_dialog', {
+        filename: fileName,
+        fileContent: pdfByteArray
+      });
       
-      // Reset PDF generating state
-      setIsPDFGenerating(false);
+      console.log('✅ PDF saved successfully to:', savedPath);
+        
+        // Show success notification
+      showNotification(`✅ PDF Downloaded!<br><small>Saved successfully</small>`, '#22C55E');
+        setTimeout(() => {
+        const notifications = document.querySelectorAll('[data-pdf-notification]');
+        notifications.forEach(n => n.remove());
+      }, 4000);
       
-      // Remove loading notification if it exists
-      if (document.body.contains(loadingNotification)) {
-        document.body.removeChild(loadingNotification);
-        console.log('🧹 Loading notification removed due to error');
-      }
+    } catch (saveError) {
+      console.error('❌ Error saving PDF:', saveError);
+      throw new Error(`Failed to save PDF: ${saveError}`);
+    }
+        
+        console.log('🎉 PDF generation completed successfully!');
+        
+  } catch (error) {
+    console.error('❌ Error generating PDF:', error);
       
       // Show error notification
-      const errorNotification = document.createElement('div');
-      errorNotification.innerHTML = `
+    const showErrorNotification = (message: string) => {
+      const notifications = document.querySelectorAll('[data-pdf-notification]');
+      notifications.forEach(n => n.remove());
+      
+      const notification = document.createElement('div');
+      notification.setAttribute('data-pdf-notification', 'true');
+      notification.innerHTML = `
         <div style="
           position: fixed; 
           top: 20px; 
@@ -646,7 +588,7 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
           color: white; 
           padding: 15px 20px; 
           border-radius: 8px; 
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
           z-index: 10000;
           font-weight: 600;
           font-size: 14px;
@@ -656,74 +598,57 @@ const downloadPDF = async (elementId: string, title: string, summary: string, se
           <small style="font-weight: 400;">Please try again</small>
         </div>
       `;
-      document.body.appendChild(errorNotification);
-      console.log('❌ Error notification added to DOM');
+      document.body.appendChild(notification);
       
       setTimeout(() => {
-        if (errorNotification.parentNode) {
-          errorNotification.parentNode.removeChild(errorNotification);
-          console.log('🧹 Error notification removed after timeout');
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
         }
       }, 4000);
-    }
+    };
     
-  } catch (error: unknown) {
-    console.error('❌ Critical error in downloadPDF function:', error);
-    console.error('❌ Critical error details:', (error as Error).message, (error as Error).stack);
-    
-    // Reset PDF generating state
+    showErrorNotification('PDF generation failed');
+  } finally {
     setIsPDFGenerating(false);
-    
-    // Remove loading notification if it exists
-    const loadingNotification = document.querySelector('[style*="Loading PDF library"]') || 
-                                document.querySelector('[style*="Generating PDF"]');
-    if (loadingNotification?.parentNode) {
-      loadingNotification.parentNode.removeChild(loadingNotification);
-      console.log('🧹 Loading notification removed due to critical error');
-    }
-    
-    // Show error notification
-    const errorNotification = document.createElement('div');
-    errorNotification.innerHTML = `
-      <div style="
-        position: fixed; 
-        top: 20px; 
-        right: 20px; 
-        background: #EF4444; 
-        color: white; 
-        padding: 15px 20px; 
-        border-radius: 8px; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 10000;
-        font-weight: 600;
-        font-size: 14px;
-        max-width: 300px;
-      ">
-        ❌ PDF generation failed<br>
-        <small style="font-weight: 400;">Please try again</small>
-      </div>
-    `;
-    document.body.appendChild(errorNotification);
-    console.log('❌ Critical error notification added to DOM');
-    
-    setTimeout(() => {
-      if (errorNotification.parentNode) {
-        errorNotification.parentNode.removeChild(errorNotification);
-        console.log('🧹 Critical error notification removed after timeout');
-      }
-    }, 3000);
   }
 };
 
-// Simple Download Button Component
-const DownloadButton = ({ elementId, title, summary, isPDFGenerating, setIsPDFGenerating }: { elementId: string, title: string, summary: string, isPDFGenerating: boolean, setIsPDFGenerating: (value: boolean) => void }) => {
+// Consolidated Download Button Component - One per subtab
+const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerating }: { 
+  subtabContent: SubtabContent; 
+  isPDFGenerating: boolean; 
+  setIsPDFGenerating: (value: boolean) => void;
+}) => {
   if (isPDFGenerating) {
-    return null; // Hide button during PDF generation
+    return (
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '0.5rem 1rem',
+        background: '#9CA3AF',
+        color: '#FFFFFF',
+        border: 'none',
+        borderRadius: '0.375rem',
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        gap: '0.5rem'
+      }}>
+        <div style={{
+          width: '16px',
+          height: '16px',
+          border: '2px solid #ffffff',
+          borderTop: '2px solid transparent',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        Generating PDF...
+      </div>
+    );
   }
   
   return (
     <button
-      onClick={() => downloadPDF(elementId, title, summary, setIsPDFGenerating)}
+              onClick={() => downloadSubtabPDF(subtabContent, setIsPDFGenerating)}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -763,7 +688,7 @@ const DownloadButton = ({ elementId, title, summary, isPDFGenerating, setIsPDFGe
       >
         <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
       </svg>
-      PDF Report
+      PDF Download
     </button>
   );
 };
@@ -1216,7 +1141,7 @@ const mockDataSets = {
     riskLevel: 'High Risk',
     riskScore: '82/100',
     condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
-    details: 'Family History: Breast Cancer<br/>Referral: Oncology<br/>Previous Tests: BRCA1/2 Panel',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'critical' as const,
@@ -1246,7 +1171,7 @@ const mockDataSets = {
     riskLevel: 'Medium Risk',
     riskScore: '45/100',
     condition: 'Lynch Syndrome',
-    details: 'Family History: Colorectal Cancer<br/>Referral: Oncology<br/>Previous Tests: MSI-H positive',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'warning' as const,
@@ -1276,7 +1201,7 @@ const mockDataSets = {
     riskLevel: 'Low Risk',
     riskScore: '15/100',
     condition: 'Li-Fraumeni Syndrome',
-    details: 'Family History: Multiple Sarcomas<br/>Referral: Genetics<br/>Previous Tests: TP53 Sequencing',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'info' as const,
@@ -1436,6 +1361,28 @@ const ClinicalViewPage: React.FC = () => {
   // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
+  // Helper function to determine file type from filename
+  const getFileTypeDescription = (filename?: string): string => {
+    if (!filename) return 'Unknown File Type';
+    
+    const lowercaseFile = filename.toLowerCase();
+    
+    if (lowercaseFile.endsWith('.maf') || lowercaseFile.endsWith('.maf.gz')) {
+      return 'Uploaded MAF File';
+    } else if (lowercaseFile.endsWith('.vcf') || lowercaseFile.endsWith('.vcf.gz')) {
+      return 'Uploaded VCF File';
+    } else if (lowercaseFile.endsWith('.fastq') || lowercaseFile.endsWith('.fq') || 
+               lowercaseFile.endsWith('.fastq.gz') || lowercaseFile.endsWith('.fq.gz')) {
+      return 'Uploaded FASTQ File';
+    } else if (lowercaseFile.endsWith('.bam')) {
+      return 'Uploaded BAM File';
+    } else if (lowercaseFile.endsWith('.sam')) {
+      return 'Uploaded SAM File';
+    } else {
+      return 'Uploaded Genomic File';
+    }
+  };
+
   // Get real data for sidebar when available
   const getSidebarData = () => {
     if (pipelineResults) {
@@ -1463,17 +1410,44 @@ const ClinicalViewPage: React.FC = () => {
         riskLevel: riskCategory,
         riskScore: `${overallRiskScore}/100`,
         condition: `${highestRisk.cancer} Cancer Risk Assessment`,
-        details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
+        details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: ${getFileTypeDescription(fileName)}`,
         alerts: realAlerts
       };
     }
     
     console.log('🔍 SIDEBAR DEBUG: No pipelineResults, falling back to mock data');
-    // Fallback to mock data if no pipeline results
-    return currentData;
+    // Fallback to mock data if no pipeline results (but update data source to be accurate)
+    return {
+      ...currentData,
+      details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: ${getFileTypeDescription(fileName)}`
+    };
   };
 
   const sidebarData = getSidebarData();
+
+  // Define subtab content for consolidated PDF downloads
+  const subtabContents: Record<string, SubtabContent> = {
+    analysis: {
+      id: 'analysis',
+      title: 'Genomic Analysis',
+      elementIds: ['cancer-risk-assessment', 'gene-significance-analysis', 'mutation-type-distribution', 'mutational-signatures', 'quality-metrics']
+    },
+    variants: {
+      id: 'variants',
+      title: 'Variant Heatmap',
+      elementIds: ['gene-cancer-matrix', 'detected-variants']
+    },
+    pathways: {
+      id: 'pathways',
+      title: 'Pathway Analysis',
+      elementIds: ['pathway-disruption-analysis', 'cancer-risk-by-pathways']
+    },
+    clinical: {
+      id: 'clinical',
+      title: 'Clinical Report',
+      elementIds: ['survival-analysis', 'clinical-recommendations']
+    }
+  };
 
   // Function to convert pipeline results to the format expected by the clinical view
   const getGenomicData = () => {
@@ -1719,14 +1693,26 @@ const ClinicalViewPage: React.FC = () => {
       case 'analysis':
         return (
           <div style={{ padding: '2rem' }}>
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
             <h2 style={{ 
               color: '#111827',
               fontSize: '1.5rem',
               fontWeight: '600',
-              marginBottom: '1.5rem'
+                margin: 0
             }}>
               Genomic Analysis Overview
             </h2>
+              <SubtabDownloadButton 
+                subtabContent={subtabContents.analysis}
+                isPDFGenerating={isPDFGenerating}
+                setIsPDFGenerating={setIsPDFGenerating}
+              />
+            </div>
             
             {pipelineResults && (
               <div style={{
@@ -1785,16 +1771,7 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Shows calculated cancer risk percentages based on genetic variants and pathway analysis. Each cancer type is assessed individually using machine learning models trained on population data and clinical outcomes." isVisible={hoveredTooltip === 'risk-assessment'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="cancer-risk-assessment"
-                  title="Cancer Risk Assessment"
-                  summary={pipelineResults 
-                    ? `Comprehensive genetic risk analysis for ${fileName}. Key findings include risk scores across multiple cancer types based on ${genomicData.summary.total_variants_found} variants analyzed.`
-                    : "Comprehensive genetic risk analysis showing cancer predisposition across multiple cancer types. Key findings include: Breast (100%), Colon (100%), Lung (97.7%), and Prostate (81.4%) cancer risks. Analysis covers 12 variants with 6 high-risk findings. Essential for developing personalized screening and prevention strategies."
-                  }
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
+
               </div>
               
               <div style={{ 
@@ -1894,13 +1871,7 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Manhattan plot showing statistical significance of genetic variants. Higher points indicate stronger associations with cancer risk. Red dots represent pathogenic variants, blue dots show variants under investigation." isVisible={hoveredTooltip === 'gene-significance'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="gene-significance-analysis"
-                  title="Gene Significance Analysis"
-                  summary="Manhattan plot visualization showing statistical significance of genetic variants across cancer-associated genes. Analysis includes BRCA1, TP53, APC, MLH1, and KRAS genes with their quality scores and clinical significance. Red dots indicate high-confidence pathogenic variants requiring clinical follow-up."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
+
               </div>
               <svg width="100%" height="300" viewBox="0 0 800 300">
                 {/* Background */}
@@ -2012,13 +1983,7 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Breakdown of mutation types found in the genetic analysis. SNVs (single nucleotide variants) are point mutations, INDELs are insertions/deletions, CNVs are copy number variations, and structural variants are large chromosomal rearrangements." isVisible={hoveredTooltip === 'mutation-types'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="mutation-type-distribution"
-                  title="Mutation Type Distribution"
-                  summary="Analysis of mutation types detected across the genome showing 5 SNVs, 4 indels, 2 CNVs, and 1 structural variant. Different mutation types have varying therapeutic implications - SNVs may be targetable with small molecules, indels suggest DNA repair deficiency, CNVs affect gene dosage, and structural variants may disrupt gene function."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
+
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
@@ -2108,13 +2073,6 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Mutational signatures reveal the underlying biological processes that caused DNA damage. Each signature represents a specific pattern of mutations caused by factors like aging, smoking, UV exposure, DNA repair defects, or chemotherapy. The percentage shows each signature's contribution to the overall mutational profile." isVisible={hoveredTooltip === 'mutational-signatures'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="mutational-signatures"
-                  title="Mutational Signature Analysis"
-                  summary="Analysis of mutational signatures revealing underlying biological processes. Key findings: 35% aging-related (SBS1), 28% BRCA deficiency (SBS3), 22% tobacco exposure (SBS4), 15% APOBEC activity (SBS13). The BRCA deficiency signature suggests high likelihood of PARP inhibitor response. Important for therapeutic selection and risk management."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -2124,12 +2082,6 @@ const ClinicalViewPage: React.FC = () => {
                     padding: '3rem',
                     color: '#6B7280'
                   }}>
-                    <div style={{ 
-                      fontSize: '3rem',
-                      marginBottom: '1rem'
-                    }}>
-                      🔬
-                    </div>
                     <h4 style={{ 
                       color: '#111827',
                       fontSize: '1.125rem',
@@ -2253,13 +2205,6 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Quality control metrics for the genomic analysis. Shows total variants found, those passing quality filters, high-risk findings requiring clinical attention, and processing time for the analysis pipeline." isVisible={hoveredTooltip === 'quality-metrics'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="quality-metrics"
-                  title="Analysis Quality Metrics"
-                  summary="Quality control metrics for genomic analysis pipeline showing 12 total variants with 11 passing QC, 6 high-risk findings, and 0.70s processing time. High data quality with excellent variant calling reliability. All metrics meet clinical laboratory standards for confident therapeutic decision-making."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
               </div>
               <div style={{ 
                 display: 'grid', 
@@ -2303,9 +2248,14 @@ const ClinicalViewPage: React.FC = () => {
           }}>
             <div style={{ 
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '0.5rem',
               marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
             }}>
               <h2 style={{ 
                 color: '#111827',
@@ -2334,6 +2284,12 @@ const ClinicalViewPage: React.FC = () => {
                 />
                 <SmartTooltip content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns." isVisible={hoveredTooltip === 'variant-heatmap'} triggerRef={null} />
               </div>
+              </div>
+              <SubtabDownloadButton 
+                subtabContent={subtabContents.variants}
+                isPDFGenerating={isPDFGenerating}
+                setIsPDFGenerating={setIsPDFGenerating}
+              />
             </div>
             
             {/* Gene-Cancer Type Heatmap */}
@@ -2416,13 +2372,6 @@ const ClinicalViewPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="gene-cancer-matrix"
-                  title="Gene-Cancer Association Matrix"
-                  summary="Heatmap showing gene-cancer associations based on TCGA data. Strong associations: BRCA1-breast (100%), TP53-multiple cancers (80%), APC-colon (90%). Color-coded matrix indicates risk levels for enhanced screening protocols. Critical for multi-organ surveillance planning."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
               </div>
               
               {/* Build gene-cancer associations from real data */}
@@ -2834,23 +2783,56 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="detected-variants"
-                  title="Detected Variants"
-                  summary="Comprehensive table of all detected genetic variants with molecular transformations and clinical significance. Includes BRCA1, TP53, APC, MLH1, and KRAS mutations with detailed protein changes and functional impacts. Critical for understanding specific mutations and their therapeutic implications."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
               </div>
               
-              <div style={{ overflowX: 'auto', minHeight: '400px' }}>
+              {/* Table stats and scrolling indicator */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                padding: '0.5rem 0',
+                fontSize: '0.875rem',
+                color: '#6B7280',
+                borderBottom: '1px solid #E5E7EB',
+                marginBottom: '0.5rem'
+              }}>
+                <span>
+                  Showing {genomicData.variant_table.length} variants
+                </span>
+                {genomicData.variant_table.length > 10 && (
+                  <span style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.25rem',
+                    fontStyle: 'italic'
+                  }}>
+                    Scrollable table
+                  </span>
+                )}
+              </div>
+              
+              <div style={{ 
+                overflowX: 'auto', 
+                overflowY: 'auto',
+                maxHeight: '600px', // Limit height to enable vertical scrolling
+                minHeight: '400px',
+                border: '1px solid #E5E7EB',
+                borderRadius: '0.5rem',
+                // Add subtle shadow to indicate scrollable content
+                boxShadow: genomicData.variant_table.length > 10 ? 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+              }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse', 
                   tableLayout: 'fixed', // Fixed table layout for consistent widths
                   minWidth: '800px' // Reduced minimum width
                 }}>
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                  <thead style={{ 
+                    position: 'sticky', 
+                    top: 0, 
+                    zIndex: 1,
+                    background: '#F9FAFB' // Ensure header background stays visible when scrolling
+                  }}>
                     <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
                       <th style={{ 
                         padding: '0.75rem', 
@@ -3433,202 +3415,190 @@ const ClinicalViewPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              
-              {/* Structural Variants */}
-              <div style={{
-                background: '#F9FAFB',
-                padding: '1.5rem',
-                borderRadius: '0.5rem',
-                marginTop: '2rem',
-                border: '1px solid #E5E7EB'
+            </div>
+            
+            {/* Structural Variants */}
+            <div style={{
+              background: '#F9FAFB',
+              padding: '1.5rem',
+              borderRadius: '0.5rem',
+              marginTop: '2rem',
+              border: '1px solid #E5E7EB'
+            }}>
+              <h4 style={{ 
+                color: '#111827',
+                fontSize: '1rem',
+                fontWeight: '600',
+                marginBottom: '1rem'
               }}>
-                <h4 style={{ 
-                  color: '#111827',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  marginBottom: '1rem'
-                }}>
-                  Structural Variants
-                </h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.structural_variants.length === 0 ? (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '2rem',
-                      color: '#6B7280'
+                Structural Variants
+              </h4>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {genomicData.structural_variants.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#6B7280'
+                  }}>
+                    <h4 style={{ 
+                      color: '#111827',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
                     }}>
-                      <div style={{ 
-                        fontSize: '2rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        🧬
+                      No Structural Variants Detected
+                    </h4>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '350px',
+                      margin: '0 auto'
+                    }}>
+                      No large-scale genomic rearrangements were found in the analysis.
+                    </p>
+                  </div>
+                ) : (
+                  genomicData.structural_variants.map((variant, index) => (
+                    <div key={index} style={{
+                      background: '#FFFFFF',
+                      padding: '1rem',
+                      borderRadius: '0.5rem',
+                      border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <div style={{
+                            background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
+                            color: '#FFFFFF',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            textTransform: 'uppercase'
+                          }}>
+                            {variant.type}
+                          </div>
+                          <span style={{ fontWeight: '600', color: '#111827' }}>
+                            {variant.genes_affected.join(', ')}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                          {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                          {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
+                        </div>
                       </div>
-                      <h4 style={{ 
-                        color: '#111827',
-                        fontSize: '1rem',
+                      <div style={{
+                        background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
+                        color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
                         fontWeight: '600',
-                        marginBottom: '0.5rem'
+                        textAlign: 'center'
                       }}>
-                        No Structural Variants Detected
-                      </h4>
-                      <p style={{ 
-                        color: '#6B7280',
-                        fontSize: '0.875rem',
-                        maxWidth: '350px',
-                        margin: '0 auto'
-                      }}>
-                        No large-scale genomic rearrangements were found in the analysis.
-                      </p>
-                    </div>
-                  ) : (
-                    genomicData.structural_variants.map((variant, index) => (
-                      <div key={index} style={{
-                        background: '#FFFFFF',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
-                        border: `2px solid ${variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B'}`,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <div style={{
-                              background: variant.type === 'deletion' ? '#EF4444' : '#8B5CF6',
-                              color: '#FFFFFF',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              textTransform: 'uppercase'
-                            }}>
-                              {variant.type}
-                            </div>
-                            <span style={{ fontWeight: '600', color: '#111827' }}>
-                              {variant.genes_affected.join(', ')}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                            {variant.chromosome}:{variant.start}-{variant.end} ({(variant.size / 1000).toFixed(1)}kb)
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                            {(variant as ExtendedVariant).transformation?.effect || variant.functional_impact || 'Impact not determined'}
-                          </div>
-                        </div>
-                        <div style={{
-                          background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#FFFBEB',
-                          color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#F59E0B',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '0.375rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          textAlign: 'center'
-                        }}>
-                          {variant.clinical_significance.replace('_', ' ')}
-                        </div>
+                        {variant.clinical_significance.replace('_', ' ')}
                       </div>
-                    ))
-                  )}
-                </div>
+                    </div>
+                  ))
+                )}
               </div>
-              
-              {/* Copy Number Variants */}
-              <div style={{
-                background: '#F9FAFB',
-                padding: '1.5rem',
-                borderRadius: '0.5rem',
-                marginTop: '1rem',
-                border: '1px solid #E5E7EB'
+            </div>
+            
+            {/* Copy Number Variants */}
+            <div style={{
+              background: '#F9FAFB',
+              padding: '1.5rem',
+              borderRadius: '0.5rem',
+              marginTop: '1rem',
+              border: '1px solid #E5E7EB'
+            }}>
+              <h4 style={{ 
+                color: '#111827',
+                fontSize: '1rem',
+                fontWeight: '600',
+                marginBottom: '1rem'
               }}>
-                <h4 style={{ 
-                  color: '#111827',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  marginBottom: '1rem'
-                }}>
-                  Copy Number Variants
-                </h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {genomicData.copy_number_variants.length === 0 ? (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '2rem',
-                      color: '#6B7280'
+                Copy Number Variants
+              </h4>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {genomicData.copy_number_variants.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#6B7280'
+                  }}>
+                    <h4 style={{ 
+                      color: '#111827',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      marginBottom: '0.5rem'
                     }}>
-                      <div style={{ 
-                        fontSize: '2rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        📊
+                      No Copy Number Variants Detected
+                    </h4>
+                    <p style={{ 
+                      color: '#6B7280',
+                      fontSize: '0.875rem',
+                      maxWidth: '350px',
+                      margin: '0 auto'
+                    }}>
+                      No significant gene amplifications or deletions were detected in the analysis.
+                    </p>
+                  </div>
+                ) : (
+                  genomicData.copy_number_variants.map((variant, index) => (
+                    <div key={index} style={{
+                      background: '#FFFFFF',
+                      padding: '1rem',
+                      borderRadius: '0.5rem',
+                      border: '2px solid #F59E0B',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: '600', color: '#111827' }}>
+                            {variant.gene}
+                          </span>
+                          <div style={{
+                            background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
+                            color: '#FFFFFF',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                          }}>
+                            {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
+                          {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                          {variant.cancer_relevance}
+                        </div>
                       </div>
-                      <h4 style={{ 
-                        color: '#111827',
-                        fontSize: '1rem',
+                      <div style={{
+                        background: '#FFFBEB',
+                        color: '#F59E0B',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
                         fontWeight: '600',
-                        marginBottom: '0.5rem'
+                        textAlign: 'center'
                       }}>
-                        No Copy Number Variants Detected
-                      </h4>
-                      <p style={{ 
-                        color: '#6B7280',
-                        fontSize: '0.875rem',
-                        maxWidth: '350px',
-                        margin: '0 auto'
-                      }}>
-                        No significant gene amplifications or deletions were detected in the analysis.
-                      </p>
-                    </div>
-                  ) : (
-                    genomicData.copy_number_variants.map((variant, index) => (
-                      <div key={index} style={{
-                        background: '#FFFFFF',
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
-                        border: '2px solid #F59E0B',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <span style={{ fontWeight: '600', color: '#111827' }}>
-                              {variant.gene}
-                            </span>
-                            <div style={{
-                              background: variant.copy_number > variant.normal_copy_number ? '#22C55E' : '#EF4444',
-                              color: '#FFFFFF',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '0.375rem',
-                              fontSize: '0.75rem',
-                              fontWeight: '600'
-                            }}>
-                              {variant.copy_number > variant.normal_copy_number ? 'AMPLIFICATION' : 'DELETION'}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: '0.875rem', color: '#4B5563', marginBottom: '0.25rem' }}>
-                            {variant.copy_number} copies (normal: {variant.normal_copy_number}) • {variant.fold_change}x change
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                            {variant.cancer_relevance}
-                          </div>
-                        </div>
-                        <div style={{
-                          background: '#FFFBEB',
-                          color: '#F59E0B',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '0.375rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          textAlign: 'center'
-                        }}>
-                          {variant.clinical_significance}
-                        </div>
+                        {variant.clinical_significance}
                       </div>
-                    ))
-                  )}
-                </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -3639,9 +3609,14 @@ const ClinicalViewPage: React.FC = () => {
           <div style={{ padding: '2rem' }}>
             <div style={{ 
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '0.5rem',
               marginBottom: '1.5rem'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
             }}>
               <h2 style={{ 
                 color: '#111827',
@@ -3670,6 +3645,12 @@ const ClinicalViewPage: React.FC = () => {
                 />
                 <SmartTooltip content="Comprehensive analysis of biological pathways affected by genetic variants. Shows which cellular processes are disrupted and their impact on cancer risk. Pathway burden scores indicate the severity of disruption, with higher percentages representing greater dysfunction." isVisible={hoveredTooltip === 'pathway-analysis'} triggerRef={null} />
               </div>
+              </div>
+              <SubtabDownloadButton 
+                subtabContent={subtabContents.pathways}
+                isPDFGenerating={isPDFGenerating}
+                setIsPDFGenerating={setIsPDFGenerating}
+              />
             </div>
             
             {/* Check if pathway analysis data is available */}
@@ -3826,7 +3807,7 @@ const ClinicalViewPage: React.FC = () => {
               return (
                 <>
                   {/* Pathway Enrichment */}
-                  <div style={{
+                  <div id="pathway-disruption-analysis" style={{
                     background: '#FFFFFF',
                     padding: '2rem',
                     borderRadius: '0.75rem',
@@ -4006,130 +3987,128 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    
-                    {/* Cancer Risk by Pathway */}
-                    <div style={{
-                      background: '#FFFFFF',
-                      padding: '2rem',
-                      borderRadius: '0.75rem',
-                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                      border: '1px solid #E5E7EB',
-                      marginBottom: '2rem'
-                    }}>
-                      <div style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        marginBottom: '1rem'
-                      }}>
-                        <h4 style={{ 
-                          color: '#111827',
-                          fontSize: '1.125rem',
-                          fontWeight: '600',
-                          margin: 0
-                        }}>
-                          Cancer Risk by Pathway Disruption
-                        </h4>
-                        <div 
-                          style={{ position: 'relative', display: 'inline-flex' }}
-                          onMouseEnter={() => setHoveredTooltip('cancer-risk-pathways')}
-                          onMouseLeave={() => setHoveredTooltip(null)}
-                        >
-                          <InformationCircleIcon 
-                            style={{ width: '16px', height: '16px' }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#D1D5DB';
-                              e.currentTarget.style.color = '#374151';
-                              e.currentTarget.style.borderColor = '#9CA3AF';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#E5E7EB';
-                              e.currentTarget.style.color = '#6B7280';
-                              e.currentTarget.style.borderColor = '#D1D5DB';
-                            }}
-                          />
-                          <SmartTooltip content="Shows how pathway disruptions translate to cancer risk for different cancer types. Each cancer type is associated with specific pathways - when those pathways are disrupted, the risk for that cancer increases. The percentage represents the calculated risk based on the severity of pathway disruption and clinical evidence." isVisible={hoveredTooltip === 'cancer-risk-pathways'} triggerRef={null} />
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                        {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
-                          const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
-                          if (!riskFinding) return null;
-                          
-                          return (
-                            <div key={cancer} style={{
-                              padding: '1rem',
-                              border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
-                              borderRadius: '0.5rem',
-                              background: `${getRiskColor(riskFinding.risk_level)}10`,
-                              position: 'relative'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <h5 style={{ 
-                                  color: '#111827',
-                                  fontSize: '1rem',
-                                  fontWeight: '600',
-                                  margin: 0,
-                                  textTransform: 'capitalize'
-                                }}>
-                                  {cancer} Cancer
-                                </h5>
-                                <div 
-                                  style={{ position: 'relative', display: 'inline-flex' }}
-                                  onMouseEnter={() => setHoveredTooltip(`cancer-${cancer}`)}
-                                  onMouseLeave={() => setHoveredTooltip(null)}
-                                >
-                                  <InformationCircleIcon 
-                                    style={{ width: '14px', height: '14px' }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#D1D5DB';
-                                      e.currentTarget.style.color = '#374151';
-                                      e.currentTarget.style.borderColor = '#9CA3AF';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#E5E7EB';
-                                      e.currentTarget.style.color = '#6B7280';
-                                      e.currentTarget.style.borderColor = '#D1D5DB';
-                                    }}
-                                  />
-                                  <SmartTooltip 
-                                    content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
-                                    isVisible={hoveredTooltip === `cancer-${cancer}`} 
-                                    triggerRef={null} 
-                                  />
-                                </div>
-                              </div>
-                              <div style={{ 
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                                color: getRiskColor(riskFinding.risk_level),
-                                marginBottom: '0.5rem'
-                              }}>
-                                {riskFinding.risk_percentage}%
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                {(pathways as string[]).map((pathway: string, pathIndex: number) => (
-                                  <div key={pathIndex} style={{
-                                    background: '#FFFFFF',
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '0.25rem',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '500',
-                                    color: '#4B5563'
-                                  }}>
-                                    {pathway.replace('_', ' ')}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </div>
                   
-
+                  {/* Cancer Risk by Pathway - NOW SEPARATE FROM pathway-disruption-analysis */}
+                  <div id="cancer-risk-by-pathways" style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '2rem'
+                  }}>
+                    <div style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        margin: 0
+                      }}>
+                        Cancer Risk by Pathway Disruption
+                      </h4>
+                      <div 
+                        style={{ position: 'relative', display: 'inline-flex' }}
+                        onMouseEnter={() => setHoveredTooltip('cancer-risk-pathways')}
+                        onMouseLeave={() => setHoveredTooltip(null)}
+                      >
+                        <InformationCircleIcon 
+                          style={{ width: '16px', height: '16px' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#D1D5DB';
+                            e.currentTarget.style.color = '#374151';
+                            e.currentTarget.style.borderColor = '#9CA3AF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#E5E7EB';
+                            e.currentTarget.style.color = '#6B7280';
+                            e.currentTarget.style.borderColor = '#D1D5DB';
+                          }}
+                        />
+                        <SmartTooltip content="Shows how pathway disruptions translate to cancer risk for different cancer types. Each cancer type is associated with specific pathways - when those pathways are disrupted, the risk for that cancer increases. The percentage represents the calculated risk based on the severity of pathway disruption and clinical evidence." isVisible={hoveredTooltip === 'cancer-risk-pathways'} triggerRef={null} />
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
+                        const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
+                        if (!riskFinding) return null;
+                        
+                        return (
+                          <div key={cancer} style={{
+                            padding: '1rem',
+                            border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
+                            borderRadius: '0.5rem',
+                            background: `${getRiskColor(riskFinding.risk_level)}10`,
+                            position: 'relative'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                margin: 0,
+                                textTransform: 'capitalize'
+                              }}>
+                                {cancer} Cancer
+                              </h5>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`cancer-${cancer}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '14px', height: '14px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip 
+                                  content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
+                                  isVisible={hoveredTooltip === `cancer-${cancer}`} 
+                                  triggerRef={null} 
+                                />
+                              </div>
+                            </div>
+                            <div style={{ 
+                              fontSize: '1.5rem',
+                              fontWeight: 'bold',
+                              color: getRiskColor(riskFinding.risk_level),
+                              marginBottom: '0.5rem'
+                            }}>
+                              {riskFinding.risk_percentage}%
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              {(pathways as string[]).map((pathway: string, pathIndex: number) => (
+                                <div key={pathIndex} style={{
+                                  background: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.25rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  color: '#4B5563'
+                                }}>
+                                  {pathway.replace('_', ' ')}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               );
             })()}
@@ -4141,9 +4120,14 @@ const ClinicalViewPage: React.FC = () => {
           <div style={{ padding: '2rem' }}>
             <div style={{ 
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '0.5rem',
               marginBottom: '1.5rem'
+            }}>
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
             }}>
               <h2 style={{ 
                 color: '#111827',
@@ -4172,6 +4156,12 @@ const ClinicalViewPage: React.FC = () => {
                 />
                 <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
               </div>
+              </div>
+              <SubtabDownloadButton 
+                subtabContent={subtabContents.clinical}
+                isPDFGenerating={isPDFGenerating}
+                setIsPDFGenerating={setIsPDFGenerating}
+              />
             </div>
             
             {/* Survival Analysis */}
@@ -4217,13 +4207,6 @@ const ClinicalViewPage: React.FC = () => {
                     <SmartTooltip content="Comparative survival analysis showing how your genetic risk profile affects life expectancy compared to the general population. The red solid line represents your personalized risk profile, while the blue dashed line shows population averages. Early intervention and enhanced screening can significantly improve outcomes." isVisible={hoveredTooltip === 'survival-analysis'} triggerRef={null} />
                   </div>
                 </div>
-                <DownloadButton 
-                  elementId="survival-analysis"
-                  title="Survival Analysis"
-                  summary="Comparative survival analysis showing impact of high-risk genetic profile versus population average. Analysis reveals 8-12 years of life potentially affected but shows substantial benefit from early intervention, with enhanced screening achieving 90-95% of normal life expectancy."
-                  isPDFGenerating={isPDFGenerating}
-                  setIsPDFGenerating={setIsPDFGenerating}
-                />
               </div>
               
               {/* Check if survival analysis data is available */}
@@ -4352,7 +4335,7 @@ const ClinicalViewPage: React.FC = () => {
             </div>
             
             {/* Clinical Recommendations */}
-            <div style={{
+            <div id="clinical-recommendations" style={{
               background: '#FFFFFF',
               padding: '2rem',
               borderRadius: '0.75rem',
@@ -4685,7 +4668,7 @@ const ClinicalViewPage: React.FC = () => {
                 color: '#4B5563',
                 fontSize: '1rem'
               }}>
-                Comprehensive genomic analysis • {currentData.riskLevel}
+                Comprehensive genomic analysis • {sidebarData.riskLevel}
               </p>
             </div>
             <div>

@@ -44,7 +44,7 @@ const UploadOverlay: React.FC<UploadOverlayProps> = ({ onUploadComplete }) => {
       sex: "Female",
       condition: "BRCA1/BRCA2 Positive",
       riskScore: "95/100 (Extremely High)",
-      details: "Age: 34 • Female<br>Family History: Breast Cancer (Maternal)<br>Referral: Genetic Counseling<br>Previous Tests: None",
+      details: "Analysis Type: Genomic Variant Analysis<br>Method: Machine Learning Risk Assessment<br>Data Source: Uploaded VCF File",
       alerts: [
         { type: "critical" as const, title: "🚨 Pathogenic BRCA1 Variant", desc: "c.5266dupC - Immediate action required" },
         { type: "critical" as const, title: "⚠️ Pathogenic BRCA2 Variant", desc: "c.9976A>T - High penetrance" },
@@ -58,7 +58,7 @@ const UploadOverlay: React.FC<UploadOverlayProps> = ({ onUploadComplete }) => {
       sex: "Male",
       condition: "Lynch Syndrome",
       riskScore: "78/100 (High)",
-      details: "Age: 42 • Male<br>Family History: Colorectal Cancer<br>Referral: Oncology<br>Previous Tests: MSI-H positive",
+      details: "Analysis Type: Genomic Variant Analysis<br>Method: Machine Learning Risk Assessment<br>Data Source: Uploaded VCF File",
       alerts: [
         { type: "critical" as const, title: "🚨 MLH1 Pathogenic Variant", desc: "c.1989-1G>A - Splice site mutation" },
         { type: "warning" as const, title: "⚠️ MSH2 VUS", desc: "c.2634+1G>T - Needs monitoring" },
@@ -72,7 +72,7 @@ const UploadOverlay: React.FC<UploadOverlayProps> = ({ onUploadComplete }) => {
       sex: "Female",
       condition: "Li-Fraumeni Syndrome",
       riskScore: "88/100 (Very High)",
-      details: "Age: 28 • Female<br>Family History: Multiple Cancers<br>Referral: Pediatric Oncology<br>Previous Tests: TP53 screening",
+      details: "Analysis Type: Genomic Variant Analysis<br>Method: Machine Learning Risk Assessment<br>Data Source: Uploaded VCF File",
       alerts: [
         { type: "critical" as const, title: "🚨 TP53 Pathogenic Variant", desc: "c.742C>T - Guardian of genome" },
         { type: "warning" as const, title: "⚠️ Early Onset Risk", desc: "Childhood cancer surveillance needed" },
