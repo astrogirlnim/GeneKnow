@@ -762,7 +762,7 @@ const mockDataSets = {
     riskLevel: 'High Risk',
     riskScore: '82/100',
     condition: 'Hereditary Breast and Ovarian Cancer Syndrome',
-    details: 'Family History: Breast Cancer<br/>Referral: Oncology<br/>Previous Tests: BRCA1/2 Panel',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'critical' as const,
@@ -792,7 +792,7 @@ const mockDataSets = {
     riskLevel: 'Medium Risk',
     riskScore: '45/100',
     condition: 'Lynch Syndrome',
-    details: 'Family History: Colorectal Cancer<br/>Referral: Oncology<br/>Previous Tests: MSI-H positive',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'warning' as const,
@@ -822,7 +822,7 @@ const mockDataSets = {
     riskLevel: 'Low Risk',
     riskScore: '15/100',
     condition: 'Li-Fraumeni Syndrome',
-    details: 'Family History: Multiple Sarcomas<br/>Referral: Genetics<br/>Previous Tests: TP53 Sequencing',
+    details: 'Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File',
     alerts: [
       {
         type: 'info' as const,
@@ -1009,7 +1009,7 @@ const ClinicalViewPage: React.FC = () => {
         riskLevel: riskCategory,
         riskScore: `${overallRiskScore}/100`,
         condition: `${highestRisk.cancer} Cancer Risk Assessment`,
-        details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
+        details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File`,
         alerts: realAlerts
       };
     }
