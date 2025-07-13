@@ -151,6 +151,23 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
       }
     }
     
+    // Add footer
+    const footerY = pageHeight - 15;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('GeneKnow Platform - AI-powered genomic analysis', pageWidth / 2, footerY - 5, { align: 'center' });
+    
+    // Format the timestamp nicely
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    pdf.text(`Report ID: GK-${Date.now()} | Generated: ${formattedDate}`, pageWidth / 2, footerY, { align: 'center' });
+    
     // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `geneknow_${subtabContent.id}_${timestamp}.pdf`;
@@ -975,6 +992,28 @@ const ClinicalViewPage: React.FC = () => {
   // Get mock data for UI elements (only used when no real pipeline results)
   const currentData = mockDataSets[riskLevel as keyof typeof mockDataSets] || mockDataSets.low;
 
+  // Helper function to determine file type from filename
+  const getFileTypeDescription = (filename?: string): string => {
+    if (!filename) return 'Unknown File Type';
+    
+    const lowercaseFile = filename.toLowerCase();
+    
+    if (lowercaseFile.endsWith('.maf') || lowercaseFile.endsWith('.maf.gz')) {
+      return 'Uploaded MAF File';
+    } else if (lowercaseFile.endsWith('.vcf') || lowercaseFile.endsWith('.vcf.gz')) {
+      return 'Uploaded VCF File';
+    } else if (lowercaseFile.endsWith('.fastq') || lowercaseFile.endsWith('.fq') || 
+               lowercaseFile.endsWith('.fastq.gz') || lowercaseFile.endsWith('.fq.gz')) {
+      return 'Uploaded FASTQ File';
+    } else if (lowercaseFile.endsWith('.bam')) {
+      return 'Uploaded BAM File';
+    } else if (lowercaseFile.endsWith('.sam')) {
+      return 'Uploaded SAM File';
+    } else {
+      return 'Uploaded Genomic File';
+    }
+  };
+
   // Get real data for sidebar when available
   const getSidebarData = () => {
     if (pipelineResults) {
@@ -1002,14 +1041,17 @@ const ClinicalViewPage: React.FC = () => {
         riskLevel: riskCategory,
         riskScore: `${overallRiskScore}/100`,
         condition: `${highestRisk.cancer} Cancer Risk Assessment`,
-        details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: Uploaded VCF File`,
+        details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: ${getFileTypeDescription(fileName)}`,
         alerts: realAlerts
       };
     }
     
     console.log('🔍 SIDEBAR DEBUG: No pipelineResults, falling back to mock data');
-    // Fallback to mock data if no pipeline results
-    return currentData;
+    // Fallback to mock data if no pipeline results (but update data source to be accurate)
+    return {
+      ...currentData,
+      details: `Analysis Type: Genomic Variant Analysis<br/>Method: Machine Learning Risk Assessment<br/>Data Source: ${getFileTypeDescription(fileName)}`
+    };
   };
 
   const sidebarData = getSidebarData();
