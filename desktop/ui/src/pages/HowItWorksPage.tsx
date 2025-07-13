@@ -712,42 +712,40 @@ const HowItWorksPage = () => (
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '0.75rem',
+            padding: '2rem 7.2rem',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               System Requirements
             </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Windows 10/11, macOS 10.15+, or Linux
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                8GB RAM minimum (16GB recommended)
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                2GB free storage space
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Modern multi-core processor
-              </li>
+            <ul style={{ listStyle: 'none', padding: 0, color: '#4B5563', lineHeight: '1.8', textAlign: 'left' }}>
+              <li>• Windows 10/11, macOS 10.15+, or Linux</li>
+              <li>• 8GB RAM minimum (16GB recommended)</li>
+              <li>• 2GB free storage space</li>
+              <li>• Modern multi-core processor</li>
             </ul>
           </div>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '0.75rem',
+            padding: '2rem 7.2rem',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               File Requirements
             </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                FASTQ file format (.fastq or .fq)
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Whole genome sequencing data
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Minimum 30x coverage recommended
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Human genomic data (hg38 reference)
-              </li>
+            <ul style={{ listStyle: 'none', padding: 0, color: '#4B5563', lineHeight: '1.8', textAlign: 'left' }}>
+              <li>• FASTQ file format (.fastq or .fq)</li>
+              <li>• Whole genome sequencing data</li>
+              <li>• Minimum 30x coverage recommended</li>
+              <li>• Human genomic data (hg38 reference)</li>
             </ul>
           </div>
         </div>
