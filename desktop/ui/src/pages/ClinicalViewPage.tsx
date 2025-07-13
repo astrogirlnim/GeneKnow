@@ -129,11 +129,6 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             rows.forEach((row) => {
               const cells = row.querySelectorAll('td');
               if (cells.length >= 7) {
-                // Extract transformation data more carefully
-                const transformationCell = cells[3];
-                const dnaChangeDiv = transformationCell.querySelector('div:first-child div:first-child');
-                const proteinChangeDiv = transformationCell.querySelector('div:first-child div:last-child');
-                
                 // Extract quality score from the colored div
                 const qualityCell = cells[4];
                 const qualityDiv = qualityCell.querySelector('div');
@@ -153,8 +148,6 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
                   gene: cells[0]?.textContent?.trim() || 'N/A',
                   variant: cells[1]?.textContent?.trim() || 'N/A',
                   type: cells[2]?.textContent?.trim() || 'N/A',
-                  dnaChange: dnaChangeDiv?.textContent?.trim() || 'N/A',
-                  proteinChange: proteinChangeDiv?.textContent?.trim() || 'N/A',
                   quality: qualityScore,
                   significance: significance,
                   mainImpact: mainImpact,
@@ -171,9 +164,9 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             pdf.text('No variants detected in the analysis.', 20, yPosition);
             yPosition += 15;
           } else {
-            // Updated column widths to fit A4 page (170mm usable width)
-            const headers = ['Gene', 'Variant', 'Type', 'DNA Change', 'Protein Change', 'Quality', 'Significance', 'Impact'];
-            const colWidths = [18, 25, 14, 28, 28, 14, 20, 23]; // Total: 170mm
+            // Simplified column structure - removed problematic DNA/Protein Change columns
+            const headers = ['Gene', 'Variant', 'Type', 'Quality', 'Significance', 'Impact'];
+            const colWidths = [22, 35, 18, 18, 25, 52]; // Total: 170mm
             const startX = 20;
             const baseRowHeight = 8;
             
@@ -235,13 +228,11 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
                 pdf.setFont('helvetica', 'normal');
               }
               
-              // Prepare row data with proper formatting
+              // Prepare row data with clean formatting (removed problematic DNA/Protein columns)
               const cellData = [
                 variant.gene,
-                variant.variant.length > 15 ? variant.variant.substring(0, 15) + '...' : variant.variant,
+                variant.variant.length > 20 ? variant.variant.substring(0, 20) + '...' : variant.variant,
                 variant.type,
-                variant.dnaChange,
-                variant.proteinChange,
                 variant.quality,
                 variant.significance.replace('_', ' '),
                 variant.mainImpact + (variant.subImpact ? '\n' + variant.subImpact : '')
