@@ -202,6 +202,63 @@ function trackDownload(platform, fileName) {
     trackEvent('download', 'file', 'download', `${platform}-${fileName}`);
 }
 
+// Copy to clipboard functionality
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const text = element.textContent || element.innerText;
+    
+    // Try using the modern clipboard API first
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopyFeedback(elementId);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyToClipboard(text);
+    }
+}
+
+// Fallback copy method for older browsers
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopyFeedback();
+    } catch (err) {
+        console.error('Fallback: Could not copy text: ', err);
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Show feedback when text is copied
+function showCopyFeedback(elementId) {
+    const button = document.querySelector(`button[onclick="copyToClipboard('${elementId}')"]`);
+    if (button) {
+        const originalText = button.innerHTML;
+        button.innerHTML = '✅ Copied!';
+        button.classList.add('bg-green-700');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('bg-green-700');
+        }, 2000);
+    }
+}
+
 // Export functions for use in other scripts
 window.GeneKnow = {
     formatBytes,
@@ -212,8 +269,12 @@ window.GeneKnow = {
     showLoading,
     hideLoading,
     trackDownload,
-    trackEvent
+    trackEvent,
+    copyToClipboard
 };
+
+// Make copyToClipboard globally available
+window.copyToClipboard = copyToClipboard;
 
 // Add fade-in CSS class
 const style = document.createElement('style');

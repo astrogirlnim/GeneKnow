@@ -107,41 +107,69 @@ cd ..
 
 ## 📦 Installing Pre-built Binaries
 
-### macOS Installation Notice ⚠️
+### 🍎 macOS Installation (Recommended Method)
 
 **Important for macOS users:** As a small open-source project, our macOS application is not yet code-signed by Apple. You'll need to bypass macOS security (Gatekeeper) to install and run GeneKnow.
 
-**Note:** Starting with v0.1.4, macOS builds are distributed as ZIP files instead of DMG to preserve the bundled Python runtime.
+**⚠️ Critical Installation Note:** Due to the bundled Python runtime and ML models, GeneKnow requires **programmatic installation** via Terminal to ensure all components are properly copied. **DO NOT** use drag-and-drop installation from the DMG as this will result in a non-functional app.
 
-#### Installation Steps:
-1. **Download** the `.zip` file from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases)
-2. **Extract the ZIP** by double-clicking (creates `GeneKnow.app`)
-3. **Remove quarantine** (required for unsigned apps):
+#### Programmatic Installation Steps:
+
+1. **Download** the `.dmg` file from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases)
+2. **Install via Terminal** (copy and paste the commands below):
+
    ```bash
-   xattr -cr ~/Downloads/GeneKnow.app
+   # Step 1: Stop any running GeneKnow processes
+   pkill -f "GeneKnow.app"
+   pkill -f "geneknow_pipeline"
+   
+   # Step 2: Mount the DMG (replace with your actual DMG filename)
+   hdiutil attach ~/Downloads/GeneKnow_*.dmg
+   
+   # Step 3: Remove old installation if it exists
+   sudo rm -rf /Applications/GeneKnow.app
+   
+   # Step 4: Copy the app to Applications (preserves bundled resources)
+   sudo cp -R "/Volumes/GeneKnow*/GeneKnow.app" /Applications/
+   
+   # Step 5: Remove quarantine attributes (required for unsigned apps)
+   sudo xattr -r -d com.apple.quarantine /Applications/GeneKnow.app
+   
+   # Step 6: Unmount the DMG
+   hdiutil detach "/Volumes/GeneKnow*"
+   
+   # Step 7: Launch the app
+   open /Applications/GeneKnow.app
    ```
-4. **Move to Applications** by dragging the app
-5. **First launch**: Right-click GeneKnow.app and select "Open"
 
-#### Quick Terminal Installation:
+3. **First Launch**: The app should open automatically. If macOS shows a security warning, click "Open" or go to System Preferences → Security & Privacy → General → "Open Anyway"
+
+#### ✅ Verification Steps:
+
+After installation, verify that the app is working correctly:
 ```bash
-# Download, extract, and prepare the app
-cd ~/Downloads
-# Extract the ZIP (or double-click in Finder)
-unzip GeneKnow-*.zip
-# Remove quarantine
-xattr -cr GeneKnow.app
-# Move to Applications
-mv GeneKnow.app /Applications/
-# Open the app (first time)
-open -a GeneKnow
+# Check that bundled resources are present
+ls -la /Applications/GeneKnow.app/Contents/Resources/_up_/bundled_resources/
+
+# You should see:
+# - start_api_server.sh
+# - python_runtime/ (directory)
+# - geneknow_pipeline/ (directory with .pkl and .db files)
 ```
 
-For detailed instructions, see our [macOS ZIP Installation Guide](docs/MACOS_ZIP_INSTALLATION.md).
+If the `bundled_resources` directory is missing or empty, the drag-and-drop installation was used instead of the programmatic method. Please remove the app and reinstall using the Terminal commands above.
+
+#### 🚨 Common Installation Issues:
+
+- **"Command not found" errors**: Make sure you're running the Terminal commands, not drag-and-drop
+- **App won't start**: Check that bundled resources are present using the verification steps above
+- **"Not Available" in confidence check**: This indicates missing ML models - reinstall using the programmatic method
+- **Empty Resources directory**: This confirms drag-and-drop was used - remove the app and reinstall via Terminal
 
 #### Why This Happens
 - Apple requires developer certificates ($99/year) for automatic installation
 - As a small open-source project, we haven't yet obtained code signing certificates  
+- The bundled Python runtime and ML models require proper file permissions and structure preservation
 - We're working toward official code signing as our project grows
 
 #### Security Assurance
@@ -150,8 +178,18 @@ For detailed instructions, see our [macOS ZIP Installation Guide](docs/MACOS_ZIP
 - ✅ **No Network Access**: All processing happens locally
 - ✅ **Community Verified**: Code changes are reviewed through public pull requests
 
-### Windows & Linux
-Windows and Linux installations work normally without additional security steps.
+### 🪟 Windows Installation
+
+Download the `.msi` or `.exe` installer from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases) and run it normally. No additional security steps are required.
+
+### 🐧 Linux Installation
+
+Download the `.deb` package from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases) and install it using:
+```bash
+sudo dpkg -i GeneKnow_*.deb
+```
+
+No additional security steps are required.
 
 ---
 

@@ -386,7 +386,7 @@
                     </div>
                 </div>
 
-                <!-- macOS Security Notice -->
+                <!-- macOS Installation Instructions -->
                 <div class="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div class="flex items-start gap-3">
                         <div class="w-5 h-5 text-amber-600 mt-0.5">
@@ -395,22 +395,72 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h4 class="text-sm font-semibold text-amber-800 mb-2">macOS Installation Notice</h4>
+                            <h4 class="text-sm font-semibold text-amber-800 mb-2">🍎 macOS Installation Instructions</h4>
                             <p class="text-sm text-amber-700 mb-3">
-                                As a small open-source project, our macOS application is not yet code-signed by Apple. You may need to bypass macOS security to install and run GeneKnow.
+                                <strong>Important:</strong> Due to the bundled Python runtime and ML models, GeneKnow requires <strong>programmatic installation</strong> via Terminal. <strong>DO NOT</strong> use drag-and-drop installation from the DMG as this will result in a non-functional app.
                             </p>
-                            <div class="bg-white border border-amber-200 rounded p-3 text-xs text-amber-800">
-                                <p class="font-medium mb-1">To install on macOS:</p>
-                                <ol class="list-decimal list-inside space-y-1 ml-2">
-                                    <li>Download the <code class="bg-amber-100 px-1 rounded">.dmg</code> file</li>
-                                    <li>Right-click the GeneKnow app and select "Open"</li>
-                                    <li>Click "Open" in the security dialog that appears</li>
-                                    <li>Alternatively: Go to System Preferences → Security &amp; Privacy → General, and click "Open Anyway"</li>
-                                </ol>
-                                <p class="mt-2 text-amber-600 font-medium">
-                                    <strong>Why this happens:</strong> Apple requires developer certificates ($99/year) for automatic installation. We're working toward code signing as our project grows.
+                            
+                            <!-- Terminal Installation -->
+                            <div class="bg-gray-900 text-green-400 rounded-lg p-3 text-xs mb-3 overflow-x-auto">
+                                <p class="text-green-300 font-medium mb-2">📋 Copy and paste these commands into Terminal:</p>
+                                <pre class="whitespace-pre-wrap"><code id="macos-install-commands"># Step 1: Stop any running GeneKnow processes
+pkill -f "GeneKnow.app"
+pkill -f "geneknow_pipeline"
+
+# Step 2: Mount the DMG (replace with your actual DMG filename)
+hdiutil attach ~/Downloads/GeneKnow_*.dmg
+
+# Step 3: Remove old installation if it exists
+sudo rm -rf /Applications/GeneKnow.app
+
+# Step 4: Copy the app to Applications (preserves bundled resources)
+sudo cp -R "/Volumes/GeneKnow*/GeneKnow.app" /Applications/
+
+# Step 5: Remove quarantine attributes (required for unsigned apps)
+sudo xattr -r -d com.apple.quarantine /Applications/GeneKnow.app
+
+# Step 6: Unmount the DMG
+hdiutil detach "/Volumes/GeneKnow*"
+
+# Step 7: Launch the app
+open /Applications/GeneKnow.app</code></pre>
+                                <button onclick="copyToClipboard('macos-install-commands')" class="mt-2 bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded transition-colors">
+                                    📋 Copy Commands
+                                </button>
+                            </div>
+
+                            <!-- Verification Steps -->
+                            <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
+                                <p class="text-blue-800 font-medium text-xs mb-2">✅ Verification Steps:</p>
+                                <div class="bg-gray-900 text-blue-400 rounded p-2 text-xs">
+                                    <code># Check that bundled resources are present<br>ls -la /Applications/GeneKnow.app/Contents/Resources/_up_/bundled_resources/</code>
+                                </div>
+                                <p class="text-blue-700 text-xs mt-2">
+                                    You should see: <code class="bg-blue-100 px-1 rounded">start_api_server.sh</code>, <code class="bg-blue-100 px-1 rounded">python_runtime/</code>, and <code class="bg-blue-100 px-1 rounded">geneknow_pipeline/</code>
                                 </p>
                             </div>
+
+                            <!-- Common Issues -->
+                            <div class="bg-red-50 border border-red-200 rounded p-3 mb-3">
+                                <p class="text-red-800 font-medium text-xs mb-2">🚨 Common Issues:</p>
+                                <ul class="text-red-700 text-xs space-y-1 ml-4">
+                                    <li class="list-disc">Empty Resources directory → Used drag-and-drop instead of Terminal</li>
+                                    <li class="list-disc">"Not Available" in confidence check → Missing ML models</li>
+                                    <li class="list-disc">App won't start → Check bundled resources are present</li>
+                                </ul>
+                            </div>
+
+                            <!-- Why This Happens -->
+                            <div class="bg-white border border-amber-200 rounded p-3 text-xs text-amber-800">
+                                <p class="font-medium mb-1">Why programmatic installation is required:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-2">
+                                    <li>Apple requires developer certificates ($99/year) for automatic installation</li>
+                                    <li>Bundled Python runtime and ML models need proper file permissions</li>
+                                    <li>Drag-and-drop doesn't preserve the complex bundle structure</li>
+                                    <li>We're working toward official code signing as our project grows</li>
+                                </ul>
+                            </div>
+
                             <p class="text-xs text-amber-600 mt-2">
                                 <strong>Security:</strong> Our code is fully open-source and auditable on <a href="https://github.com/astrogirlnim/GeneKnow" class="underline hover:text-amber-800" target="_blank">GitHub</a>. Your genetic data never leaves your device.
                             </p>
