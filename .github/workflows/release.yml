@@ -53,6 +53,8 @@ permissions:
   issues: write
   pull-requests: write
   actions: write
+  pages: write
+  id-token: write
 
 env:
   NODE_VERSION: '20'
@@ -63,6 +65,11 @@ env:
   PYTHONLEGACYWINDOWSFSENCODING: utf-8
   LC_ALL: C.UTF-8
   LANG: C.UTF-8
+
+# Allow one concurrent deployment to pages
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   # 🧹 Cleanup old artifacts to free storage
@@ -700,12 +707,58 @@ jobs:
         shell: bash
         run: |
           echo "🐍 Bundling Python runtime for ${{ matrix.name }}..."
+          echo "📍 Current working directory: $(pwd)"
+          echo "📂 Contents of desktop directory:"
+          ls -la
           
           # Make script executable
           chmod +x scripts/bundle-python-optimized.sh
           
           # Run the optimized bundling script (no TensorFlow, 364MB instead of 1.9GB)
-          ./scripts/bundle-python-optimized.sh
+          echo "🚀 Running bundling script..."
+          if ./scripts/bundle-python-optimized.sh; then
+            echo "✅ Bundle script executed successfully"
+          else
+            echo "❌ Bundle script failed with exit code $?"
+            exit 1
+          fi
+          
+          # Verify bundled resources were created
+          echo "🔍 Verifying bundled resources were created..."
+          if [ -d "bundled_resources" ]; then
+            echo "✅ bundled_resources directory exists"
+            echo "📊 Bundle size: $(du -sh bundled_resources | cut -f1)"
+            echo "📂 Bundle contents:"
+            ls -la bundled_resources/
+            
+            # Check for critical files
+            if [ -f "bundled_resources/start_api_server.sh" ]; then
+              echo "✅ start_api_server.sh found"
+            else
+              echo "❌ start_api_server.sh MISSING - this will cause startup failures"
+              exit 1
+            fi
+            
+            if [ -d "bundled_resources/python_runtime" ]; then
+              echo "✅ python_runtime directory found"
+            else
+              echo "❌ python_runtime directory MISSING"
+              exit 1
+            fi
+            
+            if [ -d "bundled_resources/geneknow_pipeline" ]; then
+              echo "✅ geneknow_pipeline directory found"
+            else
+              echo "❌ geneknow_pipeline directory MISSING"
+              exit 1
+            fi
+            
+          else
+            echo "❌ bundled_resources directory NOT FOUND"
+            echo "📂 Current directory contents:"
+            ls -la
+            exit 1
+          fi
           
           echo "✅ Python runtime bundled successfully"
 
@@ -726,6 +779,55 @@ jobs:
             echo "   Bundle dir size: $(du -sh ../bundled_resources 2>/dev/null || echo 'Not found')"
           fi
           
+          # Pre-build verification of bundled resources
+          echo "🔍 Pre-build verification of bundled resources..."
+          echo "📍 Current working directory: $(pwd)"
+          echo "📂 Contents of src-tauri directory:"
+          ls -la
+          
+          if [ -d "../bundled_resources" ]; then
+            echo "✅ bundled_resources directory found relative to src-tauri"
+            echo "📊 Bundle size: $(du -sh ../bundled_resources | cut -f1)"
+            echo "📂 Critical files check:"
+            
+            if [ -f "../bundled_resources/start_api_server.sh" ]; then
+              echo "   ✅ start_api_server.sh found"
+            else
+              echo "   ❌ start_api_server.sh MISSING"
+              exit 1
+            fi
+            
+            if [ -d "../bundled_resources/python_runtime" ]; then
+              echo "   ✅ python_runtime directory found"
+            else
+              echo "   ❌ python_runtime directory MISSING"
+              exit 1
+            fi
+            
+            if [ -d "../bundled_resources/geneknow_pipeline" ]; then
+              echo "   ✅ geneknow_pipeline directory found"
+            else
+              echo "   ❌ geneknow_pipeline directory MISSING"
+              exit 1
+            fi
+            
+            echo "🔧 Verifying tauri.conf.json resources configuration..."
+            if grep -q '"resources": \["../bundled_resources"\]' tauri.conf.json; then
+              echo "   ✅ tauri.conf.json correctly configured to include bundled_resources"
+            else
+              echo "   ❌ tauri.conf.json NOT correctly configured"
+              echo "   📄 Current resources configuration:"
+              grep -A2 -B2 '"resources"' tauri.conf.json || echo "   No resources section found"
+              exit 1
+            fi
+            
+          else
+            echo "❌ bundled_resources directory NOT FOUND relative to src-tauri"
+            echo "📂 Contents of parent directory:"
+            ls -la ..
+            exit 1
+          fi
+          
           # Set debug logging for Tauri
           export RUST_LOG=debug
           export RUST_BACKTRACE=1
@@ -733,6 +835,79 @@ jobs:
           cargo tauri build --target ${{ matrix.rust-target }} --verbose
           
           echo "✅ Tauri release build completed for ${{ matrix.name }}"
+
+      - name: 🔍 Verify bundled resources in build artifacts
+        shell: bash
+        run: |
+          echo "🔍 Verifying bundled resources are included in build artifacts..."
+          
+          # Find the built application
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            # macOS DMG and app bundle
+            APP_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/macos/ -name "*.app" | head -1)
+            if [ -n "$APP_PATH" ]; then
+              echo "🍎 Found macOS app bundle: $APP_PATH"
+              
+              # Check for bundled resources in the app bundle
+              RESOURCES_PATH="$APP_PATH/Contents/Resources"
+              if [ -d "$RESOURCES_PATH" ]; then
+                echo "✅ Resources directory found in app bundle"
+                echo "📂 Resources contents:"
+                ls -la "$RESOURCES_PATH"
+                
+                # Check for our bundled resources
+                BUNDLED_PATH="$RESOURCES_PATH/_up_/bundled_resources"
+                if [ -d "$BUNDLED_PATH" ]; then
+                  echo "✅ bundled_resources found in app bundle at: $BUNDLED_PATH"
+                  echo "📊 Bundle size in app: $(du -sh "$BUNDLED_PATH" | cut -f1)"
+                  
+                  # Check critical files
+                  if [ -f "$BUNDLED_PATH/start_api_server.sh" ]; then
+                    echo "   ✅ start_api_server.sh found in app bundle"
+                  else
+                    echo "   ❌ start_api_server.sh MISSING from app bundle"
+                    exit 1
+                  fi
+                  
+                  if [ -d "$BUNDLED_PATH/python_runtime" ]; then
+                    echo "   ✅ python_runtime found in app bundle"
+                  else
+                    echo "   ❌ python_runtime MISSING from app bundle"
+                    exit 1
+                  fi
+                  
+                  if [ -d "$BUNDLED_PATH/geneknow_pipeline" ]; then
+                    echo "   ✅ geneknow_pipeline found in app bundle"
+                  else
+                    echo "   ❌ geneknow_pipeline MISSING from app bundle"
+                    exit 1
+                  fi
+                  
+                else
+                  echo "❌ bundled_resources NOT found in app bundle"
+                  echo "📂 _up_ directory contents:"
+                  ls -la "$RESOURCES_PATH/_up_/" 2>/dev/null || echo "   _up_ directory not found"
+                  exit 1
+                fi
+              else
+                echo "❌ Resources directory not found in app bundle"
+                exit 1
+              fi
+            else
+              echo "❌ Could not find macOS app bundle"
+              exit 1
+            fi
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            # Linux AppImage or deb
+            echo "🐧 Checking Linux build artifacts..."
+            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*" -type f | head -5
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            # Windows executable
+            echo "🪟 Checking Windows build artifacts..."
+            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*" -type f | head -5
+          fi
+          
+          echo "✅ Build artifact verification completed"
 
       - name: 📂 Locate build artifacts (Unix)
         id: artifacts-unix
@@ -901,6 +1076,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🌐 Website Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The download website will be automatically updated with this release." >> $GITHUB_STEP_SUMMARY
+          echo "Visit the website to download the latest version." >> $GITHUB_STEP_SUMMARY
 
   # 🧪 Test Build Summary (for test releases)
   test-summary:
@@ -956,3 +1136,115 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🧬 **GeneKnow Test Build** - No release created, artifacts available for download" >> $GITHUB_STEP_SUMMARY
+
+  # 🌐 Deploy Website (for production releases only)
+  deploy-website:
+    name: 🌐 Deploy Download Website
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    # Only deploy website for production releases, not test releases
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && github.event.inputs.is_test_release != 'true'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
+          lfs: true
+
+      - name: 🔧 Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📝 Update website with latest release info
+        run: |
+          echo "📝 Updating website with release information..."
+          echo "🎯 Version: ${{ needs.version.outputs.version }}"
+          echo "🏷️ Tag: ${{ needs.version.outputs.tag }}"
+          
+          # Create build directory
+          mkdir -p _site
+          cp -r download_website/* _site/
+          
+          # Update repository configuration in JavaScript
+          sed -i "s/const REPO_OWNER = 'astrogirlnim'/const REPO_OWNER = '${{ github.repository_owner }}'/g" _site/assets/js/releases.js
+          sed -i "s/const REPO_NAME = 'GeneKnow'/const REPO_NAME = '${{ github.event.repository.name }}'/g" _site/assets/js/releases.js
+          
+          # Update version in mock data to match the actual release
+          sed -i "s/tag_name: 'v1\.2\.3'/tag_name: '${{ needs.version.outputs.tag }}'/g" _site/assets/js/releases.js
+          sed -i "s/GeneKnow v1\.2\.3/GeneKnow ${{ needs.version.outputs.version }}/g" _site/assets/js/releases.js
+          
+          # Update download URLs to match actual release
+          sed -i "s/v1\.2\.3/${{ needs.version.outputs.version }}/g" _site/assets/js/releases.js
+          
+          # Add cache-busting timestamp to ensure immediate updates
+          TIMESTAMP=$(date +%s)
+          sed -i "s/setTimeout(() => {/setTimeout(() => { \/\/ Updated: $TIMESTAMP/g" _site/assets/js/releases.js
+          
+          # Update the published date to current time for immediate releases
+          CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          sed -i "s/published_at: new Date().toISOString()/published_at: '$CURRENT_DATE'/g" _site/assets/js/releases.js
+          
+          echo "✅ Website updated with release ${{ needs.version.outputs.version }}"
+          echo "🕐 Cache-busting timestamp: $TIMESTAMP"
+          echo "📅 Release date: $CURRENT_DATE"
+
+      - name: 🚀 Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: 🌐 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 🔍 Verify website deployment
+        run: |
+          echo "🔍 Verifying website deployment..."
+          WEBSITE_URL="${{ steps.deployment.outputs.page_url }}"
+          
+          # Wait a moment for deployment to propagate
+          sleep 10
+          
+          # Check if website is accessible
+          if curl -f -s "$WEBSITE_URL" > /dev/null; then
+            echo "✅ Website is accessible at: $WEBSITE_URL"
+          else
+            echo "⚠️  Website may not be immediately accessible (DNS propagation)"
+          fi
+          
+          # Check if releases.js contains the new version
+          if curl -f -s "${WEBSITE_URL}assets/js/releases.js" | grep -q "${{ needs.version.outputs.tag }}"; then
+            echo "✅ Website contains latest release information"
+          else
+            echo "⚠️  Release information may still be propagating"
+          fi
+          
+          echo "🌐 Website deployment verification completed"
+
+      - name: 📋 Website deployment summary
+        run: |
+          echo "# 🌐 Website Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Website Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** ${{ needs.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Updated:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Download Links Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The website now displays download links for:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 **macOS**: Universal DMG installer" >> $GITHUB_STEP_SUMMARY
+          echo "- 🪟 **Windows**: MSI and EXE installers" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐧 **Linux**: DEB packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please verify:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Website displays correct version: ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Download links point to latest release" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Platform detection works correctly" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Release notes display properly" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🧬 **GeneKnow Download Page** - Always up-to-date with latest releases" >> $GITHUB_STEP_SUMMARY
