@@ -1003,7 +1003,7 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
       detailedInfo: {
         whatItMeans: `A ${isPathogenic ? 'pathogenic' : 'likely pathogenic'} variant in the ${gene} gene has been identified. This variant is ${isPathogenic ? 'known to cause' : 'likely to cause'} disease or increase cancer risk.`,
         whyImportant: `${gene} variants can significantly impact cancer risk. ${isPathogenic ? 'Pathogenic' : 'Likely pathogenic'} variants have strong evidence for clinical significance and require immediate attention.`,
-        clinicalSignificance: variant.functional_impact || `${isPathogenic ? 'High' : 'Moderate'} clinical significance. This variant requires clinical evaluation and may affect treatment decisions.`,
+        clinicalSignificance: variant.functional_impact || `${isPathogenic ? 'High' : 'Moderate'} research significance. This variant requires medical evaluation and may affect treatment decisions.`,
         nextSteps: `Genetic counseling is recommended. Consider enhanced screening protocols and discuss with oncology team. Family members should be informed about potential hereditary risk.`
       }
     });
@@ -1023,11 +1023,11 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
     alerts.push({
       type: 'info',
       title: `${gene} Variant of Uncertain Significance`,
-      desc: `${proteinChange} - Clinical significance unclear`,
+      desc: `${proteinChange} - Research significance unclear`,
       detailedInfo: {
-        whatItMeans: `A genetic variant in the ${gene} gene where the clinical significance is not yet definitively established by current scientific evidence.`,
+        whatItMeans: `A genetic variant in the ${gene} gene where the research significance is not yet definitively established by current scientific evidence.`,
         whyImportant: `${gene} is an important cancer-related gene. Even uncertain variants require monitoring as new research may reclassify them as pathogenic or benign.`,
-        clinicalSignificance: 'May or may not be clinically significant. Requires ongoing evaluation as more research data becomes available.',
+        clinicalSignificance: 'May or may not be medically significant. Requires ongoing evaluation as more research data becomes available.',
         nextSteps: 'Genetic counseling to discuss implications, potential for variant reclassification, and consideration of family testing.'
       }
     });
@@ -1085,7 +1085,7 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
       detailedInfo: {
         whatItMeans: `Based on the genetic analysis, you have been identified as having elevated risk for ${topRisk.cancer} cancer (${topRisk.score.toFixed(1)}%).`,
         whyImportant: `This elevated risk is significantly higher than the general population average. Early detection and prevention strategies can significantly improve outcomes.`,
-        clinicalSignificance: `This risk level warrants ${topRisk.score >= 30 ? 'immediate clinical attention' : 'enhanced screening protocols'} and specialized medical management.`,
+        clinicalSignificance: `This risk level warrants ${topRisk.score >= 30 ? 'immediate medical attention' : 'enhanced screening protocols'} and specialized medical management.`,
         nextSteps: `Schedule consultation with oncology team. Begin enhanced screening protocols. Consider genetic counseling to discuss risk management strategies and family implications.`
       }
     });
@@ -1208,9 +1208,9 @@ const mockDataSets = {
         title: 'TP53 Variant of Uncertain Significance',
         desc: 'c.743G>A - Missense mutation',
         detailedInfo: {
-          whatItMeans: 'A genetic variant in the TP53 gene where the clinical significance is not yet definitively established by current scientific evidence.',
+          whatItMeans: 'A genetic variant in the TP53 gene where the research significance is not yet definitively established by current scientific evidence.',
           whyImportant: 'TP53 is the "guardian of the genome" and mutations can predispose to multiple cancer types. Even uncertain variants require monitoring.',
-          clinicalSignificance: 'May or may not be clinically significant. Requires ongoing evaluation as more research data becomes available.',
+          clinicalSignificance: 'May or may not be medically significant. Requires ongoing evaluation as more research data becomes available.',
           nextSteps: 'Genetic counseling to discuss implications, potential for variant reclassification, and consideration of family testing.'
         }
       },
@@ -2355,7 +2355,7 @@ const ClinicalViewPage: React.FC = () => {
                       <p style={{ color: '#D1D5DB', marginBottom: '0' }}>
                         Color-coded heatmap showing the strength of association between specific genes and cancer types. 
                         Red indicates high association (≥80%), orange medium (60-80%), blue low (30-60%), light blue very low (1-30%), 
-                        and gray no association. Based on pathway burden analysis and clinical literature. 
+                        and gray no association. Based on pathway burden analysis and research literature. 
                         Use this to understand which genes are most relevant for specific cancer screening protocols.
                       </p>
                       <div style={{
@@ -2780,7 +2780,7 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, clinical significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
+                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, research significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
                   </div>
                 </div>
               </div>
@@ -3891,7 +3891,7 @@ const ClinicalViewPage: React.FC = () => {
                                   }}
                                 />
                                 <SmartTooltip 
-                                  content={`${pathway.description}. This pathway contains ${pathway.genes_affected_ratio} genes with damaging variants. The ${pathway.significance}% disruption score indicates ${pathway.significance > 80 ? 'severe dysfunction requiring immediate clinical attention' : pathway.significance > 60 ? 'moderate disruption with potential therapeutic implications' : 'mild disruption that should be monitored'}.`} 
+                                  content={`${pathway.description}. This pathway contains ${pathway.genes_affected_ratio} genes with damaging variants. The ${pathway.significance}% disruption score indicates ${pathway.significance > 80 ? 'severe dysfunction requiring immediate medical attention' : pathway.significance > 60 ? 'moderate disruption with potential therapeutic implications' : 'mild disruption that should be monitored'}.`} 
                                   isVisible={hoveredTooltip === `pathway-${index}`} 
                                   triggerRef={null} 
                                 />
@@ -4076,7 +4076,7 @@ const ClinicalViewPage: React.FC = () => {
                                   }}
                                 />
                                 <SmartTooltip 
-                                  content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
+                                  content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate medical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
                                   isVisible={hoveredTooltip === `cancer-${cancer}`} 
                                   triggerRef={null} 
                                 />
