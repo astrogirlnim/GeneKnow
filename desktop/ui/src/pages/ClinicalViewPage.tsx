@@ -151,13 +151,6 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
       }
     }
     
-    // Add footer
-    const footerY = pageHeight - 15;
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('🧬 GeneKnow Platform - AI-powered genomic analysis', pageWidth / 2, footerY - 5, { align: 'center' });
-    pdf.text(`Report ID: GK-${Date.now()} | Generated: ${new Date().toISOString()}`, pageWidth / 2, footerY, { align: 'center' });
-    
     // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `geneknow_${subtabContent.id}_${timestamp}.pdf`;
