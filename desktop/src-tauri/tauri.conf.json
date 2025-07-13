@@ -33,7 +33,10 @@
     ],
     "resources": [],
     "macOS": {
-      "signingIdentity": "-"
+      "signingIdentity": null,
+      "hardenedRuntime": true,
+      "entitlements": null,
+      "exceptionDomain": "localhost"
     }
   }
 }
