@@ -33,7 +33,7 @@ const getRiskColor = (riskLevel: string) => {
 };
 
 // Enhanced PDF Download Function - Consolidated per subtab
-const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGenerating: (value: boolean) => void) => {
+const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGenerating: (value: boolean) => void, pipelineResults?: PipelineResult) => {
   console.log('🚀 PDF Download Started for subtab:', subtabContent.title);
   
   try {
@@ -116,124 +116,336 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         pdf.text(sectionTitle, 20, yPosition);
         yPosition += 12;
         
-        // Capture element as image with optimized settings
-        const canvas = await html2canvas(element, {
-          scale: elementId.includes('gene-significance-analysis') ? 2 : 1, // Higher resolution for gene significance
-          logging: false,
-          // Only apply specific settings to gene significance analysis
-          ...(elementId.includes('gene-significance-analysis') ? {
-            backgroundColor: '#FFFFFF',
-            width: element.scrollWidth,
-            height: element.scrollHeight
-          } : {
-            // For other elements, use transparent background and let browser handle it naturally
-            backgroundColor: 'transparent'
-          })
-        });
-        
-        const imageData = canvas.toDataURL('image/png', 0.9);
-        
-        // Calculate optimal size for PDF with better scaling for different content types
-        const maxWidth = pageWidth - 40;
-        const maxHeight = pageHeight - yPosition - 40;
-        const aspectRatio = canvas.width / canvas.height;
-        
-        let imgWidth: number;
-        let imgHeight: number;
-        
-        // Special handling for gene significance analysis - use full available width
-        if (elementId.includes('gene-significance-analysis')) {
-          console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
-          console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}, aspect ratio: ${aspectRatio.toFixed(2)}`);
-          console.log(`📄 Available space: ${maxWidth}x${maxHeight}`);
+        // Special handling for detected-variants - create a text-based table
+        if (elementId === 'detected-variants') {
+          console.log(`📊 Creating text-based table for detected variants`);
           
-          // For gene significance analysis, prioritize readability over fitting perfectly
-          // Use at least 80% of page width, but allow it to be larger if needed
-          const minDesiredWidth = maxWidth * 0.8;
-          const maxDesiredWidth = maxWidth;
+          // Extract variant data from the table in the DOM
+          const table = element.querySelector('table');
+          let variantData: any[] = [];
           
-          // Calculate height based on desired width
-          let desiredHeight = minDesiredWidth / aspectRatio;
+          if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row) => {
+              const cells = row.querySelectorAll('td');
+              if (cells.length >= 7) {
+                variantData.push({
+                  gene: cells[0]?.textContent?.trim() || 'N/A',
+                  variant: cells[1]?.textContent?.trim() || 'N/A',
+                  type: cells[2]?.textContent?.trim() || 'N/A',
+                  transformation: cells[3]?.textContent?.trim() || 'N/A',
+                  quality: cells[4]?.textContent?.trim() || 'N/A',
+                  significance: cells[5]?.textContent?.trim() || 'N/A',
+                  impact: cells[6]?.textContent?.trim() || 'N/A'
+                });
+              }
+            });
+          }
           
-          // If the minimum desired size fits, use it
-          if (desiredHeight <= maxHeight) {
-            imgWidth = minDesiredWidth;
-            imgHeight = desiredHeight;
-            console.log(`✅ Using minimum desired size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+          if (variantData.length === 0) {
+            // Add "no variants found" message
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('No variants detected in the analysis.', 20, yPosition);
+            yPosition += 15;
           } else {
-            // If minimum size is too tall, try to find the largest size that fits
-            imgHeight = maxHeight * 0.9; // Use 90% of available height to leave some margin
-            imgWidth = imgHeight * aspectRatio;
+            // Create table headers
+            const headers = ['Gene', 'Variant', 'Type', 'Transform', 'Quality', 'Significance', 'Impact'];
+            const colWidths = [25, 35, 20, 35, 20, 25, 40]; // Column widths in mm
+            const startX = 20;
+            let currentX = startX;
             
-            // Ensure we don't exceed page width
-            if (imgWidth > maxDesiredWidth) {
-              imgWidth = maxDesiredWidth;
+            // Draw header row
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFillColor(249, 250, 251); // Light gray background
+            pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 8, 'F');
+            
+            for (let i = 0; i < headers.length; i++) {
+              pdf.text(headers[i], currentX + 2, yPosition + 6);
+              currentX += colWidths[i];
+            }
+            yPosition += 8;
+            
+            // Draw data rows
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            
+            variantData.slice(0, 20).forEach((variant: any, index: number) => { // Limit to 20 variants for space
+              // Check if we need a new page
+              if (yPosition > pageHeight - 40) {
+                pdf.addPage();
+                yPosition = 20;
+                
+                // Re-draw headers on new page
+                currentX = startX;
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFillColor(249, 250, 251);
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 8, 'F');
+                
+                for (let i = 0; i < headers.length; i++) {
+                  pdf.text(headers[i], currentX + 2, yPosition + 6);
+                  currentX += colWidths[i];
+                }
+                yPosition += 8;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+              }
+              
+              currentX = startX;
+              const rowData = [
+                variant.gene.substring(0, 15),
+                variant.variant.substring(0, 20),
+                variant.type.substring(0, 10),
+                variant.transformation.substring(0, 15),
+                variant.quality.substring(0, 8),
+                variant.significance.substring(0, 12),
+                variant.impact.substring(0, 25)
+              ];
+              
+              // Alternate row colors
+              if (index % 2 === 1) {
+                pdf.setFillColor(249, 250, 251);
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 6, 'F');
+              }
+              
+              // Draw cell data
+              for (let i = 0; i < rowData.length; i++) {
+                // Split long text to fit in cell
+                const text = rowData[i];
+                const maxWidth = colWidths[i] - 4;
+                const lines = pdf.splitTextToSize(text, maxWidth);
+                
+                pdf.text(lines[0] || '', currentX + 2, yPosition + 4);
+                currentX += colWidths[i];
+              }
+              
+              yPosition += 6;
+            });
+            
+            // Add summary if we truncated
+            if (variantData.length > 20) {
+              yPosition += 5;
+              pdf.setFontSize(10);
+              pdf.setFont('helvetica', 'italic');
+              pdf.text(`Note: Showing first 20 of ${variantData.length} total variants. `, 20, yPosition);
+              pdf.text('See full analysis in the application for complete variant list.', 20, yPosition + 5);
+              yPosition += 15;
+            }
+          }
+          
+          console.log(`✅ Generated text-based variants table`);
+        } else {
+          // Original image capture for other elements
+          const canvas = await html2canvas(element, {
+            scale: elementId.includes('gene-significance-analysis') ? 2 : 1, // Higher resolution for gene significance
+            logging: false,
+            // Only apply specific settings to gene significance analysis
+            ...(elementId.includes('gene-significance-analysis') ? {
+              backgroundColor: '#FFFFFF',
+              width: element.scrollWidth,
+              height: element.scrollHeight
+            } : {
+              // For other elements, use transparent background and let browser handle it naturally
+              backgroundColor: 'transparent'
+            })
+          });
+          
+          const imageData = canvas.toDataURL('image/png', 0.9);
+          
+          // Calculate optimal size for PDF with better scaling for different content types
+          const maxWidth = pageWidth - 40;
+          const maxHeight = pageHeight - yPosition - 40;
+          const aspectRatio = canvas.width / canvas.height;
+          
+          let imgWidth: number;
+          let imgHeight: number;
+        
+          // Special handling for gene significance analysis - use full available width
+          if (elementId.includes('gene-significance-analysis')) {
+            console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
+            console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}, aspect ratio: ${aspectRatio.toFixed(2)}`);
+            console.log(`📄 Available space: ${maxWidth}x${maxHeight}`);
+            
+            // For gene significance analysis, prioritize readability over fitting perfectly
+            // Use at least 80% of page width, but allow it to be larger if needed
+            const minDesiredWidth = maxWidth * 0.8;
+            const maxDesiredWidth = maxWidth;
+            
+            // Calculate height based on desired width
+            let desiredHeight = minDesiredWidth / aspectRatio;
+            
+            // If the minimum desired size fits, use it
+            if (desiredHeight <= maxHeight) {
+              imgWidth = minDesiredWidth;
+              imgHeight = desiredHeight;
+              console.log(`✅ Using minimum desired size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            } else {
+              // If minimum size is too tall, try to find the largest size that fits
+              imgHeight = maxHeight * 0.9; // Use 90% of available height to leave some margin
+              imgWidth = imgHeight * aspectRatio;
+              
+              // Ensure we don't exceed page width
+              if (imgWidth > maxDesiredWidth) {
+                imgWidth = maxDesiredWidth;
+                imgHeight = imgWidth / aspectRatio;
+              }
+              
+              console.log(`⚠️ Using height-constrained size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            }
+            
+            // Ensure minimum readable size - gene significance should be at least 120mm wide
+            const minReadableWidth = 120;
+            if (imgWidth < minReadableWidth) {
+              console.log(`📏 Enforcing minimum readable width of ${minReadableWidth}mm`);
+              imgWidth = Math.min(minReadableWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+              
+              // If this makes it too tall, we'll let it exceed the height limit for readability
+              if (imgHeight > maxHeight) {
+                console.log(`📏 Gene significance exceeds height limit for readability - allowing overflow`);
+              }
+            }
+            
+            console.log(`✅ Gene significance final size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            
+            // For gene significance analysis, if it's large, consider adding a new page for better presentation
+            if (imgHeight > 100 && (yPosition + imgHeight) > (pageHeight - 40)) {
+              console.log(`📄 Adding new page for better gene significance presentation`);
+              pdf.addPage();
+              yPosition = 20;
+              // Re-add section title on new page
+              pdf.setFontSize(16);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(sectionTitle, 20, yPosition);
+              yPosition += 12;
+            }
+          } else {
+            // Use scaling factors for other content types
+            let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+            
+            // Special handling for other chart/visualization elements
+            if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+              scaleFactor = 0.5; // Higher scale for charts
+            }
+            
+            // For very wide elements (like tables), use adaptive scaling
+            if (canvas.width > 1000) {
+              scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+            }
+            
+            imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
+            imgHeight = imgWidth / aspectRatio;
+            
+            // Ensure minimum size for important visualizations
+            const minWidth = elementId.includes('significance') ? 120 : 80;
+            if (imgWidth < minWidth) {
+              imgWidth = Math.min(minWidth, maxWidth);
               imgHeight = imgWidth / aspectRatio;
             }
             
-            console.log(`⚠️ Using height-constrained size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
-          }
-          
-          // Ensure minimum readable size - gene significance should be at least 120mm wide
-          const minReadableWidth = 120;
-          if (imgWidth < minReadableWidth) {
-            console.log(`📏 Enforcing minimum readable width of ${minReadableWidth}mm`);
-            imgWidth = Math.min(minReadableWidth, maxWidth);
-            imgHeight = imgWidth / aspectRatio;
-            
-            // If this makes it too tall, we'll let it exceed the height limit for readability
+            // If height exceeds available space, scale down
             if (imgHeight > maxHeight) {
-              console.log(`📏 Gene significance exceeds height limit for readability - allowing overflow`);
+              imgHeight = maxHeight;
+              imgWidth = imgHeight * aspectRatio;
             }
           }
-          
-          console.log(`✅ Gene significance final size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
-          
-          // For gene significance analysis, if it's large, consider adding a new page for better presentation
-          if (imgHeight > 100 && (yPosition + imgHeight) > (pageHeight - 40)) {
-            console.log(`📄 Adding new page for better gene significance presentation`);
-            pdf.addPage();
-            yPosition = 20;
-            // Re-add section title on new page
-            pdf.setFontSize(16);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text(sectionTitle, 20, yPosition);
-            yPosition += 12;
-          }
-        } else {
-          // Use scaling factors for other content types
-          let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
-          
-          // Special handling for other chart/visualization elements
-          if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
-            scaleFactor = 0.5; // Higher scale for charts
-          }
-          
-          // For very wide elements (like tables), use adaptive scaling
-          if (canvas.width > 1000) {
-            scaleFactor = Math.min(0.6, maxWidth / canvas.width);
-          }
-          
-          imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
-          imgHeight = imgWidth / aspectRatio;
-          
-          // Ensure minimum size for important visualizations
-          const minWidth = elementId.includes('significance') ? 120 : 80;
-          if (imgWidth < minWidth) {
-            imgWidth = Math.min(minWidth, maxWidth);
-            imgHeight = imgWidth / aspectRatio;
-          }
-          
-          // If height exceeds available space, scale down
-          if (imgHeight > maxHeight) {
-            imgHeight = maxHeight;
-            imgWidth = imgHeight * aspectRatio;
-          }
-        }
+                
+          // Special handling for gene significance analysis - use full available width
+          if (elementId.includes('gene-significance-analysis')) {
+            console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
+            console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}, aspect ratio: ${aspectRatio.toFixed(2)}`);
+            console.log(`📄 Available space: ${maxWidth}x${maxHeight}`);
+            
+            // For gene significance analysis, prioritize readability over fitting perfectly
+            // Use at least 80% of page width, but allow it to be larger if needed
+            const minDesiredWidth = maxWidth * 0.8;
+            const maxDesiredWidth = maxWidth;
+            
+            // Calculate height based on desired width
+            let desiredHeight = minDesiredWidth / aspectRatio;
+            
+            // If the minimum desired size fits, use it
+            if (desiredHeight <= maxHeight) {
+              imgWidth = minDesiredWidth;
+              imgHeight = desiredHeight;
+              console.log(`✅ Using minimum desired size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            } else {
+              // If minimum size is too tall, try to find the largest size that fits
+              imgHeight = maxHeight * 0.9; // Use 90% of available height to leave some margin
+              imgWidth = imgHeight * aspectRatio;
               
-        // Add the image to PDF
-              pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
-              yPosition += imgHeight + 15;
+              // Ensure we don't exceed page width
+              if (imgWidth > maxDesiredWidth) {
+                imgWidth = maxDesiredWidth;
+                imgHeight = imgWidth / aspectRatio;
+              }
+              
+              console.log(`⚠️ Using height-constrained size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            }
+            
+            // Ensure minimum readable size - gene significance should be at least 120mm wide
+            const minReadableWidth = 120;
+            if (imgWidth < minReadableWidth) {
+              console.log(`📏 Enforcing minimum readable width of ${minReadableWidth}mm`);
+              imgWidth = Math.min(minReadableWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+              
+              // If this makes it too tall, we'll let it exceed the height limit for readability
+              if (imgHeight > maxHeight) {
+                console.log(`📏 Gene significance exceeds height limit for readability - allowing overflow`);
+              }
+            }
+            
+            console.log(`✅ Gene significance final size: ${imgWidth.toFixed(1)}x${imgHeight.toFixed(1)}`);
+            
+            // For gene significance analysis, if it's large, consider adding a new page for better presentation
+            if (imgHeight > 100 && (yPosition + imgHeight) > (pageHeight - 40)) {
+              console.log(`📄 Adding new page for better gene significance presentation`);
+              pdf.addPage();
+              yPosition = 20;
+              // Re-add section title on new page
+              pdf.setFontSize(16);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(sectionTitle, 20, yPosition);
+              yPosition += 12;
+            }
+          } else {
+            // Use scaling factors for other content types
+            let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+            
+            // Special handling for other chart/visualization elements
+            if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+              scaleFactor = 0.5; // Higher scale for charts
+            }
+            
+            // For very wide elements (like tables), use adaptive scaling
+            if (canvas.width > 1000) {
+              scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+            }
+            
+            imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
+            imgHeight = imgWidth / aspectRatio;
+            
+            // Ensure minimum size for important visualizations
+            const minWidth = elementId.includes('significance') ? 120 : 80;
+            if (imgWidth < minWidth) {
+              imgWidth = Math.min(minWidth, maxWidth);
+              imgHeight = imgWidth / aspectRatio;
+            }
+            
+            // If height exceeds available space, scale down
+            if (imgHeight > maxHeight) {
+              imgHeight = maxHeight;
+              imgWidth = imgHeight * aspectRatio;
+            }
+          }
+                
+          // Add the image to PDF
+          pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 15;
+        }
               
         console.log(`✅ Added section: ${sectionTitle}`);
         
@@ -342,10 +554,11 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
 };
 
 // Consolidated Download Button Component - One per subtab
-const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerating }: { 
+const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerating, pipelineResults }: { 
   subtabContent: SubtabContent; 
   isPDFGenerating: boolean; 
   setIsPDFGenerating: (value: boolean) => void;
+  pipelineResults?: PipelineResult;
 }) => {
   if (isPDFGenerating) {
     return (
@@ -376,7 +589,7 @@ const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerati
   
   return (
     <button
-      onClick={() => downloadSubtabPDF(subtabContent, setIsPDFGenerating)}
+      onClick={() => downloadSubtabPDF(subtabContent, setIsPDFGenerating, pipelineResults)}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -1439,6 +1652,7 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.analysis}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
+                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -2023,6 +2237,7 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.variants}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
+                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -3356,6 +3571,7 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.pathways}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
+                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -3869,6 +4085,7 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.clinical}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
+                pipelineResults={pipelineResults}
               />
             </div>
             
