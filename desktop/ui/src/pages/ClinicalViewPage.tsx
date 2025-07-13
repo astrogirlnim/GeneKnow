@@ -2759,7 +2759,7 @@ const ClinicalViewPage: React.FC = () => {
               </div>
               
               <div style={{ 
-                overflowX: 'visible', 
+                overflowX: 'auto', 
                 border: '1px solid #E5E7EB',
                 borderRadius: '0.5rem'
               }}>
@@ -2767,33 +2767,34 @@ const ClinicalViewPage: React.FC = () => {
                   width: '100%', 
                   borderCollapse: 'collapse', 
                   tableLayout: 'fixed',
-                  minWidth: '800px'
+                  minWidth: '900px'
                 }}>
                   <thead style={{ 
                     position: 'sticky', 
                     top: 0, 
                     zIndex: 1,
-                    background: '#F9FAFB' // Ensure header background stays visible when scrolling
+                    background: '#F9FAFB'
                   }}>
                     <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
                       <th style={{ 
-                        padding: '1rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '10%'
+                        fontSize: '0.85rem',
+                        width: '9%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Gene
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Gene</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-gene')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -2810,23 +2811,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '1rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '15%'
+                        fontSize: '0.85rem',
+                        width: '18%',
+                        minWidth: '130px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Variant
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Variant</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-variant')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -2872,23 +2874,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '1rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '12%'
+                        fontSize: '0.85rem',
+                        width: '9%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Type
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Type</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-type')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -2936,23 +2939,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '14%'
+                        fontSize: '0.85rem',
+                        width: '17%',
+                        minWidth: '120px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Transformation
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Transform</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-transformation')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3000,23 +3004,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '10%'
+                        fontSize: '0.85rem',
+                        width: '8%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Quality
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Quality</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-quality')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3064,23 +3069,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '15%'
+                        fontSize: '0.85rem',
+                        width: '14%',
+                        minWidth: '110px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Significance
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Significance</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-significance')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3128,23 +3134,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '24%'
+                        fontSize: '0.85rem',
+                        width: '25%',
+                        minWidth: '180px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Impact
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Impact</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-impact')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3198,66 +3205,73 @@ const ClinicalViewPage: React.FC = () => {
                     {paginatedVariants.map((variant, index) => (
                       <tr key={`${currentPage}-${index}`} style={{ 
                         borderBottom: '1px solid #F3F4F6',
-                        minHeight: '60px' // Ensure minimum row height
+                        minHeight: '60px'
                       }}>
                         <td style={{ 
-                          padding: '1rem', 
+                          padding: '0.75rem 0.25rem', 
                           fontWeight: '600', 
                           color: '#111827',
+                          fontSize: '0.875rem',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '10%',
-                          lineHeight: '1.5',
+                          width: '9%',
+                          minWidth: '70px',
+                          lineHeight: '1.4',
                           verticalAlign: 'middle'
                         }}>
                           {variant.gene}
                         </td>
                         <td style={{ 
-                          padding: '1rem', 
+                          padding: '0.75rem 0.25rem', 
                           fontFamily: 'monospace', 
-                          fontSize: '0.875rem', 
+                          fontSize: '0.8rem', 
                           color: '#4B5563',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '15%',
-                          lineHeight: '1.5',
+                          width: '18%',
+                          minWidth: '130px',
+                          lineHeight: '1.4',
                           verticalAlign: 'middle'
                         }}>
                           {variant.variant_id.split(':').slice(1).join(':')}
                         </td>
                         <td style={{ 
-                          padding: '1rem',
-                          width: '12%',
+                          padding: '0.75rem 0.25rem',
+                          width: '9%',
+                          minWidth: '70px',
                           verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.mutation_type === 'snv' ? '#3B82F6' : 
                                        variant.mutation_type === 'indel' ? '#EF4444' : '#F59E0B',
                             color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap'
                           }}>
                             {variant.mutation_type}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '1rem',
-                          width: '14%',
+                          padding: '0.75rem 0.25rem',
+                          width: '17%',
+                          minWidth: '120px',
                           verticalAlign: 'middle'
                         }}>
                           <div style={{ 
-                            fontSize: '0.875rem', 
+                            fontSize: '0.8rem', 
                             color: '#4B5563',
                             wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
+                            overflowWrap: 'break-word',
+                            lineHeight: '1.3'
                           }}>
                             <div style={{ 
                               fontFamily: 'monospace', 
-                              fontSize: '0.75rem', 
+                              fontSize: '0.7rem', 
                               marginBottom: '0.25rem',
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word'
@@ -3265,7 +3279,7 @@ const ClinicalViewPage: React.FC = () => {
                               {variant.transformation.original} → {variant.transformation.mutated}
                             </div>
                             <div style={{ 
-                              fontSize: '0.75rem', 
+                              fontSize: '0.7rem', 
                               color: '#6B7280',
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word'
@@ -3275,49 +3289,54 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '1rem',
-                          width: '10%',
+                          padding: '0.75rem 0.25rem',
+                          width: '8%',
+                          minWidth: '70px',
                           verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.quality_score > 90 ? '#22C55E' : 
                                        variant.quality_score > 70 ? '#F59E0B' : '#EF4444',
                             color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
-                            minWidth: '50px'
+                            minWidth: '40px',
+                            whiteSpace: 'nowrap'
                           }}>
                             {variant.quality_score}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '1rem',
-                          width: '15%',
+                          padding: '0.75rem 0.25rem',
+                          width: '14%',
+                          minWidth: '110px',
                           verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#F0FDF4',
                             color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#22C55E',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
                             wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
+                            overflowWrap: 'break-word',
+                            lineHeight: '1.2'
                           }}>
-                            {variant.clinical_significance}
+                            {variant.clinical_significance.replace('_', ' ')}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '1rem', 
-                          fontSize: '0.875rem', 
+                          padding: '0.75rem 0.25rem', 
+                          fontSize: '0.8rem', 
                           color: '#4B5563',
-                          width: '24%',
-                          lineHeight: '1.5',
+                          width: '25%',
+                          minWidth: '180px',
+                          lineHeight: '1.4',
                           verticalAlign: 'middle'
                         }}>
                           <div style={{ 
@@ -3325,10 +3344,10 @@ const ClinicalViewPage: React.FC = () => {
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
                           }}>
-                            <strong>{variant.functional_impact}</strong>
+                            <strong style={{ fontSize: '0.8rem' }}>{variant.functional_impact}</strong>
                           </div>
                           <div style={{ 
-                            fontSize: '0.75rem', 
+                            fontSize: '0.7rem', 
                             color: '#6B7280',
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
