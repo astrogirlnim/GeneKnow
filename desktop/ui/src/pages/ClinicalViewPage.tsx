@@ -4244,7 +4244,7 @@ const ClinicalViewPage: React.FC = () => {
                 color: '#4B5563',
                 fontSize: '1rem'
               }}>
-                Comprehensive genomic analysis • {currentData.riskLevel}
+                Comprehensive genomic analysis • {sidebarData.riskLevel}
               </p>
             </div>
             <div>
