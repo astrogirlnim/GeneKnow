@@ -3957,130 +3957,128 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    
-                    {/* Cancer Risk by Pathway */}
-                    <div id="cancer-risk-by-pathways" style={{
-                      background: '#FFFFFF',
-                      padding: '2rem',
-                      borderRadius: '0.75rem',
-                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                      border: '1px solid #E5E7EB',
-                      marginBottom: '2rem'
-                    }}>
-                      <div style={{ 
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        marginBottom: '1rem'
-                      }}>
-                        <h4 style={{ 
-                          color: '#111827',
-                          fontSize: '1.125rem',
-                          fontWeight: '600',
-                          margin: 0
-                        }}>
-                          Cancer Risk by Pathway Disruption
-                        </h4>
-                        <div 
-                          style={{ position: 'relative', display: 'inline-flex' }}
-                          onMouseEnter={() => setHoveredTooltip('cancer-risk-pathways')}
-                          onMouseLeave={() => setHoveredTooltip(null)}
-                        >
-                          <InformationCircleIcon 
-                            style={{ width: '16px', height: '16px' }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#D1D5DB';
-                              e.currentTarget.style.color = '#374151';
-                              e.currentTarget.style.borderColor = '#9CA3AF';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#E5E7EB';
-                              e.currentTarget.style.color = '#6B7280';
-                              e.currentTarget.style.borderColor = '#D1D5DB';
-                            }}
-                          />
-                          <SmartTooltip content="Shows how pathway disruptions translate to cancer risk for different cancer types. Each cancer type is associated with specific pathways - when those pathways are disrupted, the risk for that cancer increases. The percentage represents the calculated risk based on the severity of pathway disruption and clinical evidence." isVisible={hoveredTooltip === 'cancer-risk-pathways'} triggerRef={null} />
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                        {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
-                          const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
-                          if (!riskFinding) return null;
-                          
-                          return (
-                            <div key={cancer} style={{
-                              padding: '1rem',
-                              border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
-                              borderRadius: '0.5rem',
-                              background: `${getRiskColor(riskFinding.risk_level)}10`,
-                              position: 'relative'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                <h5 style={{ 
-                                  color: '#111827',
-                                  fontSize: '1rem',
-                                  fontWeight: '600',
-                                  margin: 0,
-                                  textTransform: 'capitalize'
-                                }}>
-                                  {cancer} Cancer
-                                </h5>
-                                <div 
-                                  style={{ position: 'relative', display: 'inline-flex' }}
-                                  onMouseEnter={() => setHoveredTooltip(`cancer-${cancer}`)}
-                                  onMouseLeave={() => setHoveredTooltip(null)}
-                                >
-                                  <InformationCircleIcon 
-                                    style={{ width: '14px', height: '14px' }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#D1D5DB';
-                                      e.currentTarget.style.color = '#374151';
-                                      e.currentTarget.style.borderColor = '#9CA3AF';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = '#E5E7EB';
-                                      e.currentTarget.style.color = '#6B7280';
-                                      e.currentTarget.style.borderColor = '#D1D5DB';
-                                    }}
-                                  />
-                                  <SmartTooltip 
-                                    content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
-                                    isVisible={hoveredTooltip === `cancer-${cancer}`} 
-                                    triggerRef={null} 
-                                  />
-                                </div>
-                              </div>
-                              <div style={{ 
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                                color: getRiskColor(riskFinding.risk_level),
-                                marginBottom: '0.5rem'
-                              }}>
-                                {riskFinding.risk_percentage}%
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                {(pathways as string[]).map((pathway: string, pathIndex: number) => (
-                                  <div key={pathIndex} style={{
-                                    background: '#FFFFFF',
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '0.25rem',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '500',
-                                    color: '#4B5563'
-                                  }}>
-                                    {pathway.replace('_', ' ')}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </div>
                   
-
+                  {/* Cancer Risk by Pathway - NOW SEPARATE FROM pathway-disruption-analysis */}
+                  <div id="cancer-risk-by-pathways" style={{
+                    background: '#FFFFFF',
+                    padding: '2rem',
+                    borderRadius: '0.75rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    marginBottom: '2rem'
+                  }}>
+                    <div style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <h4 style={{ 
+                        color: '#111827',
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        margin: 0
+                      }}>
+                        Cancer Risk by Pathway Disruption
+                      </h4>
+                      <div 
+                        style={{ position: 'relative', display: 'inline-flex' }}
+                        onMouseEnter={() => setHoveredTooltip('cancer-risk-pathways')}
+                        onMouseLeave={() => setHoveredTooltip(null)}
+                      >
+                        <InformationCircleIcon 
+                          style={{ width: '16px', height: '16px' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#D1D5DB';
+                            e.currentTarget.style.color = '#374151';
+                            e.currentTarget.style.borderColor = '#9CA3AF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#E5E7EB';
+                            e.currentTarget.style.color = '#6B7280';
+                            e.currentTarget.style.borderColor = '#D1D5DB';
+                          }}
+                        />
+                        <SmartTooltip content="Shows how pathway disruptions translate to cancer risk for different cancer types. Each cancer type is associated with specific pathways - when those pathways are disrupted, the risk for that cancer increases. The percentage represents the calculated risk based on the severity of pathway disruption and clinical evidence." isVisible={hoveredTooltip === 'cancer-risk-pathways'} triggerRef={null} />
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      {Object.entries(pathwayData.cancer_pathway_associations).map(([cancer, pathways]) => {
+                        const riskFinding = genomicData.risk_findings.find(r => r.cancer_type === cancer);
+                        if (!riskFinding) return null;
+                        
+                        return (
+                          <div key={cancer} style={{
+                            padding: '1rem',
+                            border: `2px solid ${getRiskColor(riskFinding.risk_level)}`,
+                            borderRadius: '0.5rem',
+                            background: `${getRiskColor(riskFinding.risk_level)}10`,
+                            position: 'relative'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                              <h5 style={{ 
+                                color: '#111827',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                margin: 0,
+                                textTransform: 'capitalize'
+                              }}>
+                                {cancer} Cancer
+                              </h5>
+                              <div 
+                                style={{ position: 'relative', display: 'inline-flex' }}
+                                onMouseEnter={() => setHoveredTooltip(`cancer-${cancer}`)}
+                                onMouseLeave={() => setHoveredTooltip(null)}
+                              >
+                                <InformationCircleIcon 
+                                  style={{ width: '14px', height: '14px' }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                                    e.currentTarget.style.color = '#374151';
+                                    e.currentTarget.style.borderColor = '#9CA3AF';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                                    e.currentTarget.style.color = '#6B7280';
+                                    e.currentTarget.style.borderColor = '#D1D5DB';
+                                  }}
+                                />
+                                <SmartTooltip 
+                                  content={`${cancer.charAt(0).toUpperCase() + cancer.slice(1)} cancer risk is ${riskFinding.risk_percentage}% based on disruption in ${(pathways as string[]).length} pathway${(pathways as string[]).length > 1 ? 's' : ''}: ${(pathways as string[]).join(', ')}. This represents a ${riskFinding.risk_level} risk level requiring ${riskFinding.risk_level === 'high' ? 'immediate clinical attention and enhanced screening' : riskFinding.risk_level === 'medium' ? 'regular monitoring and preventive measures' : 'standard screening protocols'}.`} 
+                                  isVisible={hoveredTooltip === `cancer-${cancer}`} 
+                                  triggerRef={null} 
+                                />
+                              </div>
+                            </div>
+                            <div style={{ 
+                              fontSize: '1.5rem',
+                              fontWeight: 'bold',
+                              color: getRiskColor(riskFinding.risk_level),
+                              marginBottom: '0.5rem'
+                            }}>
+                              {riskFinding.risk_percentage}%
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              {(pathways as string[]).map((pathway: string, pathIndex: number) => (
+                                <div key={pathIndex} style={{
+                                  background: '#FFFFFF',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '0.25rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                  color: '#4B5563'
+                                }}>
+                                  {pathway.replace('_', ' ')}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </>
               );
             })()}
