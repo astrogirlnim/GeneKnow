@@ -1692,7 +1692,7 @@ const ClinicalViewPage: React.FC = () => {
     switch (activeTab) {
       case 'analysis':
         return (
-          <div style={{ padding: '2rem' }}>
+          <div style={{ padding: '1rem' }}>
             <div style={{ 
               display: 'flex',
               justifyContent: 'space-between',
@@ -1701,9 +1701,9 @@ const ClinicalViewPage: React.FC = () => {
             }}>
             <h2 style={{ 
               color: '#111827',
-              fontSize: '1.5rem',
+              fontSize: '1.25rem',
               fontWeight: '600',
-                margin: 0
+              margin: 0
             }}>
               Genomic Analysis Overview
             </h2>
@@ -1716,13 +1716,13 @@ const ClinicalViewPage: React.FC = () => {
             
             {pipelineResults && (
               <div style={{
-                padding: '1rem',
-                marginBottom: '2rem',
+                padding: '0.75rem',
+                marginBottom: '1rem',
                 background: '#EFF6FF',
                 borderRadius: '0.5rem',
                 border: '1px solid #BFDBFE'
               }}>
-                <p style={{ color: '#1E40AF', fontSize: '0.875rem', fontWeight: '500' }}>
+                <p style={{ color: '#1E40AF', fontSize: '0.8rem', fontWeight: '500' }}>
                   Analysis completed.
                 </p>
               </div>
@@ -1731,13 +1731,13 @@ const ClinicalViewPage: React.FC = () => {
             {/* Risk Summary Cards */}
             <div id="cancer-risk-assessment" style={{ 
               background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
+              padding: '1rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
+              marginBottom: '1rem'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ 
                   display: 'flex',
                   alignItems: 'center',
@@ -1831,11 +1831,11 @@ const ClinicalViewPage: React.FC = () => {
             {/* Manhattan Plot */}
             <div id="gene-significance-analysis" style={{
               background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
+              padding: '1rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
+              marginBottom: '1rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ 
@@ -1873,9 +1873,9 @@ const ClinicalViewPage: React.FC = () => {
                 </div>
 
               </div>
-              <svg width="100%" height="300" viewBox="0 0 800 300">
+              <svg width="100%" height="200" viewBox="0 0 800 200">
                 {/* Background */}
-                <rect width="800" height="300" fill="#F9FAFB"/>
+                <rect width="800" height="200" fill="#F9FAFB"/>
                 
                 {/* Grid lines */}
                 {[0, 1, 2, 3, 4, 5].map(i => (
@@ -4640,33 +4640,33 @@ const ClinicalViewPage: React.FC = () => {
     <Layout>
       <section style={{ 
         background: '#F9FAFB',
-        minHeight: 'calc(100vh - 4rem)',
-        padding: '2rem 0'
+        minHeight: '100vh',
+        padding: '1rem 0'
       }}>
         <div style={{ 
-          maxWidth: '1200px',
+          maxWidth: '1400px',
           margin: '0 auto',
-          padding: '0 1.5rem'
+          padding: '0 1rem'
         }}>
           {/* Header */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '2rem'
+            marginBottom: '1rem'
           }}>
             <div>
               <h1 style={{
-                fontSize: '1.875rem',
+                fontSize: '1.5rem',
                 fontWeight: 'bold',
                 color: '#111827',
-                marginBottom: '0.5rem'
+                marginBottom: '0.25rem'
               }}>
                 In-Depth Analysis
               </h1>
               <p style={{
                 color: '#4B5563',
-                fontSize: '1rem'
+                fontSize: '0.875rem'
               }}>
                 Comprehensive genomic analysis • {sidebarData.riskLevel}
               </p>
@@ -4689,7 +4689,7 @@ const ClinicalViewPage: React.FC = () => {
                   }
                 }}
                 style={{
-                  padding: '0.5rem 1.25rem',
+                  padding: '0.5rem 1rem',
                   color: '#FFFFFF',
                   background: '#2563EB',
                   border: 'none',
@@ -4713,27 +4713,30 @@ const ClinicalViewPage: React.FC = () => {
 
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'minmax(280px, 320px) 1fr', 
-            gap: '1.5rem',
-            maxWidth: '100%', // Ensure grid doesn't exceed container width
-            overflow: 'hidden' // Prevent grid from causing horizontal overflow
+            gridTemplateColumns: 'minmax(260px, 280px) 1fr', 
+            gap: '1rem',
+            alignItems: 'start'
           }}>
             {/* Sidebar */}
             <div style={{
               background: '#FFFFFF',
-              borderRadius: '0.75rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               border: '1px solid #E5E7EB',
-              overflow: 'visible'
+              position: 'sticky',
+              top: '1rem',
+              alignSelf: 'start',
+              maxHeight: 'calc(100vh - 2rem)',
+              overflow: 'auto'
             }}>
               {/* Risk Info */}
               <div style={{
                 background: '#F9FAFB',
-                padding: '1.5rem',
+                padding: '1rem',
                 borderBottom: '1px solid #E5E7EB'
               }}>
                 <div style={{ 
-                  fontSize: '1.125rem',
+                  fontSize: '1rem',
                   fontWeight: '600',
                   marginBottom: '0.5rem',
                   color: '#111827'
@@ -4741,8 +4744,8 @@ const ClinicalViewPage: React.FC = () => {
                   {sidebarData.riskLevel}
                 </div>
                 <div style={{ 
-                  fontSize: '0.875rem',
-                  lineHeight: '1.4',
+                  fontSize: '0.8rem',
+                  lineHeight: '1.3',
                   color: '#4B5563'
                 }}>
                   <span dangerouslySetInnerHTML={{ __html: sidebarData.details }} />
@@ -4752,8 +4755,8 @@ const ClinicalViewPage: React.FC = () => {
                   color: '#2563EB',
                   padding: '0.5rem',
                   borderRadius: '0.375rem',
-                  marginTop: '1rem',
-                  fontSize: '0.875rem',
+                  marginTop: '0.75rem',
+                  fontSize: '0.8rem',
                   fontWeight: '500',
                   textAlign: 'center'
                 }}>
@@ -4762,7 +4765,7 @@ const ClinicalViewPage: React.FC = () => {
               </div>
 
               {/* Navigation */}
-              <div style={{ padding: '1rem' }}>
+              <div style={{ padding: '0.75rem' }}>
                 <div style={{
                   fontSize: '0.75rem',
                   fontWeight: '600',
@@ -4903,12 +4906,9 @@ const ClinicalViewPage: React.FC = () => {
             {/* Main Content */}
             <div style={{
               background: '#FFFFFF',
-              borderRadius: '0.75rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              border: '1px solid #E5E7EB',
-              minHeight: '600px',
-              overflow: 'hidden', // Prevent horizontal overflow
-              width: '100%' // Ensure it doesn't exceed available width
+              border: '1px solid #E5E7EB'
             }}>
               {renderTabContent()}
             </div>
