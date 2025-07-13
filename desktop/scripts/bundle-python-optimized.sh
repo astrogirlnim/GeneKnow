@@ -185,11 +185,18 @@ done
 
 # 2. Create ALL fusion models using the comprehensive script
 echo "   🏗️  Creating/verifying all fusion model variants..."
-"$PYTHON_EXE" create_all_fusion_models.py
-if [ $? -eq 0 ]; then
-    echo "   ✅ All fusion models created/verified successfully"
+if [ -f "create_all_fusion_models.py" ]; then
+    "$PYTHON_EXE" create_all_fusion_models.py
+    if [ $? -eq 0 ]; then
+        echo "   ✅ All fusion models created/verified successfully"
+    else
+        echo "   ⚠️  Some fusion models could not be created"
+    fi
 else
-    echo "   ⚠️  Some fusion models could not be created"
+    echo "   ⚠️  create_all_fusion_models.py not found, creating basic model only"
+    if [ -f "create_simple_fusion_model.py" ]; then
+        "$PYTHON_EXE" create_simple_fusion_model.py
+    fi
 fi
 
 # 4. Ensure no-leakage models are complete
