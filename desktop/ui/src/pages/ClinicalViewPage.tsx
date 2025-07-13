@@ -73,28 +73,28 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
     
     // Create PDF document
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 20;
-    
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        let yPosition = 20;
+        
     // Add header
-    pdf.setFontSize(20);
+        pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
     pdf.text(subtabContent.title, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-    
-    pdf.setFontSize(14);
+        yPosition += 15;
+        
+        pdf.setFontSize(14);
     pdf.setFont('helvetica', 'normal');
-    pdf.text('GeneKnow AI Genomic Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
-    
-    pdf.setFontSize(12);
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+        pdf.text('GeneKnow AI Genomic Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 10;
+        
+        pdf.setFontSize(12);
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 20;
     
     // Capture and add content from each element
     for (const elementId of subtabContent.elementIds) {
-      const element = document.getElementById(elementId);
+        const element = document.getElementById(elementId);
       if (!element) {
         console.warn(`Element ${elementId} not found, skipping`);
         continue;
@@ -125,49 +125,68 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         const maxHeight = pageHeight - yPosition - 40;
         const aspectRatio = canvas.width / canvas.height;
         
-        // Use different scaling factors based on content type
-        let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+        let imgWidth: number;
+        let imgHeight: number;
         
-        // Special handling for chart/visualization elements that need better readability
-        if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
-          scaleFactor = 0.5; // Higher scale for charts
-        }
-        
-        // For very wide elements (like tables), use adaptive scaling
-        if (canvas.width > 1000) {
-          scaleFactor = Math.min(0.6, maxWidth / canvas.width);
-        }
-        
-        let imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
-        let imgHeight = imgWidth / aspectRatio;
-        
-        // Ensure minimum size for important visualizations
-        const minWidth = elementId.includes('significance') ? 120 : 80;
-        if (imgWidth < minWidth) {
-          imgWidth = Math.min(minWidth, maxWidth);
+        // Special handling for gene significance analysis - use full available width
+        if (elementId.includes('gene-significance-analysis')) {
+          console.log(`📊 Auto-sizing gene significance analysis to full PDF width`);
+          imgWidth = maxWidth; // Use full available width
           imgHeight = imgWidth / aspectRatio;
+          
+          // If height exceeds available space, scale down proportionally
+          if (imgHeight > maxHeight) {
+            console.log(`⚠️ Gene significance analysis height (${imgHeight}) exceeds max (${maxHeight}), scaling down`);
+            imgHeight = maxHeight;
+            imgWidth = imgHeight * aspectRatio;
+          }
+          
+          console.log(`✅ Gene significance final size: ${imgWidth}x${imgHeight}`);
+        } else {
+          // Use scaling factors for other content types
+          let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+          
+          // Special handling for other chart/visualization elements
+          if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+            scaleFactor = 0.5; // Higher scale for charts
+          }
+          
+          // For very wide elements (like tables), use adaptive scaling
+          if (canvas.width > 1000) {
+            scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+          }
+          
+          imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
+          imgHeight = imgWidth / aspectRatio;
+          
+          // Ensure minimum size for important visualizations
+          const minWidth = elementId.includes('significance') ? 120 : 80;
+          if (imgWidth < minWidth) {
+            imgWidth = Math.min(minWidth, maxWidth);
+            imgHeight = imgWidth / aspectRatio;
+          }
+          
+          // If height exceeds available space, scale down
+          if (imgHeight > maxHeight) {
+            imgHeight = maxHeight;
+            imgWidth = imgHeight * aspectRatio;
+          }
         }
-        
-        // If height exceeds available space, scale down
-        if (imgHeight > maxHeight) {
-          imgHeight = maxHeight;
-          imgWidth = imgHeight * aspectRatio;
-        }
-        
+              
         // Add the image to PDF
-        pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 15;
-        
+              pdf.addImage(imageData, 'PNG', 20, yPosition, imgWidth, imgHeight);
+              yPosition += imgHeight + 15;
+              
         console.log(`✅ Added section: ${sectionTitle}`);
         
       } catch (error) {
         console.warn(`Failed to capture element ${elementId}:`, error);
         
         // Add fallback text
-        pdf.setFontSize(11);
+            pdf.setFontSize(11);
         pdf.setFont('helvetica', 'normal');
         pdf.text(`[Visualization from ${elementId} - see application for full details]`, 20, yPosition);
-        yPosition += 10;
+          yPosition += 10;
       }
     }
     
@@ -205,10 +224,10 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
       });
       
       console.log('✅ PDF saved successfully to:', savedPath);
-      
-      // Show success notification
+        
+        // Show success notification
       showNotification(`✅ PDF Downloaded!<br><small>Saved successfully</small>`, '#22C55E');
-      setTimeout(() => {
+        setTimeout(() => {
         const notifications = document.querySelectorAll('[data-pdf-notification]');
         notifications.forEach(n => n.remove());
       }, 4000);
@@ -217,13 +236,13 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
       console.error('❌ Error saving PDF:', saveError);
       throw new Error(`Failed to save PDF: ${saveError}`);
     }
-    
-    console.log('🎉 PDF generation completed successfully!');
-    
+        
+        console.log('🎉 PDF generation completed successfully!');
+        
   } catch (error) {
     console.error('❌ Error generating PDF:', error);
-    
-    // Show error notification
+      
+      // Show error notification
     const showErrorNotification = (message: string) => {
       const notifications = document.querySelectorAll('[data-pdf-notification]');
       notifications.forEach(n => n.remove());
@@ -1350,14 +1369,14 @@ const ClinicalViewPage: React.FC = () => {
               alignItems: 'center',
               marginBottom: '1.5rem'
             }}>
-              <h2 style={{ 
-                color: '#111827',
-                fontSize: '1.5rem',
-                fontWeight: '600',
+            <h2 style={{ 
+              color: '#111827',
+              fontSize: '1.5rem',
+              fontWeight: '600',
                 margin: 0
-              }}>
-                Genomic Analysis Overview
-              </h2>
+            }}>
+              Genomic Analysis Overview
+            </h2>
               <SubtabDownloadButton 
                 subtabContent={subtabContents.analysis}
                 isPDFGenerating={isPDFGenerating}
@@ -1913,34 +1932,34 @@ const ClinicalViewPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
+            }}>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
               }}>
-                <h2 style={{ 
-                  color: '#111827',
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  margin: 0
-                }}>
-                  Variant Heatmap Analysis
-                </h2>
-                <div 
-                  style={{ position: 'relative', display: 'inline-flex' }}
-                  onMouseEnter={() => setHoveredTooltip('variant-heatmap')}
-                  onMouseLeave={() => setHoveredTooltip(null)}
-                >
-                  <InformationCircleIcon 
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#D1D5DB';
-                      e.currentTarget.style.color = '#374151';
-                      e.currentTarget.style.borderColor = '#9CA3AF';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#E5E7EB';
-                      e.currentTarget.style.color = '#6B7280';
-                      e.currentTarget.style.borderColor = '#D1D5DB';
-                    }}
-                  />
-                  <SmartTooltip content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns." isVisible={hoveredTooltip === 'variant-heatmap'} triggerRef={null} />
-                </div>
+                Variant Heatmap Analysis
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('variant-heatmap')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Interactive heatmap showing gene-cancer associations based on pathway burden analysis. Darker colors indicate stronger associations between specific genes and cancer types based on genetic variant patterns." isVisible={hoveredTooltip === 'variant-heatmap'} triggerRef={null} />
+              </div>
               </div>
               <SubtabDownloadButton 
                 subtabContent={subtabContents.variants}
@@ -3246,34 +3265,34 @@ const ClinicalViewPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
+            }}>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
               }}>
-                <h2 style={{ 
-                  color: '#111827',
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  margin: 0
-                }}>
-                  Pathway Analysis
-                </h2>
-                <div 
-                  style={{ position: 'relative', display: 'inline-flex' }}
-                  onMouseEnter={() => setHoveredTooltip('pathway-analysis')}
-                  onMouseLeave={() => setHoveredTooltip(null)}
-                >
-                  <InformationCircleIcon 
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#D1D5DB';
-                      e.currentTarget.style.color = '#374151';
-                      e.currentTarget.style.borderColor = '#9CA3AF';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#E5E7EB';
-                      e.currentTarget.style.color = '#6B7280';
-                      e.currentTarget.style.borderColor = '#D1D5DB';
-                    }}
-                  />
-                  <SmartTooltip content="Comprehensive analysis of biological pathways affected by genetic variants. Shows which cellular processes are disrupted and their impact on cancer risk. Pathway burden scores indicate the severity of disruption, with higher percentages representing greater dysfunction." isVisible={hoveredTooltip === 'pathway-analysis'} triggerRef={null} />
-                </div>
+                Pathway Analysis
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('pathway-analysis')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Comprehensive analysis of biological pathways affected by genetic variants. Shows which cellular processes are disrupted and their impact on cancer risk. Pathway burden scores indicate the severity of disruption, with higher percentages representing greater dysfunction." isVisible={hoveredTooltip === 'pathway-analysis'} triggerRef={null} />
+              </div>
               </div>
               <SubtabDownloadButton 
                 subtabContent={subtabContents.pathways}
@@ -3759,34 +3778,34 @@ const ClinicalViewPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
+            }}>
+              <h2 style={{ 
+                color: '#111827',
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0
               }}>
-                <h2 style={{ 
-                  color: '#111827',
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  margin: 0
-                }}>
-                  Clinical Report & Recommendations
-                </h2>
-                <div 
-                  style={{ position: 'relative', display: 'inline-flex' }}
-                  onMouseEnter={() => setHoveredTooltip('clinical-report')}
-                  onMouseLeave={() => setHoveredTooltip(null)}
-                >
-                  <InformationCircleIcon 
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#D1D5DB';
-                      e.currentTarget.style.color = '#374151';
-                      e.currentTarget.style.borderColor = '#9CA3AF';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#E5E7EB';
-                      e.currentTarget.style.color = '#6B7280';
-                      e.currentTarget.style.borderColor = '#D1D5DB';
-                    }}
-                  />
-                  <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
-                </div>
+                Clinical Report & Recommendations
+              </h2>
+              <div 
+                style={{ position: 'relative', display: 'inline-flex' }}
+                onMouseEnter={() => setHoveredTooltip('clinical-report')}
+                onMouseLeave={() => setHoveredTooltip(null)}
+              >
+                <InformationCircleIcon 
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#D1D5DB';
+                    e.currentTarget.style.color = '#374151';
+                    e.currentTarget.style.borderColor = '#9CA3AF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#E5E7EB';
+                    e.currentTarget.style.color = '#6B7280';
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }}
+                />
+                <SmartTooltip content="Comprehensive clinical analysis combining survival predictions with personalized screening recommendations. Integrates genetic risk assessment with evidence-based clinical guidelines to provide actionable healthcare recommendations tailored to your specific genetic profile." isVisible={hoveredTooltip === 'clinical-report'} triggerRef={null} />
+              </div>
               </div>
               <SubtabDownloadButton 
                 subtabContent={subtabContents.clinical}
