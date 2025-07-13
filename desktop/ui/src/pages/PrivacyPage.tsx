@@ -86,18 +86,23 @@ const PrivacyPage = () => (
             <div style={{
               width: '100%',
               height: '300px',
-              background: 'linear-gradient(135deg, #EBF4FF 0%, #3B82F6 100%)',
               borderRadius: '0.75rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#FFFFFF',
-              fontSize: '1.25rem',
-              fontWeight: '600',
-              textAlign: 'center',
+              overflow: 'hidden',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}>
-              🔒 Secure Analysis<br />Illustration
+              <img 
+                src="/privacy-first.png" 
+                alt="Privacy First - Secure Local Analysis"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '0.75rem'
+                }}
+              />
             </div>
           </div>
         </div>

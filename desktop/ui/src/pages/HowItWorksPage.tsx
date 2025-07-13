@@ -285,35 +285,34 @@ const HowItWorksPage = () => (
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.8rem',
-              minWidth: '1400px',
-              padding: '1rem',
+              gap: '0.5rem',
+              minWidth: '1050px',
+              padding: '0.5rem',
               justifyContent: 'flex-start',
-              margin: '0',
-              paddingLeft: '1rem'
+              margin: '0'
             }}>
               {/* Preprocess */}
               <div style={{
                 background: '#E3F2FD',
                 border: '2px solid #1976D2',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Preprocess</div>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.7rem' }}>Preprocess<br/>Data</div>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ width: '15px', height: '2px', background: '#1976D2' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #1976D2'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #1976D2'
                 }} />
               </div>
 
@@ -322,23 +321,23 @@ const HowItWorksPage = () => (
                 background: '#E3F2FD',
                 border: '2px solid #1976D2',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Variant Calling<br/>QC Filtering</div>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.65rem' }}>Variant Calling<br/>QC Filtering</div>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ width: '15px', height: '2px', background: '#1976D2' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #1976D2'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #1976D2'
                 }} />
               </div>
 
@@ -347,40 +346,40 @@ const HowItWorksPage = () => (
                 background: '#E3F2FD',
                 border: '2px solid #1976D2',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Population<br/>Mapper</div>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.65rem' }}>Population<br/>Mapper</div>
               </div>
 
-              {/* Branching Arrow - Fixed to not overextend */}
-              <div style={{ position: 'relative', width: '30px', height: '200px', display: 'flex', alignItems: 'center' }}>
-                <svg width="30" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
+              {/* Branching Arrow - Adjusted for new box heights */}
+              <div style={{ position: 'relative', width: '25px', height: '170px', display: 'flex', alignItems: 'center' }}>
+                <svg width="25" height="170" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
                   {/* Main horizontal line from Population Mapper */}
-                  <line x1="0" y1="100" x2="15" y2="100" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="85" x2="12" y2="85" stroke="#1976D2" strokeWidth="2" />
                   {/* Vertical distribution line - only between arrows */}
-                  <line x1="15" y1="20" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="12" y1="15" x2="12" y2="155" stroke="#1976D2" strokeWidth="2" />
                   {/* Branches to each parallel node - precisely centered on each node */}
-                  <line x1="15" y1="20" x2="25" y2="20" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,16 30,20 25,24" fill="#1976D2" />
+                  <line x1="12" y1="15" x2="20" y2="15" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,12 25,15 20,18" fill="#1976D2" />
                   
-                  <line x1="15" y1="60" x2="25" y2="60" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,56 30,60 25,64" fill="#1976D2" />
+                  <line x1="12" y1="50" x2="20" y2="50" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,47 25,50 20,53" fill="#1976D2" />
                   
-                  <line x1="15" y1="100" x2="25" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,96 30,100 25,104" fill="#1976D2" />
+                  <line x1="12" y1="85" x2="20" y2="85" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,82 25,85 20,88" fill="#1976D2" />
                   
-                  <line x1="15" y1="140" x2="25" y2="140" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,136 30,140 25,144" fill="#1976D2" />
+                  <line x1="12" y1="120" x2="20" y2="120" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,117 25,120 20,123" fill="#1976D2" />
                   
-                  <line x1="15" y1="180" x2="25" y2="180" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,176 30,180 25,184" fill="#1976D2" />
+                  <line x1="12" y1="155" x2="20" y2="155" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,152 25,155 20,158" fill="#1976D2" />
                 </svg>
               </div>
 
-              {/* Parallel Variant Models - Fixed spacing */}
+              {/* Parallel Variant Models - Adjusted spacing */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {/* TCGA Mapper */}
                 <div style={{
@@ -389,14 +388,14 @@ const HowItWorksPage = () => (
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textAlign: 'center',
-                  minWidth: '120px',
-                  width: '120px',
-                  height: '32px',
+                  minWidth: '105px',
+                  width: '105px',
+                  height: '30px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.7rem' }}>TCGA Mapper</div>
+                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.65rem' }}>TCGA Mapper</div>
                 </div>
 
                 {/* CADD Scoring */}
@@ -406,14 +405,14 @@ const HowItWorksPage = () => (
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textAlign: 'center',
-                  minWidth: '120px',
-                  width: '120px',
-                  height: '32px',
+                  minWidth: '105px',
+                  width: '105px',
+                  height: '30px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.7rem' }}>CADD Scoring</div>
+                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.65rem' }}>CADD Scoring</div>
                 </div>
 
                 {/* ClinVar Annotator */}
@@ -423,14 +422,14 @@ const HowItWorksPage = () => (
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textAlign: 'center',
-                  minWidth: '120px',
-                  width: '120px',
-                  height: '32px',
+                  minWidth: '105px',
+                  width: '105px',
+                  height: '30px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.7rem' }}>ClinVar Annotator</div>
+                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.6rem' }}>ClinVar<br/>Annotator</div>
                 </div>
 
                 {/* PRS Calculator */}
@@ -440,14 +439,14 @@ const HowItWorksPage = () => (
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textAlign: 'center',
-                  minWidth: '120px',
-                  width: '120px',
-                  height: '32px',
+                  minWidth: '105px',
+                  width: '105px',
+                  height: '30px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.7rem' }}>PRS Calculator</div>
+                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.6rem' }}>PRS<br/>Calculator</div>
                 </div>
 
                 {/* Pathway Burden */}
@@ -457,43 +456,43 @@ const HowItWorksPage = () => (
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                   textAlign: 'center',
-                  minWidth: '120px',
-                  width: '120px',
-                  height: '32px',
+                  minWidth: '105px',
+                  width: '105px',
+                  height: '30px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.7rem' }}>Pathway Burden</div>
+                  <div style={{ fontWeight: '600', color: '#E65100', fontSize: '0.6rem' }}>Pathway<br/>Burden</div>
                 </div>
               </div>
 
-              {/* Merging Arrow - Direct to ML Risk Model */}
-              <div style={{ position: 'relative', width: '30px', height: '200px', display: 'flex', alignItems: 'center' }}>
-                <svg width="30" height="200" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
+              {/* Merging Arrow - Adjusted for new box heights */}
+              <div style={{ position: 'relative', width: '25px', height: '170px', display: 'flex', alignItems: 'center' }}>
+                <svg width="25" height="170" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)' }}>
                   {/* Branches from each parallel node - precisely centered on each node */}
-                  <line x1="0" y1="20" x2="15" y2="20" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="60" x2="15" y2="60" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="100" x2="15" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="140" x2="15" y2="140" stroke="#1976D2" strokeWidth="2" />
-                  <line x1="0" y1="180" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="15" x2="12" y2="15" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="50" x2="12" y2="50" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="85" x2="12" y2="85" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="120" x2="12" y2="120" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="0" y1="155" x2="12" y2="155" stroke="#1976D2" strokeWidth="2" />
                   {/* Vertical collection line - only between first and last arrows */}
-                  <line x1="15" y1="20" x2="15" y2="180" stroke="#1976D2" strokeWidth="2" />
+                  <line x1="12" y1="15" x2="12" y2="155" stroke="#1976D2" strokeWidth="2" />
                   {/* Main horizontal line to ML Risk Model with arrow head */}
-                  <line x1="15" y1="100" x2="25" y2="100" stroke="#1976D2" strokeWidth="2" />
-                  <polygon points="25,96 30,100 25,104" fill="#1976D2" />
+                  <line x1="12" y1="85" x2="20" y2="85" stroke="#1976D2" strokeWidth="2" />
+                  <polygon points="20,82 25,85 20,88" fill="#1976D2" />
                 </svg>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ width: '15px', height: '2px', background: '#1976D2' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #1976D2'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #1976D2'
                 }} />
               </div>
 
@@ -502,48 +501,48 @@ const HowItWorksPage = () => (
                 background: '#F3E5F5',
                 border: '2px solid #9C27B0',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#7B1FA2', fontSize: '0.8rem' }}>ML Risk<br/>Model</div>
+                <div style={{ fontWeight: '600', color: '#7B1FA2', fontSize: '0.65rem' }}>ML Risk<br/>Model</div>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ width: '15px', height: '2px', background: '#1976D2' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #1976D2'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #1976D2'
                 }} />
               </div>
 
-              {/* Validation and Metric */}
+              {/* Validation and Metrics */}
               <div style={{
                 background: '#E3F2FD',
                 border: '2px solid #1976D2',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Validation<br/>and Metric</div>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.65rem' }}>Validation<br/>and Metrics</div>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#1976D2' }} />
+                <div style={{ width: '15px', height: '2px', background: '#1976D2' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #1976D2'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #1976D2'
                 }} />
               </div>
 
@@ -552,23 +551,23 @@ const HowItWorksPage = () => (
                 background: '#E3F2FD',
                 border: '2px solid #1976D2',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.8rem' }}>Report<br/>Writer</div>
+                <div style={{ fontWeight: '600', color: '#1976D2', fontSize: '0.65rem' }}>Report<br/>Writer</div>
               </div>
 
               {/* Arrow */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '25px', height: '2px', background: '#388E3C' }} />
+                <div style={{ width: '15px', height: '2px', background: '#388E3C' }} />
                 <div style={{ 
                   width: '0', 
                   height: '0', 
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderLeft: '8px solid #388E3C'
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderLeft: '6px solid #388E3C'
                 }} />
               </div>
 
@@ -577,27 +576,29 @@ const HowItWorksPage = () => (
                 background: '#E0F2F1',
                 border: '2px solid #388E3C',
                 borderRadius: '0.5rem',
-                padding: '1rem',
+                padding: '0.75rem',
                 textAlign: 'center',
-                minWidth: '120px',
-                width: '120px'
+                minWidth: '90px',
+                width: '90px'
               }}>
-                <div style={{ fontWeight: '600', color: '#388E3C', fontSize: '0.8rem' }}>Visualizations<br/>Frontend</div>
+                <div style={{ fontWeight: '600', color: '#388E3C', fontSize: '0.6rem' }}>Visualizations<br/>Frontend</div>
               </div>
             </div>
 
             {/* Legend */}
             <div style={{ 
               display: 'flex', 
-              gap: '2rem', 
+              gap: '1.5rem', 
               marginTop: '1rem',
               fontSize: '0.75rem',
-              color: '#6B7280'
+              color: '#6B7280',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ 
-                  width: '20px', 
-                  height: '10px', 
+                  width: '16px', 
+                  height: '8px', 
                   background: '#E3F2FD',
                   border: '1px solid #1976D2',
                   borderRadius: '2px'
@@ -606,8 +607,8 @@ const HowItWorksPage = () => (
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ 
-                  width: '20px', 
-                  height: '10px', 
+                  width: '16px', 
+                  height: '8px', 
                   background: '#FFF3E0',
                   border: '1px solid #F57C00',
                   borderRadius: '2px'
@@ -616,8 +617,8 @@ const HowItWorksPage = () => (
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ 
-                  width: '20px', 
-                  height: '10px', 
+                  width: '16px', 
+                  height: '8px', 
                   background: '#F3E5F5',
                   border: '1px solid #9C27B0',
                   borderRadius: '2px'
@@ -626,8 +627,8 @@ const HowItWorksPage = () => (
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ 
-                  width: '20px', 
-                  height: '10px', 
+                  width: '16px', 
+                  height: '8px', 
                   background: '#E0F2F1',
                   border: '1px solid #388E3C',
                   borderRadius: '2px'
@@ -711,42 +712,40 @@ const HowItWorksPage = () => (
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '0.75rem',
+            padding: '2rem 7.2rem',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               System Requirements
             </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Windows 10/11, macOS 10.15+, or Linux
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                8GB RAM minimum (16GB recommended)
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                2GB free storage space
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Modern multi-core processor
-              </li>
+            <ul style={{ listStyle: 'none', padding: 0, color: '#4B5563', lineHeight: '1.8', textAlign: 'left' }}>
+              <li>• Windows 10/11, macOS 10.15+, or Linux</li>
+              <li>• 8GB RAM minimum (16GB recommended)</li>
+              <li>• 2GB free storage space</li>
+              <li>• Modern multi-core processor</li>
             </ul>
           </div>
-          <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '0.75rem',
+            padding: '2rem 7.2rem',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
               File Requirements
             </h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                FASTQ file format (.fastq or .fq)
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Whole genome sequencing data
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Minimum 30x coverage recommended
-              </li>
-              <li style={{ marginBottom: '0.75rem', color: '#4B5563' }}>
-                Human genomic data (hg38 reference)
-              </li>
+            <ul style={{ listStyle: 'none', padding: 0, color: '#4B5563', lineHeight: '1.8', textAlign: 'left' }}>
+              <li>• FASTQ file format (.fastq or .fq)</li>
+              <li>• Whole genome sequencing data</li>
+              <li>• Minimum 30x coverage recommended</li>
+              <li>• Human genomic data (hg38 reference)</li>
             </ul>
           </div>
         </div>
