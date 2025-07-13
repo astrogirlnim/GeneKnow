@@ -863,6 +863,13 @@ interface PathwayBurdenResult {
   description?: string;
 }
 
+interface PipelineWarning {
+  message?: string;
+  [key: string]: unknown;
+}
+
+type WarningType = string | PipelineWarning;
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -1165,7 +1172,7 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
     // Only show the most relevant warnings (limit to avoid cluttering)
     const relevantWarnings = warnings.slice(0, 2);
     
-    relevantWarnings.forEach((warning: any) => {
+    relevantWarnings.forEach((warning: WarningType) => {
       alerts.push({
         type: 'info',
         title: 'Analysis Quality Notice',
