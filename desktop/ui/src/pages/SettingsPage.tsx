@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiConfig } from '../api/apiConfig'
 import { invoke } from '@tauri-apps/api/core'
+import Layout from '../components/Layout';
 
 interface ReportGeneratorConfig {
   backend: 'ollama' | 'none'
   model_name: string | null
   temperature: number
-  style: 'clinical' | 'technical' | 'patient'
+  style: 'clinician' | 'technical' | 'patient'
   include_recommendations: boolean
   include_glossary: boolean
 }
@@ -198,14 +199,13 @@ export const SettingsPage: React.FC = () => {
     backend: 'ollama',
     model_name: null,
     temperature: 0.3,
-    style: 'clinical',
+    style: 'clinician',
     include_recommendations: true,
     include_glossary: true
   })
   const [availableModels, setAvailableModels] = useState<AvailableModels>({
     ollama: []
   })
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [backendStatus, setBackendStatus] = useState<{
@@ -233,8 +233,6 @@ export const SettingsPage: React.FC = () => {
 
   const loadConfiguration = async () => {
     try {
-      setIsLoading(true)
-      
       // Load current config
       const response = await fetch(`${apiConfig.getBaseUrl()}/api/report-generator/config`)
       if (response.ok) {
@@ -243,7 +241,7 @@ export const SettingsPage: React.FC = () => {
           backend: data.backend || 'ollama',
           model_name: data.model_name,
           temperature: data.temperature || 0.3,
-          style: data.style || 'clinical',
+          style: data.style || 'clinician',
           include_recommendations: data.include_recommendations || true,
           include_glossary: data.include_glossary || true
         })
@@ -258,8 +256,6 @@ export const SettingsPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to load configuration:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -471,7 +467,7 @@ export const SettingsPage: React.FC = () => {
 
   const getStyleOptions = () => [
     { 
-      value: 'clinical', 
+      value: 'clinician', 
       label: 'Clinical', 
       description: 'Medical professionals - detailed clinical language' 
     },
@@ -487,192 +483,295 @@ export const SettingsPage: React.FC = () => {
     }
   ]
 
-  if (isLoading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#F8FAFC',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          background: '#FFFFFF',
-          border: '1px solid #E5E7EB',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '16px', fontWeight: '500', color: '#111827' }}>
-            Loading Settings...
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F8FAFC'
-    }}>
-      {/* Header */}
-      <div style={{
-        background: '#FFFFFF',
-        borderBottom: '1px solid #E5E7EB',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+    <Layout>
+      <section style={{ 
+        background: '#F8FAFC',
+        minHeight: 'calc(100vh - 4rem)',
+        padding: '2rem 0'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6B7280',
-              fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              transition: 'all 200ms ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#F3F4F6';
-              e.currentTarget.style.color = '#374151';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'none';
-              e.currentTarget.style.color = '#6B7280';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-          
-          <div style={{
-            background: '#DBEAFE',
-            color: '#2563EB',
-            padding: '4px 12px',
-            borderRadius: '16px',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}>
-            AI Model Configuration
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Page Title */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{
-            fontSize: '32px',
-            fontWeight: '700',
-            color: '#111827',
-            marginBottom: '8px'
-          }}>
-            Settings
-          </h1>
-          <p style={{
-            fontSize: '16px',
-            color: '#6B7280',
-            lineHeight: '1.5'
-          }}>
-            Configure your preferred AI model for generating genomic reports.
-          </p>
-        </div>
-
-        {/* Settings Card */}
-        <div style={{
-          background: '#FFFFFF',
-          border: '1px solid #E5E7EB',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          overflow: 'hidden'
+        <div style={{ 
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0 1.5rem'
         }}>
-          
-          {/* AI Backend Section */}
-          <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
-              color: '#111827',
-              marginBottom: '16px'
-            }}>
-              AI Backend
-            </h2>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Ollama Option */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '16px',
-                border: `2px solid ${config.backend === 'ollama' ? '#2563EB' : '#E5E7EB'}`,
-                borderRadius: '8px',
-                background: config.backend === 'ollama' ? '#F0F9FF' : '#FFFFFF',
-                cursor: 'pointer',
-                transition: 'all 200ms ease'
-              }}
-              onClick={() => handleBackendChange('ollama')}
-              onMouseEnter={(e) => {
-                if (config.backend !== 'ollama') {
-                  e.currentTarget.style.borderColor = '#D1D5DB';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (config.backend !== 'ollama') {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem'
+          }}>
+            <div>
+              <h1 style={{
+                fontSize: '1.875rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '0.5rem'
               }}>
-                <input
-                  type="radio"
-                  name="backend"
-                  value="ollama"
-                  checked={config.backend === 'ollama'}
-                  onChange={() => handleBackendChange('ollama')}
-                  style={{ 
-                    marginRight: '12px',
-                    width: '16px',
-                    height: '16px',
-                    accentColor: '#2563EB'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    marginBottom: '4px'
-                  }}>
-                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
-                      Ollama (Local)
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      borderRadius: '12px',
-                      background: backendStatus.ollama ? '#DCFCE7' : '#FEF2F2',
-                      color: backendStatus.ollama ? '#166534' : '#991B1B'
+                Settings
+              </h1>
+              <p style={{
+                color: '#4B5563',
+                fontSize: '1rem'
+              }}>
+                Configure your preferred AI model for generating genomic reports.
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                onClick={() => navigate(-1)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6B7280',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  transition: 'all 200ms ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#F3F4F6';
+                  e.currentTarget.style.color = '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.color = '#6B7280';
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              
+              <div style={{
+                background: '#DBEAFE',
+                color: '#2563EB',
+                padding: '4px 12px',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}>
+                AI Model Configuration
+              </div>
+            </div>
+          </div>
+
+          {/* Settings Card */}
+          <div style={{
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            
+            {/* AI Backend Section */}
+            <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: '#111827',
+                marginBottom: '16px'
+              }}>
+                AI Backend
+              </h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Ollama Option */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '16px',
+                  border: `2px solid ${config.backend === 'ollama' ? '#2563EB' : '#E5E7EB'}`,
+                  borderRadius: '8px',
+                  background: config.backend === 'ollama' ? '#F0F9FF' : '#FFFFFF',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease'
+                }}
+                onClick={() => handleBackendChange('ollama')}
+                onMouseEnter={(e) => {
+                  if (config.backend !== 'ollama') {
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (config.backend !== 'ollama') {
+                    e.currentTarget.style.borderColor = '#E5E7EB';
+                  }
+                }}>
+                  <input
+                    type="radio"
+                    name="backend"
+                    value="ollama"
+                    checked={config.backend === 'ollama'}
+                    onChange={() => handleBackendChange('ollama')}
+                    style={{ 
+                      marginRight: '12px',
+                      width: '16px',
+                      height: '16px',
+                      accentColor: '#2563EB'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      marginBottom: '4px'
                     }}>
-                      {backendStatus.ollama ? 'Available' : 'Not Available'}
-                    </span>
-                    <a
-                      href="https://ollama.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                        Ollama (Local)
+                      </span>
+                      <span style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: backendStatus.ollama ? '#DCFCE7' : '#FEF2F2',
+                        color: backendStatus.ollama ? '#166534' : '#991B1B'
+                      }}>
+                        {backendStatus.ollama ? 'Available' : 'Not Available'}
+                      </span>
+                      <a
+                        href="https://ollama.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          try {
+                            await invoke('plugin:shell|open', { path: 'https://ollama.com' });
+                          } catch (error) {
+                            console.error('Failed to open URL:', error);
+                            // Fallback to window.open
+                            window.open('https://ollama.com', '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        style={{
+                          padding: '2px 8px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          borderRadius: '12px',
+                          background: '#E0E7FF',
+                          color: '#3730A3',
+                          textDecoration: 'none',
+                          transition: 'all 200ms ease',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#C7D2FE';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#E0E7FF';
+                        }}
+                      >
+                        Download Ollama
+                      </a>
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
+                      Run models locally with Ollama. Recommended for privacy and performance.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Template-Based Option */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '16px',
+                  border: `2px solid ${config.backend === 'none' ? '#2563EB' : '#E5E7EB'}`,
+                  borderRadius: '8px',
+                  background: config.backend === 'none' ? '#F0F9FF' : '#FFFFFF',
+                  cursor: 'pointer',
+                  transition: 'all 200ms ease'
+                }}
+                onClick={() => handleBackendChange('none')}
+                onMouseEnter={(e) => {
+                  if (config.backend !== 'none') {
+                    e.currentTarget.style.borderColor = '#D1D5DB';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (config.backend !== 'none') {
+                    e.currentTarget.style.borderColor = '#E5E7EB';
+                  }
+                }}>
+                  <input
+                    type="radio"
+                    name="backend"
+                    value="none"
+                    checked={config.backend === 'none'}
+                    onChange={() => handleBackendChange('none')}
+                    style={{ 
+                      marginRight: '12px',
+                      width: '16px',
+                      height: '16px',
+                      accentColor: '#2563EB'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      marginBottom: '4px'
+                    }}>
+                      <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                        Template-Based (No AI)
+                      </span>
+                      <span style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: '#DCFCE7',
+                        color: '#166534'
+                      }}>
+                        Always Available
+                      </span>
+                      <span style={{
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        borderRadius: '12px',
+                        background: '#E0E7FF',
+                        color: '#3730A3'
+                      }}>
+                        Instant
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
+                      Generate reports using templates without AI assistance. Fast and reliable.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Installation Help Section */}
+              <div style={{ 
+                marginTop: '16px', 
+                padding: '16px', 
+                background: '#F8FAFC', 
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0'
+              }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                  🚀 Quick Setup Guide
+                </h3>
+                <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.4' }}>
+                  <p style={{ margin: '0' }}>
+                    <strong>Ollama:</strong> Download and install from{' '}
+                    <a 
+                      href="https://ollama.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
                       onClick={async (e) => {
-                        e.stopPropagation();
                         e.preventDefault();
                         try {
                           await invoke('plugin:shell|open', { path: 'https://ollama.com' });
@@ -682,149 +781,100 @@ export const SettingsPage: React.FC = () => {
                           window.open('https://ollama.com', '_blank', 'noopener,noreferrer');
                         }
                       }}
-                      style={{
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        borderRadius: '12px',
-                        background: '#E0E7FF',
-                        color: '#3730A3',
-                        textDecoration: 'none',
-                        transition: 'all 200ms ease',
+                      style={{ 
+                        color: '#2563EB',
                         cursor: 'pointer'
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#C7D2FE';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#E0E7FF';
-                      }}
                     >
-                      Download Ollama
+                      ollama.com
                     </a>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
-                    Run models locally with Ollama. Recommended for privacy and performance.
-                  </div>
-                </div>
-              </div>
-
-              {/* Template-Based Option */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '16px',
-                border: `2px solid ${config.backend === 'none' ? '#2563EB' : '#E5E7EB'}`,
-                borderRadius: '8px',
-                background: config.backend === 'none' ? '#F0F9FF' : '#FFFFFF',
-                cursor: 'pointer',
-                transition: 'all 200ms ease'
-              }}
-              onClick={() => handleBackendChange('none')}
-              onMouseEnter={(e) => {
-                if (config.backend !== 'none') {
-                  e.currentTarget.style.borderColor = '#D1D5DB';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (config.backend !== 'none') {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }
-              }}>
-                <input
-                  type="radio"
-                  name="backend"
-                  value="none"
-                  checked={config.backend === 'none'}
-                  onChange={() => handleBackendChange('none')}
-                  style={{ 
-                    marginRight: '12px',
-                    width: '16px',
-                    height: '16px',
-                    accentColor: '#2563EB'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    marginBottom: '4px'
-                  }}>
-                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
-                      Template-Based (No AI)
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      borderRadius: '12px',
-                      background: '#DCFCE7',
-                      color: '#166534'
-                    }}>
-                      Always Available
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      borderRadius: '12px',
-                      background: '#E0E7FF',
-                      color: '#3730A3'
-                    }}>
-                      Instant
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.4' }}>
-                    Generate reports using templates without AI assistance. Fast and reliable.
-                  </div>
+                    , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull [model]</code> in terminal.
+                  </p>
                 </div>
               </div>
             </div>
-            
-            {/* Installation Help Section */}
-            <div style={{ 
-              marginTop: '16px', 
-              padding: '16px', 
-              background: '#F8FAFC', 
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0'
-            }}>
-              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-                🚀 Quick Setup Guide
-              </h3>
-              <div style={{ fontSize: '12px', color: '#4B5563', lineHeight: '1.4' }}>
-                <p style={{ margin: '0' }}>
-                  <strong>Ollama:</strong> Download and install from{' '}
-                  <a 
-                    href="https://ollama.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      try {
-                        await invoke('plugin:shell|open', { path: 'https://ollama.com' });
-                      } catch (error) {
-                        console.error('Failed to open URL:', error);
-                        // Fallback to window.open
-                        window.open('https://ollama.com', '_blank', 'noopener,noreferrer');
-                      }
-                    }}
-                    style={{ 
-                      color: '#2563EB',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ollama.com
-                  </a>
-                  , then run <code style={{ background: '#E5E7EB', padding: '2px 4px', borderRadius: '3px' }}>ollama pull [model]</code> in terminal.
+
+            {/* Model Selection */}
+            {config.backend !== 'none' && (
+              <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
+                <h2 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Model Selection
+                </h2>
+                <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
+                  Choose which specific model to use for report generation.
                 </p>
+                
+                <CustomDropdown
+                  value={config.model_name || 'auto'}
+                  onChange={handleModelChange}
+                  options={getModelOptions()}
+                  placeholder="Select a model"
+                  disabled={!backendStatus.ollama}
+                />
+                
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
+                  {config.model_name 
+                    ? `Using specific model: ${config.model_name}`
+                    : 'Will automatically select the best available model'
+                  }
+                </div>
+                
+                {/* Model Warming Status */}
+                {config.backend === 'ollama' && modelWarmingStatus.isWarming && (
+                  <div style={{ marginTop: '12px' }}>
+                    <div style={{
+                      padding: '12px',
+                      background: '#FEF3C7',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '#92400E'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔄</span>
+                        <span>Loading model: {modelWarmingStatus.warmingModel}</span>
+                      </div>
+                      <div style={{ fontSize: '12px', marginTop: '4px', color: '#B45309' }}>
+                        This may take 1-2 minutes for first-time loading...
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {modelWarmingStatus.warmingProgress && !modelWarmingStatus.isWarming && (
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    background: modelWarmingStatus.warmingProgress.includes('ready') ? '#F0FDF4' : '#FEF2F2', 
+                    borderRadius: '6px',
+                    border: `1px solid ${modelWarmingStatus.warmingProgress.includes('ready') ? '#BBF7D0' : '#FECACA'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ fontSize: '12px', color: modelWarmingStatus.warmingProgress.includes('ready') ? '#166534' : '#991B1B', fontWeight: '500' }}>
+                      {modelWarmingStatus.warmingProgress}
+                    </div>
+                  </div>
+                )}
+                
+                {modelWarmingStatus.cachedModels.length > 0 && (
+                  <div style={{ 
+                    marginTop: '6px',
+                    fontSize: '11px', 
+                    color: '#059669',
+                    fontWeight: '500'
+                  }}>
+                    ✅ Ready models: {modelWarmingStatus.cachedModels.join(', ')}
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Model Selection */}
-          {config.backend !== 'none' && (
+            {/* Report Style */}
             <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
               <h2 style={{ 
                 fontSize: '18px', 
@@ -832,239 +882,161 @@ export const SettingsPage: React.FC = () => {
                 color: '#111827',
                 marginBottom: '8px'
               }}>
-                Model Selection
+                Report Style
               </h2>
               <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
-                Choose which specific model to use for report generation.
+                Choose the writing style and target audience for your reports.
               </p>
               
               <CustomDropdown
-                value={config.model_name || 'auto'}
-                onChange={handleModelChange}
-                options={getModelOptions()}
-                placeholder="Select a model"
-                disabled={!backendStatus.ollama}
+                value={config.style}
+                onChange={(value) => {
+                  const newConfig = { ...config, style: value as 'clinician' | 'technical' | 'patient' }
+                  setConfig(newConfig)
+                  autoSave(newConfig)
+                }}
+                options={getStyleOptions()}
+                placeholder="Select report style"
               />
+            </div>
+
+            {/* Advanced Settings Section */}
+            <div style={{ 
+              padding: '20px',
+              background: '#F9FAFB',
+              borderRadius: '8px',
+              marginTop: '24px'
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
+                Advanced Settings
+              </h3>
               
-              <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>
-                {config.model_name 
-                  ? `Using specific model: ${config.model_name}`
-                  : 'Will automatically select the best available model'
-                }
-              </div>
-              
-              {/* Model Warming Status */}
-              {config.backend === 'ollama' && modelWarmingStatus.isWarming && (
-                <div style={{ marginTop: '12px' }}>
-                  <div style={{
-                    padding: '12px',
-                    background: '#FEF3C7',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: '#92400E'
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Temperature Slider */}
+                <div>
+                  <label style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#374151',
+                    marginBottom: '8px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>🔄</span>
-                      <span>Loading model: {modelWarmingStatus.warmingModel}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', marginTop: '4px', color: '#B45309' }}>
-                      This may take 1-2 minutes for first-time loading...
-                    </div>
+                    Temperature
+                    <span style={{ 
+                      marginLeft: '8px',
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      background: '#E5E7EB',
+                      borderRadius: '12px',
+                      color: '#6B7280'
+                    }}>
+                      {config.temperature}
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1.0"
+                    step="0.1"
+                    value={config.temperature}
+                    onChange={(e) => {
+                      const newConfig = { ...config, temperature: parseFloat(e.target.value) }
+                      setConfig(newConfig)
+                      autoSave(newConfig)
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    color: '#9CA3AF',
+                    marginTop: '4px'
+                  }}>
+                    <span>More Focused</span>
+                    <span>More Creative</span>
                   </div>
                 </div>
-              )}
-              
-              {modelWarmingStatus.warmingProgress && !modelWarmingStatus.isWarming && (
-                <div style={{ 
-                  padding: '8px 12px', 
-                  background: modelWarmingStatus.warmingProgress.includes('ready') ? '#F0FDF4' : '#FEF2F2', 
+
+                {/* Include Recommendations */}
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={config.include_recommendations}
+                    onChange={(e) => {
+                      const newConfig = { ...config, include_recommendations: e.target.checked }
+                      setConfig(newConfig)
+                      autoSave(newConfig)
+                    }}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Include Clinical Recommendations</span>
+                </label>
+
+                {/* Include Glossary */}
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={config.include_glossary}
+                    onChange={(e) => {
+                      const newConfig = { ...config, include_glossary: e.target.checked }
+                      setConfig(newConfig)
+                      autoSave(newConfig)
+                    }}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <span style={{ color: '#374151', fontWeight: '500' }}>Include Medical Glossary</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Auto-save Status */}
+            {saveMessage && (
+              <div style={{ 
+                padding: '16px 24px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  padding: '8px 16px',
                   borderRadius: '6px',
-                  border: `1px solid ${modelWarmingStatus.warmingProgress.includes('ready') ? '#BBF7D0' : '#FECACA'}`,
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  background: saveMessage.includes('✓') ? '#DCFCE7' : '#FEF2F2',
+                  color: saveMessage.includes('✓') ? '#166534' : '#991B1B',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <div style={{ fontSize: '12px', color: modelWarmingStatus.warmingProgress.includes('ready') ? '#166534' : '#991B1B', fontWeight: '500' }}>
-                    {modelWarmingStatus.warmingProgress}
-                  </div>
-                </div>
-              )}
-              
-              {modelWarmingStatus.cachedModels.length > 0 && (
-                <div style={{ 
-                  marginTop: '6px',
-                  fontSize: '11px', 
-                  color: '#059669',
-                  fontWeight: '500'
-                }}>
-                  ✅ Ready models: {modelWarmingStatus.cachedModels.join(', ')}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Report Style */}
-          <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
-            <h2 style={{ 
-              fontSize: '18px', 
-              fontWeight: '600', 
-              color: '#111827',
-              marginBottom: '8px'
-            }}>
-              Report Style
-            </h2>
-            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
-              Choose the writing style and target audience for your reports.
-            </p>
-            
-            <CustomDropdown
-              value={config.style}
-              onChange={(value) => {
-                const newConfig = { ...config, style: value as 'clinical' | 'technical' | 'patient' }
-                setConfig(newConfig)
-                autoSave(newConfig)
-              }}
-              options={getStyleOptions()}
-              placeholder="Select report style"
-            />
-          </div>
-
-          {/* Advanced Settings Section */}
-          <div style={{ 
-            padding: '20px',
-            background: '#F9FAFB',
-            borderRadius: '8px',
-            marginTop: '24px'
-          }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>
-              Advanced Settings
-            </h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Temperature Slider */}
-              <div>
-                <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  color: '#374151',
-                  marginBottom: '8px'
-                }}>
-                  Temperature
-                  <span style={{ 
-                    marginLeft: '8px',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    background: '#E5E7EB',
-                    borderRadius: '12px',
-                    color: '#6B7280'
-                  }}>
-                    {config.temperature}
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="1.0"
-                  step="0.1"
-                  value={config.temperature}
-                  onChange={(e) => {
-                    const newConfig = { ...config, temperature: parseFloat(e.target.value) }
-                    setConfig(newConfig)
-                    autoSave(newConfig)
-                  }}
-                  style={{ width: '100%' }}
-                />
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  fontSize: '12px',
-                  color: '#9CA3AF',
-                  marginTop: '4px'
-                }}>
-                  <span>More Focused</span>
-                  <span>More Creative</span>
+                  {isSaving && (
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #E5E7EB',
+                      borderTop: '2px solid #2563EB',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                  )}
+                  {saveMessage}
                 </div>
               </div>
-
-              {/* Include Recommendations */}
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={config.include_recommendations}
-                  onChange={(e) => {
-                    const newConfig = { ...config, include_recommendations: e.target.checked }
-                    setConfig(newConfig)
-                    autoSave(newConfig)
-                  }}
-                  style={{ marginRight: '8px' }}
-                />
-                <span style={{ color: '#374151', fontWeight: '500' }}>Include Clinical Recommendations</span>
-              </label>
-
-              {/* Include Glossary */}
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={config.include_glossary}
-                  onChange={(e) => {
-                    const newConfig = { ...config, include_glossary: e.target.checked }
-                    setConfig(newConfig)
-                    autoSave(newConfig)
-                  }}
-                  style={{ marginRight: '8px' }}
-                />
-                <span style={{ color: '#374151', fontWeight: '500' }}>Include Medical Glossary</span>
-              </label>
-            </div>
+            )}
           </div>
-
-          {/* Auto-save Status */}
-          {saveMessage && (
-            <div style={{ 
-              padding: '16px 24px',
-              display: 'flex',
-              justifyContent: 'center'
-            }}>
-              <div style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                background: saveMessage.includes('✓') ? '#DCFCE7' : '#FEF2F2',
-                color: saveMessage.includes('✓') ? '#166534' : '#991B1B',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                {isSaving && (
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid #E5E7EB',
-                    borderTop: '2px solid #2563EB',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
-                )}
-                {saveMessage}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    </div>
+      </section>
+    </Layout>
   )
 }
 

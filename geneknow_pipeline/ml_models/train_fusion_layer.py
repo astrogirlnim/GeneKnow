@@ -31,7 +31,7 @@ def train_fusion_models(n_samples: int = 5000, model_types: list = None):
         model_types: List of model types to train
     """
     if model_types is None:
-model_types = ['gradient_boosting', 'random_forest', 'linear']
+        model_types = ['gradient_boosting', 'random_forest', 'linear']
     
     logger.info(f"Training fusion layer with {n_samples} samples")
     
@@ -52,7 +52,7 @@ model_types = ['gradient_boosting', 'random_forest', 'linear']
     risk_categories = []
     for score in risk_scores:
         if score <= 0.25:
-risk_categories.append('low')
+            risk_categories.append('low')
         elif score <= 0.5:
             risk_categories.append('moderate')
         elif score <= 0.75:
@@ -66,7 +66,8 @@ risk_categories.append('low')
     print(f"Risk category distribution:")
     for category, count in category_counts.items():
         print(f"  {category}: {count} ({count/len(risk_categories)*100:.1f}%)")
-# Train different model types
+    
+    # Train different model types
     results = {}
     best_model = None
     best_score = float('inf')
@@ -104,7 +105,7 @@ risk_categories.append('low')
     if best_model:
         best_fusion = FusionLayer(model_type=best_model)
         best_fusion.train(training_data)
-best_fusion.save_model('best_fusion_model.pkl')
+        best_fusion.save_model('best_fusion_model.pkl')
         print(f"\n🏆 Best model: {best_model} (MSE: {best_score:.4f})")
     
     # Save training results
