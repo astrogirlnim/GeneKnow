@@ -2734,7 +2734,7 @@ const ClinicalViewPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* Table stats and scrolling indicator */}
+              {/* Table stats */}
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
@@ -2746,29 +2746,22 @@ const ClinicalViewPage: React.FC = () => {
                 marginBottom: '0.5rem'
               }}>
                 <span>
-                  Showing {genomicData.variant_table.length} variants
+                  Showing page {currentPage} of {totalPages} ({genomicData.variant_table.length} total variants)
                 </span>
-                {genomicData.variant_table.length > 10 && (
-                  <span style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.25rem',
-                    fontStyle: 'italic'
-                  }}>
-                    Scrollable table
-                  </span>
-                )}
+                <span style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem',
+                  fontStyle: 'italic'
+                }}>
+                  {variantsPerPage} variants per page
+                </span>
               </div>
               
               <div style={{ 
                 overflowX: 'auto', 
-                overflowY: 'auto',
-                maxHeight: '600px', // Limit height to enable vertical scrolling
-                minHeight: '400px',
                 border: '1px solid #E5E7EB',
-                borderRadius: '0.5rem',
-                // Add subtle shadow to indicate scrollable content
-                boxShadow: genomicData.variant_table.length > 10 ? 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                borderRadius: '0.5rem'
               }}>
                 <table style={{ 
                   width: '100%', 

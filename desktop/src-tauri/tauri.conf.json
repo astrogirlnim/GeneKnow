@@ -31,7 +31,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../bundled_resources"],
+    "resources": [],
     "macOS": {
       "signingIdentity": null,
       "hardenedRuntime": true,
