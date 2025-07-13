@@ -66,10 +66,10 @@ env:
   LC_ALL: C.UTF-8
   LANG: C.UTF-8
 
-# Allow one concurrent deployment to pages
+# Allow one concurrent deployment to pages per workflow run
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: "pages-${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: false
 
 jobs:
   # 🧹 Cleanup old artifacts to free storage
@@ -1278,12 +1278,21 @@ jobs:
     runs-on: ubuntu-latest
     # Only deploy website for production releases, not test releases
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && github.event.inputs.is_test_release != 'true'
+    concurrency:
+      group: "pages-deploy-${{ github.ref }}"
+      cancel-in-progress: false
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.target_branch || github.ref }}
           lfs: true
+
+      - name: ⏳ Wait for release propagation
+        run: |
+          echo "⏳ Waiting for GitHub release to fully propagate..."
+          sleep 30
+          echo "✅ Proceeding with website deployment"
 
       - name: 🔧 Setup Pages
         uses: actions/configure-pages@v4
