@@ -1037,10 +1037,16 @@ const SmartTooltip = ({ content, isVisible, triggerRef }: {
 
 // Function to generate real clinical alerts from pipeline data
 const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Alert[] => {
-  if (!pipelineResults) return [];
+  console.log('🔍 ALERT DEBUG: generateClinicalAlerts called with:', !!pipelineResults);
+  if (!pipelineResults) {
+    console.log('🔍 ALERT DEBUG: No pipeline results, returning empty array');
+    return [];
+  }
 
   const alerts: Alert[] = [];
   const structuredJson = pipelineResults.structured_json;
+  console.log('🔍 ALERT DEBUG: structuredJson available:', !!structuredJson);
+  console.log('🔍 ALERT DEBUG: structuredJson keys:', structuredJson ? Object.keys(structuredJson) : 'none');
 
   // 1. Check for pathogenic and likely pathogenic variants
   const variantDetails = structuredJson?.variant_details || [];
@@ -1125,24 +1131,29 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
     }
   }
 
-  // 4. Check for high-risk cancer types
+  // 4. Check for elevated cancer risk (>20% for clinical significance)
   const riskScores = pipelineResults.risk_scores || {};
-  const highRiskCancers = Object.entries(riskScores).filter(([, score]) => score >= 30);
+  console.log('🔍 ALERT DEBUG: All risk scores:', riskScores);
   
-  if (highRiskCancers.length > 0) {
-    const topRisk = highRiskCancers.reduce((prev, [cancer, score]) => 
+  const elevatedRiskCancers = Object.entries(riskScores).filter(([, score]) => score >= 20);
+  console.log('🔍 ALERT DEBUG: Elevated risk cancers (>=20%):', elevatedRiskCancers);
+  
+  if (elevatedRiskCancers.length > 0) {
+    const topRisk = elevatedRiskCancers.reduce((prev, [cancer, score]) => 
       score > prev.score ? { cancer, score } : prev,
       { cancer: '', score: 0 }
     );
 
+    console.log('🔍 ALERT DEBUG: Adding elevated risk alert for:', topRisk);
+    
     alerts.push({
-      type: topRisk.score >= 50 ? 'critical' : 'warning',
+      type: topRisk.score >= 30 ? 'critical' : 'warning',
       title: `Elevated ${topRisk.cancer} Cancer Risk`,
       desc: `${topRisk.score.toFixed(1)}% risk detected - Enhanced screening recommended`,
       detailedInfo: {
         whatItMeans: `Based on the genetic analysis, you have been identified as having elevated risk for ${topRisk.cancer} cancer (${topRisk.score.toFixed(1)}%).`,
         whyImportant: `This elevated risk is significantly higher than the general population average. Early detection and prevention strategies can significantly improve outcomes.`,
-        clinicalSignificance: `This risk level warrants ${topRisk.score >= 50 ? 'immediate clinical attention' : 'enhanced screening protocols'} and specialized medical management.`,
+        clinicalSignificance: `This risk level warrants ${topRisk.score >= 30 ? 'immediate clinical attention' : 'enhanced screening protocols'} and specialized medical management.`,
         nextSteps: `Schedule consultation with oncology team. Begin enhanced screening protocols. Consider genetic counseling to discuss risk management strategies and family implications.`
       }
     });
@@ -1172,6 +1183,7 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
   // 6. Default success alert for low-risk cases with no significant findings
   if (alerts.length === 0) {
     const overallRiskScore = Math.max(...Object.values(riskScores));
+    console.log('🔍 ALERT DEBUG: No alerts generated, adding default success alert. Overall risk score:', overallRiskScore);
     
     alerts.push({
       type: 'success',
@@ -1186,6 +1198,8 @@ const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Al
     });
   }
 
+  console.log('🔍 ALERT DEBUG: Final alerts being returned:', alerts);
+  console.log('🔍 ALERT DEBUG: Total alert count:', alerts.length);
   return alerts;
 };
 
@@ -1418,6 +1432,10 @@ const ClinicalViewPage: React.FC = () => {
   // Get real data for sidebar when available
   const getSidebarData = () => {
     if (pipelineResults) {
+      console.log('🔍 SIDEBAR DEBUG: pipelineResults available, generating real alerts');
+      console.log('🔍 Risk scores:', pipelineResults.risk_scores);
+      console.log('🔍 Structured JSON:', pipelineResults.structured_json);
+      
       // Calculate real risk level and score from pipeline results
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
@@ -1431,6 +1449,8 @@ const ClinicalViewPage: React.FC = () => {
       
       // Generate real clinical alerts from pipeline data
       const realAlerts = generateClinicalAlerts(pipelineResults);
+      console.log('🔍 SIDEBAR DEBUG: Generated alerts:', realAlerts);
+      console.log('🔍 SIDEBAR DEBUG: Alert count:', realAlerts.length);
       
       return {
         riskLevel: riskCategory,
@@ -1441,6 +1461,7 @@ const ClinicalViewPage: React.FC = () => {
       };
     }
     
+    console.log('🔍 SIDEBAR DEBUG: No pipelineResults, falling back to mock data');
     // Fallback to mock data if no pipeline results
     return currentData;
   };
