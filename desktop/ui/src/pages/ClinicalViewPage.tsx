@@ -8,6 +8,15 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { invoke } from '@tauri-apps/api/core';
 
+// Extended interface for html2canvas options to include scale property
+interface ExtendedHtml2CanvasOptions {
+  scale?: number;
+  logging?: boolean;
+  backgroundColor?: string;
+  width?: number;
+  height?: number;
+}
+
 // Type definitions for genomic data structures
 // (Structural and Copy Number variant interfaces removed as they're not currently used)
 
@@ -297,7 +306,6 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         } else {
           // Original image capture for other elements
           const canvas = await html2canvas(element, {
-            scale: elementId.includes('gene-significance-analysis') ? 2 : 1, // Higher resolution for gene significance
             logging: false,
             // Only apply specific settings to gene significance analysis
             ...(elementId.includes('gene-significance-analysis') ? {
