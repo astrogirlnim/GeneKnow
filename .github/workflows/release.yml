@@ -843,58 +843,91 @@ jobs:
           
           # Find the built application
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # macOS DMG and app bundle
-            APP_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/macos/ -name "*.app" | head -1)
-            if [ -n "$APP_PATH" ]; then
-              echo "🍎 Found macOS app bundle: $APP_PATH"
+            # macOS DMG verification (app bundle gets cleaned up after DMG creation)
+            DMG_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/dmg/ -name "*.dmg" | head -1)
+            if [ -n "$DMG_PATH" ]; then
+              echo "🍎 Found macOS DMG: $DMG_PATH"
+              echo "📊 DMG size: $(du -sh "$DMG_PATH" | cut -f1)"
               
-              # Check for bundled resources in the app bundle
-              RESOURCES_PATH="$APP_PATH/Contents/Resources"
-              if [ -d "$RESOURCES_PATH" ]; then
-                echo "✅ Resources directory found in app bundle"
-                echo "📂 Resources contents:"
-                ls -la "$RESOURCES_PATH"
+              # Create temporary mount point and extract DMG to verify contents
+              TEMP_MOUNT_POINT=$(mktemp -d)
+              echo "📦 Extracting DMG to verify bundled resources..."
+              
+              if hdiutil attach "$DMG_PATH" -mountpoint "$TEMP_MOUNT_POINT" -nobrowse -readonly; then
+                echo "✅ DMG mounted successfully"
                 
-                # Check for our bundled resources
-                BUNDLED_PATH="$RESOURCES_PATH/_up_/bundled_resources"
-                if [ -d "$BUNDLED_PATH" ]; then
-                  echo "✅ bundled_resources found in app bundle at: $BUNDLED_PATH"
-                  echo "📊 Bundle size in app: $(du -sh "$BUNDLED_PATH" | cut -f1)"
+                # Find the app bundle inside the DMG
+                APP_PATH=$(find "$TEMP_MOUNT_POINT" -name "*.app" | head -1)
+                if [ -n "$APP_PATH" ]; then
+                  echo "✅ Found app bundle in DMG: $APP_PATH"
                   
-                  # Check critical files
-                  if [ -f "$BUNDLED_PATH/start_api_server.sh" ]; then
-                    echo "   ✅ start_api_server.sh found in app bundle"
+                  # Check for bundled resources in the app bundle
+                  RESOURCES_PATH="$APP_PATH/Contents/Resources"
+                  if [ -d "$RESOURCES_PATH" ]; then
+                    echo "✅ Resources directory found in app bundle"
+                    
+                    # Check for our bundled resources
+                    BUNDLED_PATH="$RESOURCES_PATH/_up_/bundled_resources"
+                    if [ -d "$BUNDLED_PATH" ]; then
+                      echo "✅ bundled_resources found in app bundle at: $BUNDLED_PATH"
+                      echo "📊 Bundle size in app: $(du -sh "$BUNDLED_PATH" | cut -f1)"
+                      
+                      # Check critical files
+                      if [ -f "$BUNDLED_PATH/start_api_server.sh" ]; then
+                        echo "   ✅ start_api_server.sh found in app bundle"
+                      else
+                        echo "   ❌ start_api_server.sh MISSING from app bundle"
+                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        exit 1
+                      fi
+                      
+                      if [ -d "$BUNDLED_PATH/python_runtime" ]; then
+                        echo "   ✅ python_runtime found in app bundle"
+                      else
+                        echo "   ❌ python_runtime MISSING from app bundle"
+                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        exit 1
+                      fi
+                      
+                      if [ -d "$BUNDLED_PATH/geneknow_pipeline" ]; then
+                        echo "   ✅ geneknow_pipeline found in app bundle"
+                      else
+                        echo "   ❌ geneknow_pipeline MISSING from app bundle"
+                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        exit 1
+                      fi
+                      
+                    else
+                      echo "❌ bundled_resources NOT found in app bundle"
+                      echo "📂 _up_ directory contents:"
+                      ls -la "$RESOURCES_PATH/_up_/" 2>/dev/null || echo "   _up_ directory not found"
+                      hdiutil detach "$TEMP_MOUNT_POINT"
+                      exit 1
+                    fi
                   else
-                    echo "   ❌ start_api_server.sh MISSING from app bundle"
+                    echo "❌ Resources directory not found in app bundle"
+                    hdiutil detach "$TEMP_MOUNT_POINT"
                     exit 1
                   fi
-                  
-                  if [ -d "$BUNDLED_PATH/python_runtime" ]; then
-                    echo "   ✅ python_runtime found in app bundle"
-                  else
-                    echo "   ❌ python_runtime MISSING from app bundle"
-                    exit 1
-                  fi
-                  
-                  if [ -d "$BUNDLED_PATH/geneknow_pipeline" ]; then
-                    echo "   ✅ geneknow_pipeline found in app bundle"
-                  else
-                    echo "   ❌ geneknow_pipeline MISSING from app bundle"
-                    exit 1
-                  fi
-                  
                 else
-                  echo "❌ bundled_resources NOT found in app bundle"
-                  echo "📂 _up_ directory contents:"
-                  ls -la "$RESOURCES_PATH/_up_/" 2>/dev/null || echo "   _up_ directory not found"
+                  echo "❌ Could not find app bundle in DMG"
+                  hdiutil detach "$TEMP_MOUNT_POINT"
                   exit 1
                 fi
+                
+                # Clean up mount point
+                hdiutil detach "$TEMP_MOUNT_POINT"
+                rm -rf "$TEMP_MOUNT_POINT"
+                
               else
-                echo "❌ Resources directory not found in app bundle"
+                echo "❌ Failed to mount DMG for verification"
                 exit 1
               fi
+              
             else
-              echo "❌ Could not find macOS app bundle"
+              echo "❌ Could not find macOS DMG"
+              echo "📂 Looking for DMG in:"
+              find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" 2>/dev/null || echo "   No DMG files found"
               exit 1
             fi
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
