@@ -147,6 +147,11 @@ find lib/python*/site-packages -name "locale" -type d -exec sh -c '
 echo "📂 Copying pipeline code..."
 cp -r "$PROJECT_ROOT/geneknow_pipeline" "$BUNDLE_DIR/"
 
+# Copy plugin system and Python ML tools
+echo "🔌 Copying plugin system..."
+mkdir -p "$BUNDLE_DIR/desktop/python_ml"
+cp -r "$PROJECT_ROOT/desktop/python_ml/plugins" "$BUNDLE_DIR/desktop/python_ml/" 2>/dev/null || true
+
 # Remove unnecessary files from pipeline
 cd "$BUNDLE_DIR/geneknow_pipeline"
 rm -rf venv/ 2>/dev/null || true
@@ -155,18 +160,33 @@ rm -rf .pytest_cache/ 2>/dev/null || true
 rm -rf *.log 2>/dev/null || true
 find . -name "*.pyc" -delete 2>/dev/null || true
 
-echo "🤖 Verifying ML models..."
-if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models/best_fusion_model.pkl" ]; then
-    echo "   ✅ Found ML fusion model (confidence check will work)"
+echo "🤖 Creating ML models for confidence check..."
+cd "$BUNDLE_DIR/geneknow_pipeline"
+
+# Create fusion models if they don't exist
+if [ -f "ml_models/best_fusion_model.pkl" ]; then
+    echo "   ✅ Found existing ML fusion model (confidence check will work)"
 else
-    echo "   ⚠️  ML fusion model missing - confidence check will show 'Not Available'"
-    echo "   Run 'python create_simple_fusion_model.py' to create it"
+    echo "   🏗️  Creating ML fusion model for confidence check..."
+    "$PYTHON_EXE" create_simple_fusion_model.py
+    if [ -f "ml_models/best_fusion_model.pkl" ]; then
+        echo "   ✅ Created ML fusion model successfully"
+    else
+        echo "   ⚠️  Failed to create ML fusion model - confidence check will show 'Not Available'"
+    fi
 fi
 
-if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models_no_leakage/best_model.pkl" ]; then
-    echo "   ✅ Found ML models (no leakage)"
+# Create no-leakage models if they don't exist
+if [ -f "ml_models_no_leakage/best_model.pkl" ]; then
+    echo "   ✅ Found existing ML models (no leakage)"
 else
-    echo "   ⚠️  ML models (no leakage) missing - fallback predictions will be used"
+    echo "   🏗️  Creating ML models (no leakage) for predictions..."
+    "$PYTHON_EXE" train_ml_no_leakage.py
+    if [ -f "ml_models_no_leakage/best_model.pkl" ]; then
+        echo "   ✅ Created ML models (no leakage) successfully"
+    else
+        echo "   ⚠️  Failed to create ML models (no leakage) - fallback predictions will be used"
+    fi
 fi
 
 echo "🗄️ Setting up database..."

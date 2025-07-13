@@ -43,13 +43,56 @@ class MLFusionNode:
             model_path: Path to the trained fusion model. If None, uses best model.
         """
         self.fusion_layer = FusionLayer()
-        self.model_path = model_path or str(
-            Path(__file__).parent.parent / "ml_models" / "best_fusion_model.pkl"
-        )
+        self.model_path = model_path or self._get_default_model_path()
         self.is_loaded = False
 
         # Load model if it exists
         self._load_model()
+    
+    def _get_default_model_path(self) -> str:
+        """Get the default model path, handling both development and production modes."""
+        # Check if we're in a bundled production environment
+        current_file = Path(__file__).resolve()
+        
+        # If we're in bundled resources, use that path
+        if "bundled_resources" in str(current_file):
+            # We're in production bundle
+            bundle_root = current_file
+            while bundle_root.parent != bundle_root and bundle_root.name != "bundled_resources":
+                bundle_root = bundle_root.parent
+            
+            if bundle_root.name == "bundled_resources":
+                return str(bundle_root / "geneknow_pipeline" / "ml_models" / "best_fusion_model.pkl")
+        
+        # Default to development path
+        return str(Path(__file__).parent.parent / "ml_models" / "best_fusion_model.pkl")
+    
+    def _get_alternative_model_paths(self) -> List[str]:
+        """Get alternative model paths, handling both development and production modes."""
+        current_file = Path(__file__).resolve()
+        
+        # If we're in bundled resources, use that path
+        if "bundled_resources" in str(current_file):
+            # We're in production bundle
+            bundle_root = current_file
+            while bundle_root.parent != bundle_root and bundle_root.name != "bundled_resources":
+                bundle_root = bundle_root.parent
+            
+            if bundle_root.name == "bundled_resources":
+                base_path = bundle_root / "geneknow_pipeline"
+                return [
+                    str(base_path / "ml_models" / "fusion_gradient_boosting.pkl"),
+                    str(base_path / "ml_models" / "fusion_random_forest.pkl"),
+                    str(base_path / "ml_models_no_leakage" / "best_model.pkl"),
+                ]
+        
+        # Default to development paths
+        base_path = Path(__file__).parent.parent
+        return [
+            str(base_path / "ml_models" / "fusion_gradient_boosting.pkl"),
+            str(base_path / "ml_models" / "fusion_random_forest.pkl"),
+            str(base_path / "ml_models_no_leakage" / "best_model.pkl"),
+        ]
 
     def _load_model(self):
         """Load the trained fusion model."""
@@ -64,23 +107,7 @@ class MLFusionNode:
                 )
             else:
                 # Try alternative paths
-                alternative_paths = [
-                    str(
-                        Path(__file__).parent.parent
-                        / "ml_models"
-                        / "fusion_gradient_boosting.pkl"
-                    ),
-                    str(
-                        Path(__file__).parent.parent
-                        / "ml_models"
-                        / "fusion_random_forest.pkl"
-                    ),
-                    str(
-                        Path(__file__).parent.parent
-                        / "ml_models_no_leakage"
-                        / "best_model.pkl"
-                    ),
-                ]
+                alternative_paths = self._get_alternative_model_paths()
 
                 logger.warning(
                     f"⚠️ ML Fusion model not found at primary path: {self.model_path}"
