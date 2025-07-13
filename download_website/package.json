@@ -1,0 +1,21 @@
+{
+  "name": "download_website",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "This is the static website for hosting GeneKnow downloads and serving as a marketing landing page. The website is automatically deployed to GitHub Pages and fetches the latest releases from the GitHub API.",
+  "main": "eslint.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint assets/js/*.js",
+    "lint:fix": "eslint assets/js/*.js --fix",
+    "lint:html": "html-validate *.html",
+    "lint:all": "npm run lint && npm run lint:html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^9.31.0",
+    "html-validate": "^8.29.0"
+  }
+}
