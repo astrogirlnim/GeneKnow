@@ -42,6 +42,11 @@ graph TD
 **Trigger:** Pushes to `main` branch or manual workflow dispatch  
 **Purpose:** Automated versioning and production releases
 
+### 🌐 Download Website Pipeline (`.github/workflows/deploy-website.yml`)
+
+**Trigger:** Changes to `download_website/` files, manual dispatch, or completion of Release Pipeline  
+**Purpose:** Automatically updates the download website with latest releases
+
 ```mermaid
 graph TD
     A[Main Branch Push] --> B[Determine Version]
@@ -56,6 +61,8 @@ graph TD
     H --> J
     I --> J
     J --> K[Upload Artifacts]
+    J --> L[Trigger Website Update]
+    L --> M[Deploy Latest Website]
 ```
 
 **Jobs:**
