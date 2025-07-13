@@ -170,7 +170,7 @@ const ConfidenceCheckTest: React.FC = () => {
         {/* Detailed Clinical Alerts Views */}
         <section>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#111827' }}>
-            Clinical Alerts Detailed Views
+            In-Depth Alerts Detailed Views
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {Object.entries(mockValidations).map(([key, validation]) => (

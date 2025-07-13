@@ -155,7 +155,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
         return (
           <p style={{ fontSize: '0.875rem', color: config.textColor }}>
             The AI's reasoning aligns with the primary genomic evidence. The risk calculation is based on 
-            clinically significant factors.
+            medically significant factors.
           </p>
         );
       case 'ERROR':
@@ -174,7 +174,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
             </p>
             <p style={{ fontSize: '0.75rem', color: config.textColor, fontStyle: 'italic' }}>
               Your genetic analysis is still complete and accurate. The risk scores are based on 
-              established clinical databases and statistical models.
+              established research databases and statistical models.
             </p>
           </div>
         );
@@ -211,7 +211,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
       }}
     >
       This automated check verifies that the model's risk calculation is based on the most 
-      clinically significant genomic evidence.
+      medically significant genomic evidence.
       
       {/* Arrow */}
       <div style={{
@@ -284,7 +284,7 @@ const ConfidenceCheck: React.FC<ConfidenceCheckProps> = ({
     );
   }
 
-  // Detailed view for Clinical Alerts
+  // Detailed view for In-Depth Alerts
   return (
     <div 
       style={{

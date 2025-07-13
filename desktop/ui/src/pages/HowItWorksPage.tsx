@@ -668,7 +668,7 @@ const HowItWorksPage = () => (
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
           }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
-              Clinical Databases
+              Research Databases
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, color: '#4B5563', lineHeight: '1.8' }}>
               <li>• TCGA: 2,828 patient cohort</li>

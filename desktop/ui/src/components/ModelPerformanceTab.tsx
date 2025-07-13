@@ -454,7 +454,7 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
                   title="Min Confidence"
                   value={userMetrics.confidence.min_model_confidence?.toFixed(3) ?? 'N/A'}
                   unit=""
-                  description="Lowest confidence score among all cancer risk predictions. This represents the cancer type where the model has the least certainty in its assessment. Lower values may indicate insufficient genetic information or complex variant patterns requiring additional clinical evaluation. Values below 0.5 suggest caution in interpretation."
+                  description="Lowest confidence score among all cancer risk predictions. This represents the cancer type where the model has the least certainty in its assessment. Lower values may indicate insufficient genetic information or complex variant patterns requiring additional medical evaluation. Values below 0.5 suggest caution in interpretation."
                 />
                 <MetricCard
                   title="Max Confidence"
@@ -540,7 +540,7 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
                   title="Pathogenic Variants"
                   value={userMetrics.variant.pathogenic_variants ?? 'N/A'}
                   unit="variants"
-                  description="Number of variants classified as pathogenic or likely pathogenic according to clinical databases like ClinVar. These variants have established evidence for causing disease or significantly increasing cancer risk. Even one pathogenic variant in a cancer-associated gene can substantially affect risk and screening recommendations."
+                  description="Number of variants classified as pathogenic or likely pathogenic according to research databases like ClinVar. These variants have established evidence for causing disease or significantly increasing cancer risk. Even one pathogenic variant in a cancer-associated gene can substantially affect risk and screening recommendations."
                 />
                 <MetricCard
                   title="Benign Variants"
@@ -552,7 +552,7 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
                   title="Uncertain Variants"
                   value={userMetrics.variant.uncertain_variants ?? 'N/A'}
                   unit="variants"
-                  description="Number of variants with uncertain significance (VUS) where the clinical impact is unknown or conflicting. These variants require careful interpretation and may be reclassified as more data becomes available. They are typically not used for clinical decision-making but are monitored for future updates."
+                  description="Number of variants with uncertain significance (VUS) where the research impact is unknown or conflicting. These variants require careful interpretation and may be reclassified as more data becomes available. They are typically not used for medical decision-making but are monitored for future updates."
                 />
                 <MetricCard
                   title="Mean CADD Score"
@@ -661,7 +661,7 @@ const ModelPerformanceTab: React.FC<ModelPerformanceTabProps> = ({ pipelineResul
             title="AUC-ROC"
             value={MODEL_VALIDATION_METRICS.auc_roc.toFixed(3)}
             unit=""
-            description="Area Under the Receiver Operating Characteristic curve measuring the model's ability to distinguish between cancer and non-cancer cases. Values range from 0-1, where 0.5 is random chance and 1.0 is perfect classification. Our model achieves 0.763, indicating good discriminative ability. Values above 0.7 are considered clinically useful."
+            description="Area Under the Receiver Operating Characteristic curve measuring the model's ability to distinguish between cancer and non-cancer cases. Values range from 0-1, where 0.5 is random chance and 1.0 is perfect classification. Our model achieves 0.763, indicating good discriminative ability. Values above 0.7 are considered medically useful."
             isReference={true}
           />
           {MODEL_VALIDATION_METRICS.f1_score !== undefined && (
