@@ -254,22 +254,28 @@ function createDownloadItem(asset, platform) {
     fileInfo.className = 'file-info';
     
     const fileName = document.createElement('div');
-    fileName.className = 'file-name';
+    fileName.className = 'file-name font-semibold text-gray-900 text-sm';
     fileName.textContent = asset.name;
     
     const fileSize = document.createElement('div');
-    fileSize.className = 'file-size';
-    const formatBytes = window.GeneKnow ? window.GeneKnow.formatBytes : (bytes) => `${Math.round(bytes / 1024 / 1024)} MB`;
+    fileSize.className = 'file-size text-sm text-gray-600';
+    const formatBytes = window.GeneKnow ? window.GeneKnow.formatBytes : formatBytesFallback;
     fileSize.textContent = formatBytes(asset.size);
     
     fileInfo.appendChild(fileName);
     fileInfo.appendChild(fileSize);
     
     const downloadBtn = document.createElement('button');
-    downloadBtn.className = 'download-btn';
-    downloadBtn.textContent = 'Download';
+    downloadBtn.className = 'download-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer text-sm';
+    downloadBtn.innerHTML = `
+        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Download
+    `;
     downloadBtn.onclick = () => downloadFile(asset, platform);
     
+    item.className = 'download-item flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors';
     item.appendChild(fileInfo);
     item.appendChild(downloadBtn);
     
@@ -341,7 +347,8 @@ function setupRecommendedDownload(release) {
     
     if (!recommendedBtn) return;
     
-    const userPlatform = window.GeneKnow.detectPlatform();
+    // Fallback platform detection if window.GeneKnow is not available
+    const userPlatform = window.GeneKnow ? window.GeneKnow.detectPlatform() : detectPlatformFallback();
     const assets = release.assets || [];
     const platformAssets = groupAssetsByPlatform(assets);
     
@@ -349,11 +356,57 @@ function setupRecommendedDownload(release) {
     const recommendedAsset = getRecommendedAsset(userPlatform, platformAssets);
     
     if (recommendedAsset) {
+        recommendedBtn.innerHTML = `
+            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Download for ${getPlatformDisplayName(userPlatform)}</span>
+            </div>
+        `;
         recommendedBtn.onclick = () => downloadFile(recommendedAsset, userPlatform);
         recommendedBtn.style.display = 'flex';
     } else {
         recommendedBtn.style.display = 'none';
     }
+}
+
+// Fallback platform detection
+function detectPlatformFallback() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    if (userAgent.includes('windows')) {
+        return 'windows';
+    } else if (userAgent.includes('mac')) {
+        return 'macos';
+    } else if (userAgent.includes('linux')) {
+        return 'linux';
+    } else {
+        return 'windows'; // Default to Windows
+    }
+}
+
+// Get platform display name
+function getPlatformDisplayName(platform) {
+    const platformNames = {
+        'windows': 'Windows',
+        'macos': 'macOS',
+        'linux': 'Linux'
+    };
+    return platformNames[platform] || platform;
+}
+
+// Fallback function to format bytes
+function formatBytesFallback(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 // Get recommended asset based on platform
@@ -408,13 +461,13 @@ function showErrorState() {
         releaseDate.textContent = 'Unable to load release information';
     }
     
-            if (releaseContent) {
-            releaseContent.innerHTML = `
-                <p>Unable to load release information. Please visit our 
-                <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
-                to download the latest version of GeneKnow.</p>
-            `;
-        }
+    if (releaseContent) {
+        releaseContent.innerHTML = `
+            <p>Unable to load release information. Please visit our 
+            <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
+            to download the latest version of GeneKnow.</p>
+        `;
+    }
     
     // Update download sections
     const downloadSections = ['windows-downloads', 'macos-downloads', 'linux-downloads'];
