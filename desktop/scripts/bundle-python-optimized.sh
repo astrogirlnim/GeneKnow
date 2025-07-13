@@ -308,6 +308,13 @@ cd "$BUNDLE_DIR"
 echo ""
 echo "🧪 Running resource verification test..."
 cd "$BUNDLE_DIR/geneknow_pipeline"
+
+# Set UTF-8 encoding to prevent Unicode errors on Windows
+export PYTHONIOENCODING=utf-8
+export PYTHONLEGACYWINDOWSFSENCODING=utf-8
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+
 "$PYTHON_EXE" test_bundle_resources.py
 if [ $? -ne 0 ]; then
     echo "   ⚠️  Resource verification failed - some components may not work"

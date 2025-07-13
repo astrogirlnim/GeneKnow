@@ -13,7 +13,7 @@ from pathlib import Path
 def check_resource(path, description, required=True):
     """Check if a resource exists and report status."""
     exists = os.path.exists(path)
-    status = "✅" if exists else ("❌" if required else "⚠️")
+    status = "[OK]" if exists else ("[FAIL]" if required else "[WARN]")
     
     if exists:
         size = os.path.getsize(path)
@@ -32,7 +32,7 @@ def check_resource(path, description, required=True):
 def check_database(path, description):
     """Check database and report table count."""
     if not os.path.exists(path):
-        print(f"❌ {description}: {path} (NOT FOUND)")
+        print(f"[FAIL] {description}: {path} (NOT FOUND)")
         return False
     
     try:
@@ -59,7 +59,7 @@ def check_database(path, description):
 
 def main():
     """Check all required resources."""
-    print("🔍 GeneKnow Bundle Resource Verification\n")
+    print("[CHECK] GeneKnow Bundle Resource Verification\n")
     
     # Get base directory (either bundle or development)
     base_dir = Path(__file__).parent
