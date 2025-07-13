@@ -120,13 +120,33 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         
         const imageData = canvas.toDataURL('image/png', 0.9);
         
-        // Calculate optimal size for PDF
+        // Calculate optimal size for PDF with better scaling for different content types
         const maxWidth = pageWidth - 40;
         const maxHeight = pageHeight - yPosition - 40;
         const aspectRatio = canvas.width / canvas.height;
         
-        let imgWidth = Math.min(maxWidth, canvas.width * 0.2);
+        // Use different scaling factors based on content type
+        let scaleFactor = 0.3; // Default scale factor (increased from 0.2)
+        
+        // Special handling for chart/visualization elements that need better readability
+        if (elementId.includes('significance') || elementId.includes('matrix') || elementId.includes('chart')) {
+          scaleFactor = 0.5; // Higher scale for charts
+        }
+        
+        // For very wide elements (like tables), use adaptive scaling
+        if (canvas.width > 1000) {
+          scaleFactor = Math.min(0.6, maxWidth / canvas.width);
+        }
+        
+        let imgWidth = Math.min(maxWidth, canvas.width * scaleFactor);
         let imgHeight = imgWidth / aspectRatio;
+        
+        // Ensure minimum size for important visualizations
+        const minWidth = elementId.includes('significance') ? 120 : 80;
+        if (imgWidth < minWidth) {
+          imgWidth = Math.min(minWidth, maxWidth);
+          imgHeight = imgWidth / aspectRatio;
+        }
         
         // If height exceeds available space, scale down
         if (imgHeight > maxHeight) {
