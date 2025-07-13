@@ -590,12 +590,24 @@ async fn start_api_server() -> Result<bool, String> {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(&startup_script)
-                .map_err(|e| format!("Failed to get script metadata: {}", e))?
-                .permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&startup_script, perms)
-                .map_err(|e| format!("Failed to set script permissions: {}", e))?;
+            let metadata = fs::metadata(&startup_script)
+                .map_err(|e| format!("Failed to get script metadata: {}", e))?;
+            let current_perms = metadata.permissions();
+            
+            // Check if script is already executable
+            let is_executable = current_perms.mode() & 0o111 != 0;
+            
+            if !is_executable {
+                // Only try to set permissions if not already executable
+                let mut perms = current_perms;
+                perms.set_mode(0o755);
+                if let Err(e) = fs::set_permissions(&startup_script, perms) {
+                    // If we can't set permissions but script might already be executable, warn and continue
+                    log::warn!("Failed to set script permissions, but continuing: {}", e);
+                }
+            } else {
+                log::info!("Script is already executable, skipping permission setup");
+            }
         }
         
         let mut cmd = Command::new(&startup_script);
