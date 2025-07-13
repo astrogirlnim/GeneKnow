@@ -162,6 +162,7 @@ jobs:
 
       - name: 🏷️ Calculate new version
         id: version
+        shell: bash
         run: |
           echo "🔍 Starting automatic version calculation..."
           
@@ -704,6 +705,7 @@ jobs:
 
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri
+        shell: bash
         run: |
           echo "${{ matrix.emoji }} Building Tauri release for ${{ matrix.name }}..."
           echo "🎯 Target: ${{ matrix.rust-target }}"
