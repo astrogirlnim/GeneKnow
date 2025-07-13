@@ -2759,7 +2759,7 @@ const ClinicalViewPage: React.FC = () => {
               </div>
               
               <div style={{ 
-                overflowX: 'auto', 
+                overflowX: 'visible', 
                 border: '1px solid #E5E7EB',
                 borderRadius: '0.5rem'
               }}>
@@ -3340,6 +3340,7 @@ const ClinicalViewPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
               
               {/* Pagination Controls */}
