@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def classify_mutation_type(variant: Dict) -> str:
     """Classify variant based on reference and alternate alleles"""
-    ref = variant.get("re", "")
+    ref = variant.get("ref", "")
     alt = variant.get("alt", "")
 
     # Single Nucleotide Variant (SNV)
