@@ -6,6 +6,7 @@ import DetailedDisclaimer from '../components/DetailedDisclaimer';
 import type { PipelineResult } from '../api/geneknowPipeline';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { invoke } from '@tauri-apps/api/core';
 
 // Type definitions for genomic data structures
 // (Structural and Copy Number variant interfaces removed as they're not currently used)
@@ -114,8 +115,8 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         pdf.text(sectionTitle, 20, yPosition);
         yPosition += 12;
         
-                 // Capture element as image
-         const canvas = await html2canvas(element);
+        // Capture element as image
+        const canvas = await html2canvas(element);
         
         const imageData = canvas.toDataURL('image/png', 0.9);
         
@@ -157,17 +158,35 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
     pdf.text('🧬 GeneKnow Platform - AI-powered genomic analysis', pageWidth / 2, footerY - 5, { align: 'center' });
     pdf.text(`Report ID: GK-${Date.now()} | Generated: ${new Date().toISOString()}`, pageWidth / 2, footerY, { align: 'center' });
     
-    // Generate filename and save
+    // Generate filename
     const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `geneknow_${subtabContent.id}_${timestamp}.pdf`;
-    pdf.save(fileName);
     
-    // Show success notification
-    showNotification(`✅ PDF Downloaded!<br><small>${fileName}</small>`, '#22C55E');
-    setTimeout(() => {
-      const notifications = document.querySelectorAll('[data-pdf-notification]');
-      notifications.forEach(n => n.remove());
-    }, 3000);
+    // Get PDF as blob and convert to bytes
+    const pdfBlob = pdf.output('blob');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+    const pdfByteArray = Array.from(new Uint8Array(pdfBytes));
+    
+    // Use Tauri save_file_dialog to save the PDF
+    try {
+      const savedPath = await invoke<string>('save_file_dialog', {
+        filename: fileName,
+        fileContent: pdfByteArray
+      });
+      
+      console.log('✅ PDF saved successfully to:', savedPath);
+      
+      // Show success notification
+      showNotification(`✅ PDF Downloaded!<br><small>Saved to Downloads folder</small>`, '#22C55E');
+      setTimeout(() => {
+        const notifications = document.querySelectorAll('[data-pdf-notification]');
+        notifications.forEach(n => n.remove());
+      }, 4000);
+      
+    } catch (saveError) {
+      console.error('❌ Error saving PDF:', saveError);
+      throw new Error(`Failed to save PDF: ${saveError}`);
+    }
     
     console.log('🎉 PDF generation completed successfully!');
     
