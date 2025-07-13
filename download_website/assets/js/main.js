@@ -13,13 +13,13 @@ document.addEventListener('DOMContentLoaded', function() {
 function initMobileMenu() {
     const mobileToggle = document.querySelector('.mobile-menu-toggle');
     const nav = document.querySelector('.nav');
-    
+
     if (mobileToggle && nav) {
         mobileToggle.addEventListener('click', function() {
             nav.classList.toggle('mobile-open');
             this.classList.toggle('active');
         });
-        
+
         // Close mobile menu when clicking on nav links
         const navLinks = nav.querySelectorAll('.nav-link');
         navLinks.forEach(link => {
@@ -28,7 +28,7 @@ function initMobileMenu() {
                 mobileToggle.classList.remove('active');
             });
         });
-        
+
         // Close mobile menu when clicking outside
         document.addEventListener('click', function(event) {
             if (!nav.contains(event.target) && !mobileToggle.contains(event.target)) {
@@ -44,7 +44,7 @@ function initPlatformDetection() {
     const platform = detectPlatform();
     const detectedOS = document.getElementById('detected-os');
     const recommendedOS = document.getElementById('recommended-os');
-    
+
     if (detectedOS && recommendedOS) {
         const platformInfo = getPlatformInfo(platform);
         detectedOS.textContent = platformInfo.name;
@@ -54,7 +54,7 @@ function initPlatformDetection() {
 
 function detectPlatform() {
     const userAgent = navigator.userAgent.toLowerCase();
-    
+
     if (userAgent.includes('windows')) {
         return 'windows';
     } else if (userAgent.includes('mac')) {
@@ -73,24 +73,24 @@ function getPlatformInfo(platform) {
         'linux': { name: 'Linux' },
         'unknown': { name: 'Your OS' }
     };
-    
+
     return platformMap[platform] || platformMap['unknown'];
 }
 
 // Smooth scrolling for anchor links
 function initSmoothScrolling() {
     const links = document.querySelectorAll('a[href^="#"]');
-    
+
     links.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             const targetId = this.getAttribute('href');
             const targetElement = document.querySelector(targetId);
-            
+
             if (targetElement) {
                 const offsetTop = targetElement.offsetTop - 80; // Account for fixed header
-                
+
                 window.scrollTo({
                     top: offsetTop,
                     behavior: 'smooth'
@@ -103,10 +103,10 @@ function initSmoothScrolling() {
 // Scroll effects
 function initScrollEffects() {
     const header = document.querySelector('.header');
-    
+
     window.addEventListener('scroll', function() {
         const scrollTop = window.pageYOffset;
-        
+
         // Keep header consistently white
         if (header) {
             header.style.background = '#FFFFFF';
@@ -127,7 +127,7 @@ function initAnimations() {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
     };
-    
+
     const observer = new IntersectionObserver(function(entries) {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -135,12 +135,12 @@ function initAnimations() {
             }
         });
     }, observerOptions);
-    
+
     // Observe elements for animation
     const animatedElements = document.querySelectorAll(
         '.feature-card, .download-card, .stat, .about-feature'
     );
-    
+
     animatedElements.forEach(element => {
         observer.observe(element);
     });
@@ -149,13 +149,13 @@ function initAnimations() {
 // Utility functions
 function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    
+
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
@@ -168,22 +168,10 @@ function formatDate(dateString) {
     });
 }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 // Error handling
 function showError(message) {
     console.error('GeneKnow Website Error:', message);
-    
+
     // You can add more sophisticated error handling here
     // For example, showing a toast notification or modal
 }
@@ -245,4 +233,4 @@ style.textContent = `
         }
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);

@@ -19,13 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
 async function fetchLatestRelease() {
     try {
         showLoadingState();
-        
+
         // Use mock release data directly (GitHub API is often rate-limited)
         console.log('Loading release data...');
         const mockRelease = getMockReleaseData();
         displayRelease(mockRelease);
         hideLoadingState();
-        
+
         // Try GitHub API in background and update if available
         setTimeout(() => {
             fetch(`${GITHUB_API_BASE}/${REPO_OWNER}/${REPO_NAME}/releases/latest`)
@@ -44,7 +44,7 @@ async function fetchLatestRelease() {
                     console.log('GitHub API unavailable, using mock data');
                 });
         }, 500); // Give mock data time to load first
-        
+
     } catch (error) {
         console.error('Error fetching release:', error);
         showErrorState();
@@ -83,7 +83,7 @@ function getMockReleaseData() {
                 browser_download_url: `${GITHUB_REPO_URL}/releases/download/v1.2.3/GeneKnow-v1.2.3-Windows-x64.msi`
             },
             {
-                name: 'GeneKnow-v1.2.3-Windows-x64.exe', 
+                name: 'GeneKnow-v1.2.3-Windows-x64.exe',
                 size: 68157440, // ~65 MB
                 browser_download_url: `${GITHUB_REPO_URL}/releases/download/v1.2.3/GeneKnow-v1.2.3-Windows-x64.exe`
             },
@@ -121,32 +121,32 @@ function updateVersionInfo(release) {
     const releaseDate = document.getElementById('release-date');
     const versionDisplay = document.getElementById('version-display');
     const releaseDateDisplay = document.getElementById('release-date-display');
-    
+
     console.log('Updating version info. Elements found:', {
         versionNumber: !!versionNumber,
         releaseDate: !!releaseDate,
         versionDisplay: !!versionDisplay,
         releaseDateDisplay: !!releaseDateDisplay
     });
-    
+
     const versionText = release.tag_name || release.name;
     const date = new Date(release.published_at);
     const formattedDate = window.GeneKnow ? window.GeneKnow.formatDate(date) : date.toLocaleDateString();
-    
+
     if (versionNumber) {
         versionNumber.textContent = versionText;
         console.log('Updated version number to:', versionText);
     } else {
         console.warn('version-number element not found');
     }
-    
+
     if (releaseDate) {
         releaseDate.textContent = `Released on ${formattedDate}`;
         console.log('Updated release date to:', formattedDate);
     } else {
         console.warn('release-date element not found');
     }
-    
+
     // Update download section version display
     if (versionDisplay) {
         versionDisplay.textContent = versionText;
@@ -154,7 +154,7 @@ function updateVersionInfo(release) {
     } else {
         console.warn('version-display element not found');
     }
-    
+
     if (releaseDateDisplay) {
         releaseDateDisplay.textContent = `Released ${formattedDate}`;
         console.log('Updated release date display to:', formattedDate);
@@ -167,11 +167,11 @@ function updateVersionInfo(release) {
 function updateDownloadLinks(release) {
     const assets = release.assets || [];
     console.log('Updating download links with assets:', assets);
-    
+
     // Group assets by platform
     const platformAssets = groupAssetsByPlatform(assets);
     console.log('Grouped assets by platform:', platformAssets);
-    
+
     // Update each platform's download section
     updatePlatformDownloads('windows', platformAssets.windows);
     updatePlatformDownloads('macos', platformAssets.macos);
@@ -185,10 +185,10 @@ function groupAssetsByPlatform(assets) {
         macos: [],
         linux: []
     };
-    
+
     assets.forEach(asset => {
         const name = asset.name.toLowerCase();
-        
+
         // Windows files
         if (name.endsWith('.msi') || name.endsWith('.exe')) {
             platformAssets.windows.push(asset);
@@ -202,37 +202,37 @@ function groupAssetsByPlatform(assets) {
             platformAssets.linux.push(asset);
         }
     });
-    
+
     return platformAssets;
 }
 
 // Update platform-specific download section
 function updatePlatformDownloads(platform, assets) {
     const container = document.getElementById(`${platform}-downloads`);
-    
+
     console.log(`Updating ${platform} downloads:`, {
         container: !!container,
         assetsCount: assets.length,
         assets: assets
     });
-    
+
     if (!container) {
         console.warn(`Container not found for ${platform}-downloads`);
         return;
     }
-    
+
     if (assets.length === 0) {
         console.log(`No assets found for ${platform}`);
         container.innerHTML = '<div class="no-downloads">No downloads available for this platform</div>';
         return;
     }
-    
+
     container.innerHTML = '';
-    
+
     // Get the best/recommended asset for this platform
     const recommendedAsset = getRecommendedAsset(platform, { [platform]: assets });
     console.log(`Recommended asset for ${platform}:`, recommendedAsset);
-    
+
     if (recommendedAsset) {
         const downloadItem = createDownloadItem(recommendedAsset, platform);
         container.appendChild(downloadItem);
@@ -246,33 +246,39 @@ function updatePlatformDownloads(platform, assets) {
 // Create download item element
 function createDownloadItem(asset, platform) {
     console.log('Creating download item for:', asset);
-    
+
     const item = document.createElement('div');
     item.className = 'download-file';
-    
+
     const fileInfo = document.createElement('div');
     fileInfo.className = 'file-info';
-    
+
     const fileName = document.createElement('div');
-    fileName.className = 'file-name';
+    fileName.className = 'file-name font-semibold text-gray-900 text-sm';
     fileName.textContent = asset.name;
-    
+
     const fileSize = document.createElement('div');
-    fileSize.className = 'file-size';
-    const formatBytes = window.GeneKnow ? window.GeneKnow.formatBytes : (bytes) => `${Math.round(bytes / 1024 / 1024)} MB`;
+    fileSize.className = 'file-size text-sm text-gray-600';
+    const formatBytes = window.GeneKnow ? window.GeneKnow.formatBytes : formatBytesFallback;
     fileSize.textContent = formatBytes(asset.size);
-    
+
     fileInfo.appendChild(fileName);
     fileInfo.appendChild(fileSize);
-    
+
     const downloadBtn = document.createElement('button');
-    downloadBtn.className = 'download-btn';
-    downloadBtn.textContent = 'Download';
+    downloadBtn.className = 'download-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer text-sm';
+    downloadBtn.innerHTML = `
+        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Download
+    `;
     downloadBtn.onclick = () => downloadFile(asset, platform);
-    
+
+    item.className = 'download-item flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors';
     item.appendChild(fileInfo);
     item.appendChild(downloadBtn);
-    
+
     console.log('Created download item element:', item);
     return item;
 }
@@ -280,22 +286,22 @@ function createDownloadItem(asset, platform) {
 // Handle file download
 function downloadFile(asset, platform) {
     console.log('Downloading file:', asset.name, 'for platform:', platform);
-    
+
     // Track download
     if (window.GeneKnow && window.GeneKnow.trackDownload) {
         window.GeneKnow.trackDownload(platform, asset.name);
     }
-    
+
     // Create temporary link and trigger download
     const link = document.createElement('a');
     link.href = asset.browser_download_url;
     link.download = asset.name;
     link.target = '_blank';
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     console.log('Download initiated for:', asset.name);
 }
 
@@ -303,13 +309,13 @@ function downloadFile(asset, platform) {
 function updateReleaseNotes(release) {
     const releaseContent = document.getElementById('release-content');
     const viewAllReleases = document.getElementById('view-all-releases');
-    
+
     if (releaseContent) {
         // Parse markdown-style release notes
         const formattedNotes = formatReleaseNotes(release.body || 'No release notes available.');
         releaseContent.innerHTML = formattedNotes;
     }
-    
+
     if (viewAllReleases) {
         viewAllReleases.href = `${GITHUB_REPO_URL}/releases`;
     }
@@ -338,17 +344,26 @@ function formatReleaseNotes(notes) {
 // Setup recommended download based on user's platform
 function setupRecommendedDownload(release) {
     const recommendedBtn = document.getElementById('recommended-download');
-    
+
     if (!recommendedBtn) return;
-    
-    const userPlatform = window.GeneKnow.detectPlatform();
+
+    // Fallback platform detection if window.GeneKnow is not available
+    const userPlatform = window.GeneKnow ? window.GeneKnow.detectPlatform() : detectPlatformFallback();
     const assets = release.assets || [];
     const platformAssets = groupAssetsByPlatform(assets);
-    
+
     // Get the most appropriate download for the user's platform
     const recommendedAsset = getRecommendedAsset(userPlatform, platformAssets);
-    
+
     if (recommendedAsset) {
+        recommendedBtn.innerHTML = `
+            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Download for ${getPlatformDisplayName(userPlatform)}</span>
+            </div>
+        `;
         recommendedBtn.onclick = () => downloadFile(recommendedAsset, userPlatform);
         recommendedBtn.style.display = 'flex';
     } else {
@@ -356,27 +371,65 @@ function setupRecommendedDownload(release) {
     }
 }
 
+// Fallback platform detection
+function detectPlatformFallback() {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (userAgent.includes('windows')) {
+        return 'windows';
+    } else if (userAgent.includes('mac')) {
+        return 'macos';
+    } else if (userAgent.includes('linux')) {
+        return 'linux';
+    } else {
+        return 'windows'; // Default to Windows
+    }
+}
+
+// Get platform display name
+function getPlatformDisplayName(platform) {
+    const platformNames = {
+        'windows': 'Windows',
+        'macos': 'macOS',
+        'linux': 'Linux'
+    };
+    return platformNames[platform] || platform;
+}
+
+// Fallback function to format bytes
+function formatBytesFallback(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
 // Get recommended asset based on platform
 function getRecommendedAsset(platform, platformAssets) {
     const assets = platformAssets[platform] || [];
-    
+
     if (assets.length === 0) return null;
-    
+
     // Platform-specific preferences
     const preferences = {
         windows: ['.msi', '.exe'],
         macos: ['.dmg', '.app'],
         linux: ['.appimage', '.deb', '.rpm']
     };
-    
+
     const platformPrefs = preferences[platform] || [];
-    
+
     // Find the most preferred asset
     for (const pref of platformPrefs) {
         const asset = assets.find(a => a.name.toLowerCase().endsWith(pref));
         if (asset) return asset;
     }
-    
+
     // Return first available asset if no preference match
     return assets[0];
 }
@@ -399,23 +452,23 @@ function showErrorState() {
     const versionNumber = document.getElementById('version-number');
     const releaseDate = document.getElementById('release-date');
     const releaseContent = document.getElementById('release-content');
-    
+
     if (versionNumber) {
         versionNumber.textContent = 'Error';
     }
-    
+
     if (releaseDate) {
         releaseDate.textContent = 'Unable to load release information';
     }
-    
-            if (releaseContent) {
-            releaseContent.innerHTML = `
-                <p>Unable to load release information. Please visit our 
-                <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
-                to download the latest version of GeneKnow.</p>
-            `;
-        }
-    
+
+    if (releaseContent) {
+        releaseContent.innerHTML = `
+            <p>Unable to load release information. Please visit our 
+            <a href="${GITHUB_REPO_URL}/releases" target="_blank">GitHub releases page</a> 
+            to download the latest version of GeneKnow.</p>
+        `;
+    }
+
     // Update download sections
     const downloadSections = ['windows-downloads', 'macos-downloads', 'linux-downloads'];
     downloadSections.forEach(sectionId => {
@@ -431,7 +484,7 @@ function showErrorState() {
             `;
         }
     });
-    
+
     // Hide recommended download
     const recommendedBtn = document.getElementById('recommended-download');
     if (recommendedBtn) {
@@ -447,7 +500,7 @@ function setupDownloadHandlers() {
         card.addEventListener('click', function(e) {
             // Don't trigger if clicking on a download button
             if (e.target.classList.contains('download-btn')) return;
-            
+
             // Add some visual feedback
             this.style.transform = 'scale(1.02)';
             setTimeout(() => {
@@ -455,13 +508,6 @@ function setupDownloadHandlers() {
             }, 150);
         });
     });
-}
-
-// Utility function to check if running in development
-function isDevelopment() {
-    return window.location.hostname === 'localhost' || 
-           window.location.hostname === '127.0.0.1' || 
-           window.location.hostname === '';
 }
 
 // Export for testing
@@ -533,4 +579,4 @@ errorStyle.textContent = `
         flex-grow: 1;
     }
 `;
-document.head.appendChild(errorStyle); 
+document.head.appendChild(errorStyle);

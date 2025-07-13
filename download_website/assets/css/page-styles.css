@@ -1,0 +1,66 @@
+/* Page-specific styles for privacy and terms pages */
+
+.page-main {
+    padding: calc(80px + var(--spacing-4xl)) 0 var(--spacing-4xl);
+}
+
+.page-content {
+    max-width: 800px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.privacy-promise {
+    margin-top: var(--spacing-4xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--primary-color);
+}
+
+.privacy-promise h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.privacy-promise p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.medical-disclaimer {
+    padding: var(--spacing-lg);
+    background: var(--warning-color);
+    color: white;
+    border-radius: var(--radius-lg);
+    margin: var(--spacing-lg) 0;
+}
+
+.medical-disclaimer h3 {
+    color: white;
+    margin-bottom: var(--spacing-md);
+}
+
+.medical-disclaimer p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.open-source-commitment {
+    margin-top: var(--spacing-4xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--success-color);
+}
+
+.open-source-commitment h3 {
+    color: var(--success-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.open-source-commitment p {
+    margin: 0;
+    font-weight: 500;
+} 
