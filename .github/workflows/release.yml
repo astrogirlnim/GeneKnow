@@ -812,12 +812,12 @@ jobs:
             fi
             
             echo "🔧 Verifying tauri.conf.json resources configuration..."
-            if grep -q '"resources": \["../bundled_resources"\]' tauri.conf.json; then
+            if grep -A5 '"resources"' tauri.conf.json | grep -q '"../bundled_resources"'; then
               echo "   ✅ tauri.conf.json correctly configured to include bundled_resources"
             else
               echo "   ❌ tauri.conf.json NOT correctly configured"
               echo "   📄 Current resources configuration:"
-              grep -A2 -B2 '"resources"' tauri.conf.json || echo "   No resources section found"
+              grep -A3 -B1 '"resources"' tauri.conf.json || echo "   No resources section found"
               exit 1
             fi
             
