@@ -119,15 +119,16 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
         // Capture element as image with optimized settings
         const canvas = await html2canvas(element, {
           scale: elementId.includes('gene-significance-analysis') ? 2 : 1, // Higher resolution for gene significance
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: elementId.includes('gene-significance-analysis') ? '#FFFFFF' : null, // Only force white background for gene significance
           logging: false,
-          // Only use custom dimensions for gene significance analysis
+          // Only apply specific settings to gene significance analysis
           ...(elementId.includes('gene-significance-analysis') ? {
+            backgroundColor: '#FFFFFF',
             width: element.scrollWidth,
             height: element.scrollHeight
-          } : {})
+          } : {
+            // For other elements, use transparent background and let browser handle it naturally
+            backgroundColor: 'transparent'
+          })
         });
         
         const imageData = canvas.toDataURL('image/png', 0.9);
