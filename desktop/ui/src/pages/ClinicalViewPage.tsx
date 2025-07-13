@@ -2644,98 +2644,125 @@ const ClinicalViewPage: React.FC = () => {
                       )}
                     </div>
                     
-                    <svg width="100%" height="400" viewBox="0 0 700 400" style={{ overflow: 'visible' }}>
-                    {/* Background */}
-                    <rect width="700" height="400" fill="#F9FAFB"/>
-                    
-                    {/* Heatmap grid */}
-                    {uniqueGenes.map((gene, geneIndex) => {
-                      return cancerTypes.map((cancer, cancerIndex) => {
-                        const x = 120 + cancerIndex * 70;
-                        const y = 80 + geneIndex * 50;
-                        
-                        // Get intensity from real data
-                        const intensity = (geneAssociations[gene]?.[cancer] || 0) / 100;
-                        
-                        const color = intensity > 0.8 ? '#EF4444' : 
-                                     intensity > 0.6 ? '#F59E0B' : 
-                                     intensity > 0.3 ? '#3B82F6' : 
-                                     intensity > 0 ? '#93C5FD' : '#E5E7EB';
-                        
-                        return (
-                          <g key={`${gene}-${cancer}`}>
-                            <rect 
-                              x={x} 
-                              y={y} 
-                              width="60" 
-                              height="40" 
-                              fill={color}
-                              stroke="#FFFFFF"
-                              strokeWidth="2"
-                              opacity="0.8"
-                            />
-                            {intensity > 0 && (
-                              <text 
-                                x={x + 30} 
-                                y={y + 25} 
-                                fill="#FFFFFF" 
-                                fontSize="11" 
-                                textAnchor="middle"
-                                fontWeight="600"
-                              >
-                                {(intensity * 100).toFixed(0)}%
-                              </text>
-                            )}
-                          </g>
-                        );
-                      });
-                    })}
-                    
-                    {/* Gene labels */}
-                    {uniqueGenes.map((gene, index) => (
-                      <text 
-                        key={gene}
-                        x="110" 
-                        y={105 + index * 50} 
-                        fill="#111827" 
-                        fontSize="13" 
-                        textAnchor="end"
-                        fontWeight="600"
+                    {/* Fully Responsive Heatmap Container */}
+                    <div style={{
+                      width: '100%',
+                      background: '#F9FAFB',
+                      borderRadius: '0.5rem',
+                      padding: '1rem'
+                    }}>
+                      <svg 
+                        width="100%" 
+                        height="300" 
+                        viewBox="0 0 700 250" 
+                        style={{ 
+                          width: '100%',
+                          height: 'auto'
+                        }}
+                        preserveAspectRatio="xMidYMid meet"
                       >
-                        {gene}
-                      </text>
-                    ))}
+                                          {/* Background */}
+                      <rect width="700" height="250" fill="#F9FAFB"/>
+                      
+                      {/* Heatmap grid */}
+                      {uniqueGenes.map((gene, geneIndex) => {
+                        return cancerTypes.map((cancer, cancerIndex) => {
+                          // Calculate positions with proper alignment
+                          const cellWidth = 80;
+                          const cellHeight = 35;
+                          const startX = 120;
+                          const startY = 50;
+                          
+                          const x = startX + cancerIndex * (cellWidth + 5);
+                          const y = startY + geneIndex * (cellHeight + 5);
+                          
+                          // Get intensity from real data
+                          const intensity = (geneAssociations[gene]?.[cancer] || 0) / 100;
+                          
+                          const color = intensity > 0.8 ? '#EF4444' : 
+                                       intensity > 0.6 ? '#F59E0B' : 
+                                       intensity > 0.3 ? '#3B82F6' : 
+                                       intensity > 0 ? '#93C5FD' : '#E5E7EB';
+                          
+                          return (
+                            <g key={`${gene}-${cancer}`}>
+                              <rect 
+                                x={x} 
+                                y={y} 
+                                width={cellWidth} 
+                                height={cellHeight} 
+                                fill={color}
+                                stroke="#FFFFFF"
+                                strokeWidth="2"
+                                opacity="0.8"
+                                rx="4"
+                              />
+                              {intensity > 0 && (
+                                <text 
+                                  x={x + cellWidth/2} 
+                                  y={y + cellHeight/2} 
+                                  fill="#FFFFFF" 
+                                  fontSize="12" 
+                                  textAnchor="middle"
+                                  fontWeight="600"
+                                  dominantBaseline="middle"
+                                >
+                                  {(intensity * 100).toFixed(0)}%
+                                </text>
+                              )}
+                            </g>
+                          );
+                        });
+                      })}
                     
-                    {/* Cancer type labels */}
-                    {cancerTypes.map((cancer, index) => (
-                      <text 
-                        key={cancer}
-                        x={150 + index * 70} 
-                        y="70" 
-                        fill="#111827" 
-                        fontSize="13" 
-                        textAnchor="middle"
-                        fontWeight="600"
-                      >
-                        {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
-                      </text>
-                    ))}
+                                          {/* Gene labels */}
+                      {uniqueGenes.map((gene, index) => (
+                        <text 
+                          key={gene}
+                          x="110" 
+                          y={50 + 17.5 + index * 40} 
+                          fill="#111827" 
+                          fontSize="14" 
+                          textAnchor="end"
+                          fontWeight="600"
+                          dominantBaseline="middle"
+                        >
+                          {gene}
+                        </text>
+                      ))}
+                      
+                      {/* Cancer type labels */}
+                      {cancerTypes.map((cancer, index) => (
+                        <text 
+                          key={cancer}
+                          x={120 + 40 + index * 85} 
+                          y="35" 
+                          fill="#111827" 
+                          fontSize="14" 
+                          textAnchor="middle"
+                          fontWeight="600"
+                          dominantBaseline="middle"
+                        >
+                          {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
+                        </text>
+                      ))}
                     
-                    {/* Legend */}
-                    <g transform="translate(480, 300)">
-                      <text x="0" y="0" fill="#111827" fontSize="11" fontWeight="600">Risk Level</text>
-                      <rect x="0" y="10" width="12" height="12" fill="#EF4444"/>
-                      <text x="16" y="21" fill="#4B5563" fontSize="10">High (≥80%)</text>
-                      <rect x="0" y="26" width="12" height="12" fill="#F59E0B"/>
-                      <text x="16" y="37" fill="#4B5563" fontSize="10">Medium (60-80%)</text>
-                      <rect x="0" y="42" width="12" height="12" fill="#3B82F6"/>
-                      <text x="16" y="53" fill="#4B5563" fontSize="10">Low (30-60%)</text>
-                      <rect x="0" y="58" width="12" height="12" fill="#93C5FD"/>
-                      <text x="16" y="69" fill="#4B5563" fontSize="10">Very Low (1-30%)</text>
-                      <rect x="0" y="74" width="12" height="12" fill="#E5E7EB"/>
-                      <text x="16" y="85" fill="#4B5563" fontSize="10">No Association</text>
-                    </g>
+                                          {/* Legend */}
+                      <g transform="translate(550, 60)">
+                        <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Risk Level</text>
+                        <rect x="0" y="12" width="12" height="12" fill="#EF4444" rx="2"/>
+                        <text x="16" y="23" fill="#4B5563" fontSize="10" dominantBaseline="middle">High (≥80%)</text>
+                        <rect x="0" y="30" width="12" height="12" fill="#F59E0B" rx="2"/>
+                        <text x="16" y="41" fill="#4B5563" fontSize="10" dominantBaseline="middle">Medium (60-80%)</text>
+                        <rect x="0" y="48" width="12" height="12" fill="#3B82F6" rx="2"/>
+                        <text x="16" y="59" fill="#4B5563" fontSize="10" dominantBaseline="middle">Low (30-60%)</text>
+                        <rect x="0" y="66" width="12" height="12" fill="#93C5FD" rx="2"/>
+                        <text x="16" y="77" fill="#4B5563" fontSize="10" dominantBaseline="middle">Very Low (1-30%)</text>
+                        <rect x="0" y="84" width="12" height="12" fill="#E5E7EB" rx="2"/>
+                        <text x="16" y="95" fill="#4B5563" fontSize="10" dominantBaseline="middle">No Association</text>
+                      </g>
                   </svg>
+                </div>
                 </div>
                 );
               })()}
