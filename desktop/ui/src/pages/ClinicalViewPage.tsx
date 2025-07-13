@@ -1035,6 +1035,160 @@ const SmartTooltip = ({ content, isVisible, triggerRef }: {
 
 // Legacy SectionTooltip component removed - was unused
 
+// Function to generate real clinical alerts from pipeline data
+const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Alert[] => {
+  if (!pipelineResults) return [];
+
+  const alerts: Alert[] = [];
+  const structuredJson = pipelineResults.structured_json;
+
+  // 1. Check for pathogenic and likely pathogenic variants
+  const variantDetails = structuredJson?.variant_details || [];
+  const pathogenicVariants = variantDetails.filter(variant => 
+    variant.clinical_significance === 'pathogenic' || 
+    variant.clinical_significance === 'likely_pathogenic'
+  );
+
+  // Generate alerts for pathogenic variants
+  pathogenicVariants.forEach(variant => {
+    const isPathogenic = variant.clinical_significance === 'pathogenic';
+    const gene = variant.gene || 'Unknown';
+    const variantId = variant.variant_id || variant.variant || 'Unknown';
+    
+    // Get protein change or use variant ID
+    const proteinChange = variant.protein_change || variant.hgvs_p || variantId;
+    
+    alerts.push({
+      type: isPathogenic ? 'critical' : 'warning',
+      title: `${gene} ${isPathogenic ? 'Pathogenic' : 'Likely Pathogenic'} Variant`,
+      desc: `${proteinChange} - ${variant.consequence || 'mutation'} detected`,
+      detailedInfo: {
+        whatItMeans: `A ${isPathogenic ? 'pathogenic' : 'likely pathogenic'} variant in the ${gene} gene has been identified. This variant is ${isPathogenic ? 'known to cause' : 'likely to cause'} disease or increase cancer risk.`,
+        whyImportant: `${gene} variants can significantly impact cancer risk. ${isPathogenic ? 'Pathogenic' : 'Likely pathogenic'} variants have strong evidence for clinical significance and require immediate attention.`,
+        clinicalSignificance: variant.functional_impact || `${isPathogenic ? 'High' : 'Moderate'} clinical significance. This variant requires clinical evaluation and may affect treatment decisions.`,
+        nextSteps: `Genetic counseling is recommended. Consider enhanced screening protocols and discuss with oncology team. Family members should be informed about potential hereditary risk.`
+      }
+    });
+  });
+
+  // 2. Check for variants of uncertain significance (VUS) in important genes
+  const importantGenes = ['TP53', 'BRCA1', 'BRCA2', 'ATM', 'CHEK2', 'PALB2', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'APC'];
+  const vusInImportantGenes = variantDetails.filter(variant => 
+    variant.clinical_significance === 'uncertain_significance' && 
+    importantGenes.includes(variant.gene)
+  );
+
+  vusInImportantGenes.forEach(variant => {
+    const gene = variant.gene || 'Unknown';
+    const proteinChange = variant.protein_change || variant.hgvs_p || variant.variant_id || 'Unknown';
+    
+    alerts.push({
+      type: 'info',
+      title: `${gene} Variant of Uncertain Significance`,
+      desc: `${proteinChange} - Clinical significance unclear`,
+      detailedInfo: {
+        whatItMeans: `A genetic variant in the ${gene} gene where the clinical significance is not yet definitively established by current scientific evidence.`,
+        whyImportant: `${gene} is an important cancer-related gene. Even uncertain variants require monitoring as new research may reclassify them as pathogenic or benign.`,
+        clinicalSignificance: 'May or may not be clinically significant. Requires ongoing evaluation as more research data becomes available.',
+        nextSteps: 'Genetic counseling to discuss implications, potential for variant reclassification, and consideration of family testing.'
+      }
+    });
+  });
+
+  // 3. Check SHAP validation results for model reliability alerts
+  const shapValidation = structuredJson?.shap_validation;
+  if (shapValidation) {
+    if (shapValidation.status === 'FLAG_FOR_REVIEW') {
+      alerts.push({
+        type: 'warning',
+        title: 'AI Model Review Required',
+        desc: 'Machine learning prediction requires manual verification',
+        detailedInfo: {
+          whatItMeans: 'The AI model has flagged this analysis for review due to potential inconsistencies in the prediction logic or unusual patterns in the data.',
+          whyImportant: 'This flag indicates the model prediction may be less reliable than usual. Manual review by a healthcare provider is recommended to ensure accuracy.',
+          clinicalSignificance: `Review reasons: ${shapValidation.reasons?.join('; ') || 'Model validation concerns detected'}`,
+          nextSteps: 'Have a healthcare provider review the analysis results. Consider additional testing or consultation with a genetic counselor.'
+        }
+      });
+    } else if (shapValidation.status === 'ERROR') {
+      alerts.push({
+        type: 'critical',
+        title: 'Analysis Validation Error',
+        desc: 'Technical issue with risk prediction model',
+        detailedInfo: {
+          whatItMeans: 'The analysis encountered a technical error during the validation process. This may affect the reliability of the risk predictions.',
+          whyImportant: 'Validation errors can indicate problems with the analysis that may impact the accuracy of the results.',
+          clinicalSignificance: 'Results should be interpreted with caution due to validation errors.',
+          nextSteps: 'Consult with a healthcare provider for proper interpretation. Consider re-running the analysis or seeking additional genetic testing.'
+        }
+      });
+    }
+  }
+
+  // 4. Check for high-risk cancer types
+  const riskScores = pipelineResults.risk_scores || {};
+  const highRiskCancers = Object.entries(riskScores).filter(([, score]) => score >= 30);
+  
+  if (highRiskCancers.length > 0) {
+    const topRisk = highRiskCancers.reduce((prev, [cancer, score]) => 
+      score > prev.score ? { cancer, score } : prev,
+      { cancer: '', score: 0 }
+    );
+
+    alerts.push({
+      type: topRisk.score >= 50 ? 'critical' : 'warning',
+      title: `Elevated ${topRisk.cancer} Cancer Risk`,
+      desc: `${topRisk.score.toFixed(1)}% risk detected - Enhanced screening recommended`,
+      detailedInfo: {
+        whatItMeans: `Based on the genetic analysis, you have been identified as having elevated risk for ${topRisk.cancer} cancer (${topRisk.score.toFixed(1)}%).`,
+        whyImportant: `This elevated risk is significantly higher than the general population average. Early detection and prevention strategies can significantly improve outcomes.`,
+        clinicalSignificance: `This risk level warrants ${topRisk.score >= 50 ? 'immediate clinical attention' : 'enhanced screening protocols'} and specialized medical management.`,
+        nextSteps: `Schedule consultation with oncology team. Begin enhanced screening protocols. Consider genetic counseling to discuss risk management strategies and family implications.`
+      }
+    });
+  }
+
+  // 5. Check for quality or pipeline warnings
+  const warnings = structuredJson?.warnings || [];
+  if (Array.isArray(warnings) && warnings.length > 0) {
+    // Only show the most relevant warnings (limit to avoid cluttering)
+    const relevantWarnings = warnings.slice(0, 2);
+    
+    relevantWarnings.forEach((warning: any) => {
+      alerts.push({
+        type: 'info',
+        title: 'Analysis Quality Notice',
+        desc: typeof warning === 'string' ? warning : (warning?.message || 'Quality check flagged'),
+        detailedInfo: {
+          whatItMeans: 'A quality check during the analysis process has identified a potential issue or limitation in the data.',
+          whyImportant: 'Quality issues can affect the reliability of the analysis results. Being aware of these limitations helps with proper interpretation.',
+          clinicalSignificance: 'Results should be interpreted considering these quality factors.',
+          nextSteps: 'Discuss these quality considerations with your healthcare provider. Additional testing may be recommended if needed.'
+        }
+      });
+    });
+  }
+
+  // 6. Default success alert for low-risk cases with no significant findings
+  if (alerts.length === 0) {
+    const overallRiskScore = Math.max(...Object.values(riskScores));
+    
+    alerts.push({
+      type: 'success',
+      title: 'Low Risk Assessment',
+      desc: 'No significant genetic risk factors identified',
+      detailedInfo: {
+        whatItMeans: 'Current genetic analysis does not indicate significantly elevated risk for hereditary cancer syndromes based on the variants analyzed.',
+        whyImportant: 'This provides reassurance while maintaining appropriate vigilance for any changes in risk factors or family history.',
+        clinicalSignificance: 'Standard population screening guidelines are appropriate at this time.',
+        nextSteps: 'Continue routine screening as recommended for general population. Maintain awareness of family history changes and discuss with healthcare provider.'
+      }
+    });
+  }
+
+  return alerts;
+};
+
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
   high: {
@@ -1275,14 +1429,15 @@ const ClinicalViewPage: React.FC = () => {
       const riskCategory = overallRiskScore >= 30 ? 'High Risk' : 
                           overallRiskScore >= 15 ? 'Moderate Risk' : 'Low Risk';
       
-      // Note: variant details could be used here for enhanced sidebar data in the future
+      // Generate real clinical alerts from pipeline data
+      const realAlerts = generateClinicalAlerts(pipelineResults);
       
       return {
         riskLevel: riskCategory,
         riskScore: `${overallRiskScore}/100`,
         condition: `${highestRisk.cancer} Cancer Risk Assessment`,
         details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
-        alerts: currentData.alerts // Keep mock alerts for now since we don't have real alert data
+        alerts: realAlerts
       };
     }
     
