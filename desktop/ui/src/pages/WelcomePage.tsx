@@ -12,9 +12,9 @@ const WelcomePage = () => {
     <Layout>
       <section style={{
         background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)',
-        padding: '1rem 0 1rem 0',
-        height: 'calc(100vh - 9.5rem)',
-        minHeight: '400px'
+        padding: '0.5rem 0 0.5rem 0',
+        height: 'calc(100vh - 14rem)',
+        minHeight: '280px'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
