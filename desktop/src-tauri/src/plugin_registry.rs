@@ -103,31 +103,51 @@ impl PluginRegistry {
     
     /// Get the plugin directory path
     fn get_plugin_directory(&self) -> Result<PathBuf, PluginError> {
-        // Find project root
-        let current_dir = std::env::current_dir()
-            .map_err(|e| PluginError::InitializationFailed(e.to_string()))?;
-        
-        let mut path = current_dir;
-        loop {
-            // Check for key project files
-            if path.join("README.md").exists() && 
-               path.join("desktop").exists() && 
-               path.join("docs").exists() {
-                break;
+        // Check if we're running in production mode (app bundle)
+        let plugin_dir = if cfg!(debug_assertions) {
+            // Development mode: Find project root
+            let current_dir = std::env::current_dir()
+                .map_err(|e| PluginError::InitializationFailed(e.to_string()))?;
+            
+            let mut path = current_dir;
+            loop {
+                // Check for key project files
+                if path.join("README.md").exists() && 
+                   path.join("desktop").exists() && 
+                   path.join("docs").exists() {
+                    break;
+                }
+                
+                // Move up one directory
+                if let Some(parent) = path.parent() {
+                    path = parent.to_path_buf();
+                } else {
+                    return Err(PluginError::InitializationFailed(
+                        "Could not find project root directory".to_string()
+                    ));
+                }
             }
             
-            // Move up one directory
-            if let Some(parent) = path.parent() {
-                path = parent.to_path_buf();
-            } else {
-                return Err(PluginError::InitializationFailed(
-                    "Could not find project root directory".to_string()
-                ));
-            }
-        }
-        
-        // Build plugin directory path
-        let plugin_dir = path.join("desktop").join("python_ml").join("plugins");
+            // Build plugin directory path
+            path.join("desktop").join("python_ml").join("plugins")
+        } else {
+            // Production mode: Use bundled resources
+            let exe_path = std::env::current_exe()
+                .map_err(|e| PluginError::InitializationFailed(
+                    format!("Failed to get executable path: {}", e)
+                ))?;
+            
+            let resource_dir = exe_path
+                .parent()
+                .ok_or_else(|| PluginError::InitializationFailed("Failed to get executable directory".to_string()))?
+                .parent()
+                .ok_or_else(|| PluginError::InitializationFailed("Failed to get app directory".to_string()))?
+                .join("Resources")
+                .join("_up_")
+                .join("bundled_resources");
+            
+            resource_dir.join("desktop").join("python_ml").join("plugins")
+        };
         
         // Create plugin directory if it doesn't exist
         if !plugin_dir.exists() {

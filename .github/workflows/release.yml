@@ -1,5 +1,15 @@
 name: 🚀 Release Pipeline
 
+# This workflow can be triggered in three ways:
+# 1. Automatic: Push to main branch or create version tags
+# 2. Manual: Workflow dispatch with production release (creates GitHub release)
+# 3. Manual: Workflow dispatch with test release (builds artifacts without GitHub release)
+#
+# Manual trigger options:
+# - target_branch: Specify which branch to build from (default: current branch)
+# - version_type: patch/minor/major version bump
+# - is_test_release: If true, builds artifacts but doesn't create GitHub release or git tags
+
 on:
   push:
     branches: [ main ]
@@ -27,6 +37,16 @@ on:
           - patch
           - minor
           - major
+      target_branch:
+        description: 'Branch to build from (leave empty for current branch)'
+        required: false
+        default: ''
+        type: string
+      is_test_release:
+        description: 'Is this a test release? (will not create GitHub release)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -47,6 +67,8 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: 🧹 Delete old artifacts (ULTRA AGGRESSIVE)
         uses: actions/github-script@v7
@@ -116,7 +138,9 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
           fetch-depth: 0
+          lfs: true
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
@@ -157,6 +181,12 @@ jobs:
           fi
           echo "📈 Version bump type: $VERSION_TYPE"
           
+          # Check if this is a test release
+          IS_TEST_RELEASE="${{ github.event.inputs.is_test_release }}"
+          CURRENT_BRANCH="${{ github.event.inputs.target_branch || github.ref_name }}"
+          echo "🧪 Is test release: $IS_TEST_RELEASE"
+          echo "🌿 Current branch: $CURRENT_BRANCH"
+          
           # Parse current version (format: x.y.z)
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
           echo "📊 Current version components: MAJOR=$MAJOR, MINOR=$MINOR, PATCH=$PATCH"
@@ -184,6 +214,15 @@ jobs:
           esac
           
           NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+          
+          # For test releases, add branch identifier to make version unique
+          if [ "$IS_TEST_RELEASE" == "true" ] && [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "refs/heads/main" ]; then
+            # Clean branch name for version (remove special chars, limit length)
+            CLEAN_BRANCH=$(echo "$CURRENT_BRANCH" | sed 's/refs\/heads\///' | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-20)
+            NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH-test-$CLEAN_BRANCH"
+            echo "🧪 Test release version with branch: $NEW_VERSION"
+          fi
+          
           NEW_TAG="v$NEW_VERSION"
           
           echo "🎯 New version: $NEW_VERSION"
@@ -273,7 +312,35 @@ jobs:
           
           COMMITS=$(git log --oneline --no-merges "$LAST_TAG"..HEAD --pretty=format:"- %s" | head -20)
           
-          CHANGELOG=$(cat << EOF
+          # Generate changelog based on release type
+          if [ "$IS_TEST_RELEASE" == "true" ]; then
+            CHANGELOG=$(cat << EOF
+          ## 🧪 GeneKnow Test Build $NEW_VERSION
+          
+          ### 📋 Test Build Details
+          - **Build Type**: Test Release (No GitHub Release)
+          - **Source Branch**: $CURRENT_BRANCH
+          - **Build Purpose**: Testing and validation
+          - Cross-platform builds (macOS, Windows, Linux)
+          
+          ### 🔄 Changes Since Last Release
+          $COMMITS
+          
+          ### 🔨 Technical Details
+          - **Version**: $NEW_VERSION
+          - **Version Type**: $VERSION_TYPE
+          - **Previous Version**: $CURRENT_VERSION
+          - **Source Branch**: $CURRENT_BRANCH
+          - **Tauri**: 2.6.2
+          - **React**: 19.1.0
+          - **TypeScript**: 5.8.3
+          
+          ### 📝 Note
+          This is a test build. Artifacts are available for download but no GitHub release will be created.
+          EOF
+          )
+          else
+            CHANGELOG=$(cat << EOF
           ## 🧬 GeneKnow Release $NEW_VERSION
           
           ### 📋 What's New
@@ -296,6 +363,7 @@ jobs:
           Choose the appropriate installer for your platform below.
           EOF
           )
+          fi
           
           # Set outputs
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -320,6 +388,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📤 Create and push git tag
+        # Only create and push tags for production releases, not test releases
+        if: github.event.inputs.is_test_release != 'true'
         run: |
           echo "📤 Creating and pushing git tag..."
           
@@ -384,6 +454,16 @@ jobs:
           echo "ℹ️  Note: Version files are updated locally for build process only"
           echo "ℹ️  Use ./scripts/bump-version.sh to update version files in repository"
 
+      - name: 🧪 Test release info
+        # Only show this message for test releases
+        if: github.event.inputs.is_test_release == 'true'
+        run: |
+          echo "🧪 This is a test release - no git tag will be created"
+          echo "📝 Test build will generate artifacts but not create a GitHub release"
+          echo "🎯 Version: ${{ steps.version.outputs.version }}"
+          echo "🏷️ Tag (for reference): ${{ steps.version.outputs.tag }}"
+          echo "🌿 Branch: ${{ github.event.inputs.target_branch || github.ref_name }}"
+
 
 
   # 🧪 Validation & Testing
@@ -395,7 +475,8 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
+          lfs: true
 
       - name: 🔄 Update version files for validation
         shell: bash
@@ -494,7 +575,8 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
+          lfs: true
 
       - name: 🔄 Update version files for build
         shell: bash
@@ -717,13 +799,14 @@ jobs:
     name: 🚀 Create GitHub Release
     needs: [version, build]
     runs-on: ubuntu-latest
-    # Create releases for main branch pushes, tag pushes, and workflow dispatch events
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    # Create releases for main branch pushes, tag pushes, and workflow dispatch events (but not for test releases)
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && github.event.inputs.is_test_release != 'true'
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.inputs.target_branch || github.ref }}
+          lfs: true
 
       - name: 📥 Download all artifacts
         uses: actions/download-artifact@v4
@@ -795,3 +878,58 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🧬 **GeneKnow** - Privacy-First Genomic Risk Assessment Platform" >> $GITHUB_STEP_SUMMARY 
+
+  # 🧪 Test Build Summary (for test releases)
+  test-summary:
+    name: 🧪 Test Build Summary
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    # Only run for test releases
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.is_test_release == 'true'
+    steps:
+      - name: 📥 Download all artifacts  
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          pattern: "release-ready-*-${{ needs.version.outputs.version }}"
+          merge-multiple: true
+
+      - name: 📊 Test build summary
+        run: |
+          echo "# 🧪 GeneKnow Test Build ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Test Build Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.event.inputs.target_branch || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ needs.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Type:** Test Release (No GitHub Release Created)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Build Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following platforms were successfully built:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count artifacts by platform
+          if ls ./artifacts/*.dmg 1> /dev/null 2>&1; then
+            echo "- 🍎 **macOS**: $(ls ./artifacts/*.dmg | wc -l) installer(s)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if ls ./artifacts/*.msi 1> /dev/null 2>&1; then
+            echo "- 🪟 **Windows MSI**: $(ls ./artifacts/*.msi | wc -l) installer(s)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if ls ./artifacts/*.exe 1> /dev/null 2>&1; then
+            echo "- 🪟 **Windows EXE**: $(ls ./artifacts/*.exe | wc -l) installer(s)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if ls ./artifacts/*.deb 1> /dev/null 2>&1; then
+            echo "- 🐧 **Linux DEB**: $(ls ./artifacts/*.deb | wc -l) package(s)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Download artifacts from this workflow run to test locally" >> $GITHUB_STEP_SUMMARY
+          echo "- If testing is successful, merge to main branch for production release" >> $GITHUB_STEP_SUMMARY
+          echo "- Or run workflow again with 'Is test release?' unchecked to create GitHub release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🧬 **GeneKnow Test Build** - No release created, artifacts available for download" >> $GITHUB_STEP_SUMMARY

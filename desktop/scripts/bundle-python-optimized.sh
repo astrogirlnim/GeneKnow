@@ -147,6 +147,11 @@ find lib/python*/site-packages -name "locale" -type d -exec sh -c '
 echo "📂 Copying pipeline code..."
 cp -r "$PROJECT_ROOT/geneknow_pipeline" "$BUNDLE_DIR/"
 
+# Copy plugin system and Python ML tools
+echo "🔌 Copying plugin system..."
+mkdir -p "$BUNDLE_DIR/desktop/python_ml"
+cp -r "$PROJECT_ROOT/desktop/python_ml/plugins" "$BUNDLE_DIR/desktop/python_ml/" 2>/dev/null || true
+
 # Remove unnecessary files from pipeline
 cd "$BUNDLE_DIR/geneknow_pipeline"
 rm -rf venv/ 2>/dev/null || true
@@ -155,29 +160,159 @@ rm -rf .pytest_cache/ 2>/dev/null || true
 rm -rf *.log 2>/dev/null || true
 find . -name "*.pyc" -delete 2>/dev/null || true
 
-echo "🤖 Verifying ML models..."
-if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models/best_fusion_model.pkl" ]; then
-    echo "   ✅ Found ML fusion model (confidence check will work)"
+echo "🤖 Ensuring ALL ML models and databases are available..."
+cd "$BUNDLE_DIR/geneknow_pipeline"
+
+# 1. Copy existing fusion models from project root if they exist
+echo "   📋 Copying existing ML fusion models..."
+FUSION_MODELS=(
+    "best_fusion_model_FIXED.pkl"
+    "best_fusion_model_real_data.pkl"
+    "fusion_gradient_boosting_FIXED.pkl"
+    "fusion_gradient_boosting_real_data.pkl"
+    "fusion_linear_FIXED.pkl"
+    "fusion_linear_real_data.pkl"
+    "fusion_random_forest_FIXED.pkl"
+    "fusion_random_forest_real_data.pkl"
+)
+
+for model in "${FUSION_MODELS[@]}"; do
+    if [ -f "$PROJECT_ROOT/geneknow_pipeline/$model" ]; then
+        cp "$PROJECT_ROOT/geneknow_pipeline/$model" "$BUNDLE_DIR/geneknow_pipeline/"
+        echo "   ✅ Copied $model"
+    fi
+done
+
+# 2. Create ALL fusion models using the comprehensive script
+echo "   🏗️  Creating/verifying all fusion model variants..."
+if [ -f "create_all_fusion_models.py" ]; then
+    "$PYTHON_EXE" create_all_fusion_models.py
+    if [ $? -eq 0 ]; then
+        echo "   ✅ All fusion models created/verified successfully"
+    else
+        echo "   ⚠️  Some fusion models could not be created"
+    fi
 else
-    echo "   ⚠️  ML fusion model missing - confidence check will show 'Not Available'"
-    echo "   Run 'python create_simple_fusion_model.py' to create it"
+    echo "   ⚠️  create_all_fusion_models.py not found, creating basic model only"
+    if [ -f "create_simple_fusion_model.py" ]; then
+        "$PYTHON_EXE" create_simple_fusion_model.py
+    fi
 fi
 
-if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models_no_leakage/best_model.pkl" ]; then
-    echo "   ✅ Found ML models (no leakage)"
+# 4. Ensure no-leakage models are complete
+echo "   📋 Checking no-leakage models..."
+NO_LEAK_DIR="ml_models_no_leakage"
+REQUIRED_NO_LEAK_MODELS=(
+    "best_model.pkl"
+    "gradient_boosting_class_weight.pkl"
+    "logistic_regression_class_weight.pkl"
+    "random_forest_class_weight.pkl"
+    "svm_class_weight.pkl"
+    "naive_bayes_class_weight.pkl"
+    "feature_columns.pkl"
+    "label_encoders.pkl"
+    "scaler.pkl"
+    "model_metadata.json"
+)
+
+all_present=true
+for model in "${REQUIRED_NO_LEAK_MODELS[@]}"; do
+    if [ ! -f "$NO_LEAK_DIR/$model" ]; then
+        echo "   ⚠️  Missing: $model"
+        all_present=false
+    fi
+done
+
+if [ "$all_present" = true ]; then
+    echo "   ✅ All no-leakage models present"
 else
-    echo "   ⚠️  ML models (no leakage) missing - fallback predictions will be used"
+    echo "   🏗️  Creating missing no-leakage models..."
+    "$PYTHON_EXE" train_ml_no_leakage.py
+    if [ -f "$NO_LEAK_DIR/best_model.pkl" ]; then
+        echo "   ✅ Created no-leakage models successfully"
+    else
+        echo "   ⚠️  Failed to create no-leakage models"
+    fi
 fi
 
-echo "🗄️ Setting up database..."
-if [ -f "$PROJECT_ROOT/geneknow_pipeline/tcga_data/population_variants.db" ]; then
-    echo "   Found existing database, copying..."
-    # Database is already included in the pipeline copy
+echo "🗄️ Setting up ALL required databases..."
+
+# 5. Copy or create population_variants.db
+if [ -f "$PROJECT_ROOT/geneknow_pipeline/population_variants.db" ]; then
+    echo "   ✅ Copying existing population_variants.db (37MB)..."
+    cp "$PROJECT_ROOT/geneknow_pipeline/population_variants.db" "$BUNDLE_DIR/geneknow_pipeline/"
 else
-    echo "   Creating minimal database..."
+    echo "   🏗️  Creating population_variants.db (this may take a few minutes)..."
     cd "$BUNDLE_DIR/geneknow_pipeline"
-    "$PYTHON_EXE" create_population_database.py
+    # Create the database non-interactively
+    echo "y" | "$PYTHON_EXE" create_population_database.py --cancer-genes-only
+    if [ -f "population_variants.db" ]; then
+        echo "   ✅ Created population_variants.db successfully"
+    else
+        echo "   ⚠️  Failed to create population_variants.db"
+    fi
 fi
+
+# 6. Copy ClinVar annotations database
+if [ -f "$PROJECT_ROOT/geneknow_pipeline/clinvar_annotations.db" ]; then
+    echo "   ✅ Copying ClinVar annotations database..."
+    cp "$PROJECT_ROOT/geneknow_pipeline/clinvar_annotations.db" "$BUNDLE_DIR/geneknow_pipeline/"
+else
+    echo "   ⚠️  ClinVar annotations database not found - some features may not work"
+fi
+
+# 7. Copy PRS SNPs database
+if [ -f "$PROJECT_ROOT/geneknow_pipeline/prs_snps.db" ]; then
+    echo "   ✅ Copying PRS SNPs database..."
+    cp "$PROJECT_ROOT/geneknow_pipeline/prs_snps.db" "$BUNDLE_DIR/geneknow_pipeline/"
+else
+    echo "   ⚠️  PRS SNPs database not found - polygenic risk scores will not be available"
+fi
+
+# 8. Copy test reference if needed
+if [ -d "$PROJECT_ROOT/geneknow_pipeline/test_reference" ]; then
+    echo "   ✅ Copying test reference genome..."
+    cp -r "$PROJECT_ROOT/geneknow_pipeline/test_reference" "$BUNDLE_DIR/geneknow_pipeline/"
+fi
+
+# 9. Verify all critical resources
+echo ""
+echo "🔍 Verifying bundled resources..."
+cd "$BUNDLE_DIR/geneknow_pipeline"
+
+# Check ML models
+echo "   ML Fusion Models:"
+for model in ml_models/*.pkl *_FIXED.pkl *_real_data.pkl; do
+    if [ -f "$model" ]; then
+        echo "     ✅ $model ($(du -h "$model" | cut -f1))"
+    fi
+done
+
+echo "   ML No-Leakage Models:"
+for model in ml_models_no_leakage/*.pkl ml_models_no_leakage/*.json; do
+    if [ -f "$model" ]; then
+        echo "     ✅ $model ($(du -h "$model" | cut -f1))"
+    fi
+done
+
+echo "   Databases:"
+for db in *.db; do
+    if [ -f "$db" ]; then
+        echo "     ✅ $db ($(du -h "$db" | cut -f1))"
+    fi
+done
+
+cd "$BUNDLE_DIR"
+
+# 10. Run resource verification test
+echo ""
+echo "🧪 Running resource verification test..."
+cd "$BUNDLE_DIR/geneknow_pipeline"
+"$PYTHON_EXE" test_bundle_resources.py
+if [ $? -ne 0 ]; then
+    echo "   ⚠️  Resource verification failed - some components may not work"
+fi
+cd "$BUNDLE_DIR"
 
 echo "🚀 Creating optimized startup wrapper..."
 cat > "$BUNDLE_DIR/start_api_server.sh" << 'EOF'

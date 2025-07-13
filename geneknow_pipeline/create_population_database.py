@@ -347,7 +347,7 @@ def create_database(variants: List[Dict], db_path: str = DB_PATH) -> None:
                 (
                     v["chrom"],
                     v["pos"],
-                    v["re"],
+                    v["ref"],
                     v["alt"],
                     v["gene"],
                     v["gnomad_a"],
