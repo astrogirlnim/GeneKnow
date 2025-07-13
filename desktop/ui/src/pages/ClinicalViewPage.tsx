@@ -2072,12 +2072,6 @@ const ClinicalViewPage: React.FC = () => {
                     padding: '3rem',
                     color: '#6B7280'
                   }}>
-                    <div style={{ 
-                      fontSize: '3rem',
-                      marginBottom: '1rem'
-                    }}>
-                      🔬
-                    </div>
                     <h4 style={{ 
                       color: '#111827',
                       fontSize: '1.125rem',
@@ -2803,7 +2797,6 @@ const ClinicalViewPage: React.FC = () => {
                     gap: '0.25rem',
                     fontStyle: 'italic'
                   }}>
-                    <span>📜</span>
                     Scrollable table
                   </span>
                 )}
@@ -3439,12 +3432,6 @@ const ClinicalViewPage: React.FC = () => {
                     padding: '2rem',
                     color: '#6B7280'
                   }}>
-                    <div style={{ 
-                      fontSize: '2rem',
-                      marginBottom: '0.5rem'
-                    }}>
-                      🧬
-                    </div>
                     <h4 style={{ 
                       color: '#111827',
                       fontSize: '1rem',
@@ -3538,12 +3525,6 @@ const ClinicalViewPage: React.FC = () => {
                     padding: '2rem',
                     color: '#6B7280'
                   }}>
-                    <div style={{ 
-                      fontSize: '2rem',
-                      marginBottom: '0.5rem'
-                    }}>
-                      📊
-                    </div>
                     <h4 style={{ 
                       color: '#111827',
                       fontSize: '1rem',
