@@ -155,6 +155,20 @@ rm -rf .pytest_cache/ 2>/dev/null || true
 rm -rf *.log 2>/dev/null || true
 find . -name "*.pyc" -delete 2>/dev/null || true
 
+echo "🤖 Verifying ML models..."
+if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models/best_fusion_model.pkl" ]; then
+    echo "   ✅ Found ML fusion model (confidence check will work)"
+else
+    echo "   ⚠️  ML fusion model missing - confidence check will show 'Not Available'"
+    echo "   Run 'python create_simple_fusion_model.py' to create it"
+fi
+
+if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models_no_leakage/best_model.pkl" ]; then
+    echo "   ✅ Found ML models (no leakage)"
+else
+    echo "   ⚠️  ML models (no leakage) missing - fallback predictions will be used"
+fi
+
 echo "🗄️ Setting up database..."
 if [ -f "$PROJECT_ROOT/geneknow_pipeline/tcga_data/population_variants.db" ]; then
     echo "   Found existing database, copying..."
