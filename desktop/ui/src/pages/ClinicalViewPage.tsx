@@ -2777,7 +2777,7 @@ const ClinicalViewPage: React.FC = () => {
                   }}>
                     <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '1rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
@@ -2810,7 +2810,7 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '1rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
@@ -2872,13 +2872,13 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '1rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
                         fontSize: '0.875rem',
-                        width: '8%'
+                        width: '12%'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           Type
@@ -2942,7 +2942,7 @@ const ClinicalViewPage: React.FC = () => {
                         fontWeight: '600',
                         color: '#111827',
                         fontSize: '0.875rem',
-                        width: '18%'
+                        width: '14%'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           Transformation
@@ -3196,31 +3196,39 @@ const ClinicalViewPage: React.FC = () => {
                   <tbody>
                     {/* Render only paginated variants for performance */}
                     {paginatedVariants.map((variant, index) => (
-                      <tr key={`${currentPage}-${index}`} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                      <tr key={`${currentPage}-${index}`} style={{ 
+                        borderBottom: '1px solid #F3F4F6',
+                        minHeight: '60px' // Ensure minimum row height
+                      }}>
                         <td style={{ 
-                          padding: '0.75rem', 
+                          padding: '1rem', 
                           fontWeight: '600', 
                           color: '#111827',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '10%'
+                          width: '10%',
+                          lineHeight: '1.5',
+                          verticalAlign: 'middle'
                         }}>
                           {variant.gene}
                         </td>
                         <td style={{ 
-                          padding: '0.75rem', 
+                          padding: '1rem', 
                           fontFamily: 'monospace', 
                           fontSize: '0.875rem', 
                           color: '#4B5563',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '15%'
+                          width: '15%',
+                          lineHeight: '1.5',
+                          verticalAlign: 'middle'
                         }}>
                           {variant.variant_id.split(':').slice(1).join(':')}
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '8%'
+                          padding: '1rem',
+                          width: '12%',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.mutation_type === 'snv' ? '#3B82F6' : 
@@ -3237,8 +3245,9 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '18%'
+                          padding: '1rem',
+                          width: '14%',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{ 
                             fontSize: '0.875rem', 
@@ -3266,8 +3275,9 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '10%'
+                          padding: '1rem',
+                          width: '10%',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.quality_score > 90 ? '#22C55E' : 
@@ -3284,8 +3294,9 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '15%'
+                          padding: '1rem',
+                          width: '15%',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#F0FDF4',
@@ -3302,10 +3313,12 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem', 
+                          padding: '1rem', 
                           fontSize: '0.875rem', 
                           color: '#4B5563',
-                          width: '24%'
+                          width: '24%',
+                          lineHeight: '1.5',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{ 
                             marginBottom: '0.25rem',
