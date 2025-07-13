@@ -58,6 +58,11 @@ env:
   NODE_VERSION: '20'
   RUST_VERSION: '1.88.0'
   PNPM_VERSION: '10.12.1'
+  # UTF-8 encoding to prevent Unicode errors on Windows
+  PYTHONIOENCODING: utf-8
+  PYTHONLEGACYWINDOWSFSENCODING: utf-8
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
 
 jobs:
   # 🧹 Cleanup old artifacts to free storage
