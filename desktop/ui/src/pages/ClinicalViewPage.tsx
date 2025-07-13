@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
@@ -8,14 +9,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { invoke } from '@tauri-apps/api/core';
 
-// Extended interface for html2canvas options to include scale property
-interface ExtendedHtml2CanvasOptions {
-  scale?: number;
-  logging?: boolean;
-  backgroundColor?: string;
-  width?: number;
-  height?: number;
-}
+
 
 // Type definitions for genomic data structures
 // (Structural and Copy Number variant interfaces removed as they're not currently used)
