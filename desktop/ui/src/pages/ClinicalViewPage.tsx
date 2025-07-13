@@ -121,10 +121,13 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
           scale: elementId.includes('gene-significance-analysis') ? 2 : 1, // Higher resolution for gene significance
           useCORS: true,
           allowTaint: false,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: elementId.includes('gene-significance-analysis') ? '#FFFFFF' : null, // Only force white background for gene significance
           logging: false,
-          width: element.scrollWidth,
-          height: element.scrollHeight
+          // Only use custom dimensions for gene significance analysis
+          ...(elementId.includes('gene-significance-analysis') ? {
+            width: element.scrollWidth,
+            height: element.scrollHeight
+          } : {})
         });
         
         const imageData = canvas.toDataURL('image/png', 0.9);
