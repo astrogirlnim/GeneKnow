@@ -18,6 +18,16 @@ interface SubtabContent {
   elementIds: string[];
 }
 
+interface VariantTableRow {
+  gene: string;
+  variant: string;
+  type: string;
+  quality: string;
+  significance: string;
+  mainImpact: string;
+  subImpact: string;
+}
+
 // Mock SHAP validation function removed - only real pipeline data is used
 
 // Mock genomic data removed - only real pipeline data is used
@@ -33,7 +43,7 @@ const getRiskColor = (riskLevel: string) => {
 };
 
 // Enhanced PDF Download Function - Consolidated per subtab
-const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGenerating: (value: boolean) => void, pipelineResults?: PipelineResult) => {
+const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGenerating: (value: boolean) => void) => {
   console.log('🚀 PDF Download Started for subtab:', subtabContent.title);
   
   try {
@@ -122,7 +132,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
           
           // Extract variant data from the table in the DOM
           const table = element.querySelector('table');
-          let variantData: any[] = [];
+          const variantData: VariantTableRow[] = [];
           
           if (table) {
             const rows = table.querySelectorAll('tbody tr');
@@ -183,7 +193,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
               const lines = pdf.splitTextToSize(text, width - 4);
               let lineY = y + 3;
               
-              lines.forEach((line: string, index: number) => {
+              lines.forEach((line: string) => {
                 if (lineY < y + height - 1) { // Ensure we don't overflow the cell
                   pdf.text(line, x + 2, lineY);
                   lineY += 3;
@@ -207,7 +217,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             // Draw data rows with proper text wrapping
             pdf.setFont('helvetica', 'normal');
             
-            variantData.slice(0, 20).forEach((variant: any, index: number) => {
+            variantData.slice(0, 20).forEach((variant: VariantTableRow, index: number) => {
               // Check if we need a new page
               if (yPosition > pageHeight - 60) {
                 pdf.addPage();
@@ -322,7 +332,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             const maxDesiredWidth = maxWidth;
             
             // Calculate height based on desired width
-            let desiredHeight = minDesiredWidth / aspectRatio;
+            const desiredHeight = minDesiredWidth / aspectRatio;
             
             // If the minimum desired size fits, use it
             if (desiredHeight <= maxHeight) {
@@ -412,7 +422,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             const maxDesiredWidth = maxWidth;
             
             // Calculate height based on desired width
-            let desiredHeight = minDesiredWidth / aspectRatio;
+            const desiredHeight = minDesiredWidth / aspectRatio;
             
             // If the minimum desired size fits, use it
             if (desiredHeight <= maxHeight) {
@@ -602,11 +612,10 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
 };
 
 // Consolidated Download Button Component - One per subtab
-const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerating, pipelineResults }: { 
+const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerating }: { 
   subtabContent: SubtabContent; 
   isPDFGenerating: boolean; 
   setIsPDFGenerating: (value: boolean) => void;
-  pipelineResults?: PipelineResult;
 }) => {
   if (isPDFGenerating) {
     return (
@@ -637,7 +646,7 @@ const SubtabDownloadButton = ({ subtabContent, isPDFGenerating, setIsPDFGenerati
   
   return (
     <button
-      onClick={() => downloadSubtabPDF(subtabContent, setIsPDFGenerating, pipelineResults)}
+              onClick={() => downloadSubtabPDF(subtabContent, setIsPDFGenerating)}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -1700,7 +1709,6 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.analysis}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
-                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -2279,7 +2287,6 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.variants}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
-                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -3641,7 +3648,6 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.pathways}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
-                pipelineResults={pipelineResults}
               />
             </div>
             
@@ -4153,7 +4159,6 @@ const ClinicalViewPage: React.FC = () => {
                 subtabContent={subtabContents.clinical}
                 isPDFGenerating={isPDFGenerating}
                 setIsPDFGenerating={setIsPDFGenerating}
-                pipelineResults={pipelineResults}
               />
             </div>
             
