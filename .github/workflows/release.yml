@@ -704,7 +704,20 @@ jobs:
           echo "🎯 Target: ${{ matrix.rust-target }}"
           echo "📦 Version: ${{ needs.version.outputs.version }}"
           
-          cargo tauri build --target ${{ matrix.rust-target }}
+          # Add debugging for macOS DMG issues
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "🍎 macOS Environment Debug Info:"
+            echo "   Disk space: $(df -h . | tail -1)"
+            echo "   Available memory: $(vm_stat | grep free)"
+            echo "   Xcode tools: $(xcode-select -p 2>/dev/null || echo 'Not found')"
+            echo "   Bundle dir size: $(du -sh ../bundled_resources 2>/dev/null || echo 'Not found')"
+          fi
+          
+          # Set debug logging for Tauri
+          export RUST_LOG=debug
+          export RUST_BACKTRACE=1
+          
+          cargo tauri build --target ${{ matrix.rust-target }} --verbose
           
           echo "✅ Tauri release build completed for ${{ matrix.name }}"
 
