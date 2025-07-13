@@ -1,5 +1,5 @@
 import type { ReactNode, FC } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { invoke } from '@tauri-apps/api/core'
 import { useState, useEffect } from 'react'
 
@@ -157,84 +157,124 @@ const FirstTimeLaunchModal = ({ isOpen, onAccept }: { isOpen: boolean; onAccept:
   );
 };
 
-const Header = () => (
-  <header style={{
-    background: '#FFFFFF',
-    backdropFilter: 'blur(10px)',
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1030,
-    borderBottom: '1px solid #E5E7EB',
-    padding: '1rem 0',
-    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-  }}>
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0.75rem 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Link to="/" style={{ 
-        textDecoration: 'none', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '0.1rem',
-        marginLeft: '-0.5rem'
-      }}>
-        <GeneKnowLogo />
-        <h1 style={{ 
-          fontSize: '2rem', 
-          fontWeight: 'bold', 
-          color: '#1F2937', 
-          margin: 0,
-          padding: 0
-        }}>GeneKnow</h1>
-      </Link>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-        <Link to="/how-it-works" style={{ 
-          color: '#4B5563', 
+const Header = () => {
+  const location = useLocation()
+  
+  const isActive = (path: string) => location.pathname === path
+
+  const getLinkStyle = (path: string) => ({
+    color: isActive(path) ? '#1F2937' : '#4B5563',
+    textDecoration: 'none',
+    transition: 'all 200ms ease',
+    fontWeight: '500',
+    position: 'relative' as const,
+    paddingBottom: '0.5rem',
+    borderBottom: isActive(path) ? '2px solid #2563EB' : '2px solid transparent'
+  })
+
+  return (
+    <header style={{
+      background: '#FFFFFF',
+      backdropFilter: 'blur(10px)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1030,
+      borderBottom: '1px solid #E5E7EB',
+      padding: '0.75rem 0',
+      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0.75rem 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Link to="/" style={{ 
           textDecoration: 'none', 
-          transition: 'color 200ms ease',
-          fontWeight: '500'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
-          How It Works
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.1rem',
+          marginLeft: '-0.5rem'
+        }}>
+          <GeneKnowLogo />
+          <h1 style={{ 
+            fontSize: '2rem', 
+            fontWeight: 'bold', 
+            color: '#1F2937', 
+            margin: 0,
+            padding: 0
+          }}>GeneKnow</h1>
         </Link>
-        <Link to="/features" style={{ 
-          color: '#4B5563', 
-          textDecoration: 'none', 
-          transition: 'color 200ms ease',
-          fontWeight: '500'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
-          Features
-        </Link>
-        <Link to="/privacy" style={{ 
-          color: '#4B5563', 
-          textDecoration: 'none', 
-          transition: 'color 200ms ease',
-          fontWeight: '500'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
-          Privacy First
-        </Link>
-        <Link to="/settings" style={{ 
-          color: '#4B5563', 
-          textDecoration: 'none', 
-          transition: 'color 200ms ease',
-          fontWeight: '500'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1F2937'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#4B5563'}>
-          Settings
-        </Link>
-      </nav>
-    </div>
-  </header>
-)
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <Link 
+            to="/how-it-works" 
+            style={getLinkStyle('/how-it-works')}
+            onMouseEnter={(e) => {
+              if (!isActive('/how-it-works')) {
+                e.currentTarget.style.color = '#1F2937'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/how-it-works')) {
+                e.currentTarget.style.color = '#4B5563'
+              }
+            }}
+          >
+            How It Works
+          </Link>
+          <Link 
+            to="/features" 
+            style={getLinkStyle('/features')}
+            onMouseEnter={(e) => {
+              if (!isActive('/features')) {
+                e.currentTarget.style.color = '#1F2937'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/features')) {
+                e.currentTarget.style.color = '#4B5563'
+              }
+            }}
+          >
+            Features
+          </Link>
+          <Link 
+            to="/privacy" 
+            style={getLinkStyle('/privacy')}
+            onMouseEnter={(e) => {
+              if (!isActive('/privacy')) {
+                e.currentTarget.style.color = '#1F2937'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/privacy')) {
+                e.currentTarget.style.color = '#4B5563'
+              }
+            }}
+          >
+            Privacy First
+          </Link>
+          <Link 
+            to="/settings" 
+            style={getLinkStyle('/settings')}
+            onMouseEnter={(e) => {
+              if (!isActive('/settings')) {
+                e.currentTarget.style.color = '#1F2937'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/settings')) {
+                e.currentTarget.style.color = '#4B5563'
+              }
+            }}
+          >
+            Settings
+          </Link>
+        </nav>
+      </div>
+    </header>
+  )
+}
 
 const Footer = () => (
-  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '2rem 0' }}>
+  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '1rem 0' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
       {/* Row with copyright & disclaimer on left and GitHub button on right */}
       <div style={{ 
@@ -249,7 +289,7 @@ const Footer = () => (
           <p style={{ 
             fontSize: '0.875rem', 
             color: 'var(--gray-400)', 
-            margin: '0 0 0.5rem 0',
+            margin: '0 0 0.25rem 0',
             textAlign: 'left'
           }}>
             &copy; 2025 GeneKnow. All rights reserved.
@@ -331,7 +371,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
     <div style={{ fontFamily: 'var(--font-family-sans)', background: '#FFFFFF', color: 'var(--gray-800)', minHeight: '100vh' }}>
       <FirstTimeLaunchModal isOpen={showModal} onAccept={handleAcceptTerms} />
       <Header />
-      <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
+      <main style={{ paddingTop: '3.5rem', minHeight: 'calc(100vh - 3.5rem)' }}>
         {children}
       </main>
       <Footer />

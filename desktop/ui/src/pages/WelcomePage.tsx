@@ -12,22 +12,24 @@ const WelcomePage = () => {
     <Layout>
       <section style={{
         background: 'radial-gradient(circle at top left, rgba(239, 246, 255, 1) 0%, rgba(255, 255, 255, 1) 50%)',
-        padding: '5rem 0 8rem 0'
+        padding: '0.5rem 0 0.5rem 0',
+        height: 'calc(100vh - 14rem)',
+        minHeight: '280px'
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
             <span style={{
               color: '#2563EB',
               fontWeight: '600',
               background: '#DBEAFE',
               borderRadius: '9999px',
-              padding: '0.5rem 1rem',
-              fontSize: '0.875rem',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.8rem',
               display: 'inline-block'
             }}>Your Personal Genomic Insights</span>
             <h1 style={{
-              marginTop: '1rem',
-              fontSize: 'clamp(2.25rem, 5vw, 3.25rem)',
+              marginTop: '0.8rem',
+              fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
               fontWeight: 'bold',
               letterSpacing: '-0.02em',
               color: '#111827',
@@ -36,16 +38,16 @@ const WelcomePage = () => {
               Understand Your Genomic Health, Instantly and Privately.
             </h1>
             <p style={{
-              marginTop: '1.5rem',
-              fontSize: '1.125rem',
-              lineHeight: '1.75',
+              marginTop: '0.8rem',
+              fontSize: '1rem',
+              lineHeight: '1.6',
               color: '#4B5563',
               maxWidth: '42rem',
-              margin: '1.5rem auto 0'
+              margin: '0.8rem auto 0'
             }}>
               Get a private cancer risk assessment by analyzing your genomic data securely on your own device. Start by selecting a file—your data never leaves your computer.
             </p>
-            <div style={{ marginTop: '2.5rem' }}>
+            <div style={{ marginTop: '1.5rem' }}>
               <button 
                 onClick={handleTestNow}
                 style={{
