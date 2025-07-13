@@ -234,7 +234,7 @@ const Header = () => (
 )
 
 const Footer = () => (
-  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '2rem 0' }}>
+  <footer style={{ background: 'var(--gray-800)', color: '#FFFFFF', padding: '1rem 0' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
       {/* Row with copyright & disclaimer on left and GitHub button on right */}
       <div style={{ 
@@ -249,7 +249,7 @@ const Footer = () => (
           <p style={{ 
             fontSize: '0.875rem', 
             color: 'var(--gray-400)', 
-            margin: '0 0 0.5rem 0',
+            margin: '0 0 0.25rem 0',
             textAlign: 'left'
           }}>
             &copy; 2025 GeneKnow. All rights reserved.
