@@ -129,14 +129,36 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             rows.forEach((row) => {
               const cells = row.querySelectorAll('td');
               if (cells.length >= 7) {
+                // Extract transformation data more carefully
+                const transformationCell = cells[3];
+                const dnaChangeDiv = transformationCell.querySelector('div:first-child div:first-child');
+                const proteinChangeDiv = transformationCell.querySelector('div:first-child div:last-child');
+                
+                // Extract quality score from the colored div
+                const qualityCell = cells[4];
+                const qualityDiv = qualityCell.querySelector('div');
+                const qualityScore = qualityDiv?.textContent?.trim() || 'N/A';
+                
+                // Extract clinical significance from the colored div
+                const significanceCell = cells[5];
+                const significanceDiv = significanceCell.querySelector('div');
+                const significance = significanceDiv?.textContent?.trim() || 'N/A';
+                
+                // Extract impact with both main text and sub-text
+                const impactCell = cells[6];
+                const mainImpact = impactCell.querySelector('div:first-child strong')?.textContent?.trim() || '';
+                const subImpact = impactCell.querySelector('div:last-child')?.textContent?.trim() || '';
+                
                 variantData.push({
                   gene: cells[0]?.textContent?.trim() || 'N/A',
                   variant: cells[1]?.textContent?.trim() || 'N/A',
                   type: cells[2]?.textContent?.trim() || 'N/A',
-                  transformation: cells[3]?.textContent?.trim() || 'N/A',
-                  quality: cells[4]?.textContent?.trim() || 'N/A',
-                  significance: cells[5]?.textContent?.trim() || 'N/A',
-                  impact: cells[6]?.textContent?.trim() || 'N/A'
+                  dnaChange: dnaChangeDiv?.textContent?.trim() || 'N/A',
+                  proteinChange: proteinChangeDiv?.textContent?.trim() || 'N/A',
+                  quality: qualityScore,
+                  significance: significance,
+                  mainImpact: mainImpact,
+                  subImpact: subImpact
                 });
               }
             });
@@ -149,93 +171,128 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
             pdf.text('No variants detected in the analysis.', 20, yPosition);
             yPosition += 15;
           } else {
-            // Create table headers
-            const headers = ['Gene', 'Variant', 'Type', 'Transform', 'Quality', 'Significance', 'Impact'];
-            const colWidths = [25, 35, 20, 35, 20, 25, 40]; // Column widths in mm
+            // Updated column widths to fit A4 page (170mm usable width)
+            const headers = ['Gene', 'Variant', 'Type', 'DNA Change', 'Protein Change', 'Quality', 'Significance', 'Impact'];
+            const colWidths = [18, 25, 14, 28, 28, 14, 20, 23]; // Total: 170mm
             const startX = 20;
-            let currentX = startX;
+            const baseRowHeight = 8;
+            
+            // Helper function to calculate required height for multi-line text
+            const calculateCellHeight = (text: string, width: number, fontSize: number = 8): number => {
+              pdf.setFontSize(fontSize);
+              const lines = pdf.splitTextToSize(text, width - 4);
+              return Math.max(baseRowHeight, lines.length * 3 + 4);
+            };
+            
+            // Helper function to draw multi-line text in a cell
+            const drawCellText = (text: string, x: number, y: number, width: number, height: number, fontSize: number = 8) => {
+              pdf.setFontSize(fontSize);
+              const lines = pdf.splitTextToSize(text, width - 4);
+              let lineY = y + 3;
+              
+              lines.forEach((line: string, index: number) => {
+                if (lineY < y + height - 1) { // Ensure we don't overflow the cell
+                  pdf.text(line, x + 2, lineY);
+                  lineY += 3;
+                }
+              });
+            };
             
             // Draw header row
-            pdf.setFontSize(10);
+            let currentX = startX;
+            pdf.setFontSize(9);
             pdf.setFont('helvetica', 'bold');
             pdf.setFillColor(249, 250, 251); // Light gray background
-            pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 8, 'F');
+            pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 10, 'F');
             
             for (let i = 0; i < headers.length; i++) {
-              pdf.text(headers[i], currentX + 2, yPosition + 6);
+              drawCellText(headers[i], currentX, yPosition, colWidths[i], 10, 9);
               currentX += colWidths[i];
             }
-            yPosition += 8;
+            yPosition += 10;
             
-            // Draw data rows
+            // Draw data rows with proper text wrapping
             pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8);
             
-            variantData.slice(0, 20).forEach((variant: any, index: number) => { // Limit to 20 variants for space
+            variantData.slice(0, 20).forEach((variant: any, index: number) => {
               // Check if we need a new page
-              if (yPosition > pageHeight - 40) {
+              if (yPosition > pageHeight - 60) {
                 pdf.addPage();
                 yPosition = 20;
                 
                 // Re-draw headers on new page
                 currentX = startX;
-                pdf.setFontSize(10);
+                pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFillColor(249, 250, 251);
-                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 8, 'F');
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 10, 'F');
                 
                 for (let i = 0; i < headers.length; i++) {
-                  pdf.text(headers[i], currentX + 2, yPosition + 6);
+                  drawCellText(headers[i], currentX, yPosition, colWidths[i], 10, 9);
                   currentX += colWidths[i];
                 }
-                yPosition += 8;
+                yPosition += 10;
                 pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
               }
               
-              currentX = startX;
-              const rowData = [
-                variant.gene.substring(0, 15),
-                variant.variant.substring(0, 20),
-                variant.type.substring(0, 10),
-                variant.transformation.substring(0, 15),
-                variant.quality.substring(0, 8),
-                variant.significance.substring(0, 12),
-                variant.impact.substring(0, 25)
+              // Prepare row data with proper formatting
+              const cellData = [
+                variant.gene,
+                variant.variant.length > 15 ? variant.variant.substring(0, 15) + '...' : variant.variant,
+                variant.type,
+                variant.dnaChange,
+                variant.proteinChange,
+                variant.quality,
+                variant.significance.replace('_', ' '),
+                variant.mainImpact + (variant.subImpact ? '\n' + variant.subImpact : '')
               ];
               
-              // Alternate row colors
+              // Calculate row height based on the tallest cell
+              let maxRowHeight = baseRowHeight;
+              cellData.forEach((text, i) => {
+                const cellHeight = calculateCellHeight(text.toString(), colWidths[i]);
+                maxRowHeight = Math.max(maxRowHeight, cellHeight);
+              });
+              
+              // Ensure minimum readable height
+              maxRowHeight = Math.max(maxRowHeight, 12);
+              
+              // Draw row background (alternate colors)
               if (index % 2 === 1) {
                 pdf.setFillColor(249, 250, 251);
-                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), 6, 'F');
+                pdf.rect(startX, yPosition, colWidths.reduce((sum, width) => sum + width, 0), maxRowHeight, 'F');
               }
               
-              // Draw cell data
-              for (let i = 0; i < rowData.length; i++) {
-                // Split long text to fit in cell
-                const text = rowData[i];
-                const maxWidth = colWidths[i] - 4;
-                const lines = pdf.splitTextToSize(text, maxWidth);
+              // Draw cell borders and content
+              currentX = startX;
+              cellData.forEach((text, i) => {
+                // Draw cell border
+                pdf.setDrawColor(230, 230, 230);
+                pdf.rect(currentX, yPosition, colWidths[i], maxRowHeight);
                 
-                pdf.text(lines[0] || '', currentX + 2, yPosition + 4);
+                // Draw cell content
+                pdf.setTextColor(0, 0, 0);
+                drawCellText(text.toString(), currentX, yPosition, colWidths[i], maxRowHeight, 8);
+                
                 currentX += colWidths[i];
-              }
+              });
               
-              yPosition += 6;
+              yPosition += maxRowHeight;
             });
             
             // Add summary if we truncated
             if (variantData.length > 20) {
-              yPosition += 5;
+              yPosition += 10;
               pdf.setFontSize(10);
               pdf.setFont('helvetica', 'italic');
-              pdf.text(`Note: Showing first 20 of ${variantData.length} total variants. `, 20, yPosition);
+              pdf.setTextColor(100, 100, 100);
+              pdf.text(`Note: Showing first 20 of ${variantData.length} total variants.`, 20, yPosition);
               pdf.text('See full analysis in the application for complete variant list.', 20, yPosition + 5);
-              yPosition += 15;
+              yPosition += 20;
             }
           }
           
-          console.log(`✅ Generated text-based variants table`);
+          console.log(`✅ Generated text-based variants table with improved formatting`);
         } else {
           // Original image capture for other elements
           const canvas = await html2canvas(element, {
@@ -528,7 +585,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
           color: white; 
           padding: 15px 20px; 
           border-radius: 8px; 
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
           z-index: 10000;
           font-weight: 600;
           font-size: 14px;
