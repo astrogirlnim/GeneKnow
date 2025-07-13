@@ -167,7 +167,7 @@ const Header = () => (
     right: 0,
     zIndex: 1030,
     borderBottom: '1px solid #E5E7EB',
-    padding: '1rem 0',
+    padding: '0.75rem 0',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
   }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0.75rem 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -331,7 +331,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
     <div style={{ fontFamily: 'var(--font-family-sans)', background: '#FFFFFF', color: 'var(--gray-800)', minHeight: '100vh' }}>
       <FirstTimeLaunchModal isOpen={showModal} onAccept={handleAcceptTerms} />
       <Header />
-      <main style={{ paddingTop: '4rem', minHeight: 'calc(100vh - 4rem)' }}>
+      <main style={{ paddingTop: '3.5rem', minHeight: 'calc(100vh - 3.5rem)' }}>
         {children}
       </main>
       <Footer />
