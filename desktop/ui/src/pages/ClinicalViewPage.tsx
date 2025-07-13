@@ -1429,6 +1429,10 @@ const ClinicalViewPage: React.FC = () => {
         if (alleleFreq > 0.9) qualityDetails.quality_factors.push('High allele frequency');
         if (variant.clinical_significance === 'pathogenic') qualityDetails.quality_factors.push('Pathogenic variant');
 
+        // Better handling of TCGA matches
+        const tcgaMatch = variant.tcga_matches ? 
+          Object.entries(variant.tcga_matches)[0]?.[1] || null : null;
+        
         return {
           gene: variant.gene || 'Unknown',
           variant_id: variant.variant || variant.variant_id || `Unknown_${index}`,
@@ -1437,9 +1441,7 @@ const ClinicalViewPage: React.FC = () => {
           quality_score: Math.round(adjustedQuality),
           quality_details: qualityDetails,
           clinical_significance: variant.clinical_significance || 'uncertain_significance',
-          tcga_best_match: variant.tcga_matches ? 
-            Object.entries(variant.tcga_matches)[0]?.[1] || { cancer_type: 'unknown', frequency: 0 } :
-            { cancer_type: 'unknown', frequency: 0 },
+          tcga_best_match: tcgaMatch || { cancer_type: 'not_cancer_associated', frequency: 0 },
           protein_change: variant.protein_change || variant.hgvs_p || `p.Unknown${index}`,
           functional_impact: variant.functional_impact || 'Unknown',
           // Use real transformation data if available, otherwise provide placeholder
@@ -1752,7 +1754,13 @@ const ClinicalViewPage: React.FC = () => {
                         {variant.gene}
                       </text>
                       <text x={x} y={y + 25} fill="#4B5563" fontSize="10" textAnchor="middle">
-                        {(variant.tcga_best_match as { cancer_type?: string })?.cancer_type || 'Unknown'}
+                        {(() => {
+                          const cancerType = (variant.tcga_best_match as { cancer_type?: string })?.cancer_type;
+                          if (cancerType === 'not_cancer_associated') {
+                            return 'No cancer association';
+                          }
+                          return cancerType || 'Unknown';
+                        })()}
                       </text>
                     </g>
                   );
@@ -1772,8 +1780,9 @@ const ClinicalViewPage: React.FC = () => {
                 color: '#4B5563',
                 marginTop: '1rem'
               }}>
-                <strong>Interpretation:</strong> Points above the red line indicate statistically significant associations. 
-                Red dots represent high-confidence pathogenic variants, blue dots represent variants under investigation.
+                <strong>Interpretation:</strong> This plot shows gene variants found in your analysis. 
+                Red dots represent high-confidence pathogenic variants, blue dots represent variants under investigation. 
+                "No cancer association" indicates genes not found in cancer databases (this is normal for most genes).
               </div>
             </div>
             
@@ -2763,12 +2772,11 @@ const ClinicalViewPage: React.FC = () => {
                               fontSize: '0.75rem',
                               borderRadius: '0.5rem',
                               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
-                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
-                              transition: 'opacity 300ms ease, visibility 300ms ease',
                               zIndex: 1000,
-                              pointerEvents: 'none' as const,
-                              lineHeight: '1.4',
+                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
                               border: '1px solid #374151'
                             }}>
                               <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference→alternate (e.g., 17:41223094:A→G). This uniquely identifies the DNA change.</p>
