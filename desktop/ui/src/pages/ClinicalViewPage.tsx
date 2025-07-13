@@ -1429,7 +1429,7 @@ const ClinicalViewPage: React.FC = () => {
     pathways: {
       id: 'pathways',
       title: 'Pathway Analysis',
-      elementIds: ['pathway-disruption-content', 'cancer-risk-pathways']
+      elementIds: ['pathway-disruption-analysis', 'cancer-risk-by-pathways']
     },
     clinical: {
       id: 'clinical',
@@ -3777,7 +3777,7 @@ const ClinicalViewPage: React.FC = () => {
               return (
                 <>
                   {/* Pathway Enrichment */}
-                  <div style={{
+                  <div id="pathway-disruption-analysis" style={{
                     background: '#FFFFFF',
                     padding: '2rem',
                     borderRadius: '0.75rem',
@@ -3959,7 +3959,7 @@ const ClinicalViewPage: React.FC = () => {
                     </div>
                     
                     {/* Cancer Risk by Pathway */}
-                    <div style={{
+                    <div id="cancer-risk-by-pathways" style={{
                       background: '#FFFFFF',
                       padding: '2rem',
                       borderRadius: '0.75rem',
