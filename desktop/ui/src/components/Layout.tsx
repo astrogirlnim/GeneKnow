@@ -6,14 +6,14 @@ import { useState, useEffect } from 'react'
 const GeneKnowLogo = () => (
   <div 
     style={{
-      width: '32px',
-      height: '32px',
+      width: '56px',
+      height: '56px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
     }}
   >
-    <svg width="20" height="20" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    <svg width="36" height="36" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
       <defs>
         {/* Enhanced gradients with blue and green */}
         <linearGradient id="dnaGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -170,12 +170,13 @@ const Header = () => (
     padding: '1rem 0',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
   }}>
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0.75rem 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <Link to="/" style={{ 
         textDecoration: 'none', 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '0.1rem' 
+        gap: '0.1rem',
+        marginLeft: '-0.5rem'
       }}>
         <GeneKnowLogo />
         <h1 style={{ 

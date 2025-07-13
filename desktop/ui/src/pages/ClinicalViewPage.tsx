@@ -863,6 +863,13 @@ interface PathwayBurdenResult {
   description?: string;
 }
 
+interface PipelineWarning {
+  message?: string;
+  [key: string]: unknown;
+}
+
+type WarningType = string | PipelineWarning;
+
 // Icon components
 const InformationCircleIcon = ({ style, onMouseEnter, onMouseLeave }: { 
   style?: React.CSSProperties; 
@@ -1034,6 +1041,174 @@ const SmartTooltip = ({ content, isVisible, triggerRef }: {
 };
 
 // Legacy SectionTooltip component removed - was unused
+
+// Function to generate real clinical alerts from pipeline data
+const generateClinicalAlerts = (pipelineResults: PipelineResult | undefined): Alert[] => {
+  console.log('🔍 ALERT DEBUG: generateClinicalAlerts called with:', !!pipelineResults);
+  if (!pipelineResults) {
+    console.log('🔍 ALERT DEBUG: No pipeline results, returning empty array');
+    return [];
+  }
+
+  const alerts: Alert[] = [];
+  const structuredJson = pipelineResults.structured_json;
+  console.log('🔍 ALERT DEBUG: structuredJson available:', !!structuredJson);
+  console.log('🔍 ALERT DEBUG: structuredJson keys:', structuredJson ? Object.keys(structuredJson) : 'none');
+
+  // 1. Check for pathogenic and likely pathogenic variants
+  const variantDetails = structuredJson?.variant_details || [];
+  const pathogenicVariants = variantDetails.filter(variant => 
+    variant.clinical_significance === 'pathogenic' || 
+    variant.clinical_significance === 'likely_pathogenic'
+  );
+
+  // Generate alerts for pathogenic variants
+  pathogenicVariants.forEach(variant => {
+    const isPathogenic = variant.clinical_significance === 'pathogenic';
+    const gene = variant.gene || 'Unknown';
+    const variantId = variant.variant_id || variant.variant || 'Unknown';
+    
+    // Get protein change or use variant ID
+    const proteinChange = variant.protein_change || variant.hgvs_p || variantId;
+    
+    alerts.push({
+      type: isPathogenic ? 'critical' : 'warning',
+      title: `${gene} ${isPathogenic ? 'Pathogenic' : 'Likely Pathogenic'} Variant`,
+      desc: `${proteinChange} - ${variant.consequence || 'mutation'} detected`,
+      detailedInfo: {
+        whatItMeans: `A ${isPathogenic ? 'pathogenic' : 'likely pathogenic'} variant in the ${gene} gene has been identified. This variant is ${isPathogenic ? 'known to cause' : 'likely to cause'} disease or increase cancer risk.`,
+        whyImportant: `${gene} variants can significantly impact cancer risk. ${isPathogenic ? 'Pathogenic' : 'Likely pathogenic'} variants have strong evidence for clinical significance and require immediate attention.`,
+        clinicalSignificance: variant.functional_impact || `${isPathogenic ? 'High' : 'Moderate'} clinical significance. This variant requires clinical evaluation and may affect treatment decisions.`,
+        nextSteps: `Genetic counseling is recommended. Consider enhanced screening protocols and discuss with oncology team. Family members should be informed about potential hereditary risk.`
+      }
+    });
+  });
+
+  // 2. Check for variants of uncertain significance (VUS) in important genes
+  const importantGenes = ['TP53', 'BRCA1', 'BRCA2', 'ATM', 'CHEK2', 'PALB2', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'APC'];
+  const vusInImportantGenes = variantDetails.filter(variant => 
+    variant.clinical_significance === 'uncertain_significance' && 
+    importantGenes.includes(variant.gene)
+  );
+
+  vusInImportantGenes.forEach(variant => {
+    const gene = variant.gene || 'Unknown';
+    const proteinChange = variant.protein_change || variant.hgvs_p || variant.variant_id || 'Unknown';
+    
+    alerts.push({
+      type: 'info',
+      title: `${gene} Variant of Uncertain Significance`,
+      desc: `${proteinChange} - Clinical significance unclear`,
+      detailedInfo: {
+        whatItMeans: `A genetic variant in the ${gene} gene where the clinical significance is not yet definitively established by current scientific evidence.`,
+        whyImportant: `${gene} is an important cancer-related gene. Even uncertain variants require monitoring as new research may reclassify them as pathogenic or benign.`,
+        clinicalSignificance: 'May or may not be clinically significant. Requires ongoing evaluation as more research data becomes available.',
+        nextSteps: 'Genetic counseling to discuss implications, potential for variant reclassification, and consideration of family testing.'
+      }
+    });
+  });
+
+  // 3. Check SHAP validation results for model reliability alerts
+  const shapValidation = structuredJson?.shap_validation;
+  if (shapValidation) {
+    if (shapValidation.status === 'FLAG_FOR_REVIEW') {
+      alerts.push({
+        type: 'warning',
+        title: 'AI Model Review Required',
+        desc: 'Machine learning prediction requires manual verification',
+        detailedInfo: {
+          whatItMeans: 'The AI model has flagged this analysis for review due to potential inconsistencies in the prediction logic or unusual patterns in the data.',
+          whyImportant: 'This flag indicates the model prediction may be less reliable than usual. Manual review by a healthcare provider is recommended to ensure accuracy.',
+          clinicalSignificance: `Review reasons: ${shapValidation.reasons?.join('; ') || 'Model validation concerns detected'}`,
+          nextSteps: 'Have a healthcare provider review the analysis results. Consider additional testing or consultation with a genetic counselor.'
+        }
+      });
+    } else if (shapValidation.status === 'ERROR') {
+      alerts.push({
+        type: 'critical',
+        title: 'Analysis Validation Error',
+        desc: 'Technical issue with risk prediction model',
+        detailedInfo: {
+          whatItMeans: 'The analysis encountered a technical error during the validation process. This may affect the reliability of the risk predictions.',
+          whyImportant: 'Validation errors can indicate problems with the analysis that may impact the accuracy of the results.',
+          clinicalSignificance: 'Results should be interpreted with caution due to validation errors.',
+          nextSteps: 'Consult with a healthcare provider for proper interpretation. Consider re-running the analysis or seeking additional genetic testing.'
+        }
+      });
+    }
+  }
+
+  // 4. Check for elevated cancer risk (>20% for clinical significance)
+  const riskScores = pipelineResults.risk_scores || {};
+  console.log('🔍 ALERT DEBUG: All risk scores:', riskScores);
+  
+  const elevatedRiskCancers = Object.entries(riskScores).filter(([, score]) => score >= 20);
+  console.log('🔍 ALERT DEBUG: Elevated risk cancers (>=20%):', elevatedRiskCancers);
+  
+  if (elevatedRiskCancers.length > 0) {
+    const topRisk = elevatedRiskCancers.reduce((prev, [cancer, score]) => 
+      score > prev.score ? { cancer, score } : prev,
+      { cancer: '', score: 0 }
+    );
+
+    console.log('🔍 ALERT DEBUG: Adding elevated risk alert for:', topRisk);
+    
+    alerts.push({
+      type: topRisk.score >= 30 ? 'critical' : 'warning',
+      title: `Elevated ${topRisk.cancer} Cancer Risk`,
+      desc: `${topRisk.score.toFixed(1)}% risk detected - Enhanced screening recommended`,
+      detailedInfo: {
+        whatItMeans: `Based on the genetic analysis, you have been identified as having elevated risk for ${topRisk.cancer} cancer (${topRisk.score.toFixed(1)}%).`,
+        whyImportant: `This elevated risk is significantly higher than the general population average. Early detection and prevention strategies can significantly improve outcomes.`,
+        clinicalSignificance: `This risk level warrants ${topRisk.score >= 30 ? 'immediate clinical attention' : 'enhanced screening protocols'} and specialized medical management.`,
+        nextSteps: `Schedule consultation with oncology team. Begin enhanced screening protocols. Consider genetic counseling to discuss risk management strategies and family implications.`
+      }
+    });
+  }
+
+  // 5. Check for quality or pipeline warnings
+  const warnings = structuredJson?.warnings || [];
+  if (Array.isArray(warnings) && warnings.length > 0) {
+    // Only show the most relevant warnings (limit to avoid cluttering)
+    const relevantWarnings = warnings.slice(0, 2);
+    
+    relevantWarnings.forEach((warning: WarningType) => {
+      alerts.push({
+        type: 'info',
+        title: 'Analysis Quality Notice',
+        desc: typeof warning === 'string' ? warning : (warning?.message || 'Quality check flagged'),
+        detailedInfo: {
+          whatItMeans: 'A quality check during the analysis process has identified a potential issue or limitation in the data.',
+          whyImportant: 'Quality issues can affect the reliability of the analysis results. Being aware of these limitations helps with proper interpretation.',
+          clinicalSignificance: 'Results should be interpreted considering these quality factors.',
+          nextSteps: 'Discuss these quality considerations with your healthcare provider. Additional testing may be recommended if needed.'
+        }
+      });
+    });
+  }
+
+  // 6. Default success alert for low-risk cases with no significant findings
+  if (alerts.length === 0) {
+    const overallRiskScore = Math.max(...Object.values(riskScores));
+    console.log('🔍 ALERT DEBUG: No alerts generated, adding default success alert. Overall risk score:', overallRiskScore);
+    
+    alerts.push({
+      type: 'success',
+      title: 'Low Risk Assessment',
+      desc: 'No significant genetic risk factors identified',
+      detailedInfo: {
+        whatItMeans: 'Current genetic analysis does not indicate significantly elevated risk for hereditary cancer syndromes based on the variants analyzed.',
+        whyImportant: 'This provides reassurance while maintaining appropriate vigilance for any changes in risk factors or family history.',
+        clinicalSignificance: 'Standard population screening guidelines are appropriate at this time.',
+        nextSteps: 'Continue routine screening as recommended for general population. Maintain awareness of family history changes and discuss with healthcare provider.'
+      }
+    });
+  }
+
+  console.log('🔍 ALERT DEBUG: Final alerts being returned:', alerts);
+  console.log('🔍 ALERT DEBUG: Total alert count:', alerts.length);
+  return alerts;
+};
 
 // Mock data sets for different risk levels - completely anonymous
 const mockDataSets = {
@@ -1264,6 +1439,10 @@ const ClinicalViewPage: React.FC = () => {
   // Get real data for sidebar when available
   const getSidebarData = () => {
     if (pipelineResults) {
+      console.log('🔍 SIDEBAR DEBUG: pipelineResults available, generating real alerts');
+      console.log('🔍 Risk scores:', pipelineResults.risk_scores);
+      console.log('🔍 Structured JSON:', pipelineResults.structured_json);
+      
       // Calculate real risk level and score from pipeline results
       const riskScores = Object.entries(pipelineResults.risk_scores || {});
       const highestRisk = riskScores.reduce((prev, [cancer, score]) => 
@@ -1275,17 +1454,21 @@ const ClinicalViewPage: React.FC = () => {
       const riskCategory = overallRiskScore >= 30 ? 'High Risk' : 
                           overallRiskScore >= 15 ? 'Moderate Risk' : 'Low Risk';
       
-      // Note: variant details could be used here for enhanced sidebar data in the future
+      // Generate real clinical alerts from pipeline data
+      const realAlerts = generateClinicalAlerts(pipelineResults);
+      console.log('🔍 SIDEBAR DEBUG: Generated alerts:', realAlerts);
+      console.log('🔍 SIDEBAR DEBUG: Alert count:', realAlerts.length);
       
       return {
         riskLevel: riskCategory,
         riskScore: `${overallRiskScore}/100`,
         condition: `${highestRisk.cancer} Cancer Risk Assessment`,
         details: `Family History: Genetic Analysis<br/>Referral: Genomics<br/>Previous Tests: Comprehensive Variant Analysis`,
-        alerts: currentData.alerts // Keep mock alerts for now since we don't have real alert data
+        alerts: realAlerts
       };
     }
     
+    console.log('🔍 SIDEBAR DEBUG: No pipelineResults, falling back to mock data');
     // Fallback to mock data if no pipeline results
     return currentData;
   };
@@ -1429,6 +1612,10 @@ const ClinicalViewPage: React.FC = () => {
         if (alleleFreq > 0.9) qualityDetails.quality_factors.push('High allele frequency');
         if (variant.clinical_significance === 'pathogenic') qualityDetails.quality_factors.push('Pathogenic variant');
 
+        // Better handling of TCGA matches
+        const tcgaMatch = variant.tcga_matches ? 
+          Object.entries(variant.tcga_matches)[0]?.[1] || null : null;
+        
         return {
           gene: variant.gene || 'Unknown',
           variant_id: variant.variant || variant.variant_id || `Unknown_${index}`,
@@ -1437,9 +1624,7 @@ const ClinicalViewPage: React.FC = () => {
           quality_score: Math.round(adjustedQuality),
           quality_details: qualityDetails,
           clinical_significance: variant.clinical_significance || 'uncertain_significance',
-          tcga_best_match: variant.tcga_matches ? 
-            Object.entries(variant.tcga_matches)[0]?.[1] || { cancer_type: 'unknown', frequency: 0 } :
-            { cancer_type: 'unknown', frequency: 0 },
+          tcga_best_match: tcgaMatch || { cancer_type: 'not_cancer_associated', frequency: 0 },
           protein_change: variant.protein_change || variant.hgvs_p || `p.Unknown${index}`,
           functional_impact: variant.functional_impact || 'Unknown',
           // Use real transformation data if available, otherwise provide placeholder
@@ -1752,7 +1937,13 @@ const ClinicalViewPage: React.FC = () => {
                         {variant.gene}
                       </text>
                       <text x={x} y={y + 25} fill="#4B5563" fontSize="10" textAnchor="middle">
-                        {(variant.tcga_best_match as { cancer_type?: string })?.cancer_type || 'Unknown'}
+                        {(() => {
+                          const cancerType = (variant.tcga_best_match as { cancer_type?: string })?.cancer_type;
+                          if (cancerType === 'not_cancer_associated') {
+                            return 'No cancer association';
+                          }
+                          return cancerType || 'Unknown';
+                        })()}
                       </text>
                     </g>
                   );
@@ -1772,8 +1963,9 @@ const ClinicalViewPage: React.FC = () => {
                 color: '#4B5563',
                 marginTop: '1rem'
               }}>
-                <strong>Interpretation:</strong> Points above the red line indicate statistically significant associations. 
-                Red dots represent high-confidence pathogenic variants, blue dots represent variants under investigation.
+                <strong>Interpretation:</strong> This plot shows gene variants found in your analysis. 
+                Red dots represent high-confidence pathogenic variants, blue dots represent variants under investigation. 
+                "No cancer association" indicates genes not found in cancer databases (this is normal for most genes).
               </div>
             </div>
             
@@ -2763,12 +2955,11 @@ const ClinicalViewPage: React.FC = () => {
                               fontSize: '0.75rem',
                               borderRadius: '0.5rem',
                               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
-                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
-                              transition: 'opacity 300ms ease, visibility 300ms ease',
                               zIndex: 1000,
-                              pointerEvents: 'none' as const,
-                              lineHeight: '1.4',
+                              visibility: hoveredTooltip === 'header-variant' ? 'visible' as const : 'hidden' as const,
+                              opacity: hoveredTooltip === 'header-variant' ? 1 : 0,
+                              transition: 'opacity 0.2s, visibility 0.2s',
+                              pointerEvents: 'none',
                               border: '1px solid #374151'
                             }}>
                               <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Genomic coordinates and nucleotide change. Format: position:reference→alternate (e.g., 17:41223094:A→G). This uniquely identifies the DNA change.</p>

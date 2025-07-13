@@ -12,15 +12,26 @@ logger = logging.getLogger(__name__)
 
 def classify_mutation_type(variant: Dict) -> str:
     """Classify variant based on reference and alternate alleles"""
-    ref = variant.get("re", "")
+    ref = variant.get("ref", "")
     alt = variant.get("alt", "")
 
+    # Debug logging for classification issues
+    variant_id = variant.get("variant_id", "unknown")
+    logger.info(f"🔍 CLASSIFYING {variant_id}: ref='{ref}' (len={len(ref)}), alt='{alt}' (len={len(alt)})")
+
+    # Check for indels first (insertions/deletions with "-" symbol)
+    if ref == "-" or alt == "-":
+        logger.info(f"→ INDEL: {variant_id} (contains '-' symbol)")
+        return "indel"
+    
     # Single Nucleotide Variant (SNV)
-    if len(ref) == 1 and len(alt) == 1:
+    elif len(ref) == 1 and len(alt) == 1:
+        logger.info(f"→ SNV: {variant_id}")
         return "snv"
 
-    # Insertion/Deletion (Indel)
+    # Insertion/Deletion (Indel) - length difference
     elif len(ref) != len(alt):
+        logger.info(f"→ INDEL: {variant_id} (length difference)")
         return "indel"
 
     # Complex variants (could be structural)

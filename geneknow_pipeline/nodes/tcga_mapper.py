@@ -283,6 +283,13 @@ def process(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(
             f"  Highly enriched variants: {len([v for v in enriched_variants if v['enrichment'] > 50])}"
         )
+        
+        # Add context about low match rates
+        if total_variants_matched == 0:
+            logger.info("  Note: 0 matches is normal - TCGA database only contains well-known cancer genes")
+            logger.info("  Note: Most genetic variants are in non-cancer genes and won't have TCGA matches")
+        elif total_variants_matched / len(filtered_variants) < 0.1:
+            logger.info("  Note: Low match rate is normal - most variants are in non-cancer genes")
 
         # Note: Don't append to completed_nodes to avoid concurrent updates
         # The merge node will handle tracking completion

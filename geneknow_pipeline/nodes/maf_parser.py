@@ -99,11 +99,11 @@ def parse_maf_file(file_path: str) -> List[Dict[str, Any]]:
                 }
 
                 # Only include variants that pass basic filters
-                if variant["ref"] not in ["N", "-", ""] and variant["alt"] not in [
-                    "N",
-                    "-",
-                    "",
-                ]:
+                # Allow "-" for indels but exclude N and empty strings
+                ref_valid = variant["ref"] not in ["N", ""]
+                alt_valid = variant["alt"] not in ["N", ""]
+                # For indels, either ref or alt can be "-", but not both
+                if ref_valid and alt_valid and not (variant["ref"] == "-" and variant["alt"] == "-"):
                     variants.append(variant)
 
             except Exception as e:
