@@ -95,14 +95,8 @@ LEFT JOIN cadd_scores cs ON
 
 For team members setting up the project:
 
-### 1. Download Pre-built Database
-If available, download the pre-built database from your team's shared storage:
-```bash
-# Replace with your team's storage location
-curl -o population_variants.db "https://your-team-storage/population_variants.db"
-```
 
-### 2. Create Database from Source
+### 1. Create Database from Source
 If you need to create the database from scratch:
 
 ```bash
@@ -119,7 +113,7 @@ python create_population_database.py --cancer-genes-only
 python create_population_database.py
 ```
 
-### 3. Add CADD Scores Table
+### 2. Add CADD Scores Table
 After creating the population database, add the CADD scores table:
 
 ```bash
@@ -130,7 +124,7 @@ After creating the population database, add the CADD scores table:
 ./scripts/fetch_cadd.sh
 ```
 
-### 4. Verify Setup
+### 3. Verify Setup
 ```bash
 # Check database exists and is valid
 python -c "
