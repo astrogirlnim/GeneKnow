@@ -4306,7 +4306,7 @@ const ClinicalViewPage: React.FC = () => {
             </div>
             
             {/* Clinical Recommendations */}
-            <div style={{
+            <div id="clinical-recommendations" style={{
               background: '#FFFFFF',
               padding: '2rem',
               borderRadius: '0.75rem',
