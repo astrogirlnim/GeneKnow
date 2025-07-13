@@ -117,9 +117,9 @@ echo "🧹 Cleaning up Python installation..."
 # Remove unnecessary files to reduce size
 cd "$BUNDLE_DIR/python_runtime"
 
-# Remove test files and documentation
-find . -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
-find . -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true
+# Remove test files and documentation (but preserve numpy._core.tests)
+find . -name "test" -type d -not -path "*/numpy/*" -exec rm -rf {} + 2>/dev/null || true
+find . -name "tests" -type d -not -path "*/numpy/*" -exec rm -rf {} + 2>/dev/null || true
 find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 find . -name "*.pyc" -delete 2>/dev/null || true
 find . -name "*.pyo" -delete 2>/dev/null || true
@@ -129,9 +129,9 @@ rm -rf lib/python*/site-packages/pip/_internal/operations/build/ 2>/dev/null || 
 rm -rf lib/python*/site-packages/setuptools/ 2>/dev/null || true
 rm -rf lib/python*/site-packages/wheel/ 2>/dev/null || true
 
-# Remove documentation and examples
-find lib/python*/site-packages -name "docs" -type d -exec rm -rf {} + 2>/dev/null || true
-find lib/python*/site-packages -name "examples" -type d -exec rm -rf {} + 2>/dev/null || true
+# Remove documentation and examples (but preserve numpy core files)
+find lib/python*/site-packages -name "docs" -type d -not -path "*/numpy/*" -exec rm -rf {} + 2>/dev/null || true
+find lib/python*/site-packages -name "examples" -type d -not -path "*/numpy/*" -exec rm -rf {} + 2>/dev/null || true
 find lib/python*/site-packages -name "*.md" -delete 2>/dev/null || true
 find lib/python*/site-packages -name "*.rst" -delete 2>/dev/null || true
 
@@ -154,6 +154,20 @@ rm -rf __pycache__/ 2>/dev/null || true
 rm -rf .pytest_cache/ 2>/dev/null || true
 rm -rf *.log 2>/dev/null || true
 find . -name "*.pyc" -delete 2>/dev/null || true
+
+echo "🤖 Verifying ML models..."
+if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models/best_fusion_model.pkl" ]; then
+    echo "   ✅ Found ML fusion model (confidence check will work)"
+else
+    echo "   ⚠️  ML fusion model missing - confidence check will show 'Not Available'"
+    echo "   Run 'python create_simple_fusion_model.py' to create it"
+fi
+
+if [ -f "$BUNDLE_DIR/geneknow_pipeline/ml_models_no_leakage/best_model.pkl" ]; then
+    echo "   ✅ Found ML models (no leakage)"
+else
+    echo "   ⚠️  ML models (no leakage) missing - fallback predictions will be used"
+fi
 
 echo "🗄️ Setting up database..."
 if [ -f "$PROJECT_ROOT/geneknow_pipeline/tcga_data/population_variants.db" ]; then

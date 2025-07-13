@@ -103,6 +103,55 @@ cd ..
 ./test_implementation.sh
 ```
 
+---
+
+## 📦 Installing Pre-built Binaries
+
+### macOS Installation Notice ⚠️
+
+**Important for macOS users:** As a small open-source project, our macOS application is not yet code-signed by Apple. You'll need to bypass macOS security (Gatekeeper) to install and run GeneKnow.
+
+#### Installation Steps:
+1. **Download** the `.dmg` file from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases)
+2. **Open the DMG** and drag GeneKnow to Applications
+3. **Bypass Gatekeeper** using one of these methods:
+
+**Method 1 (Recommended):**
+```bash
+# Right-click the GeneKnow app in Applications
+# Select "Open" from the context menu
+# Click "Open" in the security dialog
+```
+
+**Method 2 (System Preferences):**
+```bash
+# If the app is blocked, go to:
+# System Preferences → Security & Privacy → General
+# Click "Open Anyway" next to the GeneKnow message
+```
+
+**Method 3 (Terminal):**
+```bash
+# Remove quarantine attribute (advanced users)
+sudo xattr -rd com.apple.quarantine /Applications/GeneKnow.app
+```
+
+#### Why This Happens
+- Apple requires developer certificates ($99/year) for automatic installation
+- As a small open-source project, we haven't yet obtained code signing certificates  
+- We're working toward official code signing as our project grows
+
+#### Security Assurance
+- ✅ **Open Source**: Our entire codebase is [publicly auditable](https://github.com/astrogirlnim/GeneKnow)
+- ✅ **Privacy-First**: Your genetic data never leaves your device
+- ✅ **No Network Access**: All processing happens locally
+- ✅ **Community Verified**: Code changes are reviewed through public pull requests
+
+### Windows & Linux
+Windows and Linux installations work normally without additional security steps.
+
+---
+
 ### 4. Run Full Application (Complete Integration)
 
 **🚀 Recommended: One-Command Startup**

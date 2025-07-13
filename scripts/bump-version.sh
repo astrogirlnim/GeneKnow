@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🔖 GenePredict Version Bumping Script
+# 🔖 GeneKnow Version Bumping Script
 # This script allows manual version bumping during development
 
 set -e
@@ -34,7 +34,7 @@ print_error() {
 
 # Function to show usage
 show_usage() {
-    echo "🔖 GenePredict Version Bumping Script"
+    echo "🔖 GeneKnow Version Bumping Script"
     echo ""
     echo "Usage: $0 [patch|minor|major]"
     echo ""

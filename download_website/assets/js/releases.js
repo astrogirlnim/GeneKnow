@@ -119,26 +119,47 @@ function displayRelease(release) {
 function updateVersionInfo(release) {
     const versionNumber = document.getElementById('version-number');
     const releaseDate = document.getElementById('release-date');
+    const versionDisplay = document.getElementById('version-display');
+    const releaseDateDisplay = document.getElementById('release-date-display');
     
     console.log('Updating version info. Elements found:', {
         versionNumber: !!versionNumber,
-        releaseDate: !!releaseDate
+        releaseDate: !!releaseDate,
+        versionDisplay: !!versionDisplay,
+        releaseDateDisplay: !!releaseDateDisplay
     });
     
+    const versionText = release.tag_name || release.name;
+    const date = new Date(release.published_at);
+    const formattedDate = window.GeneKnow ? window.GeneKnow.formatDate(date) : date.toLocaleDateString();
+    
     if (versionNumber) {
-        versionNumber.textContent = release.tag_name;
-        console.log('Updated version number to:', release.tag_name);
+        versionNumber.textContent = versionText;
+        console.log('Updated version number to:', versionText);
     } else {
         console.warn('version-number element not found');
     }
     
     if (releaseDate) {
-        const date = new Date(release.published_at);
-        const formattedDate = window.GeneKnow ? window.GeneKnow.formatDate(date) : date.toLocaleDateString();
         releaseDate.textContent = `Released on ${formattedDate}`;
         console.log('Updated release date to:', formattedDate);
     } else {
         console.warn('release-date element not found');
+    }
+    
+    // Update download section version display
+    if (versionDisplay) {
+        versionDisplay.textContent = versionText;
+        console.log('Updated version display to:', versionText);
+    } else {
+        console.warn('version-display element not found');
+    }
+    
+    if (releaseDateDisplay) {
+        releaseDateDisplay.textContent = `Released ${formattedDate}`;
+        console.log('Updated release date display to:', formattedDate);
+    } else {
+        console.warn('release-date-display element not found');
     }
 }
 

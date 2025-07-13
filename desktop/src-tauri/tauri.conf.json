@@ -31,9 +31,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": ["../bundled_resources"],
     "macOS": {
-      "signingIdentity": "-"
+      "signingIdentity": null,
+      "hardenedRuntime": true,
+      "entitlements": null,
+      "exceptionDomain": "localhost"
     }
   }
 }
