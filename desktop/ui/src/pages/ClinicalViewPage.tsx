@@ -4771,14 +4771,14 @@ const ClinicalViewPage: React.FC = () => {
                   color: '#4B5563',
                   marginBottom: '0.75rem'
                 }}>
-                  Clinical Workflow
+                  Analysis Workflow
                 </div>
                 
                 {[
                   { id: 'analysis', label: 'Genomic Analysis' },
                   { id: 'variants', label: 'Variant Heatmap' },
                   { id: 'pathways', label: 'Pathway Analysis' },
-                  { id: 'clinical', label: 'Clinical Report' }
+                  { id: 'clinical', label: 'In-Depth Report' }
                 ].map(item => (
                   <div 
                     key={item.id}
@@ -4823,7 +4823,7 @@ const ClinicalViewPage: React.FC = () => {
                   color: '#4B5563',
                   marginBottom: '0.75rem'
                 }}>
-                  Clinical Alerts
+                  In-Depth Alerts
                 </div>
                 
                 {sidebarData.alerts.map((alert: Alert, index: number) => (
