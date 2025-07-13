@@ -4654,9 +4654,7 @@ const ClinicalViewPage: React.FC = () => {
               border: '1px solid #E5E7EB',
               position: 'sticky',
               top: '1rem',
-              alignSelf: 'start',
-              maxHeight: 'calc(100vh - 2rem)',
-              overflow: 'auto'
+              alignSelf: 'start'
             }}>
               {/* Risk Info */}
               <div style={{
