@@ -770,7 +770,7 @@ jobs:
           echo "🎯 Target: ${{ matrix.rust-target }}"
           echo "📦 Version: ${{ needs.version.outputs.version }}"
           
-          # Add debugging for macOS DMG issues
+          # Add debugging for macOS app bundle issues
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "🍎 macOS Environment Debug Info:"
             echo "   Disk space: $(df -h . | tail -1)"
@@ -836,6 +836,45 @@ jobs:
           
           echo "✅ Tauri release build completed for ${{ matrix.name }}"
 
+      - name: 🗜️ Package macOS .app as ZIP
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          echo "🗜️ Creating ZIP archive for macOS .app bundle..."
+          
+          # Find the .app bundle
+          APP_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/macos/ -name "*.app" -type d | head -1)
+          
+          if [ -n "$APP_PATH" ]; then
+            echo "✅ Found app bundle: $APP_PATH"
+            APP_NAME=$(basename "$APP_PATH")
+            ZIP_NAME="${APP_NAME%.app}-${{ needs.version.outputs.version }}-${{ matrix.rust-target }}.zip"
+            
+            # Create ZIP in the bundle directory
+            cd "$(dirname "$APP_PATH")"
+            echo "📦 Creating ZIP: $ZIP_NAME"
+            
+            # Use ditto to preserve macOS attributes and bundle structure
+            ditto -c -k --sequesterRsrc --keepParent "$APP_NAME" "$ZIP_NAME"
+            
+            if [ -f "$ZIP_NAME" ]; then
+              echo "✅ ZIP created successfully"
+              echo "📊 ZIP size: $(du -sh "$ZIP_NAME" | cut -f1)"
+              
+              # Verify ZIP contents
+              echo "🔍 Verifying ZIP contents..."
+              unzip -l "$ZIP_NAME" | grep -E "(start_api_server|python_runtime|geneknow_pipeline)" | head -10
+            else
+              echo "❌ Failed to create ZIP"
+              exit 1
+            fi
+          else
+            echo "❌ Could not find .app bundle"
+            echo "📂 Looking in:"
+            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type d -name "*.app" 2>/dev/null || echo "No .app bundles found"
+            exit 1
+          fi
+
       - name: 🔍 Verify bundled resources in build artifacts
         shell: bash
         run: |
@@ -843,23 +882,23 @@ jobs:
           
           # Find the built application
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # macOS DMG verification (app bundle gets cleaned up after DMG creation)
-            DMG_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/dmg/ -name "*.dmg" | head -1)
-            if [ -n "$DMG_PATH" ]; then
-              echo "🍎 Found macOS DMG: $DMG_PATH"
-              echo "📊 DMG size: $(du -sh "$DMG_PATH" | cut -f1)"
+            # macOS ZIP verification
+            ZIP_PATH=$(find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/macos/ -name "*.zip" | head -1)
+            if [ -n "$ZIP_PATH" ]; then
+              echo "🍎 Found macOS ZIP: $ZIP_PATH"
+              echo "📊 ZIP size: $(du -sh "$ZIP_PATH" | cut -f1)"
               
-              # Create temporary mount point and extract DMG to verify contents
-              TEMP_MOUNT_POINT=$(mktemp -d)
-              echo "📦 Extracting DMG to verify bundled resources..."
+              # Create temporary directory and extract ZIP to verify contents
+              TEMP_EXTRACT_DIR=$(mktemp -d)
+              echo "📦 Extracting ZIP to verify bundled resources..."
               
-              if hdiutil attach "$DMG_PATH" -mountpoint "$TEMP_MOUNT_POINT" -nobrowse -readonly; then
-                echo "✅ DMG mounted successfully"
+              if unzip -q "$ZIP_PATH" -d "$TEMP_EXTRACT_DIR"; then
+                echo "✅ ZIP extracted successfully"
                 
-                # Find the app bundle inside the DMG
-                APP_PATH=$(find "$TEMP_MOUNT_POINT" -name "*.app" | head -1)
+                # Find the app bundle inside the extracted ZIP
+                APP_PATH=$(find "$TEMP_EXTRACT_DIR" -name "*.app" -type d | head -1)
                 if [ -n "$APP_PATH" ]; then
-                  echo "✅ Found app bundle in DMG: $APP_PATH"
+                  echo "✅ Found app bundle in ZIP: $APP_PATH"
                   
                   # Check for bundled resources in the app bundle
                   RESOURCES_PATH="$APP_PATH/Contents/Resources"
@@ -877,7 +916,7 @@ jobs:
                         echo "   ✅ start_api_server.sh found in app bundle"
                       else
                         echo "   ❌ start_api_server.sh MISSING from app bundle"
-                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        rm -rf "$TEMP_EXTRACT_DIR"
                         exit 1
                       fi
                       
@@ -885,7 +924,7 @@ jobs:
                         echo "   ✅ python_runtime found in app bundle"
                       else
                         echo "   ❌ python_runtime MISSING from app bundle"
-                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        rm -rf "$TEMP_EXTRACT_DIR"
                         exit 1
                       fi
                       
@@ -893,7 +932,7 @@ jobs:
                         echo "   ✅ geneknow_pipeline found in app bundle"
                       else
                         echo "   ❌ geneknow_pipeline MISSING from app bundle"
-                        hdiutil detach "$TEMP_MOUNT_POINT"
+                        rm -rf "$TEMP_EXTRACT_DIR"
                         exit 1
                       fi
                       
@@ -901,33 +940,32 @@ jobs:
                       echo "❌ bundled_resources NOT found in app bundle"
                       echo "📂 _up_ directory contents:"
                       ls -la "$RESOURCES_PATH/_up_/" 2>/dev/null || echo "   _up_ directory not found"
-                      hdiutil detach "$TEMP_MOUNT_POINT"
+                      rm -rf "$TEMP_EXTRACT_DIR"
                       exit 1
                     fi
                   else
                     echo "❌ Resources directory not found in app bundle"
-                    hdiutil detach "$TEMP_MOUNT_POINT"
+                    rm -rf "$TEMP_EXTRACT_DIR"
                     exit 1
                   fi
                 else
-                  echo "❌ Could not find app bundle in DMG"
-                  hdiutil detach "$TEMP_MOUNT_POINT"
+                  echo "❌ Could not find app bundle in ZIP"
+                  rm -rf "$TEMP_EXTRACT_DIR"
                   exit 1
                 fi
                 
-                # Clean up mount point
-                hdiutil detach "$TEMP_MOUNT_POINT"
-                rm -rf "$TEMP_MOUNT_POINT"
+                # Clean up
+                rm -rf "$TEMP_EXTRACT_DIR"
                 
               else
-                echo "❌ Failed to mount DMG for verification"
+                echo "❌ Failed to extract ZIP for verification"
                 exit 1
               fi
               
             else
-              echo "❌ Could not find macOS DMG"
-              echo "📂 Looking for DMG in:"
-              find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" 2>/dev/null || echo "   No DMG files found"
+              echo "❌ Could not find macOS ZIP"
+              echo "📂 Looking for ZIP in:"
+              find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.zip" 2>/dev/null || echo "   No ZIP files found"
               exit 1
             fi
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -1076,7 +1114,7 @@ jobs:
         with:
           name: ${{ matrix.name }}-${{ needs.version.outputs.version }}
           path: |
-            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.dmg
+            desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.zip
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.msi
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.deb
             desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/*/*.exe
@@ -1107,7 +1145,7 @@ jobs:
           mkdir -p ./release-ready
           
           # Copy all installer files to release-ready directory
-          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.dmg" -exec cp {} ./release-ready/ \; 2>/dev/null || true
+          find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.zip" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.msi" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.deb" -exec cp {} ./release-ready/ \; 2>/dev/null || true
           find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -name "*.exe" -exec cp {} ./release-ready/ \; 2>/dev/null || true
@@ -1160,7 +1198,7 @@ jobs:
           mkdir -p ./release-assets
           
           # Copy all installer files from artifacts
-          find ./artifacts -name "*.dmg" -exec cp {} ./release-assets/ \;
+          find ./artifacts -name "*.zip" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.msi" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.deb" -exec cp {} ./release-assets/ \;
           find ./artifacts -name "*.exe" -exec cp {} ./release-assets/ \;
@@ -1170,7 +1208,7 @@ jobs:
           
           # Verify we have installers for all platforms
           echo "📊 Platform coverage:"
-          echo "🍎 macOS: $(ls ./release-assets/*.dmg 2>/dev/null | wc -l) installers"
+          echo "🍎 macOS: $(ls ./release-assets/*.zip 2>/dev/null | wc -l) ZIP archives"
           echo "🪟 Windows: $(ls ./release-assets/*.msi 2>/dev/null | wc -l) MSI + $(ls ./release-assets/*.exe 2>/dev/null | wc -l) EXE"
           echo "🐧 Linux: $(ls ./release-assets/*.deb 2>/dev/null | wc -l) DEB packages"
 
@@ -1201,7 +1239,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- 🐧 **Linux**: .deb packages" >> $GITHUB_STEP_SUMMARY
           echo "- 🪟 **Windows**: .msi and .exe installers" >> $GITHUB_STEP_SUMMARY
-          echo "- 🍎 **macOS**: .dmg installer (Universal Binary)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 **macOS**: .zip archive (Universal Binary)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -1248,8 +1286,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Count artifacts by platform
-          if ls ./artifacts/*.dmg 1> /dev/null 2>&1; then
-            echo "- 🍎 **macOS**: $(ls ./artifacts/*.dmg | wc -l) installer(s)" >> $GITHUB_STEP_SUMMARY
+          if ls ./artifacts/*.zip 1> /dev/null 2>&1; then
+            echo "- 🍎 **macOS**: $(ls ./artifacts/*.zip | wc -l) ZIP archive(s)" >> $GITHUB_STEP_SUMMARY
           fi
           if ls ./artifacts/*.msi 1> /dev/null 2>&1; then
             echo "- 🪟 **Windows MSI**: $(ls ./artifacts/*.msi | wc -l) installer(s)" >> $GITHUB_STEP_SUMMARY
@@ -1377,7 +1415,7 @@ jobs:
           echo "## 📦 Download Links Updated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The website now displays download links for:" >> $GITHUB_STEP_SUMMARY
-          echo "- 🍎 **macOS**: Universal DMG installer" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍎 **macOS**: Universal ZIP archive" >> $GITHUB_STEP_SUMMARY
           echo "- 🪟 **Windows**: MSI and EXE installers" >> $GITHUB_STEP_SUMMARY
           echo "- 🐧 **Linux**: DEB packages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

@@ -111,30 +111,33 @@ cd ..
 
 **Important for macOS users:** As a small open-source project, our macOS application is not yet code-signed by Apple. You'll need to bypass macOS security (Gatekeeper) to install and run GeneKnow.
 
+**Note:** Starting with v0.1.4, macOS builds are distributed as ZIP files instead of DMG to preserve the bundled Python runtime.
+
 #### Installation Steps:
-1. **Download** the `.dmg` file from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases)
-2. **Open the DMG** and drag GeneKnow to Applications
-3. **Bypass Gatekeeper** using one of these methods:
+1. **Download** the `.zip` file from our [releases page](https://github.com/astrogirlnim/GeneKnow/releases)
+2. **Extract the ZIP** by double-clicking (creates `GeneKnow.app`)
+3. **Remove quarantine** (required for unsigned apps):
+   ```bash
+   xattr -cr ~/Downloads/GeneKnow.app
+   ```
+4. **Move to Applications** by dragging the app
+5. **First launch**: Right-click GeneKnow.app and select "Open"
 
-**Method 1 (Recommended):**
+#### Quick Terminal Installation:
 ```bash
-# Right-click the GeneKnow app in Applications
-# Select "Open" from the context menu
-# Click "Open" in the security dialog
+# Download, extract, and prepare the app
+cd ~/Downloads
+# Extract the ZIP (or double-click in Finder)
+unzip GeneKnow-*.zip
+# Remove quarantine
+xattr -cr GeneKnow.app
+# Move to Applications
+mv GeneKnow.app /Applications/
+# Open the app (first time)
+open -a GeneKnow
 ```
 
-**Method 2 (System Preferences):**
-```bash
-# If the app is blocked, go to:
-# System Preferences → Security & Privacy → General
-# Click "Open Anyway" next to the GeneKnow message
-```
-
-**Method 3 (Terminal):**
-```bash
-# Remove quarantine attribute (advanced users)
-sudo xattr -rd com.apple.quarantine /Applications/GeneKnow.app
-```
+For detailed instructions, see our [macOS ZIP Installation Guide](docs/MACOS_ZIP_INSTALLATION.md).
 
 #### Why This Happens
 - Apple requires developer certificates ($99/year) for automatic installation
