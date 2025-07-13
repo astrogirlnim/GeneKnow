@@ -88,9 +88,9 @@ function getMockReleaseData() {
                 browser_download_url: `${GITHUB_REPO_URL}/releases/download/v1.2.3/GeneKnow-v1.2.3-Windows-x64.exe`
             },
             {
-                name: 'GeneKnow-v1.2.3-macOS-Universal.zip',
+                name: 'GeneKnow-v1.2.3-macOS-Universal.dmg',
                 size: 82837504, // ~79 MB
-                browser_download_url: `${GITHUB_REPO_URL}/releases/download/v1.2.3/GeneKnow-v1.2.3-macOS-Universal.zip`
+                browser_download_url: `${GITHUB_REPO_URL}/releases/download/v1.2.3/GeneKnow-v1.2.3-macOS-Universal.dmg`
             },
             {
                 name: 'GeneKnow-v1.2.3-Linux-x64.appimage',
@@ -194,13 +194,8 @@ function groupAssetsByPlatform(assets) {
             platformAssets.windows.push(asset);
         }
         // macOS files
-        else if (name.endsWith('.dmg') || name.endsWith('.app') || name.endsWith('.zip')) {
-            // For zip files, only include if they contain 'mac' in the name
-            if (name.endsWith('.zip') && !name.includes('mac')) {
-                // Skip non-macOS zip files
-            } else {
-                platformAssets.macos.push(asset);
-            }
+        else if (name.endsWith('.dmg') || name.endsWith('.app')) {
+            platformAssets.macos.push(asset);
         }
         // Linux files
         else if (name.endsWith('.deb') || name.endsWith('.rpm') || name.endsWith('.appimage')) {
@@ -423,7 +418,7 @@ function getRecommendedAsset(platform, platformAssets) {
     // Platform-specific preferences
     const preferences = {
         windows: ['.msi', '.exe'],
-        macos: ['.zip', '.dmg', '.app'],
+        macos: ['.dmg', '.app'],
         linux: ['.appimage', '.deb', '.rpm']
     };
 
