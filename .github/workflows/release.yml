@@ -863,7 +863,7 @@ jobs:
               
               # Verify ZIP contents
               echo "🔍 Verifying ZIP contents..."
-              unzip -l "$ZIP_NAME" | grep -E "(start_api_server|python_runtime|geneknow_pipeline)" | head -10
+              unzip -l "$ZIP_NAME" | grep -E "(start_api_server|python_runtime|geneknow_pipeline)" | head -10 || true
             else
               echo "❌ Failed to create ZIP"
               exit 1
@@ -1042,7 +1042,7 @@ jobs:
             
             # Show first few build artifacts safely (avoiding broken pipe)
             echo "📂 First few build artifacts:"
-            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5 || echo "   No artifacts found"
+            (find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5) || echo "   No artifacts found"
             
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             # Windows MSI/EXE verification
@@ -1068,7 +1068,7 @@ jobs:
             
             # Show first few build artifacts safely (avoiding broken pipe)
             echo "📂 First few build artifacts:"
-            find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5 || echo "   No artifacts found"
+            (find desktop/src-tauri/target/${{ matrix.rust-target }}/release/bundle/ -type f 2>/dev/null | head -5) || echo "   No artifacts found"
           fi
           
           echo "✅ Build artifact verification completed"
