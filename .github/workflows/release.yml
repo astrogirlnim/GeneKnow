@@ -316,7 +316,8 @@ jobs:
             LAST_TAG="HEAD~10"  # If no tags, get last 10 commits
           fi
           
-          COMMITS=$(git log --oneline --no-merges "$LAST_TAG"..HEAD --pretty=format:"- %s" | head -20)
+          # Get simplified commit messages (first line only, safe for heredoc)
+          COMMITS=$(git log --oneline --no-merges "$LAST_TAG"..HEAD --pretty=format:"- %s" | head -5 | cut -c1-60 || echo "- Recent improvements and bug fixes")
           
           # Generate changelog based on release type
           if [ "$IS_TEST_RELEASE" == "true" ]; then
@@ -371,12 +372,17 @@ jobs:
           )
           fi
           
-          # Set outputs
+          # Debug changelog content
+          echo "📋 Changelog generated successfully (${#CHANGELOG} characters)"
+          
+          # Set outputs with safer heredoc handling
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            echo "$CHANGELOG"
+            echo "CHANGELOG_EOF"
+          } >> $GITHUB_OUTPUT
           
           echo "✅ Version calculation completed successfully!"
 
