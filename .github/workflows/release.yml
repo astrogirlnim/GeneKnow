@@ -699,9 +699,6 @@ jobs:
 
       - name: 🔨 Build Tauri Release
         working-directory: desktop/src-tauri
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           echo "${{ matrix.emoji }} Building Tauri release for ${{ matrix.name }}..."
           echo "🎯 Target: ${{ matrix.rust-target }}"

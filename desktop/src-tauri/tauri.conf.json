@@ -34,7 +34,7 @@
     "resources": ["../bundled_resources"],
     "macOS": {
       "signingIdentity": null,
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "entitlements": null,
       "exceptionDomain": "localhost"
     }
