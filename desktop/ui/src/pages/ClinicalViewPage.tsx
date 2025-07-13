@@ -177,7 +177,7 @@ const downloadSubtabPDF = async (subtabContent: SubtabContent, setIsPDFGeneratin
       console.log('✅ PDF saved successfully to:', savedPath);
       
       // Show success notification
-      showNotification(`✅ PDF Downloaded!<br><small>Saved to Downloads folder</small>`, '#22C55E');
+      showNotification(`✅ PDF Downloaded!<br><small>Saved successfully</small>`, '#22C55E');
       setTimeout(() => {
         const notifications = document.querySelectorAll('[data-pdf-notification]');
         notifications.forEach(n => n.remove());
