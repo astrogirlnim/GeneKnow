@@ -26,12 +26,15 @@ class MedicalGlossary:
             "homozygous": "Having two identical versions (alleles) of a gene.",
             "missense variant": "A genetic change that results in a different amino acid being incorporated into the protein.",
             "nonsense variant": "A genetic change that creates a premature stop codon, resulting in a truncated protein.",
+            "nonsense mutation": "A change that introduces a premature stop codon in the protein.",
             "pathogenic": "A genetic variant that is known to cause disease.",
-            "polygenic risk score": "A score that estimates disease risk based on the combined effect of many genetic variants.",
+            "polygenic risk score": "A numerical estimate of genetic risk based on many small-effect variants.",
+            "odds ratio": "A measure of association between a variant and a disease.",
             "TCGA": "The Cancer Genome Atlas - a comprehensive database of cancer genomics data.",
             "variant of uncertain significance": "A genetic variant whose impact on health is not yet known.",
             "HGVS nomenclature": "Human Genome Variation Society standard notation for describing genetic variants.",
             "penetrance": "The likelihood that a person with a genetic variant will develop the associated condition.",
+            "risk contribution": "The estimated contribution of a variant to the overall composite genetic risk score.",
             "loss of function": "A genetic variant that reduces or eliminates the normal function of a gene.",
             "gain of function": "A genetic variant that increases or creates new gene function.",
             "splice site": "DNA sequences that mark the boundaries between exons and introns in genes.",
@@ -195,7 +198,7 @@ class ReportFormatter:
 
         header = f"""# Genomic Risk Assessment Report
 
-**Generated:** {datetime.now().strftime('%B %d, %Y at %H:%M')}
+**Generated:** {datetime.now().strftime('%B %d, %Y, %H:%M')}
 """
 
         if llm_enhanced:
@@ -297,7 +300,8 @@ class ReportFormatter:
             content += f"CADD scoring was performed on {cadd_summary.get('variants_scored', 0)} variants. "
 
         content += "\n\nThe analysis provides research-grade insights that should be interpreted within the context of current scientific understanding and guidelines. "
-        content += "These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
+        content += "Risk estimates are population-based and individual variation may exist based on genetic ancestry, environmental factors, and other clinical variables. "
+        content += "\n\nClinical interpretation should integrate these genomic findings with family history, lifestyle factors, and clinical presentation to provide comprehensive risk assessment."
 
         return content
 
@@ -334,6 +338,7 @@ class ReportFormatter:
         """Build standardized technical appendix that's the same for every report."""
         summary = data.get("summary", {})
         tcga_summary = data.get("tcga_summary", {})
+        cadd_summary = data.get("cadd_summary", {})
 
         total_variants = summary.get("total_variants_found", 0)
         qc_variants = summary.get("variants_passed_qc", 0)
@@ -341,18 +346,28 @@ class ReportFormatter:
             (qc_variants / max(total_variants, 1)) * 100 if total_variants > 0 else 0
         )
 
+        # Build methods list based on what was actually used
+        methods = [
+            "**Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency",
+            "**Population Analysis:** Comparison with reference populations and allele frequencies",
+            "**TCGA Integration:** Matching variants against The Cancer Genome Atlas database",
+            "**Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment",
+            "**Machine Learning:** Advanced risk models trained on cancer genomics data"
+        ]
+
+        # Only include CADD if it was actually enabled
+        if cadd_summary and cadd_summary.get("enabled", False):
+            methods.insert(3, "**CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction")
+
+        methods_text = "\n".join(f"- {method}" for method in methods)
+
         appendix = f"""**Technical Appendix**
 
 ### Analysis Methods
 
 This report was generated using the GeneKnow genomic analysis pipeline, which includes:
 
-- **Quality Control:** Variant filtering based on quality scores, read depth, and allele frequency
-- **Population Analysis:** Comparison with reference populations and allele frequencies
-- **TCGA Integration:** Matching variants against The Cancer Genome Atlas database
-- **CADD Scoring:** Combined Annotation Dependent Depletion pathogenicity prediction
-- **Polygenic Risk Scoring:** Integration of multiple genetic variants for risk assessment
-- **Machine Learning:** Advanced risk models trained on cancer genomics data
+{methods_text}
 
 ### Quality Metrics
 
@@ -360,10 +375,32 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 - **Variants Passing QC:** {qc_variants}
 - **QC Pass Rate:** {qc_rate:.1f}%
 
+### Model Summary
+
+The risk assessment integrates multiple computational models:
+
+- **Polygenic Risk Score (PRS):** Population-based genetic risk calculation using validated SNP associations
+- **TCGA Matching:** Comparison with tumor genome data from The Cancer Genome Atlas
+{f"- **CADD Scoring:** Pathogenicity prediction using Combined Annotation Dependent Depletion" if cadd_summary and cadd_summary.get('enabled', False) else ""}
+- **Machine Learning Fusion:** Advanced ensemble models combining static annotations with genomic features
+- **ClinVar Integration:** Clinical significance annotations from expert-curated databases
+
 ### Database Coverage
 
 - **TCGA Cancer Types:** 5 (breast, colon, lung, prostate, blood)
-- **Variants with TCGA Data:** {tcga_summary.get('variants_with_tcga_data', 0)}
+- **Variants with TCGA Data:** {tcga_summary.get('variants_with_tcga_data', 0)} (from variant subset analyzed)
+{f"- **CADD Variants Scored:** {cadd_summary.get('variants_scored', 0)}" if cadd_summary and cadd_summary.get('enabled', False) else ""}
+
+### Risk Contribution Methodology
+
+The "Risk Contribution" scores reported for individual variants represent their estimated contribution to the overall composite genetic risk score. This metric is calculated using:
+
+- **Feature Importance:** Machine learning model feature weights indicating relative variant impact
+- **PRS Integration:** Polygenic risk score contributions normalized to percentage scale
+- **Clinical Significance:** ClinVar pathogenicity classifications with evidence-based weighting
+- **Population Context:** Allele frequency adjustments and population stratification corrections
+
+Risk contributions are normalized to sum to 100% across all variants, providing relative importance rankings while maintaining interpretability for clinical assessment.
 
 ### Limitations
 
@@ -381,9 +418,10 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
         # Always include these basic terms
         glossary += "**Allele Frequency:** The proportion of chromosomes in a population that carry a specific variant of a gene.\n\n"
-        glossary += (
-            "**Pathogenic:** A genetic variant that is known to cause disease.\n\n"
-        )
+        glossary += "**Pathogenic:** A genetic variant that is known to cause disease.\n\n"
+        glossary += "**Polygenic Risk Score (PRS):** A numerical estimate of genetic risk based on many small-effect variants.\n\n"
+        glossary += "**Odds Ratio (OR):** A measure of association between a variant and a disease.\n\n"
+        glossary += "**Risk Contribution:** The estimated contribution of a variant to the overall composite genetic risk score.\n\n"
 
         # Add additional terms based on content
         if "frameshift" in content.lower():
@@ -391,6 +429,15 @@ This report was generated using the GeneKnow genomic analysis pipeline, which in
 
         if "missense" in content.lower():
             glossary += "**Missense Variant:** A genetic change that results in a different amino acid being incorporated into the protein.\n\n"
+
+        if "nonsense" in content.lower():
+            glossary += "**Nonsense Mutation:** A change that introduces a premature stop codon in the protein.\n\n"
+
+        if "TCGA" in content:
+            glossary += "**TCGA:** The Cancer Genome Atlas - a comprehensive database of cancer genomics data.\n\n"
+
+        if "CADD" in content:
+            glossary += "**CADD Score:** Combined Annotation Dependent Depletion score - predicts the deleteriousness of genetic variants.\n\n"
 
         # Remove trailing newlines
         return glossary.rstrip()

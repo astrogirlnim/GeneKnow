@@ -267,11 +267,12 @@ INPUT DATA:
 TASK:
 Write exactly 2-3 paragraphs for the Interpretation section that:
 1. First paragraph: Explains the methodology used (TCGA matching, CADD scoring, ML models, etc.)
-2. Second paragraph: Discusses reliability, limitations, and context
-3. Always includes the standard caveat about correlating with family history and presentation
+2. Second paragraph: Discusses reliability, limitations, and context of the analysis
+3. Third paragraph: Provides clinical context and recommendations for next steps
 4. Uses professional medical language
 5. Maintains balanced, evidence-based tone
 6. Emphasizes research nature of analysis
+7. AVOID repetitive language - each paragraph should have distinct content
 
 OUTPUT FORMAT:
 Return ONLY the paragraph text. Do not include section headers or formatting.
@@ -283,10 +284,11 @@ REQUIRED ELEMENTS TO INCLUDE:
 - Discuss pathogenicity prediction algorithms
 - Note polygenic risk scoring and machine learning
 - Include reliability/limitations discussion
-- End with caveat about correlation
+- Clinical context and interpretation guidance
+- Avoid repeating the same phrases about family history correlation
 
 REQUIRED ENDING SENTENCE:
-"These findings should be correlated with family history, lifestyle factors, and presentation for comprehensive risk assessment."
+"Clinical interpretation should integrate these genomic findings with family history, lifestyle factors, and clinical presentation to provide comprehensive risk assessment."
 """
 
         return prompt
