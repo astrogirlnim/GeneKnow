@@ -197,8 +197,8 @@ No additional security steps are required.
 
 **🚀 Recommended: One-Command Startup**
 ```bash
-# From desktop/ui directory (starts both frontend + backend)
-cd ui
+# From root directory, navigate to desktop/ui (starts both frontend + backend)
+cd desktop/ui
 pnpm run tauri-dev
 ```
 
