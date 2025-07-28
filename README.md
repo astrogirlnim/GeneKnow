@@ -10,7 +10,7 @@
 
 ## 🎯 Project Overview
 
-GeneKnow is a **privacy-first genomic risk assessment platform** that processes genetic data entirely on your local machine. No data ever leaves your device, ensuring complete privacy and HIPAA compliance for sensitive genetic information.
+GeneKnow is a **privacy-first and local-first genomic risk assessment platform** that processes genetic data entirely on your local machine. No data ever leaves your device, ensuring complete privacy and HIPAA friendly for sensitive genetic information.
 
 ### 🔬 Core Capabilities (Planned)
 - **FASTQ/BAM File Processing**: Native support for genomic data formats
