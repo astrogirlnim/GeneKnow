@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfidenceCheck from '../components/ConfidenceCheck';
@@ -1323,6 +1322,10 @@ const ClinicalViewPage: React.FC = () => {
   const [isPDFGenerating, setIsPDFGenerating] = useState(false);
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
   
+  // Add pagination state for variants table
+  const [currentPage, setCurrentPage] = useState(1);
+  const [variantsPerPage] = useState(20); // Show 20 variants per page
+  
   // Check if we have real results from the pipeline
   const pipelineResults = location.state?.results as PipelineResult | undefined;
   const fileName = location.state?.fileName as string | undefined;
@@ -1686,13 +1689,144 @@ const ClinicalViewPage: React.FC = () => {
     }
   };
 
-  const genomicData = getGenomicData();
+  // Memoize genomic data to prevent recalculation
+  const genomicData = useMemo(() => getGenomicData(), [pipelineResults, fileName]);
+
+  // Memoize gene associations calculation to prevent lag
+  const geneAssociations = useMemo(() => {
+    console.log('🔄 Calculating gene associations (memoized)');
+    
+    if (!pipelineResults?.pathway_burden_results) {
+      return { associations: {}, genes: [], cancerTypes: ['breast', 'lung', 'colon', 'prostate', 'blood'] };
+    }
+
+    const pathwayBurdenResults = pipelineResults.pathway_burden_results;
+    const allGenes = new Set<string>();
+    
+    // Collect genes from pathway burden analysis
+    Object.values(pathwayBurdenResults).forEach((pathwayResult: PathwayResult) => {
+      if (pathwayResult.contributing_genes) {
+        pathwayResult.contributing_genes.forEach((gene: string) => allGenes.add(gene));
+      }
+      if (pathwayResult.damaging_genes) {
+        pathwayResult.damaging_genes.forEach((gene: string) => allGenes.add(gene));
+      }
+    });
+
+    // Limit to top 8 genes for performance
+    const limitedGenes = Array.from(allGenes).slice(0, 8);
+    const cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'];
+    
+    const associations: Record<string, Record<string, number>> = {};
+    
+    // Initialize with zeros
+    limitedGenes.forEach(gene => {
+      associations[gene] = {};
+      cancerTypes.forEach(cancer => {
+        associations[gene][cancer] = 0;
+      });
+    });
+
+    // Build associations from pathway burden data
+    const pathwayCancerMapping: Record<string, string[]> = {
+      'dna_repair': ['breast', 'colon'],
+      'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
+      'oncogenes': ['lung', 'colon', 'breast'],
+      'ras_mapk': ['lung', 'colon', 'prostate'],
+      'cell_cycle': ['breast', 'lung', 'prostate'],
+      'apoptosis': ['breast', 'lung', 'colon'],
+      'chromatin_remodeling': ['blood', 'lung'],
+      'mismatch_repair': ['colon'],
+      'wnt_signaling': ['colon'],
+      'pi3k_akt': ['breast', 'prostate']
+    };
+
+    Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, PathwayResult]) => {
+      const associatedCancers = pathwayCancerMapping[pathwayName] || [];
+      const burdenScore = pathwayResult.burden_score || 0;
+      
+      if (pathwayResult.damaging_genes) {
+        pathwayResult.damaging_genes.forEach((gene: string) => {
+          if (associations[gene]) {
+            associatedCancers.forEach(cancer => {
+              const geneVariantCount = pathwayResult.gene_damaging_counts?.[gene] || 1;
+              const associationScore = burdenScore * 100 * Math.min(geneVariantCount, 2);
+              associations[gene][cancer] = Math.max(
+                associations[gene][cancer] || 0,
+                Math.min(associationScore, 100)
+              );
+            });
+          }
+        });
+      }
+    });
+
+    console.log('✅ Gene associations calculated:', Object.keys(associations).length, 'genes');
+    return { associations, genes: limitedGenes, cancerTypes };
+  }, [pipelineResults?.pathway_burden_results]);
+
+  // Memoize paginated variants
+  const paginatedVariants = useMemo(() => {
+    const startIndex = (currentPage - 1) * variantsPerPage;
+    const endIndex = startIndex + variantsPerPage;
+    return genomicData.variant_table.slice(startIndex, endIndex);
+  }, [genomicData.variant_table, currentPage, variantsPerPage]);
+
+  const totalPages = Math.ceil(genomicData.variant_table.length / variantsPerPage);
+
+  // Pagination component
+  const PaginationControls = useCallback(() => (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '1rem',
+      padding: '1rem',
+      borderTop: '1px solid #E5E7EB'
+    }}>
+      <button
+        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        style={{
+          padding: '0.5rem 1rem',
+          background: currentPage === 1 ? '#F3F4F6' : '#2563EB',
+          color: currentPage === 1 ? '#9CA3AF' : '#FFFFFF',
+          border: 'none',
+          borderRadius: '0.375rem',
+          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+          fontSize: '0.875rem'
+        }}
+      >
+        Previous
+      </button>
+      
+      <span style={{ fontSize: '0.875rem', color: '#4B5563' }}>
+        Page {currentPage} of {totalPages} ({genomicData.variant_table.length} total variants)
+      </span>
+      
+      <button
+        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        style={{
+          padding: '0.5rem 1rem',
+          background: currentPage === totalPages ? '#F3F4F6' : '#2563EB',
+          color: currentPage === totalPages ? '#9CA3AF' : '#FFFFFF',
+          border: 'none',
+          borderRadius: '0.375rem',
+          cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+          fontSize: '0.875rem'
+        }}
+      >
+        Next
+      </button>
+    </div>
+  ), [currentPage, totalPages, genomicData.variant_table.length]);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'analysis':
         return (
-          <div style={{ padding: '2rem' }}>
+          <div style={{ padding: '1rem' }}>
             <div style={{ 
               display: 'flex',
               justifyContent: 'space-between',
@@ -1701,9 +1835,9 @@ const ClinicalViewPage: React.FC = () => {
             }}>
             <h2 style={{ 
               color: '#111827',
-              fontSize: '1.5rem',
+              fontSize: '1.25rem',
               fontWeight: '600',
-                margin: 0
+              margin: 0
             }}>
               Genomic Analysis Overview
             </h2>
@@ -1716,13 +1850,13 @@ const ClinicalViewPage: React.FC = () => {
             
             {pipelineResults && (
               <div style={{
-                padding: '1rem',
-                marginBottom: '2rem',
+                padding: '0.75rem',
+                marginBottom: '1rem',
                 background: '#EFF6FF',
                 borderRadius: '0.5rem',
                 border: '1px solid #BFDBFE'
               }}>
-                <p style={{ color: '#1E40AF', fontSize: '0.875rem', fontWeight: '500' }}>
+                <p style={{ color: '#1E40AF', fontSize: '0.8rem', fontWeight: '500' }}>
                   Analysis completed.
                 </p>
               </div>
@@ -1731,13 +1865,13 @@ const ClinicalViewPage: React.FC = () => {
             {/* Risk Summary Cards */}
             <div id="cancer-risk-assessment" style={{ 
               background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
+              padding: '1rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
+              marginBottom: '1rem'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ 
                   display: 'flex',
                   alignItems: 'center',
@@ -1831,11 +1965,11 @@ const ClinicalViewPage: React.FC = () => {
             {/* Manhattan Plot */}
             <div id="gene-significance-analysis" style={{
               background: '#FFFFFF',
-              padding: '2rem',
-              borderRadius: '0.75rem',
+              padding: '1rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               border: '1px solid #E5E7EB',
-              marginBottom: '2rem'
+              marginBottom: '1rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ 
@@ -1873,9 +2007,9 @@ const ClinicalViewPage: React.FC = () => {
                 </div>
 
               </div>
-              <svg width="100%" height="300" viewBox="0 0 800 300">
+              <svg width="100%" height="200" viewBox="0 0 800 200">
                 {/* Background */}
-                <rect width="800" height="300" fill="#F9FAFB"/>
+                <rect width="800" height="200" fill="#F9FAFB"/>
                 
                 {/* Grid lines */}
                 {[0, 1, 2, 3, 4, 5].map(i => (
@@ -2243,8 +2377,8 @@ const ClinicalViewPage: React.FC = () => {
         return (
           <div style={{ 
             padding: '2rem',
-            maxWidth: '100%', // Ensure content doesn't exceed container width
-            overflow: 'hidden' // Prevent horizontal overflow
+            maxWidth: '100%',
+            overflow: 'hidden'
           }}>
             <div style={{ 
               display: 'flex',
@@ -2292,7 +2426,7 @@ const ClinicalViewPage: React.FC = () => {
               />
             </div>
             
-            {/* Gene-Cancer Type Heatmap */}
+            {/* Performance-optimized Gene-Cancer Type Heatmap */}
             <div id="gene-cancer-matrix" style={{
               background: '#FFFFFF',
               padding: '2rem',
@@ -2332,227 +2466,17 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <div style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: 'calc(100% + 0.5rem)',
-                      transform: 'translateX(-50%)',
-                      width: '20rem',
-                      padding: '0.75rem',
-                      background: '#1F2937',
-                      color: '#FFFFFF',
-                      fontSize: '0.75rem',
-                      borderRadius: '0.5rem',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                      opacity: hoveredTooltip === 'gene-cancer-matrix' ? 1 : 0,
-                      visibility: hoveredTooltip === 'gene-cancer-matrix' ? 'visible' as const : 'hidden' as const,
-                      transition: 'opacity 300ms ease, visibility 300ms ease',
-                      zIndex: 1000,
-                      pointerEvents: 'none' as const,
-                      lineHeight: '1.4',
-                      border: '1px solid #374151'
-                    }}>
-                      <p style={{ color: '#D1D5DB', marginBottom: '0' }}>
-                        Color-coded heatmap showing the strength of association between specific genes and cancer types. 
+                    <SmartTooltip content="Color-coded heatmap showing the strength of association between specific genes and cancer types. 
                         Red indicates high association (≥80%), orange medium (60-80%), blue low (30-60%), light blue very low (1-30%), 
                         and gray no association. Based on pathway burden analysis and research literature. 
-                        Use this to understand which genes are most relevant for specific cancer screening protocols.
-                      </p>
-                      <div style={{
-                        position: 'absolute',
-                        left: '50%',
-                        bottom: '100%',
-                        transform: 'translateX(-50%)',
-                        width: '0',
-                        height: '0',
-                        borderLeft: '0.5rem solid transparent',
-                        borderRight: '0.5rem solid transparent',
-                        borderBottom: '0.5rem solid #1F2937'
-                      }}></div>
-                    </div>
+                        Use this to understand which genes are most relevant for specific cancer screening protocols." isVisible={hoveredTooltip === 'gene-cancer-matrix'} triggerRef={null} />
                   </div>
                 </div>
               </div>
               
-              {/* Build gene-cancer associations from real data */}
+              {/* Optimized heatmap rendering */}
               {(() => {
-                console.log('🔍 Building heatmap with pathway burden data:', pipelineResults?.pathway_burden_results);
-                console.log('🔍 Available genomic data:', genomicData);
-                
-                // Extract genes from pathway burden results instead of variant table
-                const pathwayBurdenResults = pipelineResults?.pathway_burden_results || {};
-                const allGenes = new Set<string>();
-                
-                // Collect all genes from pathway burden analysis
-                Object.values(pathwayBurdenResults).forEach((pathwayResult: PathwayResult) => {
-                  if (pathwayResult.contributing_genes) {
-                    pathwayResult.contributing_genes.forEach((gene: string) => allGenes.add(gene));
-                  }
-                  if (pathwayResult.damaging_genes) {
-                    pathwayResult.damaging_genes.forEach((gene: string) => allGenes.add(gene));
-                  }
-                });
-                
-                console.log('🧬 Genes from pathway burden:', Array.from(allGenes));
-                
-                // If no pathway data, fall back to variant table but prioritize known cancer genes
-                if (allGenes.size === 0) {
-                  console.log('⚠️ No pathway burden genes found, using variant table');
-                  
-                  // Known cancer genes to prioritize
-                  const knownCancerGenes = ['BRCA1', 'BRCA2', 'TP53', 'KRAS', 'NRAS', 'HRAS', 'BRAF', 'PIK3CA', 'APC', 'PTEN', 'ATM', 'CHEK2', 'PALB2', 'RAD51C', 'RAD51D', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'SMARCA4', 'ARID1A'];
-                  
-                  // First, try to find known cancer genes in the variant table
-                  genomicData.variant_table.forEach(v => {
-                    if (v.gene && v.gene !== 'Unknown' && knownCancerGenes.includes(v.gene)) {
-                      allGenes.add(v.gene);
-                    }
-                  });
-                  
-                  // If we still don't have enough, add other genes from variant table
-                  if (allGenes.size < 5) {
-                    genomicData.variant_table.forEach(v => {
-                      if (v.gene && v.gene !== 'Unknown' && !allGenes.has(v.gene)) {
-                        allGenes.add(v.gene);
-                      }
-                    });
-                  }
-                  
-                  console.log('📊 Final gene set from variant table:', Array.from(allGenes));
-                }
-                
-                const uniqueGenes = Array.from(allGenes).slice(0, 5); // Limit to 5 for display
-                const cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'];
-                
-                // Build association matrix from pathway burden data
-                const geneAssociations: Record<string, Record<string, number>> = {};
-                
-                // Initialize with zeros
-                uniqueGenes.forEach(gene => {
-                  geneAssociations[gene] = {};
-                  cancerTypes.forEach(cancer => {
-                    geneAssociations[gene][cancer] = 0;
-                  });
-                });
-                
-                // Use pathway burden results to build gene-cancer associations
-                if (pipelineResults && Object.keys(pathwayBurdenResults).length > 0) {
-                  console.log('🔬 Using pathway burden results for associations');
-                  
-                  // Map pathways to cancer types based on literature
-                  const pathwayCancerMapping: Record<string, string[]> = {
-                    'dna_repair': ['breast', 'colon'],
-                    'tumor_suppressors': ['breast', 'lung', 'colon', 'prostate'],
-                    'oncogenes': ['lung', 'colon', 'breast'],
-                    'ras_mapk': ['lung', 'colon', 'prostate'],
-                    'cell_cycle': ['breast', 'lung', 'prostate'],
-                    'apoptosis': ['breast', 'lung', 'colon'],
-                    'chromatin_remodeling': ['blood', 'lung'],
-                    'mismatch_repair': ['colon'],
-                    'wnt_signaling': ['colon'],
-                    'pi3k_akt': ['breast', 'prostate']
-                  };
-                  
-                  // Build associations based on pathway burden scores
-                  Object.entries(pathwayBurdenResults).forEach(([pathwayName, pathwayResult]: [string, PathwayResult]) => {
-                    const associatedCancers = pathwayCancerMapping[pathwayName] || [];
-                    const burdenScore = pathwayResult.burden_score || 0;
-                    
-                    console.log(`📋 Processing pathway ${pathwayName}:`, { burdenScore, associatedCancers, damagingGenes: pathwayResult.damaging_genes });
-                    
-                    // Map genes in this pathway to associated cancer types
-                    if (pathwayResult.damaging_genes) {
-                      pathwayResult.damaging_genes.forEach((gene: string) => {
-                        if (geneAssociations[gene]) {
-                          associatedCancers.forEach(cancer => {
-                            // Use burden score as base, multiply by gene-specific factors
-                            const geneVariantCount = pathwayResult.gene_damaging_counts?.[gene] || 1;
-                            const associationScore = burdenScore * 100 * Math.min(geneVariantCount, 2); // Cap at 2x
-                            geneAssociations[gene][cancer] = Math.max(
-                              geneAssociations[gene][cancer] || 0,
-                              Math.min(associationScore, 100) // Cap at 100%
-                            );
-                          });
-                        }
-                      });
-                    }
-                  });
-                  
-                  // Also incorporate risk scores for additional cancer associations
-                  const riskScores = pipelineResults.risk_scores || {};
-                  Object.entries(riskScores).forEach(([cancer, riskScore]) => {
-                    if (cancerTypes.includes(cancer)) {
-                      // For genes that appear in multiple pathways, boost their association
-                      const multiPathwayGenes = pipelineResults.pathway_burden_summary?.multi_pathway_genes || {};
-                      Object.entries(multiPathwayGenes).forEach(([gene, pathways]: [string, string[]]) => {
-                        if (geneAssociations[gene] && pathways.length > 1) {
-                          geneAssociations[gene][cancer] = Math.max(
-                            geneAssociations[gene][cancer] || 0,
-                            (riskScore as number) * 0.8 // 80% of risk score for multi-pathway genes
-                          );
-                        }
-                      });
-                    }
-                  });
-                  
-                  console.log('📊 Built gene associations from pathway burden:', geneAssociations);
-                } else {
-                  console.log('⚠️ No pathway burden results, using fallback gene-cancer associations');
-                  
-                  // Fallback: Use known gene-cancer associations based on literature
-                  const knownGeneAssociations: Record<string, Record<string, number>> = {
-                    'BRCA1': { breast: 85, colon: 20 },
-                    'BRCA2': { breast: 80, colon: 15 },
-                    'TP53': { breast: 40, lung: 70, colon: 60, prostate: 45 },
-                    'KRAS': { lung: 85, colon: 90, prostate: 25 },
-                    'NRAS': { lung: 30, colon: 40 },
-                    'HRAS': { lung: 25, colon: 20 },
-                    'BRAF': { lung: 15, colon: 25 },
-                    'PIK3CA': { breast: 70, prostate: 60 },
-                    'APC': { colon: 95 },
-                    'PTEN': { breast: 35, prostate: 75 },
-                    'ATM': { breast: 45, lung: 30 },
-                    'CHEK2': { breast: 60 },
-                    'PALB2': { breast: 65 },
-                    'RAD51C': { breast: 55 },
-                    'RAD51D': { breast: 50 },
-                    'MLH1': { colon: 85 },
-                    'MSH2': { colon: 80 },
-                    'MSH6': { colon: 75 },
-                    'PMS2': { colon: 70 },
-                    'SMARCA4': { lung: 25, blood: 40 },
-                    'ARID1A': { lung: 20, blood: 30 }
-                  };
-                  
-                  // Apply known associations for genes we have
-                  uniqueGenes.forEach(gene => {
-                    if (knownGeneAssociations[gene]) {
-                      Object.entries(knownGeneAssociations[gene]).forEach(([cancer, score]) => {
-                        if (geneAssociations[gene] && cancerTypes.includes(cancer)) {
-                          geneAssociations[gene][cancer] = score;
-                        }
-                      });
-                    }
-                  });
-                  
-                  // For genes not in known associations, use risk scores if available
-                  const riskScores = pipelineResults?.risk_scores || {};
-                  uniqueGenes.forEach(gene => {
-                    Object.entries(riskScores).forEach(([cancer, riskScore]) => {
-                      if (cancerTypes.includes(cancer) && geneAssociations[gene]) {
-                        // If no specific association, use a fraction of the risk score
-                        if (geneAssociations[gene][cancer] === 0) {
-                          geneAssociations[gene][cancer] = Math.min((riskScore as number) * 0.3, 30);
-                        }
-                      }
-                    });
-                  });
-                  
-                  console.log('📊 Built gene associations from fallback:', geneAssociations);
-                }
-                
-                // If no genes found, show message
-                if (uniqueGenes.length === 0) {
+                if (!geneAssociations.genes || geneAssociations.genes.length === 0) {
                   return (
                     <div style={{ 
                       padding: '2rem', 
@@ -2565,16 +2489,18 @@ const ClinicalViewPage: React.FC = () => {
                   );
                 }
 
+                const { associations = {}, genes = [], cancerTypes = ['breast', 'lung', 'colon', 'prostate', 'blood'] } = geneAssociations;
+                
                 // Calculate summary statistics
-                const totalAssociations = uniqueGenes.reduce((sum, gene) => {
+                const totalAssociations = genes.reduce((sum, gene) => {
                   return sum + cancerTypes.reduce((geneSum, cancer) => {
-                    return geneSum + (geneAssociations[gene]?.[cancer] > 0 ? 1 : 0);
+                    return geneSum + (associations[gene]?.[cancer] > 0 ? 1 : 0);
                   }, 0);
                 }, 0);
 
-                const highRiskAssociations = uniqueGenes.reduce((sum, gene) => {
+                const highRiskAssociations = genes.reduce((sum, gene) => {
                   return sum + cancerTypes.reduce((geneSum, cancer) => {
-                    return geneSum + (geneAssociations[gene]?.[cancer] > 80 ? 1 : 0);
+                    return geneSum + (associations[gene]?.[cancer] > 80 ? 1 : 0);
                   }, 0);
                 }, 0);
 
@@ -2593,10 +2519,10 @@ const ClinicalViewPage: React.FC = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3B82F6' }}>
-                            {uniqueGenes.length}
+                            {genes.length}
                           </div>
                           <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
-                            Genes Analyzed
+                            Top Genes Analyzed
                           </div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
@@ -2618,7 +2544,7 @@ const ClinicalViewPage: React.FC = () => {
                         {pathwayBurdenSummary && (
                           <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8B5CF6' }}>
-                              {pathwayBurdenSummary.high_burden_pathways.length}
+                              {pathwayBurdenSummary.high_burden_pathways?.length || 0}
                             </div>
                             <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
                               High-Burden Pathways
@@ -2626,122 +2552,145 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      {pathwayBurdenSummary && pathwayBurdenSummary.primary_concern && (
+                      
+                      {genes.length >= 8 && (
                         <div style={{ 
                           marginTop: '0.75rem', 
                           padding: '0.5rem',
-                          background: '#FEF2F2',
+                          background: '#EFF6FF',
                           borderRadius: '0.375rem',
-                          border: '1px solid #FECACA'
+                          border: '1px solid #BFDBFE'
                         }}>
-                          <div style={{ fontSize: '0.875rem', color: '#EF4444', fontWeight: '600' }}>
-                            Primary Concern: {pathwayBurdenSummary.primary_concern.replace('_', ' ').toUpperCase()}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#7F1D1D', marginTop: '0.25rem' }}>
-                            Overall burden score: {pathwayBurdenSummary.overall_burden_score.toFixed(2)}
+                          <div style={{ fontSize: '0.75rem', color: '#1E40AF', fontWeight: '500' }}>
+                            ℹ️ Showing top {genes.length} genes for optimal performance. {genomicData.variant_table.length > genes.length ? `${genomicData.variant_table.length - genes.length} additional genes available in variant table below.` : ''}
                           </div>
                         </div>
                       )}
                     </div>
                     
-                    <svg width="100%" height="400" viewBox="0 0 700 400" style={{ overflow: 'visible' }}>
-                    {/* Background */}
-                    <rect width="700" height="400" fill="#F9FAFB"/>
-                    
-                    {/* Heatmap grid */}
-                    {uniqueGenes.map((gene, geneIndex) => {
-                      return cancerTypes.map((cancer, cancerIndex) => {
-                        const x = 120 + cancerIndex * 70;
-                        const y = 80 + geneIndex * 50;
-                        
-                        // Get intensity from real data
-                        const intensity = (geneAssociations[gene]?.[cancer] || 0) / 100;
-                        
-                        const color = intensity > 0.8 ? '#EF4444' : 
-                                     intensity > 0.6 ? '#F59E0B' : 
-                                     intensity > 0.3 ? '#3B82F6' : 
-                                     intensity > 0 ? '#93C5FD' : '#E5E7EB';
-                        
-                        return (
-                          <g key={`${gene}-${cancer}`}>
-                            <rect 
-                              x={x} 
-                              y={y} 
-                              width="60" 
-                              height="40" 
-                              fill={color}
-                              stroke="#FFFFFF"
-                              strokeWidth="2"
-                              opacity="0.8"
-                            />
-                            {intensity > 0 && (
-                              <text 
-                                x={x + 30} 
-                                y={y + 25} 
-                                fill="#FFFFFF" 
-                                fontSize="11" 
-                                textAnchor="middle"
-                                fontWeight="600"
-                              >
-                                {(intensity * 100).toFixed(0)}%
-                              </text>
-                            )}
-                          </g>
-                        );
-                      });
-                    })}
-                    
-                    {/* Gene labels */}
-                    {uniqueGenes.map((gene, index) => (
-                      <text 
-                        key={gene}
-                        x="110" 
-                        y={105 + index * 50} 
-                        fill="#111827" 
-                        fontSize="13" 
-                        textAnchor="end"
-                        fontWeight="600"
+                    {/* Optimized SVG Heatmap */}
+                    <div style={{
+                      width: '100%',
+                      background: '#F9FAFB',
+                      borderRadius: '0.5rem',
+                      padding: '1rem'
+                    }}>
+                      <svg 
+                        width="100%" 
+                        height="300" 
+                        viewBox="0 0 700 250" 
+                        style={{ 
+                          width: '100%',
+                          height: 'auto'
+                        }}
+                        preserveAspectRatio="xMidYMid meet"
                       >
-                        {gene}
-                      </text>
-                    ))}
-                    
-                    {/* Cancer type labels */}
-                    {cancerTypes.map((cancer, index) => (
-                      <text 
-                        key={cancer}
-                        x={150 + index * 70} 
-                        y="70" 
-                        fill="#111827" 
-                        fontSize="13" 
-                        textAnchor="middle"
-                        fontWeight="600"
-                      >
-                        {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
-                      </text>
-                    ))}
-                    
-                    {/* Legend */}
-                    <g transform="translate(480, 300)">
-                      <text x="0" y="0" fill="#111827" fontSize="11" fontWeight="600">Risk Level</text>
-                      <rect x="0" y="10" width="12" height="12" fill="#EF4444"/>
-                      <text x="16" y="21" fill="#4B5563" fontSize="10">High (≥80%)</text>
-                      <rect x="0" y="26" width="12" height="12" fill="#F59E0B"/>
-                      <text x="16" y="37" fill="#4B5563" fontSize="10">Medium (60-80%)</text>
-                      <rect x="0" y="42" width="12" height="12" fill="#3B82F6"/>
-                      <text x="16" y="53" fill="#4B5563" fontSize="10">Low (30-60%)</text>
-                      <rect x="0" y="58" width="12" height="12" fill="#93C5FD"/>
-                      <text x="16" y="69" fill="#4B5563" fontSize="10">Very Low (1-30%)</text>
-                      <rect x="0" y="74" width="12" height="12" fill="#E5E7EB"/>
-                      <text x="16" y="85" fill="#4B5563" fontSize="10">No Association</text>
-                    </g>
-                  </svg>
-                </div>
+                        {/* Background */}
+                        <rect width="700" height="250" fill="#F9FAFB"/>
+                        
+                        {/* Optimized heatmap grid - only render visible cells */}
+                        {genes.map((gene, geneIndex) => {
+                          return cancerTypes.map((cancer, cancerIndex) => {
+                            const cellWidth = 80;
+                            const cellHeight = 35;
+                            const startX = 120;
+                            const startY = 50;
+                            
+                            const x = startX + cancerIndex * (cellWidth + 5);
+                            const y = startY + geneIndex * (cellHeight + 5);
+                            
+                            const intensity = (associations[gene]?.[cancer] || 0) / 100;
+                            
+                            const color = intensity > 0.8 ? '#EF4444' : 
+                                         intensity > 0.6 ? '#F59E0B' : 
+                                         intensity > 0.3 ? '#3B82F6' : 
+                                         intensity > 0 ? '#93C5FD' : '#E5E7EB';
+                            
+                            return (
+                              <g key={`${gene}-${cancer}`}>
+                                <rect 
+                                  x={x} 
+                                  y={y} 
+                                  width={cellWidth} 
+                                  height={cellHeight} 
+                                  fill={color}
+                                  stroke="#FFFFFF"
+                                  strokeWidth="2"
+                                  opacity="0.8"
+                                  rx="4"
+                                />
+                                {intensity > 0 && (
+                                  <text 
+                                    x={x + cellWidth/2} 
+                                    y={y + cellHeight/2} 
+                                    fill="#FFFFFF" 
+                                    fontSize="12" 
+                                    textAnchor="middle"
+                                    fontWeight="600"
+                                    dominantBaseline="middle"
+                                  >
+                                    {(intensity * 100).toFixed(0)}%
+                                  </text>
+                                )}
+                              </g>
+                            );
+                          });
+                        })}
+                      
+                        {/* Gene labels */}
+                        {genes.map((gene, index) => (
+                          <text 
+                            key={gene}
+                            x="110" 
+                            y={50 + 17.5 + index * 40} 
+                            fill="#111827" 
+                            fontSize="14" 
+                            textAnchor="end"
+                            fontWeight="600"
+                            dominantBaseline="middle"
+                          >
+                            {gene}
+                          </text>
+                        ))}
+                        
+                        {/* Cancer type labels */}
+                        {cancerTypes.map((cancer, index) => (
+                          <text 
+                            key={cancer}
+                            x={120 + 40 + index * 85} 
+                            y="35" 
+                            fill="#111827" 
+                            fontSize="14" 
+                            textAnchor="middle"
+                            fontWeight="600"
+                            dominantBaseline="middle"
+                          >
+                            {cancer.charAt(0).toUpperCase() + cancer.slice(1)}
+                          </text>
+                        ))}
+                      
+                        {/* Legend */}
+                        <g transform="translate(550, 60)">
+                          <text x="0" y="0" fill="#111827" fontSize="12" fontWeight="600">Risk Level</text>
+                          <rect x="0" y="12" width="12" height="12" fill="#EF4444" rx="2"/>
+                          <text x="16" y="23" fill="#4B5563" fontSize="10" dominantBaseline="middle">High (≥80%)</text>
+                          <rect x="0" y="30" width="12" height="12" fill="#F59E0B" rx="2"/>
+                          <text x="16" y="41" fill="#4B5563" fontSize="10" dominantBaseline="middle">Medium (60-80%)</text>
+                          <rect x="0" y="48" width="12" height="12" fill="#3B82F6" rx="2"/>
+                          <text x="16" y="59" fill="#4B5563" fontSize="10" dominantBaseline="middle">Low (30-60%)</text>
+                          <rect x="0" y="66" width="12" height="12" fill="#93C5FD" rx="2"/>
+                          <text x="16" y="77" fill="#4B5563" fontSize="10" dominantBaseline="middle">Very Low (1-30%)</text>
+                          <rect x="0" y="84" width="12" height="12" fill="#E5E7EB" rx="2"/>
+                          <text x="16" y="95" fill="#4B5563" fontSize="10" dominantBaseline="middle">No Association</text>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
                 );
               })()}
             </div>
             
-            {/* Variant Table */}
+            {/* Performance-optimized Variant Table with Pagination */}
             <div id="detected-variants" style={{
               background: '#FFFFFF',
               padding: '2rem',
@@ -2780,12 +2729,12 @@ const ClinicalViewPage: React.FC = () => {
                         e.currentTarget.style.borderColor = '#D1D5DB';
                       }}
                     />
-                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, research significance, and functional impact assessments." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
+                    <SmartTooltip content="Comprehensive table of all genetic variants found in the analysis. Includes gene names, genomic positions, mutation types, protein changes, quality scores, research significance, and functional impact assessments. Paginated for optimal performance." isVisible={hoveredTooltip === 'detected-variants'} triggerRef={null} />
                   </div>
                 </div>
               </div>
               
-              {/* Table stats and scrolling indicator */}
+              {/* Table stats */}
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
@@ -2797,61 +2746,55 @@ const ClinicalViewPage: React.FC = () => {
                 marginBottom: '0.5rem'
               }}>
                 <span>
-                  Showing {genomicData.variant_table.length} variants
+                  Showing page {currentPage} of {totalPages} ({genomicData.variant_table.length} total variants)
                 </span>
-                {genomicData.variant_table.length > 10 && (
-                  <span style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.25rem',
-                    fontStyle: 'italic'
-                  }}>
-                    Scrollable table
-                  </span>
-                )}
+                <span style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem',
+                  fontStyle: 'italic'
+                }}>
+                  {variantsPerPage} variants per page
+                </span>
               </div>
               
               <div style={{ 
                 overflowX: 'auto', 
-                overflowY: 'auto',
-                maxHeight: '600px', // Limit height to enable vertical scrolling
-                minHeight: '400px',
                 border: '1px solid #E5E7EB',
-                borderRadius: '0.5rem',
-                // Add subtle shadow to indicate scrollable content
-                boxShadow: genomicData.variant_table.length > 10 ? 'inset 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                borderRadius: '0.5rem'
               }}>
                 <table style={{ 
                   width: '100%', 
                   borderCollapse: 'collapse', 
-                  tableLayout: 'fixed', // Fixed table layout for consistent widths
-                  minWidth: '800px' // Reduced minimum width
+                  tableLayout: 'fixed',
+                  minWidth: '900px'
                 }}>
                   <thead style={{ 
                     position: 'sticky', 
                     top: 0, 
                     zIndex: 1,
-                    background: '#F9FAFB' // Ensure header background stays visible when scrolling
+                    background: '#F9FAFB'
                   }}>
                     <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '10%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '9%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Gene
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Gene</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-gene')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -2863,58 +2806,29 @@ const ClinicalViewPage: React.FC = () => {
                                 e.currentTarget.style.borderColor = '#D1D5DB';
                               }}
                             />
-                            <div style={{
-                              position: 'absolute',
-                              left: '0',
-                              top: 'calc(100% + 0.5rem)',
-                              width: '18rem',
-                              padding: '0.75rem',
-                              background: '#1F2937',
-                              color: '#FFFFFF',
-                              fontSize: '0.75rem',
-                              borderRadius: '0.5rem',
-                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                              opacity: hoveredTooltip === 'header-gene' ? 1 : 0,
-                              visibility: hoveredTooltip === 'header-gene' ? 'visible' as const : 'hidden' as const,
-                              transition: 'opacity 300ms ease, visibility 300ms ease',
-                              zIndex: 1000,
-                              pointerEvents: 'none' as const,
-                              lineHeight: '1.4',
-                              border: '1px solid #374151'
-                            }}>
-                              <p style={{ color: '#D1D5DB', marginBottom: '0' }}>Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment.</p>
-                              <div style={{
-                                position: 'absolute',
-                                left: '0.75rem',
-                                bottom: '100%',
-                                width: '0',
-                                height: '0',
-                                borderLeft: '0.5rem solid transparent',
-                                borderRight: '0.5rem solid transparent',
-                                borderBottom: '0.5rem solid #1F2937'
-                              }}></div>
-                            </div>
+                            <SmartTooltip content="Gene symbol where the variant is located. These are typically cancer-associated genes like BRCA1, TP53, KRAS, etc. that are important for cancer risk assessment." isVisible={hoveredTooltip === 'header-gene'} triggerRef={null} />
                           </div>
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '15%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '18%',
+                        minWidth: '130px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Variant
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Variant</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-variant')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -2960,23 +2874,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '8%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '9%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Type
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Type</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-type')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3024,23 +2939,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '18%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '17%',
+                        minWidth: '120px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Transformation
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Transform</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-transformation')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3088,23 +3004,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '10%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '8%',
+                        minWidth: '70px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Quality
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Quality</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-quality')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3152,23 +3069,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '15%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '14%',
+                        minWidth: '110px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Significance
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Significance</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-significance')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3216,23 +3134,24 @@ const ClinicalViewPage: React.FC = () => {
                         </div>
                       </th>
                       <th style={{ 
-                        padding: '0.75rem', 
+                        padding: '0.75rem 0.25rem', 
                         textAlign: 'left', 
                         borderBottom: '1px solid #E5E7EB', 
                         fontWeight: '600',
                         color: '#111827',
-                        fontSize: '0.875rem',
-                        width: '24%' // Fixed percentage width
+                        fontSize: '0.85rem',
+                        width: '25%',
+                        minWidth: '180px'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          Impact
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>Impact</span>
                           <div 
-                            style={{ position: 'relative', display: 'inline-flex' }}
+                            style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
                             onMouseEnter={() => setHoveredTooltip('header-impact')}
                             onMouseLeave={() => setHoveredTooltip(null)}
                           >
                             <InformationCircleIcon 
-                              style={{ width: '14px', height: '14px' }}
+                              style={{ width: '12px', height: '12px' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = '#D1D5DB';
                                 e.currentTarget.style.color = '#374151';
@@ -3282,60 +3201,77 @@ const ClinicalViewPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {genomicData.variant_table.map((variant, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                    {/* Render only paginated variants for performance */}
+                    {paginatedVariants.map((variant, index) => (
+                      <tr key={`${currentPage}-${index}`} style={{ 
+                        borderBottom: '1px solid #F3F4F6',
+                        minHeight: '60px'
+                      }}>
                         <td style={{ 
-                          padding: '0.75rem', 
+                          padding: '0.75rem 0.25rem', 
                           fontWeight: '600', 
                           color: '#111827',
+                          fontSize: '0.875rem',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '10%'
+                          width: '9%',
+                          minWidth: '70px',
+                          lineHeight: '1.4',
+                          verticalAlign: 'middle'
                         }}>
                           {variant.gene}
                         </td>
                         <td style={{ 
-                          padding: '0.75rem', 
+                          padding: '0.75rem 0.25rem', 
                           fontFamily: 'monospace', 
-                          fontSize: '0.875rem', 
+                          fontSize: '0.8rem', 
                           color: '#4B5563',
                           wordWrap: 'break-word',
                           overflowWrap: 'break-word',
-                          width: '15%'
+                          width: '18%',
+                          minWidth: '130px',
+                          lineHeight: '1.4',
+                          verticalAlign: 'middle'
                         }}>
                           {variant.variant_id.split(':').slice(1).join(':')}
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '8%'
+                          padding: '0.75rem 0.25rem',
+                          width: '9%',
+                          minWidth: '70px',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.mutation_type === 'snv' ? '#3B82F6' : 
                                        variant.mutation_type === 'indel' ? '#EF4444' : '#F59E0B',
                             color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap'
                           }}>
                             {variant.mutation_type}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '18%'
+                          padding: '0.75rem 0.25rem',
+                          width: '17%',
+                          minWidth: '120px',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{ 
-                            fontSize: '0.875rem', 
+                            fontSize: '0.8rem', 
                             color: '#4B5563',
                             wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
+                            overflowWrap: 'break-word',
+                            lineHeight: '1.3'
                           }}>
                             <div style={{ 
                               fontFamily: 'monospace', 
-                              fontSize: '0.75rem', 
+                              fontSize: '0.7rem', 
                               marginBottom: '0.25rem',
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word'
@@ -3343,7 +3279,7 @@ const ClinicalViewPage: React.FC = () => {
                               {variant.transformation.original} → {variant.transformation.mutated}
                             </div>
                             <div style={{ 
-                              fontSize: '0.75rem', 
+                              fontSize: '0.7rem', 
                               color: '#6B7280',
                               wordWrap: 'break-word',
                               overflowWrap: 'break-word'
@@ -3353,56 +3289,65 @@ const ClinicalViewPage: React.FC = () => {
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '10%'
+                          padding: '0.75rem 0.25rem',
+                          width: '8%',
+                          minWidth: '70px',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.quality_score > 90 ? '#22C55E' : 
                                        variant.quality_score > 70 ? '#F59E0B' : '#EF4444',
                             color: '#FFFFFF',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
-                            minWidth: '50px'
+                            minWidth: '40px',
+                            whiteSpace: 'nowrap'
                           }}>
                             {variant.quality_score}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem',
-                          width: '15%'
+                          padding: '0.75rem 0.25rem',
+                          width: '14%',
+                          minWidth: '110px',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{
                             background: variant.clinical_significance === 'pathogenic' ? '#FEF2F2' : '#F0FDF4',
                             color: variant.clinical_significance === 'pathogenic' ? '#EF4444' : '#22C55E',
-                            padding: '0.25rem 0.5rem',
+                            padding: '0.25rem 0.4rem',
                             borderRadius: '0.375rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             textAlign: 'center',
                             wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
+                            overflowWrap: 'break-word',
+                            lineHeight: '1.2'
                           }}>
-                            {variant.clinical_significance}
+                            {variant.clinical_significance.replace('_', ' ')}
                           </div>
                         </td>
                         <td style={{ 
-                          padding: '0.75rem', 
-                          fontSize: '0.875rem', 
+                          padding: '0.75rem 0.25rem', 
+                          fontSize: '0.8rem', 
                           color: '#4B5563',
-                          width: '24%'
+                          width: '25%',
+                          minWidth: '180px',
+                          lineHeight: '1.4',
+                          verticalAlign: 'middle'
                         }}>
                           <div style={{ 
                             marginBottom: '0.25rem',
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
                           }}>
-                            <strong>{variant.functional_impact}</strong>
+                            <strong style={{ fontSize: '0.8rem' }}>{variant.functional_impact}</strong>
                           </div>
                           <div style={{ 
-                            fontSize: '0.75rem', 
+                            fontSize: '0.7rem', 
                             color: '#6B7280',
                             wordWrap: 'break-word',
                             overflowWrap: 'break-word'
@@ -3414,7 +3359,9 @@ const ClinicalViewPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>              
+              {/* Pagination Controls */}
+              {totalPages > 1 && <PaginationControls />}
             </div>
             
             {/* Structural Variants */}
@@ -4640,33 +4587,33 @@ const ClinicalViewPage: React.FC = () => {
     <Layout>
       <section style={{ 
         background: '#F9FAFB',
-        minHeight: 'calc(100vh - 4rem)',
-        padding: '2rem 0'
+        minHeight: '100vh',
+        padding: '1rem 0'
       }}>
         <div style={{ 
-          maxWidth: '1200px',
+          maxWidth: '1400px',
           margin: '0 auto',
-          padding: '0 1.5rem'
+          padding: '0 1rem'
         }}>
           {/* Header */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '2rem'
+            marginBottom: '1rem'
           }}>
             <div>
               <h1 style={{
-                fontSize: '1.875rem',
+                fontSize: '1.5rem',
                 fontWeight: 'bold',
                 color: '#111827',
-                marginBottom: '0.5rem'
+                marginBottom: '0.25rem'
               }}>
                 In-Depth Analysis
               </h1>
               <p style={{
                 color: '#4B5563',
-                fontSize: '1rem'
+                fontSize: '0.875rem'
               }}>
                 Comprehensive genomic analysis • {sidebarData.riskLevel}
               </p>
@@ -4689,7 +4636,7 @@ const ClinicalViewPage: React.FC = () => {
                   }
                 }}
                 style={{
-                  padding: '0.5rem 1.25rem',
+                  padding: '0.5rem 1rem',
                   color: '#FFFFFF',
                   background: '#2563EB',
                   border: 'none',
@@ -4713,27 +4660,28 @@ const ClinicalViewPage: React.FC = () => {
 
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'minmax(280px, 320px) 1fr', 
-            gap: '1.5rem',
-            maxWidth: '100%', // Ensure grid doesn't exceed container width
-            overflow: 'hidden' // Prevent grid from causing horizontal overflow
+            gridTemplateColumns: 'minmax(260px, 280px) 1fr', 
+            gap: '1rem',
+            alignItems: 'start'
           }}>
             {/* Sidebar */}
             <div style={{
               background: '#FFFFFF',
-              borderRadius: '0.75rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
               border: '1px solid #E5E7EB',
-              overflow: 'visible'
+              position: 'sticky',
+              top: '1rem',
+              alignSelf: 'start'
             }}>
               {/* Risk Info */}
               <div style={{
                 background: '#F9FAFB',
-                padding: '1.5rem',
+                padding: '1rem',
                 borderBottom: '1px solid #E5E7EB'
               }}>
                 <div style={{ 
-                  fontSize: '1.125rem',
+                  fontSize: '1rem',
                   fontWeight: '600',
                   marginBottom: '0.5rem',
                   color: '#111827'
@@ -4741,8 +4689,8 @@ const ClinicalViewPage: React.FC = () => {
                   {sidebarData.riskLevel}
                 </div>
                 <div style={{ 
-                  fontSize: '0.875rem',
-                  lineHeight: '1.4',
+                  fontSize: '0.8rem',
+                  lineHeight: '1.3',
                   color: '#4B5563'
                 }}>
                   <span dangerouslySetInnerHTML={{ __html: sidebarData.details }} />
@@ -4752,8 +4700,8 @@ const ClinicalViewPage: React.FC = () => {
                   color: '#2563EB',
                   padding: '0.5rem',
                   borderRadius: '0.375rem',
-                  marginTop: '1rem',
-                  fontSize: '0.875rem',
+                  marginTop: '0.75rem',
+                  fontSize: '0.8rem',
                   fontWeight: '500',
                   textAlign: 'center'
                 }}>
@@ -4762,7 +4710,7 @@ const ClinicalViewPage: React.FC = () => {
               </div>
 
               {/* Navigation */}
-              <div style={{ padding: '1rem' }}>
+              <div style={{ padding: '0.75rem' }}>
                 <div style={{
                   fontSize: '0.75rem',
                   fontWeight: '600',
@@ -4903,12 +4851,9 @@ const ClinicalViewPage: React.FC = () => {
             {/* Main Content */}
             <div style={{
               background: '#FFFFFF',
-              borderRadius: '0.75rem',
+              borderRadius: '0.5rem',
               boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              border: '1px solid #E5E7EB',
-              minHeight: '600px',
-              overflow: 'hidden', // Prevent horizontal overflow
-              width: '100%' // Ensure it doesn't exceed available width
+              border: '1px solid #E5E7EB'
             }}>
               {renderTabContent()}
             </div>

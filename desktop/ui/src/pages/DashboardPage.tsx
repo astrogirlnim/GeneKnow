@@ -1149,59 +1149,78 @@ ${content}`;
                         Showing cancer types with elevated risk (above 5% baseline)
                       </p>
                       <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: '1rem'
                       }}>
-                        {displayData.topCancerRisks.map(([cancer, score]: [string, number]) => {
-                          const getRiskColor = (risk: number) => {
-                            if (risk >= 30) return '#DC2626'; // Red for high risk
-                            if (risk >= 15) return '#F59E0B'; // Amber for medium risk
-                            return '#059669'; // Green for lower risk
-                          };
-                          
-                          const getRiskLevel = (risk: number) => {
-                            if (risk >= 30) return 'High';
-                            if (risk >= 15) return 'Moderate';
-                            return 'Slightly Elevated';
-                          };
-                          
-                          return (
-                            <div key={cancer} style={{
-                              padding: '1rem',
-                              borderRadius: '0.5rem',
-                              background: '#F9FAFB',
-                              border: '1px solid #E5E7EB',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              <div>
-                                <p style={{ 
-                                  fontWeight: '600',
-                                  color: '#374151',
-                                  textTransform: 'capitalize',
-                                  marginBottom: '0.25rem'
-                                }}>
-                                  {cancer}
-                                </p>
-                                <p style={{ 
-                                  fontSize: '0.75rem',
-                                  color: getRiskColor(score)
-                                }}>
-                                  {getRiskLevel(score)} Risk
-                                </p>
-                              </div>
-                              <p style={{ 
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                                color: getRiskColor(score)
+                        {(() => {
+                          const risksPerRow = 3;
+                          const rows = [];
+                          for (let i = 0; i < displayData.topCancerRisks.length; i += risksPerRow) {
+                            const rowItems = displayData.topCancerRisks.slice(i, i + risksPerRow);
+                            rows.push(
+                              <div key={i} style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '1rem',
+                                flexWrap: 'wrap'
                               }}>
-                                {score.toFixed(1)}%
-                              </p>
-                            </div>
-                          );
-                        })}
+                                {rowItems.map(([cancer, score]: [string, number]) => {
+                                  const getRiskColor = (risk: number) => {
+                                    if (risk >= 30) return '#DC2626'; // Red for high risk
+                                    if (risk >= 15) return '#F59E0B'; // Amber for medium risk
+                                    return '#059669'; // Green for lower risk
+                                  };
+                                  
+                                  const getRiskLevel = (risk: number) => {
+                                    if (risk >= 30) return 'High';
+                                    if (risk >= 15) return 'Moderate';
+                                    return 'Slightly Elevated';
+                                  };
+                                  
+                                  return (
+                                    <div key={cancer} style={{
+                                      padding: '1rem',
+                                      borderRadius: '0.5rem',
+                                      background: '#F9FAFB',
+                                      border: '1px solid #E5E7EB',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      width: '100%',
+                                      maxWidth: '240px'
+                                    }}>
+                                      <div>
+                                        <p style={{ 
+                                          fontWeight: '600',
+                                          color: '#374151',
+                                          textTransform: 'capitalize',
+                                          marginBottom: '0.25rem'
+                                        }}>
+                                          {cancer}
+                                        </p>
+                                        <p style={{ 
+                                          fontSize: '0.75rem',
+                                          color: getRiskColor(score)
+                                        }}>
+                                          {getRiskLevel(score)} Risk
+                                        </p>
+                                      </div>
+                                      <p style={{ 
+                                        fontSize: '1.5rem',
+                                        fontWeight: 'bold',
+                                        color: getRiskColor(score)
+                                      }}>
+                                        {score.toFixed(1)}%
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }
+                          return rows;
+                        })()}
                       </div>
                       {displayData.topCancerRisks.length <= 2 && (
                         <p style={{ 
